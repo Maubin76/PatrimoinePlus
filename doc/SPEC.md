@@ -195,7 +195,7 @@ L'utilisateur ne saisit jamais de signe : il est déduit du type d'opération.
 
 ## 3. Architecture
 
-- Kotlin, Jetpack Compose + Material 3, minSdk 30, targetSdk 35, compileSdk 36,
+- Kotlin, Jetpack Compose + Material 3, minSdk 30, targetSdk 35, compileSdk 37,
   version catalog, KSP, Hilt (sous réserve de compatibilité avec AGP 9, vérifiée
   à l'étape 1), `navigation-compose`, coroutines et Flow.
 - Package : `fr.maubin.patrimoineplus`.
