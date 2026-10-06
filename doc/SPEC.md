@@ -52,8 +52,8 @@ d'une opération sur plusieurs catégories, multi-devises.
   débit sur le compte courant.
 - Pas de date de départ globale : chaque compte reçoit une opération
   « Solde initial » à la date de son choix (par défaut : le 1er du mois courant).
-- Téléphone : version Android non précisée ; minSdk 30 couvre Android 11 et
-  au-delà.
+- Téléphone : Android 16 (API 36). minSdk 30 conservé comme demandé ; le
+  téléphone est couvert.
 
 ---
 
