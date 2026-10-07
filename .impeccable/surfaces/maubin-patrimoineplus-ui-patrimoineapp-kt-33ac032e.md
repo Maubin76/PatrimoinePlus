@@ -7,20 +7,26 @@ related_targets: ["app/src/main/java/fr/maubin/patrimoineplus/ui/home/HomeScreen
 
 # Coque de l'application et accueil
 
-Portée : coque Compose (thème, barre de navigation, FAB, barres du haut), écran d'accueil et écrans provisoires des onglets. Mode : Operate.
+Portée : coque Compose (thème, navigation, bouton de saisie, barres du haut), écran d'accueil et écrans provisoires des onglets. Mode : Operate.
 
-Audience : Mathieu, seul utilisateur ; saisie rapide d'une main et revue posée. Chiffre clé à l'ouverture : le patrimoine total. FAB de saisie sur Accueil et Comptes seulement. À éviter : look banque en ligne, gamification. Mode discret (montants masqués) requis. Aucune donnée n'existe encore (base à l'étape 2) : les états vides doivent être de vrais états, pas des chiffres inventés.
+Audience : Mathieu, seul utilisateur, qui saisit vite d'une main et fait aussi des revues posées. Chiffre clé à l'ouverture : le patrimoine total. Bouton de saisie sur Accueil et Comptes seulement. À éviter : le look banque en ligne et la gamification. Le mode discret (montants masqués) est requis. Aucune donnée n'existe encore (la base arrive à l'étape 2) : les états vides doivent être de vrais états, pas des chiffres inventés.
+
+Direction imposée par l'utilisateur le 2026-10-07. Elle remplace la direction « Calculatrice Braun ». Références : deux maquettes d'applis financières monochromes. La première montre un solde centré en très grand, une pastille dessous et une navigation en pilule flottante. La seconde montre des cartes bordées, des titres de section en gras avec un lien souligné à droite, et des chiffres secondaires atténués. Choix confirmés :
+- total centré ;
+- pilule flottante à icônes seules ;
+- bouton rond noir flottant ;
+- monochrome, avec un mode sombre qui suit le système.
 
 ## Direction contract
 
-THESIS: Le patrimoine est le résultat d'une addition. L'écran montre les opérandes (les comptes) et le résultat (le total) après un « = » rond et jaune, comme la touche égale de la Braun ET66. Refuse l'arrangement par défaut de la catégorie : une carte colorée en tête, des tuiles de comptes ombrées et des icônes de tirelire.
+THESIS: Noir sur blanc, rien d'autre. Le total est le seul élément en très grand, centré comme un solde ; tout le reste est du texte calme et des filets. Refuse la carte colorée en tête, les dégradés, les tuiles d'icônes et la barre Material pleine largeur.
 
-OWN-WORLD: Palette fixe à la place de Material You. En clair, un fond aluminium gris chaud (#EEECE7), le texte en anthracite (#2A2724) et des filets gris tiède. En sombre, un corps brun-noir (#1C1A18) avec le texte en gris clair chaud. Un seul jaune « touche égale » (#E2A72E), réservé à l'action et au résultat. Un olive (#5F7F4A) et un ocre servent de séries de données. Formes : des touches rondes (FAB circulaire, indicateurs en points) et des filets de 1 dp ; ni ombre ni carte. Chiffres tabulaires partout.
+OWN-WORLD: Fond blanc pur, encre presque noire (#0A0A0A), gris secondaire (#6B6B6B), filets et bordures gris très clair (#EBEBEB). Mode sombre inversé : fond #0B0B0B, encre #F5F5F5. Aucune couleur d'accent. Un rouge discret est réservé aux montants négatifs, dont le signe reste écrit. Grotesque unique, Hanken Grotesk : titres en demi-gras, total en demi-gras très serré. Formes : pilules (navigation, pastille, boutons), cartes bordées de 1 dp aux coins de 16 dp, bouton de saisie rond noir. Séries de données en niveaux de gris : noir, gris moyen, gris clair.
 
-STORY: À l'ouverture, Mathieu lit son patrimoine total, voit de quoi il est fait (comptes alignés comme une addition), et ajoute une opération d'un pouce. Il croit au chiffre parce qu'il voit qu'il est calculé.
+STORY: À l'ouverture, Mathieu lit le total centré, voit ses comptes listés dans une carte nette et leur répartition, puis ajoute une opération du pouce avec le rond noir.
 
-FIRST VIEWPORT: Barre du haut sobre : le nom à gauche et l'œil du mode discret à droite. Sous la mention « Patrimoine », le total en displayLarge, précédé du rond jaune « = ». Ensuite une barre de répartition proportionnelle pleine largeur, puis les comptes en lignes : un point de type, le nom, et le montant aligné à droite. Un filet sépare les opérandes du résultat. Le FAB rond jaune est en bas à droite, au-dessus de la barre de navigation. État vide : l'addition s'écrit avec des tirets et un bouton « Créer mes comptes ».
+FIRST VIEWPORT: Barre du haut avec le titre « Patrimoine » centré et l'œil du mode discret à droite. En dessous, le total en displayLarge demi-gras, centré, et sous lui une pastille bordée « Calculé au … ». Puis la section « Comptes » (titre en gras à gauche, lien souligné « Gérer » à droite) dans une carte bordée : une ligne par compte, avec le nom, le type en gris et le montant à droite. Ensuite la section « Répartition » : une barre en niveaux de gris et sa légende. La pilule flottante blanche à ombre douce est centrée en bas ; l'onglet actif y est dans une pastille grise. Le rond noir « + » est au-dessus, à droite. État vide : afficheur « – – –,– – € » atténué, carte « Aucun compte » avec un bouton noir « Voir les comptes » (la création arrive à l’étape 3).
 
-FORM: Calculatrice Braun ET66 / Dieter Rams, candidat 4 de la liste ordonnée ; clé de tirage 25b6cd87. Mouvement signature : les chiffres du total roulent quand sa valeur change, comme un afficheur ; quand les animations du système sont coupées, le chiffre change d'un coup (Compose respecte l'échelle 0 du système, aucun fondu n'est possible). Ajouts retenus des challengers : hiérarchie par l'échelle seule (spécimen) ; un mois par écran, glissement aimanté (flux) ; échelle fixe entre périodes (folio) ; rampe proportionnelle unique (atlas) ; filets au lieu d'ombres (annuel).
+FORM: Direction imposée par l'utilisateur (références fournies), donc aucun tirage ; la clé du tirage précédent, 25b6cd87, est abandonnée. Mouvement signature : le total centré en très grand, dont les chiffres roulent quand la valeur change. Quand les animations du système sont coupées, le chiffre change d'un coup.
 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance

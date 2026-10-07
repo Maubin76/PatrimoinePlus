@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Thème de fenêtre en mode sombre : corps brun-noir de la palette. -->
+<!-- Thème de fenêtre en mode sombre : noir de la palette. -->
 <resources>
-	<color name="window_background">#FF1C1A18</color>
+	<color name="window_background">#FF0B0B0B</color>
 	<style name="Theme.PatrimoinePlus" parent="android:Theme.Material.NoActionBar">
 		<item name="android:windowBackground">@color/window_background</item>
 	</style>

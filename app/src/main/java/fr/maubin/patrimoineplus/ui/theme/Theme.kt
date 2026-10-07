@@ -5,10 +5,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 
 /*
-	Thème Material 3 de l'application, palette fixe « Calculatrice Braun ».
-	Les couleurs dynamiques Material You sont volontairement écartées : le
-	jaune de la touche « = » doit rester le même quel que soit le fond d'écran.
-	Le mode sombre suit le système.
+	Thème Material 3 de l'application : monochrome, noir sur blanc, blanc sur
+	noir en mode sombre (qui suit le système). Les couleurs dynamiques Material
+	You sont volontairement écartées.
 	inDarkTheme : force le mode sombre ou clair
 	inContent   : contenu affiché sous ce thème
 */
@@ -19,8 +18,8 @@ fun PatrimoineTheme(
 )
 {
 	MaterialTheme(
-		colorScheme = if (inDarkTheme) BraunDarkColors else BraunLightColors,
-		typography  = BraunTypography,
+		colorScheme = if (inDarkTheme) MonoDarkColors else MonoLightColors,
+		typography  = MonoTypography,
 		content     = inContent
 	)
 }

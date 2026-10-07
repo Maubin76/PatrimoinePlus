@@ -1,26 +1,31 @@
 package fr.maubin.patrimoineplus.ui.settings
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemColors
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import fr.maubin.patrimoineplus.ui.components.BorderedCard
+import fr.maubin.patrimoineplus.ui.components.SectionHeader
 import fr.maubin.patrimoineplus.ui.shell.ScreenScaffold
+import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
 
 /*
 	Onglet des réglages : le mode discret fonctionne dès maintenant ; verrou
@@ -34,63 +39,102 @@ fun SettingsScreen(
 	inOnHidden : (Boolean) -> Unit
 )
 {
-	val vSnackbar = remember { SnackbarHostState() }						// messages éphémères
-	val vColors   = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface)	// listes sur le fond
-	ScreenScaffold(inTitle = "Réglages", inSnackbar = vSnackbar) { inPadding ->
-		Column(Modifier.padding(inPadding).verticalScroll(rememberScrollState())) {
-			SectionTitle("Confidentialité")
-			ListItem(
-				headlineContent   = { Text("Mode discret") },
-				supportingContent = { Text("Masque les montants sur tous les écrans. L'œil de la barre du haut fait de même.") },
-				trailingContent   = { Switch(checked = inHidden, onCheckedChange = null) },
-				colors            = vColors,
-				modifier          = Modifier.toggleable(value = inHidden, role = Role.Switch, onValueChange = inOnHidden)
-			)
-			HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
-			SectionTitle("Sécurité")
-			UpcomingItem("Verrou biométrique", "Empreinte ou code du téléphone, re-verrouillage après une minute (étape 7).", vColors)
-			HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant)
-			SectionTitle("Données")
-			UpcomingItem("Exporter", "Fichier JSON complet, rangé où vous voulez (étape 7).", vColors)
-			UpcomingItem("Importer", "Remplace toutes les données par celles d'un export (étape 7).", vColors)
+	ScreenScaffold(inTitle = "Réglages") { inPadding ->
+		Column(
+			Modifier
+				.padding(top = inPadding.calculateTopPadding())
+				.verticalScroll(rememberScrollState())
+				.padding(start = kScreenMargin, end = kScreenMargin, top = 16.dp, bottom = inPadding.calculateBottomPadding() + 16.dp)
+		) {
+			SectionHeader(inTitle = "Confidentialité")
+			Spacer(Modifier.height(8.dp))
+			BorderedCard {
+				Row(
+					modifier          = Modifier
+						.fillMaxWidth()
+						.toggleable(value = inHidden, role = Role.Switch, onValueChange = inOnHidden)
+						.padding(horizontal = 20.dp, vertical = 16.dp),
+					verticalAlignment = Alignment.CenterVertically
+				) {
+					SettingText(
+						inTitle    = "Mode discret",
+						inDetail   = "Masque les montants sur tous les écrans. L’œil de la barre du haut fait de même.",
+						inMuted    = false,
+						inModifier = Modifier.weight(1f)
+					)
+					Spacer(Modifier.width(16.dp))
+					Switch(
+						checked         = inHidden,
+						onCheckedChange = null,
+						colors          = SwitchDefaults.colors(
+							checkedTrackColor = MaterialTheme.colorScheme.primary,
+							checkedThumbColor = MaterialTheme.colorScheme.onPrimary
+						)
+					)
+				}
+			}
+			Spacer(Modifier.height(32.dp))
+			SectionHeader(inTitle = "Sécurité")
+			Spacer(Modifier.height(8.dp))
+			BorderedCard {
+				UpcomingRow("Verrou biométrique", "Empreinte ou code du téléphone, re-verrouillage après une minute (étape 7).")
+			}
+			Spacer(Modifier.height(32.dp))
+			SectionHeader(inTitle = "Données")
+			Spacer(Modifier.height(8.dp))
+			BorderedCard {
+				UpcomingRow("Exporter", "Fichier JSON complet, rangé où vous voulez (étape 7).")
+				HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = MaterialTheme.colorScheme.outlineVariant)
+				UpcomingRow("Importer", "Remplace toutes les données par celles d’un export (étape 7).")
+			}
 		}
 	}
 }
 
 /*
-	Titre d'un groupe de réglages.
-	inText : libellé du groupe
+	Titre et explication d'un réglage.
+	inTitle    : nom du réglage
+	inDetail   : explication
+	inMuted    : atténue le titre (réglage pas encore disponible)
+	inModifier : modificateur appliqué
 */
 @Composable
-private fun SectionTitle(inText: String)
+private fun SettingText(
+	inTitle    : String,
+	inDetail   : String,
+	inMuted    : Boolean,
+	inModifier : Modifier = Modifier
+)
 {
-	Text(
-		text     = inText,
-		style    = MaterialTheme.typography.titleSmall,
-		color    = MaterialTheme.colorScheme.onSurfaceVariant,
-		modifier = Modifier
-			.padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 4.dp)
-			.semantics { heading() }
-	)
+	Column(inModifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+		Text(
+			text  = inTitle,
+			style = MaterialTheme.typography.titleMedium,
+			color = if (inMuted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+		)
+		Text(
+			text  = inDetail,
+			style = MaterialTheme.typography.bodyMedium,
+			color = MaterialTheme.colorScheme.onSurfaceVariant
+		)
+	}
 }
 
 /*
-	Réglage pas encore disponible : affiché atténué, sans interaction.
+	Réglage pas encore disponible : atténué, sans interaction.
 	inTitle  : nom du réglage
 	inDetail : ce qu'il fera, et quand
-	inColors : couleurs des éléments de liste
 */
 @Composable
-private fun UpcomingItem(
+private fun UpcomingRow(
 	inTitle  : String,
-	inDetail : String,
-	inColors : ListItemColors
+	inDetail : String
 )
 {
-	val vMuted = MaterialTheme.colorScheme.onSurfaceVariant				// texte atténué
-	ListItem(
-		headlineContent   = { Text(inTitle, color = vMuted) },
-		supportingContent = { Text(inDetail, color = vMuted) },
-		colors            = inColors
+	SettingText(
+		inTitle    = inTitle,
+		inDetail   = inDetail,
+		inMuted    = true,
+		inModifier = Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 20.dp, vertical = 16.dp)
 	)
 }

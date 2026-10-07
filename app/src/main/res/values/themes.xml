@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Thème de fenêtre : fond aux couleurs de la palette, pour éviter un éclair blanc au démarrage. -->
 <resources>
-	<color name="window_background">#FFEEECE7</color>
+	<color name="window_background">#FFFFFFFF</color>
 	<style name="Theme.PatrimoinePlus" parent="android:Theme.Material.Light.NoActionBar">
 		<item name="android:windowBackground">@color/window_background</item>
 	</style>

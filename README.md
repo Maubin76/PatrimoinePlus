@@ -20,7 +20,7 @@ dans [`doc/SPEC.md`](doc/SPEC.md) ; la couverture des tests dans
 | Élément          | Choix                                                                    |
 |------------------|--------------------------------------------------------------------------|
 | Langage          | Kotlin (intégré à AGP 9), JVM 17                                         |
-| Interface        | Jetpack Compose + Material 3, palette fixe « Calculatrice Braun », police Hanken Grotesk |
+| Interface        | Jetpack Compose + Material 3, monochrome noir sur blanc, police Hanken Grotesk |
 | Navigation       | `navigation-compose`, routes typées (`kotlinx.serialization`)             |
 | Injection        | Hilt (KSP)                                                               |
 | Asynchronisme    | Coroutines et Flow                                                       |
@@ -56,21 +56,24 @@ Règles :
 
 ## Interface
 
-Direction visuelle « Calculatrice Braun » (design Dieter Rams) : le patrimoine
-s'affiche comme le résultat d'une addition, précédé d'une touche « = » jaune.
+Direction visuelle monochrome, noir sur blanc (blanc sur noir en mode sombre),
+inspirée de deux maquettes de référence fournies le 2026-10-07.
 
-- Palette fixe (`ui/theme/Color.kt`) : aluminium gris chaud, anthracite, un
-  seul jaune réservé au bouton de saisie et au résultat ; olive et ocre pour
-  les livrets et le compte-titres. Les couleurs dynamiques Material You sont
-  volontairement écartées. Mode sombre : corps brun-noir.
+- Palette fixe (`ui/theme/Color.kt`) : blanc, encre presque noire, gris
+  secondaire, filets gris très clair ; aucun accent. Rouge discret réservé aux
+  montants négatifs. Les couleurs dynamiques Material You sont écartées.
 - Police unique Hanken Grotesk (OFL, `res/font`, licence dans
-  `doc/licenses/`) ; ses chiffres sont à chasse fixe, les montants s'alignent.
-- Séparations par filets de 1 dp, sans ombres ni cartes.
+  `doc/licenses/`) ; titres et total en demi-gras ; chiffres à chasse fixe.
+- Accueil : total centré en très grand, pastille « Calculé au … », section
+  « Comptes » dans une carte bordée, section « Répartition » en niveaux de gris.
+- Navigation : pilule flottante à icônes seules (`ui/shell/AppFrame.kt`),
+  bouton rond noir de saisie au-dessus, sur Accueil et Comptes.
 - Composants : `AmountText` (masqué en mode discret, chiffres qui roulent),
-  `EqualsKey`, `ProportionBar`, `EmptyState`, `ScreenScaffold`.
+  `InfoPill`, `SectionHeader`, `BorderedCard`, `ProportionBar`, `EmptyState`,
+  `ScreenScaffold`.
 - Mode discret : l'œil de la barre du haut ou le réglage masque tous les
   montants ; mémorisé en DataStore.
-- Contexte de conception : `PRODUCT.md` et `.impeccable/`.
+- Contexte de conception : `PRODUCT.md`, `DESIGN.md` et `.impeccable/`.
 
 Captures de relecture : `./gradlew :app:recordRoborazziDebug` écrit les PNG
 dans `app/build/outputs/roborazzi/`.

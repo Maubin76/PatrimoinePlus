@@ -15,8 +15,8 @@ import fr.maubin.patrimoineplus.R
 */
 private fun hanken(inWeight: FontWeight): Font =
 	Font(
-		resId            = R.font.hanken_grotesk,
-		weight           = inWeight,
+		resId             = R.font.hanken_grotesk,
+		weight            = inWeight,
 		variationSettings = FontVariation.Settings(FontVariation.weight(inWeight.weight))
 	)
 
@@ -46,21 +46,21 @@ private fun grotesk(
 		letterSpacing = inTracking?.em ?: inStyle.letterSpacing
 	)
 
-// Échelle typographique : la hiérarchie vient de la taille, les graisses restent sobres.
-val BraunTypography = Typography(
-	displayLarge   = grotesk(kBase.displayLarge, FontWeight.Medium, -0.03f),
-	displayMedium  = grotesk(kBase.displayMedium, FontWeight.Medium, -0.025f),
-	displaySmall   = grotesk(kBase.displaySmall, FontWeight.Medium, -0.02f),
-	headlineLarge  = grotesk(kBase.headlineLarge, FontWeight.Medium, -0.015f),
-	headlineMedium = grotesk(kBase.headlineMedium, FontWeight.Medium, -0.01f),
-	headlineSmall  = grotesk(kBase.headlineSmall, FontWeight.Medium),
-	titleLarge     = grotesk(kBase.titleLarge, FontWeight.Medium),
-	titleMedium    = grotesk(kBase.titleMedium, FontWeight.Medium),
-	titleSmall     = grotesk(kBase.titleSmall, FontWeight.Medium),
+// Échelle typographique : total et titres en demi-gras serré, texte courant sans interlettrage.
+val MonoTypography = Typography(
+	displayLarge   = grotesk(kBase.displayLarge, FontWeight.SemiBold, -0.035f),
+	displayMedium  = grotesk(kBase.displayMedium, FontWeight.SemiBold, -0.03f),
+	displaySmall   = grotesk(kBase.displaySmall, FontWeight.SemiBold, -0.025f),
+	headlineLarge  = grotesk(kBase.headlineLarge, FontWeight.SemiBold, -0.02f),
+	headlineMedium = grotesk(kBase.headlineMedium, FontWeight.SemiBold, -0.015f),
+	headlineSmall  = grotesk(kBase.headlineSmall, FontWeight.SemiBold, -0.01f),
+	titleLarge     = grotesk(kBase.titleLarge, FontWeight.SemiBold, -0.005f),
+	titleMedium    = grotesk(kBase.titleMedium, FontWeight.Medium, 0f),
+	titleSmall     = grotesk(kBase.titleSmall, FontWeight.Medium, 0f),
 	bodyLarge      = grotesk(kBase.bodyLarge, FontWeight.Normal, 0f),
 	bodyMedium     = grotesk(kBase.bodyMedium, FontWeight.Normal, 0f),
-	bodySmall      = grotesk(kBase.bodySmall, FontWeight.Normal),
-	labelLarge     = grotesk(kBase.labelLarge, FontWeight.Medium),
+	bodySmall      = grotesk(kBase.bodySmall, FontWeight.Normal, 0f),
+	labelLarge     = grotesk(kBase.labelLarge, FontWeight.Medium, 0f),
 	labelMedium    = grotesk(kBase.labelMedium, FontWeight.Medium),
 	labelSmall     = grotesk(kBase.labelSmall, FontWeight.Medium)
 )

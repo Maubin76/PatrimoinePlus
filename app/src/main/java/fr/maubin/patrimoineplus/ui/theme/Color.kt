@@ -5,115 +5,114 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
-// Palette « Calculatrice Braun » : aluminium gris chaud, anthracite, un seul
-// jaune réservé à l'action (bouton de saisie) et au résultat (touche « = »).
+// Palette monochrome : noir sur blanc, gris pour le secondaire, aucun accent.
+// Seuls les montants négatifs reçoivent un rouge discret (leur signe reste écrit).
 
-private val kAluminium        = Color(0xFFEEECE7)						// fond clair
-private val kAluminiumLowest  = Color(0xFFF7F6F2)						// conteneur le plus clair
-private val kAluminiumLow     = Color(0xFFE8E6E0)						// conteneur bas
-private val kAluminiumMid     = Color(0xFFE3E0DA)						// conteneur
-private val kAluminiumHigh    = Color(0xFFDCD9D2)						// conteneur haut
-private val kAluminiumHighest = Color(0xFFD5D2CA)						// conteneur le plus haut
-private val kAnthracite       = Color(0xFF2A2724)						// encre principale
-private val kWarmGrey         = Color(0xFF5E5A54)						// texte secondaire (6:1 sur l'aluminium)
-private val kRuleLight        = Color(0xFFCFCBC3)						// filets
-private val kOutlineLight     = Color(0xFF8C877F)						// contours de champs
-private val kEqualsYellow     = Color(0xFFE2A72E)						// touche « = » de l'ET66
-private val kOlive            = Color(0xFF5F7F4A)						// série de données : livrets
-private val kOchre            = Color(0xFFA9742A)						// série de données : compte-titres
+private val kWhite          = Color(0xFFFFFFFF)							// fond clair
+private val kGrey50         = Color(0xFFF7F7F7)							// conteneur bas
+private val kGrey100        = Color(0xFFF2F2F2)							// conteneur
+private val kGrey150        = Color(0xFFEDEDED)							// pastille de sélection
+private val kGrey200        = Color(0xFFE6E6E6)							// conteneur le plus haut
+private val kRule           = Color(0xFFEBEBEB)							// filets et bordures
+private val kOutline        = Color(0xFF9E9E9E)							// contours de champs
+private val kGrey600        = Color(0xFF6B6B6B)							// texte secondaire (5,3:1 sur blanc)
+private val kInk            = Color(0xFF0A0A0A)							// encre principale
+private val kSeriesMid      = Color(0xFF8A8A8A)							// série de données : livrets
+private val kSeriesLight    = Color(0xFFC4C4C4)							// série de données : compte-titres
+private val kNegative       = Color(0xFFC62828)							// montants négatifs
 
-private val kBody             = Color(0xFF1C1A18)						// corps sombre
-private val kBodyLowest       = Color(0xFF171513)						// conteneur le plus bas
-private val kBodyLow          = Color(0xFF22201E)						// conteneur bas
-private val kBodyMid          = Color(0xFF282624)						// conteneur
-private val kBodyHigh         = Color(0xFF2E2B29)						// conteneur haut
-private val kBodyHighest      = Color(0xFF363330)						// conteneur le plus haut
-private val kKeyLight         = Color(0xFFECE8E0)						// encre claire
-private val kKeyGrey          = Color(0xFFB5AFA6)						// texte secondaire sombre
-private val kRuleDark         = Color(0xFF45413D)						// filets sombres
-private val kOutlineDark      = Color(0xFF8A847B)						// contours sombres
-private val kOliveLight       = Color(0xFF9DB884)						// livrets, mode sombre
-private val kOchreLight       = Color(0xFFD9A85A)						// compte-titres, mode sombre
+private val kBlack          = Color(0xFF0B0B0B)							// fond sombre
+private val kNight50        = Color(0xFF141414)							// conteneur bas sombre
+private val kNight100       = Color(0xFF1A1A1A)							// conteneur sombre (pilule)
+private val kNight150       = Color(0xFF333333)							// pastille de sélection sombre
+private val kNight200       = Color(0xFF303030)							// conteneur le plus haut sombre
+private val kRuleDark       = Color(0xFF262626)							// filets sombres
+private val kOutlineDark    = Color(0xFF6E6E6E)							// contours sombres
+private val kGrey400        = Color(0xFFA3A3A3)							// texte secondaire sombre
+private val kPaper          = Color(0xFFF5F5F5)							// encre claire
+private val kSeriesMidDark  = Color(0xFF9E9E9E)							// livrets, mode sombre
+private val kSeriesLowDark  = Color(0xFF5C5C5C)							// compte-titres, mode sombre
+private val kNegativeDark   = Color(0xFFEF9A9A)							// négatifs, mode sombre
 
 /*
-	Palette claire, projetée sur les rôles Material 3. Le jaune occupe
-	primaryContainer : c'est la couleur par défaut du FAB.
+	Palette claire, projetée sur les rôles Material 3. Le noir occupe
+	primaryContainer : c'est la couleur du bouton de saisie.
 */
-val BraunLightColors: ColorScheme = lightColorScheme(
-	primary                 = kAnthracite,
-	onPrimary               = kAluminiumLowest,
-	primaryContainer        = kEqualsYellow,
-	onPrimaryContainer      = kAnthracite,
-	secondary               = kOlive,
-	onSecondary             = kAluminiumLowest,
-	secondaryContainer      = kAluminiumHighest,
-	onSecondaryContainer    = kAnthracite,
-	tertiary                = kOchre,
-	onTertiary              = kAluminiumLowest,
-	tertiaryContainer       = Color(0xFFF1DDB8),
-	onTertiaryContainer     = kAnthracite,
-	background              = kAluminium,
-	onBackground            = kAnthracite,
-	surface                 = kAluminium,
-	onSurface               = kAnthracite,
-	surfaceVariant          = kAluminiumHigh,
-	onSurfaceVariant        = kWarmGrey,
+val MonoLightColors: ColorScheme = lightColorScheme(
+	primary                 = kInk,
+	onPrimary               = kWhite,
+	primaryContainer        = kInk,
+	onPrimaryContainer      = kWhite,
+	secondary               = kSeriesMid,
+	onSecondary             = kWhite,
+	secondaryContainer      = kGrey150,
+	onSecondaryContainer    = kInk,
+	tertiary                = kSeriesLight,
+	onTertiary              = kInk,
+	tertiaryContainer       = kGrey100,
+	onTertiaryContainer     = kInk,
+	background              = kWhite,
+	onBackground            = kInk,
+	surface                 = kWhite,
+	onSurface               = kInk,
+	surfaceVariant          = kGrey100,
+	onSurfaceVariant        = kGrey600,
 	surfaceTint             = Color.Transparent,
-	inverseSurface          = kAnthracite,
-	inverseOnSurface        = kAluminium,
-	inversePrimary          = kEqualsYellow,
-	outline                 = kOutlineLight,
-	outlineVariant          = kRuleLight,
-	surfaceBright           = kAluminiumLowest,
-	surfaceDim              = kAluminiumHighest,
-	surfaceContainerLowest  = kAluminiumLowest,
-	surfaceContainerLow     = kAluminiumLow,
-	surfaceContainer        = kAluminiumMid,
-	surfaceContainerHigh    = kAluminiumHigh,
-	surfaceContainerHighest = kAluminiumHighest,
-	error                   = Color(0xFFB0392B),
-	onError                 = kAluminiumLowest,
-	errorContainer          = Color(0xFFF5D9D3),
-	onErrorContainer        = Color(0xFF5C1A12)
+	inverseSurface          = kInk,
+	inverseOnSurface        = kWhite,
+	inversePrimary          = kWhite,
+	outline                 = kOutline,
+	outlineVariant          = kRule,
+	surfaceBright           = kWhite,
+	surfaceDim              = kGrey200,
+	surfaceContainerLowest  = kWhite,
+	surfaceContainerLow     = kGrey50,
+	surfaceContainer        = kGrey100,
+	surfaceContainerHigh    = kGrey150,
+	surfaceContainerHighest = kGrey200,
+	error                   = kNegative,
+	onError                 = kWhite,
+	errorContainer          = Color(0xFFFDECEC),
+	onErrorContainer        = Color(0xFF5F1111)
 )
 
 /*
-	Palette sombre : corps brun-noir de l'ET66, mêmes rôles que la palette claire.
+	Palette sombre : blanc sur noir, mêmes rôles que la palette claire.
 */
-val BraunDarkColors: ColorScheme = darkColorScheme(
-	primary                 = kKeyLight,
-	onPrimary               = kBody,
-	primaryContainer        = kEqualsYellow,
-	onPrimaryContainer      = kBody,
-	secondary               = kOliveLight,
-	onSecondary             = kBody,
-	secondaryContainer      = kBodyHighest,
-	onSecondaryContainer    = kKeyLight,
-	tertiary                = kOchreLight,
-	onTertiary              = kBody,
-	tertiaryContainer       = Color(0xFF4A3816),
-	onTertiaryContainer     = kKeyLight,
-	background              = kBody,
-	onBackground            = kKeyLight,
-	surface                 = kBody,
-	onSurface               = kKeyLight,
-	surfaceVariant          = kBodyHigh,
-	onSurfaceVariant        = kKeyGrey,
+val MonoDarkColors: ColorScheme = darkColorScheme(
+	primary                 = kPaper,
+	onPrimary               = kBlack,
+	primaryContainer        = kPaper,
+	onPrimaryContainer      = kBlack,
+	secondary               = kSeriesMidDark,
+	onSecondary             = kBlack,
+	secondaryContainer      = kNight150,
+	onSecondaryContainer    = kPaper,
+	tertiary                = kSeriesLowDark,
+	onTertiary              = kPaper,
+	tertiaryContainer       = kNight100,
+	onTertiaryContainer     = kPaper,
+	background              = kBlack,
+	onBackground            = kPaper,
+	surface                 = kBlack,
+	onSurface               = kPaper,
+	surfaceVariant          = kNight100,
+	onSurfaceVariant        = kGrey400,
 	surfaceTint             = Color.Transparent,
-	inverseSurface          = kKeyLight,
-	inverseOnSurface        = kBody,
-	inversePrimary          = kAnthracite,
+	inverseSurface          = kPaper,
+	inverseOnSurface        = kBlack,
+	inversePrimary          = kInk,
 	outline                 = kOutlineDark,
 	outlineVariant          = kRuleDark,
-	surfaceBright           = kBodyHighest,
-	surfaceDim              = kBodyLowest,
-	surfaceContainerLowest  = kBodyLowest,
-	surfaceContainerLow     = kBodyLow,
-	surfaceContainer        = kBodyMid,
-	surfaceContainerHigh    = kBodyHigh,
-	surfaceContainerHighest = kBodyHighest,
-	error                   = Color(0xFFF0A597),
-	onError                 = kBody,
-	errorContainer          = Color(0xFF5C1A12),
-	onErrorContainer        = Color(0xFFF5D9D3)
+	surfaceBright           = kNight100,
+	surfaceDim              = kBlack,
+	surfaceContainerLowest  = kBlack,
+	surfaceContainerLow     = kNight50,
+	surfaceContainer        = kNight100,
+	surfaceContainerHigh    = kNight150,
+	surfaceContainerHighest = kNight200,
+	error                   = kNegativeDark,
+	onError                 = kBlack,
+	errorContainer          = Color(0xFF4A1515),
+	onErrorContainer        = Color(0xFFFDECEC)
 )

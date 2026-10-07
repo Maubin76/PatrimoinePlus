@@ -1,11 +1,9 @@
 package fr.maubin.patrimoineplus.ui
 
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.runtime.remember
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import fr.maubin.patrimoineplus.ui.accounts.AccountsScreen
@@ -18,6 +16,7 @@ import fr.maubin.patrimoineplus.ui.home.HomeUiState
 import fr.maubin.patrimoineplus.ui.home.kPreviewState
 import fr.maubin.patrimoineplus.ui.navigation.TopLevelDestination
 import fr.maubin.patrimoineplus.ui.settings.SettingsScreen
+import fr.maubin.patrimoineplus.ui.shell.AppFrame
 import fr.maubin.patrimoineplus.ui.theme.PatrimoineTheme
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -37,7 +36,7 @@ private const val kOutDir = "build/outputs/roborazzi"						// dossier des captur
 class ScreenshotTest
 {
 	/*
-		Enveloppe un écran dans le thème et la barre de navigation réelle.
+		Enveloppe un écran dans le thème et le cadre réel (pilule, bouton de saisie).
 		inDark     : mode sombre
 		inHidden   : mode discret
 		inSelected : onglet courant
@@ -51,10 +50,8 @@ class ScreenshotTest
 	): @Composable () -> Unit = {
 		PatrimoineTheme(inDarkTheme = inDark) {
 			CompositionLocalProvider(LocalAmountsHidden provides inHidden) {
-				Scaffold(bottomBar = { PatrimoineBottomBar({ it == inSelected }, {}) }) { inPadding ->
-					androidx.compose.foundation.layout.Box(Modifier.padding(inPadding).consumeWindowInsets(inPadding)) {
-						inScreen()
-					}
+				AppFrame(inSelected = inSelected, inOnSelect = {}, inSnackbar = remember { SnackbarHostState() }) {
+					inScreen()
 				}
 			}
 		}
