@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import fr.maubin.patrimoineplus.data.settings.SettingsRepository
+import fr.maubin.patrimoineplus.data.settings.ThemeMode
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -11,7 +12,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /*
-	État partagé par toute l'interface : aujourd'hui, le mode discret.
+	État partagé par toute l'interface : mode discret et apparence.
 	inSettings : réglages mémorisés
 */
 @HiltViewModel
@@ -38,5 +39,18 @@ class AppViewModel @Inject constructor(
 	fun setAmountsHidden(inHidden: Boolean)
 	{
 		viewModelScope.launch { inSettings.setAmountsHidden(inHidden) }
+	}
+
+	// Apparence choisie ; « Système » tant que le réglage n'est pas lu.
+	val themeMode: StateFlow<ThemeMode> =
+		inSettings.themeMode.stateIn(viewModelScope, SharingStarted.Eagerly, ThemeMode.SYSTEM)
+
+	/*
+		Fixe l'apparence de l'application.
+		inMode : apparence choisie
+	*/
+	fun setThemeMode(inMode: ThemeMode)
+	{
+		viewModelScope.launch { inSettings.setThemeMode(inMode) }
 	}
 }

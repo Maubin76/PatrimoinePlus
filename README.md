@@ -71,6 +71,8 @@ inspirée de deux maquettes de référence fournies le 2026-10-07.
 - Composants : `AmountText` (masqué en mode discret, chiffres qui roulent),
   `InfoPill`, `SectionHeader`, `BorderedCard`, `ProportionBar`, `EmptyState`,
   `ScreenScaffold`.
+- Apparence : Système (suit le téléphone), Clair ou Sombre, au choix dans
+  Réglages ; mémorisée en DataStore, les barres système suivent.
 - Mode discret : l'œil de la barre du haut ou le réglage masque tous les
   montants ; mémorisé en DataStore.
 - Contexte de conception : `PRODUCT.md`, `DESIGN.md` et `.impeccable/`.

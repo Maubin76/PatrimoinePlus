@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -22,6 +23,15 @@ interface SettingsRepository
 		inHidden : vrai pour masquer les montants
 	*/
 	suspend fun setAmountsHidden(inHidden: Boolean)
+
+	// Apparence choisie : suivre le système, clair ou sombre.
+	val themeMode: Flow<ThemeMode>
+
+	/*
+		Fixe l'apparence de l'application.
+		inMode : apparence choisie
+	*/
+	suspend fun setThemeMode(inMode: ThemeMode)
 }
 
 /*
@@ -34,6 +44,7 @@ class DataStoreSettingsRepository @Inject constructor(
 ) : SettingsRepository
 {
 	private val kAmountsHiddenKey = booleanPreferencesKey("amounts_hidden")	// clé du mode discret
+	private val kThemeModeKey     = stringPreferencesKey("theme_mode")		// clé de l'apparence
 
 	override val amountsHidden: Flow<Boolean> =
 		inDataStore.data.map { inPreferences -> inPreferences[kAmountsHiddenKey] ?: false }
@@ -45,5 +56,19 @@ class DataStoreSettingsRepository @Inject constructor(
 	override suspend fun setAmountsHidden(inHidden: Boolean)
 	{
 		inDataStore.edit { inPreferences -> inPreferences[kAmountsHiddenKey] = inHidden }
+	}
+
+	override val themeMode: Flow<ThemeMode> =
+		inDataStore.data.map { inPreferences ->
+			ThemeMode.entries.firstOrNull { it.name == inPreferences[kThemeModeKey] } ?: ThemeMode.SYSTEM
+		}
+
+	/*
+		Enregistre l'apparence choisie.
+		inMode : apparence choisie
+	*/
+	override suspend fun setThemeMode(inMode: ThemeMode)
+	{
+		inDataStore.edit { inPreferences -> inPreferences[kThemeModeKey] = inMode.name }
 	}
 }

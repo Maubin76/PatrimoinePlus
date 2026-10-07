@@ -46,6 +46,7 @@ fun PatrimoineApp(inAppViewModel: AppViewModel = hiltViewModel())
 	val vSelected      = TopLevelDestination.entries.firstOrNull { vCurrent?.hasRoute(it.route::class) == true }	// onglet actif
 	val vHidden        by inAppViewModel.amountsHidden.collectAsStateWithLifecycle()	// mode discret
 	val vToggle        = inAppViewModel::toggleAmountsHidden				// bascule du mode discret
+	val vThemeMode     by inAppViewModel.themeMode.collectAsStateWithLifecycle()	// apparence choisie
 	val vSnackbar      = remember { SnackbarHostState() }					// messages éphémères
 
 	CompositionLocalProvider(LocalAmountsHidden provides vHidden) {
@@ -71,7 +72,12 @@ fun PatrimoineApp(inAppViewModel: AppViewModel = hiltViewModel())
 				composable<AccountsRoute> { AccountsScreen(vToggle) }
 				composable<CategoriesRoute> { CategoriesScreen() }
 				composable<SettingsRoute> {
-					SettingsScreen(inHidden = vHidden, inOnHidden = inAppViewModel::setAmountsHidden)
+					SettingsScreen(
+						inThemeMode   = vThemeMode,
+						inOnThemeMode = inAppViewModel::setThemeMode,
+						inHidden      = vHidden,
+						inOnHidden    = inAppViewModel::setAmountsHidden
+					)
 				}
 			}
 		}

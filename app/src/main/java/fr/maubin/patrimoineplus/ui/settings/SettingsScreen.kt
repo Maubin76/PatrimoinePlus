@@ -14,6 +14,9 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -22,21 +25,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import fr.maubin.patrimoineplus.data.settings.ThemeMode
 import fr.maubin.patrimoineplus.ui.components.BorderedCard
 import fr.maubin.patrimoineplus.ui.components.SectionHeader
 import fr.maubin.patrimoineplus.ui.shell.ScreenScaffold
 import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
 
 /*
-	Onglet des réglages : le mode discret fonctionne dès maintenant ; verrou
-	et sauvegarde arrivent à l'étape 7.
-	inHidden   : vrai si le mode discret est actif
-	inOnHidden : active ou désactive le mode discret
+	Onglet des réglages : apparence et mode discret fonctionnent dès
+	maintenant ; verrou et sauvegarde arrivent à l'étape 7.
+	inThemeMode   : apparence choisie
+	inOnThemeMode : change l'apparence
+	inHidden      : vrai si le mode discret est actif
+	inOnHidden    : active ou désactive le mode discret
 */
 @Composable
 fun SettingsScreen(
-	inHidden   : Boolean,
-	inOnHidden : (Boolean) -> Unit
+	inThemeMode   : ThemeMode,
+	inOnThemeMode : (ThemeMode) -> Unit,
+	inHidden      : Boolean,
+	inOnHidden    : (Boolean) -> Unit
 )
 {
 	ScreenScaffold(inTitle = "Réglages") { inPadding ->
@@ -46,6 +54,10 @@ fun SettingsScreen(
 				.verticalScroll(rememberScrollState())
 				.padding(start = kScreenMargin, end = kScreenMargin, top = 16.dp, bottom = inPadding.calculateBottomPadding() + 16.dp)
 		) {
+			SectionHeader(inTitle = "Apparence")
+			Spacer(Modifier.height(8.dp))
+			ThemeModeSelector(inThemeMode, inOnThemeMode)
+			Spacer(Modifier.height(32.dp))
 			SectionHeader(inTitle = "Confidentialité")
 			Spacer(Modifier.height(8.dp))
 			BorderedCard {
@@ -137,4 +149,39 @@ private fun UpcomingRow(
 		inMuted    = true,
 		inModifier = Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 20.dp, vertical = 16.dp)
 	)
+}
+
+/*
+	Choix de l'apparence : boutons segmentés Système / Clair / Sombre ; le
+	segment actif est plein (noir en clair, blanc en sombre).
+	inMode     : apparence choisie
+	inOnSelect : change l'apparence
+*/
+@Composable
+private fun ThemeModeSelector(
+	inMode     : ThemeMode,
+	inOnSelect : (ThemeMode) -> Unit
+)
+{
+	val vColors  = MaterialTheme.colorScheme								// palette courante
+	val vEntries = ThemeMode.entries										// choix proposés
+	SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+		vEntries.forEachIndexed { inIndex, inEntry ->
+			SegmentedButton(
+				selected = inEntry == inMode,
+				onClick  = { inOnSelect(inEntry) },
+				shape    = SegmentedButtonDefaults.itemShape(index = inIndex, count = vEntries.size),
+				icon     = {},
+				colors   = SegmentedButtonDefaults.colors(
+					activeContainerColor   = vColors.primary,
+					activeContentColor     = vColors.onPrimary,
+					activeBorderColor      = vColors.primary,
+					inactiveContainerColor = vColors.surface,
+					inactiveContentColor   = vColors.onSurface,
+					inactiveBorderColor    = vColors.outlineVariant
+				),
+				label    = { Text(inEntry.label) }
+			)
+		}
+	}
 }
