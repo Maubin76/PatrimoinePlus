@@ -5,45 +5,27 @@ import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import kotlinx.serialization.Serializable
 
 /*
-	Route de l'écran d'accueil.
+	Route de l'écran principal : les quatre onglets, posés côte à côte dans un
+	pager horizontal. Les écrans de détail (saisie, compte…) seront d'autres
+	routes du graphe de navigation.
 */
 @Serializable
-data object HomeRoute
+data object MainRoute
 
 /*
-	Route de la liste des comptes.
-*/
-@Serializable
-data object AccountsRoute
-
-/*
-	Route de la liste des catégories.
-*/
-@Serializable
-data object CategoriesRoute
-
-/*
-	Route des réglages.
-*/
-@Serializable
-data object SettingsRoute
-
-/*
-	Destinations de la pilule de navigation.
-	route    : route de navigation associée
+	Onglets de l'écran principal, dans l'ordre des pages du pager.
 	label    : nom de l'onglet, affiché quand il est actif et lu par TalkBack
 	icon     : icône au trait fin
 	hasEntry : l'onglet montre le bouton de saisie
 */
 enum class TopLevelDestination(
-	val route    : Any,
 	val label    : String,
 	val icon     : ImageVector,
 	val hasEntry : Boolean
 )
 {
-	Home(HomeRoute, "Accueil", LineIcons.Home, true),
-	Accounts(AccountsRoute, "Comptes", LineIcons.Wallet, true),
-	Categories(CategoriesRoute, "Catégories", LineIcons.Grid, false),
-	Settings(SettingsRoute, "Réglages", LineIcons.Sliders, false)
+	Home("Accueil", LineIcons.Home, true),
+	Accounts("Comptes", LineIcons.Wallet, true),
+	Categories("Catégories", LineIcons.Grid, false),
+	Settings("Réglages", LineIcons.Sliders, false)
 }

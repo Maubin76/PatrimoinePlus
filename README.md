@@ -68,8 +68,10 @@ inspirée de deux maquettes de référence fournies le 2026-10-07.
   `doc/licenses/`) ; titres et total en demi-gras ; chiffres à chasse fixe.
 - Accueil : total centré en très grand, pastille « Calculé au … », section
   « Comptes » dans une carte bordée, section « Répartition » en niveaux de gris.
-- Navigation : pilule flottante à icônes seules (`ui/shell/AppFrame.kt`),
-  bouton rond noir de saisie au-dessus, sur Accueil et Comptes.
+- Navigation : les quatre onglets sont les pages d'un pager horizontal (on
+  glisse de l'un à l'autre) ; pilule flottante à icônes fines dont l'indicateur
+  suit le doigt (`ui/shell/AppFrame.kt`) ; bouton rond noir de saisie au-dessus,
+  sur Accueil et Comptes ; le retour système ramène à l'Accueil.
 - Composants : `AmountText` (masqué en mode discret, chiffres qui roulent),
   `InfoPill`, `SectionHeader`, `BorderedCard`, `ProportionBar`, `EmptyState`,
   `ScreenScaffold`.

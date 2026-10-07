@@ -43,16 +43,23 @@ class ScreenshotTest
 		inHidden   : mode discret
 		inSelected : onglet courant
 		inScreen   : écran à afficher
+		inPosition : position du pager ; par défaut, l'onglet courant
 	*/
 	private fun shell(
 		inDark     : Boolean,
 		inHidden   : Boolean,
 		inSelected : TopLevelDestination,
+		inPosition : Float = inSelected.ordinal.toFloat(),
 		inScreen   : @Composable () -> Unit
 	): @Composable () -> Unit = {
 		PatrimoineTheme(inDarkTheme = inDark) {
 			CompositionLocalProvider(LocalAmountsHidden provides inHidden) {
-				AppFrame(inSelected = inSelected, inOnSelect = {}, inSnackbar = remember { SnackbarHostState() }) {
+				AppFrame(
+					inPosition = { inPosition },
+					inSelected = inSelected,
+					inOnSelect = {},
+					inSnackbar = remember { SnackbarHostState() }
+				) {
 					inScreen()
 				}
 			}
@@ -133,5 +140,14 @@ class ScreenshotTest
 	@Test
 	fun categories() = captureRoboImage("$kOutDir/categories.png", content = shell(false, false, TopLevelDestination.Categories) {
 		CategoriesScreen()
+	})
+
+	/*
+		Pilule à mi-glissement entre Accueil et Comptes : la capsule se répartit
+		entre les deux onglets.
+	*/
+	@Test
+	fun navMidSwipe() = captureRoboImage("$kOutDir/nav-mi-glissement.png", content = shell(false, false, TopLevelDestination.Home, 0.5f) {
+		HomeContent(kPreviewState, {}, {})
 	})
 }
