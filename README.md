@@ -66,8 +66,8 @@ inspirée de deux maquettes de référence fournies le 2026-10-07.
   montants négatifs. Les couleurs dynamiques Material You sont écartées.
 - Police unique Hanken Grotesk (OFL, `res/font`, licence dans
   `doc/licenses/`) ; titres et total en demi-gras ; chiffres à chasse fixe.
-- Accueil : total centré en très grand, pastille « Calculé au … », section
-  « Comptes » dans une carte bordée, section « Répartition » en niveaux de gris.
+- Accueil : total centré en très grand, pastille « Calculé au … », répartition
+  par type en niveaux de gris (la liste des comptes est dans l'onglet Comptes).
 - Navigation : les quatre onglets sont les pages d'un pager horizontal (on
   glisse de l'un à l'autre) ; pilule flottante à icônes fines dont l'indicateur
   suit le doigt (`ui/shell/AppFrame.kt`) ; bouton rond noir de saisie au-dessus,

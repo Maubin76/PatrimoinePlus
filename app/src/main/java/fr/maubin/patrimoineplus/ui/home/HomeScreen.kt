@@ -51,8 +51,8 @@ import fr.maubin.patrimoineplus.ui.theme.PatrimoineTheme
 private const val kClearedDisplay = "– – –,– – €"						// afficheur vide : aucun compte
 
 /*
-	Écran d'accueil : patrimoine total, comptes qui le composent et leur
-	répartition par type.
+	Écran d'accueil : patrimoine total et sa répartition par type de compte
+	(la liste des comptes est dans l'onglet Comptes).
 	inOnToggleHidden   : bascule le mode discret
 	inOnManageAccounts : ouvre la gestion des comptes
 	inViewModel        : ViewModel fourni par Hilt
@@ -94,19 +94,22 @@ fun HomeContent(
 			)
 		) {
 			item { TotalBlock(inState) }
-			item { Spacer(Modifier.height(28.dp)) }
-			item {
-				SectionHeader(
-					inTitle     = "Comptes",
-					inLinkLabel = if (inState.isEmpty) null else "Gérer",
-					inOnLink    = inOnManageAccounts
-				)
-			}
-			item { Spacer(Modifier.height(8.dp)) }
-			item { AccountsCard(inState, inOnManageAccounts) }
-			if (!inState.isEmpty)
+			item { Spacer(Modifier.height(36.dp)) }
+			if (inState.isEmpty)
 			{
-				item { Spacer(Modifier.height(24.dp)) }
+				item {
+					BorderedCard {
+						EmptyState(
+							inTitle       = "Aucun compte",
+							inBody        = "Le total se calcule à partir de vos comptes et de leurs opérations. Commencez par les créer.",
+							inActionLabel = "Ajouter mes comptes",
+							inOnAction    = inOnManageAccounts
+						)
+					}
+				}
+			}
+			else
+			{
 				item { SectionHeader(inTitle = "Répartition") }
 				item { Spacer(Modifier.height(4.dp)) }
 				item { RepartitionBlock(inState) }
@@ -182,73 +185,6 @@ private fun fittingStyle(
 	return vCandidates.firstOrNull { inStyle ->
 		vMeasurer.measure(inText, inStyle, maxLines = 1, softWrap = false).size.width <= inMaxWidth
 	} ?: vCandidates.last()
-}
-
-/*
-	Carte des comptes : une ligne par compte, séparées par des filets. Sans
-	compte, la carte porte l'état vide et l'action de création.
-	inState            : état de l'accueil
-	inOnManageAccounts : ouvre la gestion des comptes
-*/
-@Composable
-private fun AccountsCard(
-	inState            : HomeUiState,
-	inOnManageAccounts : () -> Unit
-)
-{
-	BorderedCard {
-		if (inState.isEmpty)
-		{
-			EmptyState(
-				inTitle       = "Aucun compte",
-				inBody        = "Le total se calcule à partir des comptes et de leurs opérations. " +
-					"Leur création arrive à l’étape 3.",
-				inActionLabel = "Voir les comptes",
-				inOnAction    = inOnManageAccounts
-			)
-		}
-		else
-		{
-			val vLines = inState.groups.flatMap { it.lines }							// comptes à plat
-			vLines.forEachIndexed { inIndex, inLine ->
-				if (inIndex > 0)
-				{
-					HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = MaterialTheme.colorScheme.outlineVariant)
-				}
-				AccountRow(inLine)
-			}
-		}
-	}
-}
-
-/*
-	Ligne d'un compte : son nom à gauche, sa valeur entière à droite.
-	inLine : compte affiché
-*/
-@Composable
-private fun AccountRow(inLine: HomeAccountLine)
-{
-	Row(
-		modifier          = Modifier
-			.fillMaxWidth()
-			.heightIn(min = 56.dp)
-			.padding(horizontal = 20.dp, vertical = 10.dp),
-		verticalAlignment = Alignment.CenterVertically
-	) {
-		Text(
-			text     = inLine.name,
-			style    = MaterialTheme.typography.titleMedium,
-			maxLines = 2,
-			overflow = TextOverflow.Ellipsis,
-			modifier = Modifier.weight(1f)
-		)
-		Spacer(Modifier.width(16.dp))
-		AmountText(
-			inCents = inLine.valueCents,
-			inStyle = MaterialTheme.typography.titleMedium,
-			inColor = if (inLine.valueCents < 0) MaterialTheme.colorScheme.error else Color.Unspecified
-		)
-	}
 }
 
 /*

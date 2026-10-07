@@ -239,7 +239,7 @@ Une encre presque noire sur un blanc pur, des gris pour le secondaire, les filet
 
 ## Layout
 
-Une colonne unique, pleine largeur, à marges latérales de 20 dp sur tous les écrans. Le contenu commence 16 dp sous la barre du haut. L'accueil se lit de haut en bas : le total centré, la pastille 16 dp dessous, 28 dp, la section « Comptes » (titre de 48 dp minimum, 8 dp, carte), 24 dp, la section « Répartition » (titre, 4 dp, barre de 10 dp, 12 dp, légende). Les réglages espacent leurs sections de 32 dp.
+Une colonne unique, pleine largeur, à marges latérales de 20 dp sur tous les écrans. Le contenu commence 16 dp sous la barre du haut. L'accueil se lit de haut en bas : le total centré, la pastille 16 dp dessous, 36 dp, la section « Répartition » (la liste des comptes vit dans l'onglet Comptes) ; sans compte, une carte d'état vide remplace la répartition. Section « Répartition » (titre, 4 dp, barre de 10 dp, 12 dp, légende). Les réglages espacent leurs sections de 32 dp.
 
 Dans une carte, une ligne mesure au moins 56 dp, avec 20 dp de marge horizontale et 10 dp verticale : nom (deux lignes au plus) et type empilés à 2 dp, 16 dp minimum, montant calé à droite. Les lignes sont séparées par un filet en retrait de 20 dp de chaque côté. Une ligne de légende mesure au moins 40 dp : point de 10 dp, 12 dp, libellé, pourcentage en gris, 16 dp, montant.
 
