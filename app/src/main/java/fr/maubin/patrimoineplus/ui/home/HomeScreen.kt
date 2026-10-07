@@ -222,8 +222,7 @@ private fun AccountsCard(
 }
 
 /*
-	Ligne d'un compte : nom et détail (type, établissement, part détenue) à
-	gauche, valeur entière du compte à droite.
+	Ligne d'un compte : son nom à gauche, sa valeur entière à droite.
 	inLine : compte affiché
 */
 @Composable
@@ -236,19 +235,13 @@ private fun AccountRow(inLine: HomeAccountLine)
 			.padding(horizontal = 20.dp, vertical = 10.dp),
 		verticalAlignment = Alignment.CenterVertically
 	) {
-		Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-			Text(
-				text     = inLine.name,
-				style    = MaterialTheme.typography.titleMedium,
-				maxLines = 2,
-				overflow = TextOverflow.Ellipsis
-			)
-			Text(
-				text  = inLine.detail,
-				style = MaterialTheme.typography.bodyMedium,
-				color = MaterialTheme.colorScheme.onSurfaceVariant
-			)
-		}
+		Text(
+			text     = inLine.name,
+			style    = MaterialTheme.typography.titleMedium,
+			maxLines = 2,
+			overflow = TextOverflow.Ellipsis,
+			modifier = Modifier.weight(1f)
+		)
 		Spacer(Modifier.width(16.dp))
 		AmountText(
 			inCents = inLine.valueCents,

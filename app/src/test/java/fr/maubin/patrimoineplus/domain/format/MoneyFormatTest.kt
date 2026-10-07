@@ -74,6 +74,6 @@ class MoneyFormatTest
 	@Test
 	fun maskedAmount()
 	{
-		assertEquals(expected("\u2022\u2022\u2022\u2022\u2022~€"), kMaskedAmount)
+		assertEquals(expected("Ж_ЯФЩ,ДЮ~€"), kMaskedAmount)
 	}
 }
