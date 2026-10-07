@@ -1,6 +1,18 @@
 package fr.maubin.patrimoineplus.ui
 
 import androidx.activity.compose.BackHandler
+import fr.maubin.patrimoineplus.ui.entry.TransactionSheet
+import fr.maubin.patrimoineplus.ui.entry.EntryViewModel
+import fr.maubin.patrimoineplus.ui.entry.EntryForm
+import fr.maubin.patrimoineplus.ui.navigation.AccountRoute
+import fr.maubin.patrimoineplus.ui.account.AccountDetailScreen
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -42,14 +54,16 @@ import fr.maubin.patrimoineplus.ui.shell.AppFrame
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
+private const val kSlideMillis = 260									// entrée et sortie de la vue d'un compte
+
 private val kPageSpring = spring<Float>(									// défilement vers un onglet touché
 	dampingRatio = Spring.DampingRatioNoBouncy,
 	stiffness    = Spring.StiffnessMediumLow
 )
 
 /*
-	Coque de l'application : mode discret partagé et graphe de navigation.
-	Pour l'instant, le graphe ne contient que l'écran principal à onglets.
+	Coque de l'application : mode discret partagé et graphe de navigation
+	(écran principal à onglets, vue d'un compte qui glisse par-dessus).
 	inAppViewModel : état partagé (mode discret, apparence)
 */
 @Composable
@@ -59,8 +73,23 @@ fun PatrimoineApp(inAppViewModel: AppViewModel = hiltViewModel())
 	val vHidden        by inAppViewModel.amountsHidden.collectAsStateWithLifecycle()	// mode discret
 
 	CompositionLocalProvider(LocalAmountsHidden provides vHidden) {
-		NavHost(navController = vNavController, startDestination = MainRoute) {
-			composable<MainRoute> { MainOrOnboarding(inAppViewModel) }
+		NavHost(
+			navController      = vNavController,
+			startDestination   = MainRoute,
+			enterTransition    = { slideInHorizontally(tween(kSlideMillis)) { it / 6 } + fadeIn(tween(kSlideMillis)) },
+			exitTransition     = { fadeOut(tween(kSlideMillis)) },
+			popEnterTransition = { fadeIn(tween(kSlideMillis)) },
+			popExitTransition  = { slideOutHorizontally(tween(kSlideMillis)) { it / 6 } + fadeOut(tween(kSlideMillis)) }
+		) {
+			composable<MainRoute> {
+				MainOrOnboarding(inAppViewModel, inOnOpenAccount = { inId -> vNavController.navigate(AccountRoute(inId)) })
+			}
+			composable<AccountRoute> {
+				AccountDetailScreen(
+					inOnBack         = { vNavController.popBackStack(MainRoute, inclusive = false) },
+					inOnToggleHidden = inAppViewModel::toggleAmountsHidden
+				)
+			}
 		}
 	}
 }
@@ -68,13 +97,15 @@ fun PatrimoineApp(inAppViewModel: AppViewModel = hiltViewModel())
 /*
 	Assistant du premier lancement s'il est dû, écran principal sinon ; fond
 	vide le temps de lire la base, pour éviter un clignotement.
-	inAppViewModel : état partagé (mode discret, apparence)
-	inOnboarding   : ViewModel de l'assistant
+	inAppViewModel  : état partagé (mode discret, apparence)
+	inOnOpenAccount : ouvre la vue d'un compte
+	inOnboarding    : ViewModel de l'assistant
 */
 @Composable
 private fun MainOrOnboarding(
-	inAppViewModel : AppViewModel,
-	inOnboarding   : OnboardingViewModel = hiltViewModel()
+	inAppViewModel  : AppViewModel,
+	inOnOpenAccount : (String) -> Unit,
+	inOnboarding    : OnboardingViewModel = hiltViewModel()
 )
 {
 	val vNeeds by inOnboarding.needsOnboarding.collectAsStateWithLifecycle()	// assistant à afficher
@@ -86,7 +117,7 @@ private fun MainOrOnboarding(
 			inOnFinish      = inOnboarding::finish,
 			inOnSkip        = inOnboarding::skip
 		)
-		false -> MainTabs(inAppViewModel)
+		false -> MainTabs(inAppViewModel, inOnOpenAccount)
 		null  -> Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface))
 	}
 }
@@ -95,10 +126,17 @@ private fun MainOrOnboarding(
 	Écran principal : les quatre onglets côte à côte dans un pager horizontal.
 	On passe de l'un à l'autre en glissant ou en touchant la pilule, qui suit
 	la position du pager au pixel près. Le retour système ramène à l'Accueil.
-	inAppViewModel : état partagé (mode discret, apparence)
+	Le bouton « + » ouvre la saisie d'une opération.
+	inAppViewModel  : état partagé (mode discret, apparence)
+	inOnOpenAccount : ouvre la vue d'un compte
+	inEntry         : ViewModel de la saisie
 */
 @Composable
-private fun MainTabs(inAppViewModel: AppViewModel)
+private fun MainTabs(
+	inAppViewModel  : AppViewModel,
+	inOnOpenAccount : (String) -> Unit,
+	inEntry         : EntryViewModel = hiltViewModel()
+)
 {
 	val vPager     = rememberPagerState { TopLevelDestination.entries.size }	// position des pages
 	val vScope     = rememberCoroutineScope()									// portée des défilements
@@ -107,6 +145,8 @@ private fun MainTabs(inAppViewModel: AppViewModel)
 	val vHidden    by inAppViewModel.amountsHidden.collectAsStateWithLifecycle()	// mode discret
 	val vThemeMode by inAppViewModel.themeMode.collectAsStateWithLifecycle()	// apparence choisie
 	val vToggle    = inAppViewModel::toggleAmountsHidden					// bascule du mode discret
+	val vData      by inEntry.data.collectAsStateWithLifecycle()			// données de saisie
+	var vEntry     by remember { mutableStateOf<EntryForm?>(null) }		// saisie ouverte
 	val vOpen      = { inDestination: TopLevelDestination ->				// défile vers un onglet
 		vScope.launch { vPager.animateScrollToPage(inDestination.ordinal, animationSpec = kPageSpring) }
 		Unit
@@ -125,7 +165,8 @@ private fun MainTabs(inAppViewModel: AppViewModel)
 		inPosition = { pagerPosition(vPager) },
 		inSelected = TopLevelDestination.entries[vPager.currentPage],
 		inOnSelect = vOpen,
-		inSnackbar = vSnackbar
+		inSnackbar = vSnackbar,
+		inOnEntry  = { vEntry = inEntry.newForm() }
 	) {
 		HorizontalPager(
 			state                   = vPager,
@@ -138,7 +179,7 @@ private fun MainTabs(inAppViewModel: AppViewModel)
 					inOnToggleHidden   = vToggle,
 					inOnManageAccounts = { vOpen(TopLevelDestination.Accounts) }
 				)
-				TopLevelDestination.Accounts   -> AccountsScreen(vToggle)
+				TopLevelDestination.Accounts   -> AccountsScreen(vToggle, inOnOpenAccount)
 				TopLevelDestination.Categories -> CategoriesScreen()
 				TopLevelDestination.Settings   -> SettingsScreen(
 					inThemeMode   = vThemeMode,
@@ -149,6 +190,18 @@ private fun MainTabs(inAppViewModel: AppViewModel)
 				)
 			}
 		}
+	}
+
+	vEntry?.let { inForm ->
+		TransactionSheet(
+			inInitial     = inForm,
+			inAccounts    = vData.accounts,
+			inCategories  = vData.categories,
+			inSuggestions = inEntry::suggestions,
+			inOnSave      = { inSaved, inOnErrors -> inEntry.save(inSaved) { if (it.isEmpty) vEntry = null else inOnErrors(it) } },
+			inOnDelete    = { vEntry = null },
+			inOnDismiss   = { vEntry = null }
+		)
 	}
 }
 

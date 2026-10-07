@@ -13,6 +13,13 @@ import kotlinx.serialization.Serializable
 data object MainRoute
 
 /*
+	Route de la vue d'un compte, mois par mois.
+	accountId : compte affiché
+*/
+@Serializable
+data class AccountRoute(val accountId: String)
+
+/*
 	Onglets de l'écran principal, dans l'ordre des pages du pager.
 	label    : nom de l'onglet, affiché quand il est actif et lu par TalkBack
 	icon     : icône au trait fin

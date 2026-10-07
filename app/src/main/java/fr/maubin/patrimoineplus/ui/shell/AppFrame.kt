@@ -38,7 +38,6 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,7 +52,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.ui.navigation.TopLevelDestination
-import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -73,6 +71,7 @@ private val kIconSize       = 24.dp										// taille des icônes d'onglet
 	inSelected : onglet courant
 	inOnSelect : ouvre un onglet
 	inSnackbar : hôte des messages éphémères
+	inOnEntry  : ouvre la saisie d'une opération
 	inContent  : écran courant
 */
 @Composable
@@ -81,10 +80,10 @@ fun AppFrame(
 	inSelected : TopLevelDestination,
 	inOnSelect : (TopLevelDestination) -> Unit,
 	inSnackbar : SnackbarHostState,
+	inOnEntry  : () -> Unit = {},
 	inContent  : @Composable () -> Unit
 )
 {
-	val vScope     = rememberCoroutineScope()									// portée des messages
 	val vShowEntry = inSelected.hasEntry									// bouton de saisie visible
 	val vClearance = kPillClearance + if (vShowEntry) kEntryClearance else 0.dp	// place à laisser au contenu
 	Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
@@ -107,7 +106,7 @@ fun AppFrame(
 				modifier = Modifier.fillMaxWidth()
 			) {
 				Box(Modifier.fillMaxWidth().padding(end = kScreenMargin, bottom = 16.dp), contentAlignment = Alignment.CenterEnd) {
-					EntryFab { vScope.launch { inSnackbar.showSnackbar("La saisie des opérations arrive à l’étape 4.") } }
+					EntryFab(inOnEntry)
 				}
 			}
 			FloatingNavBar(inPosition, inSelected, inOnSelect)

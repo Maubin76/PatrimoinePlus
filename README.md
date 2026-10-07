@@ -82,6 +82,15 @@ inspirée de deux maquettes de référence fournies le 2026-10-07.
   du bas, archivage, suppression (simple, ou définitive avec double
   confirmation ; réaffectation des opérations pour une catégorie). Icônes de
   catégories au trait fin (`ui/icons/CategoryIcons.kt`).
+- Vue d'un compte (`ui/account`) : page dédiée ouverte depuis l'onglet
+  Comptes ; mois par flèches (sélecteur en touchant le mois), synthèse
+  (ouverture, entrées, dépenses, épargne, clôture), dépenses par catégorie,
+  courbe du solde sur 12 mois, opérations par jour avec « À venir » en tête ;
+  sélection multiple par appui long et suppression confirmée.
+- Saisie (`ui/entry`) : feuille du bas ouverte par le bouton « + » (onglets
+  Accueil et Comptes, vue d'un compte) ; dépense ou revenu, montant sans
+  signe, compte (dernier utilisé par défaut), libellé obligatoire avec
+  suggestions qui reprennent la dernière catégorie, catégorie, date, notes.
 - Premier lancement : assistant qui propose comptes (avec solde du jour) et
   catégories ; réapparaît après « Tout effacer » (debug).
 - Mode discret : l'œil de la barre du haut ou le réglage masque tous les

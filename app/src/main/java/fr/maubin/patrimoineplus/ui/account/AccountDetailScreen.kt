@@ -1,0 +1,562 @@
+package fr.maubin.patrimoineplus.ui.account
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import fr.maubin.patrimoineplus.domain.calc.CategoryLine
+import fr.maubin.patrimoineplus.domain.calc.MonthSummary
+import fr.maubin.patrimoineplus.domain.model.AccountType
+import fr.maubin.patrimoineplus.ui.accounts.AccountDeletion
+import fr.maubin.patrimoineplus.ui.accounts.AccountForm
+import fr.maubin.patrimoineplus.ui.accounts.AccountSheet
+import fr.maubin.patrimoineplus.ui.accounts.AccountsViewModel
+import fr.maubin.patrimoineplus.ui.components.AmountText
+import fr.maubin.patrimoineplus.ui.components.BalanceChart
+import fr.maubin.patrimoineplus.ui.components.BorderedCard
+import fr.maubin.patrimoineplus.ui.components.ConfirmDialog
+import fr.maubin.patrimoineplus.ui.components.EmptyState
+import fr.maubin.patrimoineplus.ui.components.MonthSwitcher
+import fr.maubin.patrimoineplus.ui.components.SectionHeader
+import fr.maubin.patrimoineplus.ui.entry.EntryForm
+import fr.maubin.patrimoineplus.ui.entry.EntryViewModel
+import fr.maubin.patrimoineplus.ui.entry.TransactionSheet
+import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
+import fr.maubin.patrimoineplus.ui.icons.LineIcons
+import fr.maubin.patrimoineplus.ui.shell.EntryFab
+import fr.maubin.patrimoineplus.ui.shell.PrivacyAction
+import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
+import kotlinx.coroutines.launch
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+private val kDayFormat = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANCE)	// en-tête d'un jour
+
+/*
+	Actions de la vue d'un compte, pour le contenu sans état.
+	onBack        : retour à la liste
+	onToggleHidden: bascule le mode discret
+	onEdit        : ouvre la fiche du compte
+	onMonth       : change de mois
+	onOpen        : touche une opération
+	onLongPress   : appui long sur une opération (sélection)
+	onClearSelect : quitte la sélection
+	onDeleteSel   : demande la suppression de la sélection
+	onAdd         : nouvelle opération
+*/
+data class AccountDetailActions(
+	val onBack         : () -> Unit                    = {},
+	val onToggleHidden : () -> Unit                    = {},
+	val onEdit         : () -> Unit                    = {},
+	val onMonth        : (java.time.YearMonth) -> Unit = {},
+	val onOpen         : (OperationItem) -> Unit       = {},
+	val onLongPress    : (OperationItem) -> Unit       = {},
+	val onClearSelect  : () -> Unit                    = {},
+	val onDeleteSel    : () -> Unit                    = {},
+	val onAdd          : () -> Unit                    = {}
+)
+
+/*
+	Vue d'un compte, mois par mois : synthèse, dépenses par catégorie,
+	évolution du solde, opérations ; saisie, modification, suppression
+	unitaire et multiple ; fiche du compte.
+	inOnBack         : retour à la liste
+	inOnToggleHidden : bascule le mode discret
+	inViewModel      : ViewModel de la vue
+	inEntry          : ViewModel de la saisie
+	inAccounts       : ViewModel des comptes (fiche, suppression)
+*/
+@Composable
+fun AccountDetailScreen(
+	inOnBack         : () -> Unit,
+	inOnToggleHidden : () -> Unit,
+	inViewModel      : AccountDetailViewModel = hiltViewModel(),
+	inEntry          : EntryViewModel         = hiltViewModel(),
+	inAccounts       : AccountsViewModel      = hiltViewModel()
+)
+{
+	val vState     by inViewModel.uiState.collectAsStateWithLifecycle()		// état du mois
+	val vEntryData by inEntry.data.collectAsStateWithLifecycle()				// données de saisie
+	val vItems     by inAccounts.uiState.collectAsStateWithLifecycle()		// comptes (fiche, suppression)
+	var vSelection by remember { mutableStateOf(emptySet<String>()) }		// opérations sélectionnées
+	var vEntry     by remember { mutableStateOf<EntryForm?>(null) }			// saisie ouverte
+	var vSheet     by remember { mutableStateOf<AccountForm?>(null) }		// fiche du compte ouverte
+	var vDeleting  by remember { mutableStateOf(false) }						// suppression du compte
+	var vConfirm   by remember { mutableStateOf(false) }						// suppression de la sélection
+	val vSnackbar  = remember { SnackbarHostState() }						// messages éphémères
+	val vScope     = rememberCoroutineScope()									// portée des messages
+	val vHaptics   = LocalHapticFeedback.current								// retour haptique
+	val vItem      = vItems.active.plus(vItems.archived).firstOrNull { it.account.id == inViewModel.accountId }	// compte avec ses opérations
+
+	LaunchedEffect(vItems.loaded, vItem) {
+		if (vItems.loaded && vItem == null)
+		{
+			inOnBack()
+		}
+	}
+	BackHandler(enabled = vSelection.isNotEmpty()) { vSelection = emptySet() }
+
+	AccountDetailContent(
+		inState     = vState,
+		inSelection = vSelection,
+		inSnackbar  = vSnackbar,
+		inActions   = AccountDetailActions(
+			onBack         = inOnBack,
+			onToggleHidden = inOnToggleHidden,
+			onEdit         = { vState.account?.let { inAccount -> inAccounts.editForm(inAccount) { vSheet = it } } },
+			onMonth        = inViewModel::showMonth,
+			onOpen         = { inOp ->
+				when
+				{
+					vSelection.isNotEmpty() -> vSelection = vSelection.toggle(inOp.transaction.id)
+					inOp.editable           -> vEntry = inEntry.editForm(inOp.transaction)
+					else                    -> vScope.launch {
+						vSnackbar.showSnackbar(
+							if (inOp.subtitle == "Solde initial") "Le solde initial se modifie dans la fiche du compte (crayon)."
+							else "La modification des virements et des ordres arrive à l’étape 5. Appui long pour la supprimer."
+						)
+					}
+				}
+			},
+			onLongPress    = { inOp ->
+				vHaptics.performHapticFeedback(HapticFeedbackType.LongPress)
+				vSelection = vSelection.toggle(inOp.transaction.id)
+			},
+			onClearSelect  = { vSelection = emptySet() },
+			onDeleteSel    = { vConfirm = true },
+			onAdd          = { vEntry = inEntry.newForm(inViewModel.accountId) }
+		)
+	)
+
+	vEntry?.let { inForm ->
+		TransactionSheet(
+			inInitial     = inForm,
+			inAccounts    = vEntryData.accounts,
+			inCategories  = vEntryData.categories,
+			inSuggestions = inEntry::suggestions,
+			inOnSave      = { inSaved, inOnErrors -> inEntry.save(inSaved) { if (it.isEmpty) vEntry = null else inOnErrors(it) } },
+			inOnDelete    = {
+				inForm.id?.let { inEntry.delete(listOf(it)) }
+				vEntry = null
+			},
+			inOnDismiss   = { vEntry = null }
+		)
+	}
+
+	vSheet?.let { inForm ->
+		AccountSheet(
+			inInitial    = inForm,
+			inEditing    = vItem?.account,
+			inTypeLocked = (vItem?.operations ?: 0) > 0,
+			inOnSave     = { inSaved, inOnErrors -> inAccounts.save(inSaved, vItem?.account) { if (it.isEmpty) vSheet = null else inOnErrors(it) } },
+			inOnArchive  = {
+				vItem?.let { inAccounts.setArchived(it.account, !it.account.archived) }
+				vSheet = null
+			},
+			inOnDelete   = {
+				vSheet    = null
+				vDeleting = true
+			},
+			inOnDismiss  = { vSheet = null }
+		)
+	}
+
+	if (vDeleting && vItem != null)
+	{
+		AccountDeletion(
+			inItem      = vItem,
+			inOnArchive = { inAccounts.setArchived(vItem.account, true) },
+			inOnDelete  = { inPermanent -> inAccounts.delete(vItem.account, inPermanent) },
+			inOnClose   = { vDeleting = false }
+		)
+	}
+
+	if (vConfirm)
+	{
+		val vPicked = (vState.upcoming + vState.days.flatMap { it.items }).filter { it.transaction.id in vSelection }	// opérations choisies
+		val vLinked = vPicked.count { !it.editable && it.subtitle != "Solde initial" }	// virements et ordres
+		ConfirmDialog(
+			inTitle     = "Supprimer ${vPicked.size} opération(s) ?",
+			inText      = if (vLinked > 0) "Dont $vLinked virement(s) ou ordre(s) : ils seront supprimés en entier, ce qui modifiera aussi l’autre compte." else "Les soldes seront recalculés.",
+			inAction    = "Supprimer",
+			inOnConfirm = {
+				inEntry.delete(vSelection.toList())
+				vSelection = emptySet()
+				vConfirm   = false
+			},
+			inOnDismiss = { vConfirm = false }
+		)
+	}
+}
+
+/*
+	Ajoute ou retire un identifiant d'un ensemble.
+	inId : identifiant
+*/
+private fun Set<String>.toggle(inId: String): Set<String> = if (inId in this) this - inId else this + inId
+
+/*
+	Contenu de la vue d'un compte, sans état propre (prévisualisable).
+	inState     : état du mois
+	inSelection : opérations sélectionnées
+	inSnackbar  : hôte des messages éphémères
+	inActions   : actions
+*/
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AccountDetailContent(
+	inState     : AccountDetailState,
+	inSelection : Set<String>,
+	inSnackbar  : SnackbarHostState,
+	inActions   : AccountDetailActions
+)
+{
+	val vColors   = MaterialTheme.colorScheme									// palette courante
+	val vSelecting = inSelection.isNotEmpty()									// mode sélection
+	Scaffold(
+		containerColor       = vColors.surface,
+		snackbarHost         = { SnackbarHost(inSnackbar) },
+		topBar               = {
+			TopAppBar(
+				navigationIcon = {
+					if (vSelecting)
+					{
+						IconButton(onClick = inActions.onClearSelect) { Icon(LineIcons.Close, contentDescription = "Quitter la sélection") }
+					}
+					else
+					{
+						IconButton(onClick = inActions.onBack) { Icon(LineIcons.Back, contentDescription = "Retour aux comptes") }
+					}
+				},
+				title          = {
+					Text(
+						text     = if (vSelecting) "${inSelection.size} sélectionnée(s)" else inState.account?.name.orEmpty(),
+						style    = MaterialTheme.typography.titleMedium,
+						maxLines = 1,
+						overflow = TextOverflow.Ellipsis
+					)
+				},
+				actions        = {
+					if (vSelecting)
+					{
+						IconButton(onClick = inActions.onDeleteSel) { Icon(LineIcons.Trash, contentDescription = "Supprimer la sélection") }
+					}
+					else
+					{
+						PrivacyAction(inActions.onToggleHidden)
+						IconButton(onClick = inActions.onEdit) { Icon(LineIcons.Edit, contentDescription = "Modifier le compte") }
+					}
+				},
+				colors         = TopAppBarDefaults.topAppBarColors(containerColor = vColors.surface, scrolledContainerColor = vColors.surface)
+			)
+		},
+		floatingActionButton = {
+			AnimatedVisibility(visible = !vSelecting, enter = fadeIn() + scaleIn(initialScale = 0.8f), exit = fadeOut() + scaleOut(targetScale = 0.8f)) {
+				EntryFab(inActions.onAdd)
+			}
+		}
+	) { inPadding ->
+		LazyColumn(
+			contentPadding = PaddingValues(
+				start  = kScreenMargin,
+				end    = kScreenMargin,
+				top    = inPadding.calculateTopPadding(),
+				bottom = inPadding.calculateBottomPadding() + 96.dp
+			)
+		) {
+			item { MonthSwitcher(inState.month, inState.firstMonth, inState.lastMonth, inActions.onMonth) }
+			item { Spacer(Modifier.height(8.dp)) }
+			inState.summary?.let { inSummary -> item { SummaryCard(inSummary, inState.account?.type) } }
+			item { Spacer(Modifier.height(28.dp)) }
+			item { SectionHeader(inTitle = "Dépenses par catégorie") }
+			item { Spacer(Modifier.height(8.dp)) }
+			item { ExpensesCard(inState.expenses) }
+			item { Spacer(Modifier.height(28.dp)) }
+			item { SectionHeader(inTitle = "Évolution du solde") }
+			item { Spacer(Modifier.height(4.dp)) }
+			item { BalanceChart(inState.series, inState.month) }
+			item { Spacer(Modifier.height(28.dp)) }
+			item { SectionHeader(inTitle = "Opérations") }
+			if (inState.upcoming.isEmpty() && inState.days.isEmpty())
+			{
+				item {
+					Text(
+						text     = "Aucune opération ce mois-ci.",
+						style    = MaterialTheme.typography.bodyMedium,
+						color    = vColors.onSurfaceVariant,
+						modifier = Modifier.padding(vertical = 8.dp)
+					)
+				}
+			}
+			if (inState.upcoming.isNotEmpty())
+			{
+				item { DayHeader("À venir") }
+				item { OperationsCard(inState.upcoming, inSelection, inActions) }
+			}
+			inState.days.forEach { inDay ->
+				item(key = inDay.date.toString()) { DayHeader(inDay.date.format(kDayFormat).replaceFirstChar { it.uppercase() }) }
+				item(key = "ops-${inDay.date}") { OperationsCard(inDay.items, inSelection, inActions) }
+			}
+		}
+	}
+}
+
+/*
+	Synthèse du mois : ouverture, mouvements ventilés, clôture.
+	inSummary : synthèse
+	inType    : type du compte (libellés adaptés)
+*/
+@Composable
+private fun SummaryCard(
+	inSummary : MonthSummary,
+	inType    : AccountType?
+)
+{
+	val vSavingsLabel = if (inType == AccountType.CHECKING) "Épargne" else "Versements nets"	// libellé de l'épargne
+	BorderedCard {
+		Column(Modifier.padding(vertical = 8.dp)) {
+			SummaryRow("Ouverture", inSummary.opening, inMuted = true)
+			if (inSummary.openings != 0L) SummaryRow("Solde initial", inSummary.openings, inSigned = true)
+			SummaryRow("Entrées", inSummary.income, inSigned = true)
+			SummaryRow("Dépenses", inSummary.expenses, inSigned = true)
+			if (inSummary.savings != 0L) SummaryRow(vSavingsLabel, inSummary.savings, inSigned = true)
+			if (inSummary.transfers != 0L) SummaryRow("Virements internes", inSummary.transfers, inSigned = true)
+			if (inSummary.trades != 0L) SummaryRow("Ordres de bourse", inSummary.trades, inSigned = true)
+			HorizontalDivider(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
+			SummaryRow("Clôture", inSummary.closing, inStrong = true)
+		}
+	}
+}
+
+/*
+	Ligne de la synthèse.
+	inLabel  : libellé
+	inCents  : montant
+	inSigned : affiche le signe « + » des montants positifs
+	inMuted  : libellé et montant en gris
+	inStrong : ligne mise en avant (clôture)
+*/
+@Composable
+private fun SummaryRow(
+	inLabel  : String,
+	inCents  : Long,
+	inSigned : Boolean = false,
+	inMuted  : Boolean = false,
+	inStrong : Boolean = false
+)
+{
+	val vColors = MaterialTheme.colorScheme									// palette courante
+	val vStyle  = if (inStrong) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge	// style de la ligne
+	val vColor  = when																// couleur de la ligne
+	{
+		inStrong && inCents < 0 -> vColors.error
+		inMuted                 -> vColors.onSurfaceVariant
+		else                    -> vColors.onSurface
+	}
+	Row(
+		modifier          = Modifier.fillMaxWidth().heightIn(min = 40.dp).padding(horizontal = 20.dp),
+		verticalAlignment = Alignment.CenterVertically
+	) {
+		Text(inLabel, style = vStyle, color = if (inMuted) vColors.onSurfaceVariant else vColors.onSurface, modifier = Modifier.weight(1f))
+		AmountText(inCents = inCents, inStyle = vStyle, inColor = vColor, inShowPlusSign = inSigned)
+	}
+}
+
+/*
+	Dépenses du mois par catégorie : icône, nom, barre (rapportée à la plus
+	grosse dépense, de même longueur pour toutes), montant et part.
+	inLines : dépenses nettes par catégorie, triées
+*/
+@Composable
+private fun ExpensesCard(inLines: List<CategoryLine>)
+{
+	val vColors = MaterialTheme.colorScheme									// palette courante
+	BorderedCard {
+		if (inLines.isEmpty())
+		{
+			EmptyState(inTitle = "Aucune dépense", inBody = "Aucune dépense n’est enregistrée sur ce compte pour ce mois.")
+			return@BorderedCard
+		}
+		val vMax = inLines.maxOf { it.netCents }.coerceAtLeast(1L)				// plus grosse dépense (échelle des barres)
+		Column(Modifier.padding(vertical = 8.dp)) {
+			inLines.forEach { inLine ->
+				Row(
+					modifier          = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 20.dp, vertical = 6.dp),
+					verticalAlignment = Alignment.CenterVertically
+				) {
+					Icon(CategoryIcons.of(inLine.category.icon), contentDescription = null, modifier = Modifier.size(22.dp))
+					Spacer(Modifier.width(14.dp))
+					Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+						Text(inLine.category.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+						Box(Modifier.fillMaxWidth().height(4.dp).clip(CircleShape).background(vColors.surfaceContainerHigh)) {
+							Box(
+								Modifier
+									.fillMaxWidth((inLine.netCents.coerceAtLeast(0L).toFloat() / vMax).coerceIn(0f, 1f))
+									.height(4.dp)
+									.clip(CircleShape)
+									.background(vColors.onSurface)
+							)
+						}
+					}
+					Spacer(Modifier.width(16.dp))
+					Column(Modifier.widthIn(min = 104.dp), horizontalAlignment = Alignment.End) {
+						AmountText(inCents = inLine.netCents, inStyle = MaterialTheme.typography.bodyLarge)
+						Text("${inLine.percent}\u202F%", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+					}
+				}
+			}
+		}
+	}
+}
+
+/*
+	En-tête d'un groupe d'opérations (jour, « À venir »).
+	inText : texte
+*/
+@Composable
+private fun DayHeader(inText: String)
+{
+	Text(
+		text     = inText,
+		style    = MaterialTheme.typography.labelLarge,
+		color    = MaterialTheme.colorScheme.onSurfaceVariant,
+		modifier = Modifier.padding(start = 4.dp, top = 16.dp, bottom = 8.dp)
+	)
+}
+
+/*
+	Carte des opérations d'un groupe.
+	inItems     : opérations
+	inSelection : opérations sélectionnées
+	inActions   : actions
+*/
+@Composable
+private fun OperationsCard(
+	inItems     : List<OperationItem>,
+	inSelection : Set<String>,
+	inActions   : AccountDetailActions
+)
+{
+	BorderedCard {
+		inItems.forEachIndexed { inIndex, inItem ->
+			if (inIndex > 0)
+			{
+				HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = MaterialTheme.colorScheme.outlineVariant)
+			}
+			OperationRow(inItem, inItem.transaction.id in inSelection, inSelection.isNotEmpty(), inActions)
+		}
+	}
+}
+
+/*
+	Ligne d'une opération : icône (ou coche en sélection), libellé, catégorie
+	ou nature, montant signé à l'encre. Toucher ouvre ; appui long sélectionne.
+	inItem      : opération
+	inSelected  : opération sélectionnée
+	inSelecting : mode sélection actif
+	inActions   : actions
+*/
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun OperationRow(
+	inItem      : OperationItem,
+	inSelected  : Boolean,
+	inSelecting : Boolean,
+	inActions   : AccountDetailActions
+)
+{
+	val vColors = MaterialTheme.colorScheme									// palette courante
+	Row(
+		modifier          = Modifier
+			.fillMaxWidth()
+			.background(if (inSelected) vColors.secondaryContainer else vColors.surface)
+			.combinedClickable(
+				onClickLabel     = if (inSelecting) "Sélectionner" else "Ouvrir",
+				onLongClickLabel = "Sélectionner",
+				onClick          = { inActions.onOpen(inItem) },
+				onLongClick      = { inActions.onLongPress(inItem) }
+			)
+			.semantics { selected = inSelected }
+			.heightIn(min = 64.dp)
+			.padding(horizontal = 20.dp, vertical = 10.dp),
+		verticalAlignment = Alignment.CenterVertically
+	) {
+		Box(
+			modifier         = Modifier
+				.size(36.dp)
+				.clip(CircleShape)
+				.background(if (inSelected) vColors.onSurface else vColors.surfaceContainer),
+			contentAlignment = Alignment.Center
+		) {
+			Icon(
+				imageVector        = if (inSelected) LineIcons.Check else CategoryIcons.of(inItem.icon),
+				contentDescription = null,
+				tint               = if (inSelected) vColors.surface else vColors.onSurface,
+				modifier           = Modifier.size(20.dp)
+			)
+		}
+		Spacer(Modifier.width(14.dp))
+		Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+			Text(inItem.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+			Text(
+				text     = if (inItem.upcoming) "${inItem.subtitle} · ${inItem.transaction.date.format(DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE))}" else inItem.subtitle,
+				style    = MaterialTheme.typography.bodyMedium,
+				color    = vColors.onSurfaceVariant,
+				maxLines = 1,
+				overflow = TextOverflow.Ellipsis
+			)
+		}
+		Spacer(Modifier.width(12.dp))
+		AmountText(inCents = inItem.amount, inStyle = MaterialTheme.typography.titleMedium, inShowPlusSign = true)
+	}
+}
+

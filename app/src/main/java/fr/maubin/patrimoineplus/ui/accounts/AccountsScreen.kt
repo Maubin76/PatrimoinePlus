@@ -47,127 +47,100 @@ import fr.maubin.patrimoineplus.ui.shell.ScreenScaffold
 import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
 
 /*
-	Feuille ouverte sur l'écran des comptes.
-*/
-private sealed interface AccountSheetState
-{
-	/*
-		Création d'un compte.
-		form : saisie de départ
-	*/
-	data class Creating(val form: AccountForm) : AccountSheetState
-
-	/*
-		Modification d'un compte.
-		item : compte modifié
-		form : saisie de départ
-	*/
-	data class Editing(val item: AccountItem, val form: AccountForm) : AccountSheetState
-}
-
-/*
 	Onglet des comptes : liste réordonnable avec la valeur de chaque compte,
-	création et modification en feuille du bas, comptes archivés à part.
+	comptes archivés à part ; toucher un compte ouvre sa vue mois par mois,
+	« Ajouter un compte » ouvre la création en feuille du bas.
 	inOnToggleHidden : bascule le mode discret
+	inOnOpenAccount  : ouvre la vue d'un compte
 	inViewModel      : ViewModel fourni par Hilt
 */
 @Composable
 fun AccountsScreen(
 	inOnToggleHidden : () -> Unit,
+	inOnOpenAccount  : (String) -> Unit,
 	inViewModel      : AccountsViewModel = hiltViewModel()
 )
 {
 	val vState    by inViewModel.uiState.collectAsStateWithLifecycle()		// état à afficher
-	var vSheet    by remember { mutableStateOf<AccountSheetState?>(null) }	// feuille ouverte
-	var vDeleting by remember { mutableStateOf<AccountItem?>(null) }		// compte à supprimer
-	var vFinal    by remember { mutableStateOf<AccountItem?>(null) }		// suppression définitive à confirmer
+	var vCreating by remember { mutableStateOf<AccountForm?>(null) }		// création ouverte
 
 	AccountsContent(
 		inState          = vState,
 		inOnToggleHidden = inOnToggleHidden,
-		inOnAdd          = { vSheet = AccountSheetState.Creating(inViewModel.newForm()) },
-		inOnOpen         = { inItem -> inViewModel.editForm(inItem.account) { vSheet = AccountSheetState.Editing(inItem, it) } },
+		inOnAdd          = { vCreating = inViewModel.newForm() },
+		inOnOpen         = { inOnOpenAccount(it.account.id) },
 		inOnReorder      = inViewModel::reorder
 	)
 
-	when (val vOpen = vSheet)
-	{
-		null                          -> Unit
-		is AccountSheetState.Creating -> AccountSheet(
-			inInitial    = vOpen.form,
+	vCreating?.let { inForm ->
+		AccountSheet(
+			inInitial    = inForm,
 			inEditing    = null,
 			inTypeLocked = false,
-			inOnSave     = { inForm, inOnErrors -> inViewModel.save(inForm, null) { if (it.isEmpty) vSheet = null else inOnErrors(it) } },
+			inOnSave     = { inSaved, inOnErrors -> inViewModel.save(inSaved, null) { if (it.isEmpty) vCreating = null else inOnErrors(it) } },
 			inOnArchive  = {},
 			inOnDelete   = {},
-			inOnDismiss  = { vSheet = null }
-		)
-		is AccountSheetState.Editing  -> AccountSheet(
-			inInitial    = vOpen.form,
-			inEditing    = vOpen.item.account,
-			inTypeLocked = vOpen.item.operations > 0,
-			inOnSave     = { inForm, inOnErrors -> inViewModel.save(inForm, vOpen.item.account) { if (it.isEmpty) vSheet = null else inOnErrors(it) } },
-			inOnArchive  = {
-				inViewModel.setArchived(vOpen.item.account, !vOpen.item.account.archived)
-				vSheet = null
-			},
-			inOnDelete   = {
-				vDeleting = vOpen.item
-				vSheet    = null
-			},
-			inOnDismiss  = { vSheet = null }
+			inOnDismiss  = { vCreating = null }
 		)
 	}
+}
 
-	vDeleting?.let { inItem ->
-		if (inItem.operations == 0)
-		{
-			ConfirmDialog(
-				inTitle     = "Supprimer « ${inItem.account.name} » ?",
-				inText      = "Ce compte n’a pas d’opération ; son solde initial éventuel sera supprimé avec lui.",
-				inAction    = "Supprimer",
-				inOnConfirm = {
-					inViewModel.delete(inItem.account, inPermanent = false)
-					vDeleting = null
-				},
-				inOnDismiss = { vDeleting = null }
-			)
-		}
-		else
-		{
-			AlertDialog(
-				onDismissRequest = { vDeleting = null },
-				title            = { Text("« ${inItem.account.name} » a ${inItem.operations} opération(s)") },
-				text             = { Text("L’archiver le masque des saisies en gardant son historique et sa place dans le patrimoine. La suppression définitive efface aussi toutes ses opérations.") },
-				confirmButton    = {
-					TextButton(onClick = {
-						inViewModel.setArchived(inItem.account, true)
-						vDeleting = null
-					}) { Text("Archiver") }
-				},
-				dismissButton    = {
-					Row {
-						TextButton(onClick = { vDeleting = null }) { Text("Annuler") }
-						TextButton(onClick = {
-							vFinal    = inItem
-							vDeleting = null
-						}) { Text("Supprimer…", color = MaterialTheme.colorScheme.error) }
-					}
-				}
-			)
-		}
-	}
-
-	vFinal?.let { inItem ->
-		ConfirmDialog(
+/*
+	Boîtes de suppression d'un compte : confirmation simple s'il n'a pas
+	d'opération ; sinon choix entre archivage et suppression définitive, cette
+	dernière demandant une seconde confirmation.
+	inItem      : compte à supprimer
+	inOnArchive : archive le compte
+	inOnDelete  : supprime le compte (vrai = définitivement, avec ses opérations)
+	inOnClose   : fermeture des boîtes (après action ou annulation)
+*/
+@Composable
+fun AccountDeletion(
+	inItem      : AccountItem,
+	inOnArchive : () -> Unit,
+	inOnDelete  : (Boolean) -> Unit,
+	inOnClose   : () -> Unit
+)
+{
+	var vFinal by remember { mutableStateOf(false) }							// seconde confirmation
+	when
+	{
+		inItem.operations == 0 -> ConfirmDialog(
+			inTitle     = "Supprimer « ${inItem.account.name} » ?",
+			inText      = "Ce compte n’a pas d’opération ; son solde initial éventuel sera supprimé avec lui.",
+			inAction    = "Supprimer",
+			inOnConfirm = {
+				inOnDelete(false)
+				inOnClose()
+			},
+			inOnDismiss = inOnClose
+		)
+		vFinal                 -> ConfirmDialog(
 			inTitle     = "Suppression définitive",
 			inText      = "« ${inItem.account.name} » et ses ${inItem.operations} opération(s) seront effacés. Un virement avec un autre compte sera supprimé en entier, ce qui modifiera aussi le solde de cet autre compte. C’est irréversible.",
 			inAction    = "Tout supprimer",
 			inOnConfirm = {
-				inViewModel.delete(inItem.account, inPermanent = true)
-				vFinal = null
+				inOnDelete(true)
+				inOnClose()
 			},
-			inOnDismiss = { vFinal = null }
+			inOnDismiss = inOnClose
+		)
+		else                   -> AlertDialog(
+			onDismissRequest = inOnClose,
+			title            = { Text("« ${inItem.account.name} » a ${inItem.operations} opération(s)") },
+			text             = { Text("L’archiver le masque des saisies en gardant son historique et sa place dans le patrimoine. La suppression définitive efface aussi toutes ses opérations.") },
+			confirmButton    = {
+				TextButton(onClick = {
+					inOnArchive()
+					inOnClose()
+				}) { Text("Archiver") }
+			},
+			dismissButton    = {
+				Row {
+					TextButton(onClick = inOnClose) { Text("Annuler") }
+					TextButton(onClick = { vFinal = true }) { Text("Supprimer…", color = MaterialTheme.colorScheme.error) }
+				}
+			}
 		)
 	}
 }
@@ -177,7 +150,7 @@ fun AccountsScreen(
 	inState          : état à afficher
 	inOnToggleHidden : bascule le mode discret
 	inOnAdd          : ouvre la création d'un compte
-	inOnOpen         : ouvre la modification d'un compte
+	inOnOpen         : ouvre la vue d'un compte
 	inOnReorder      : enregistre un nouvel ordre des comptes actifs
 */
 @Composable
@@ -243,9 +216,9 @@ fun AccountsContent(
 
 /*
 	Ligne d'un compte : nom, détail (type, établissement, part), valeur.
-	Toucher ouvre la modification.
+	Toucher ouvre la vue du compte.
 	inItem   : compte affiché
-	inOnOpen : ouvre la modification
+	inOnOpen : ouvre la vue du compte
 */
 @Composable
 private fun AccountRow(

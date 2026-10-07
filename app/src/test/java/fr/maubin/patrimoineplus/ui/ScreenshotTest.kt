@@ -7,6 +7,12 @@ import androidx.compose.runtime.remember
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import fr.maubin.patrimoineplus.ui.accounts.AccountItem
+import fr.maubin.patrimoineplus.ui.account.AccountDetailActions
+import fr.maubin.patrimoineplus.ui.account.AccountDetailContent
+import fr.maubin.patrimoineplus.ui.account.buildAccountDetail
+import fr.maubin.patrimoineplus.ui.entry.EntryForm
+import fr.maubin.patrimoineplus.ui.entry.TransactionSheet
+import fr.maubin.patrimoineplus.domain.calc.labelSuggestions
 import fr.maubin.patrimoineplus.ui.accounts.AccountSheet
 import fr.maubin.patrimoineplus.ui.accounts.AccountsContent
 import fr.maubin.patrimoineplus.ui.accounts.AccountsUiState
@@ -244,5 +250,56 @@ class ScreenshotTest
 		captureRoboImage("$kOutDir/home-demo.png", content = shell(false, false, TopLevelDestination.Home) {
 			HomeContent(vState, {}, {})
 		})
+	}
+
+	/*
+		État de la vue du compte courant de démonstration, mois en cours.
+	*/
+	private fun demoDetail() = buildAccountDetail(kDemo.accounts.first().id, kDemo.accounts, kDemo.categories, kDemo.transactions, java.time.YearMonth.from(kToday), kToday)
+
+	/*
+		Vue d'un compte, mois en cours (synthèse, dépenses, courbe, opérations).
+	*/
+	@Test
+	@Config(qualifiers = "w360dp-h2200dp-xxhdpi")
+	fun accountDetail() = captureRoboImage("$kOutDir/account-detail.png") {
+		PatrimoineTheme(inDarkTheme = false) {
+			AccountDetailContent(demoDetail(), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
+		}
+	}
+
+	/*
+		Vue d'un compte en mode sélection (deux opérations choisies).
+	*/
+	@Test
+	fun accountDetailSelection()
+	{
+		val vState = demoDetail()												// état du mois
+		val vIds   = vState.days.first().items.take(1).map { it.transaction.id } + vState.days[1].items.take(1).map { it.transaction.id }	// sélection
+		captureRoboImage("$kOutDir/account-detail-selection.png") {
+			PatrimoineTheme(inDarkTheme = true) {
+				AccountDetailContent(vState.copy(), vIds.toSet(), remember { SnackbarHostState() }, AccountDetailActions())
+			}
+		}
+	}
+
+	/*
+		Feuille de saisie d'une dépense, suggestions de libellés affichées.
+	*/
+	@Test
+	fun entrySheet()
+	{
+		val vCats = kDemo.categories.sortedBy { it.sortOrder }					// catégories
+		fCompose.setContent {
+			PatrimoineTheme(inDarkTheme = false) {
+				AccountDetailContent(demoDetail(), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
+				TransactionSheet(
+					EntryForm(amount = "42,90", accountId = kDemo.accounts.first().id, categoryId = vCats.first { it.name == "Alimentation" }.id, label = "Su", date = kToday),
+					kDemo.accounts, vCats, { inPrefix -> labelSuggestions(kDemo.transactions, inPrefix) }, { _, _ -> }, {}, {}
+				)
+			}
+		}
+		fCompose.waitForIdle()
+		captureScreenRoboImage("$kOutDir/entry-sheet.png")
 	}
 }

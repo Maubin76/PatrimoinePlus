@@ -91,4 +91,25 @@ object LineIcons
 		"M4 12 H13.5", "M17.5 12 H20", circle(15.5f, 12f, 2f),
 		"M4 17 H8.5", "M12.5 17 H20", circle(10.5f, 17f, 2f)
 	)
+
+	// Retour : flèche vers la gauche.
+	val Back: ImageVector = lineIcon("Retour", "M19 12 H5", "M11 6 L5 12 L11 18")
+
+	// Mois précédent.
+	val ChevronLeft: ImageVector = lineIcon("Précédent", "M15 5 L8 12 L15 19")
+
+	// Mois suivant.
+	val ChevronRight: ImageVector = lineIcon("Suivant", "M9 5 L16 12 L9 19")
+
+	// Modifier : crayon.
+	val Edit: ImageVector = lineIcon("Modifier", "M4 20 L4.8 16.2 L16 5 A2.1 2.1 0 0 1 19 8 L7.8 19.2 Z", "M14 7 L17 10")
+
+	// Supprimer : corbeille.
+	val Trash: ImageVector = lineIcon("Supprimer", "M4 7 H20", "M9 7 V4.5 H15 V7", "M6.5 7 L7.5 20 H16.5 L17.5 7", "M10 11 V16", "M14 11 V16")
+
+	// Fermer : croix.
+	val Close: ImageVector = lineIcon("Fermer", "M6 6 L18 18", "M18 6 L6 18")
+
+	// Coche (élément sélectionné).
+	val Check: ImageVector = lineIcon("Sélectionné", "M5 12.5 L10 17.5 L19 7")
 }

@@ -41,6 +41,15 @@ interface SettingsRepository
 		inMode : apparence choisie
 	*/
 	suspend fun setThemeMode(inMode: ThemeMode)
+
+	// Compte de la dernière opération saisie ; null au départ.
+	val lastAccountId: Flow<String?>
+
+	/*
+		Mémorise le compte de la dernière opération saisie.
+		inId : compte
+	*/
+	suspend fun setLastAccountId(inId: String)
 }
 
 /*
@@ -55,6 +64,7 @@ class DataStoreSettingsRepository @Inject constructor(
 	private val kAmountsHiddenKey = booleanPreferencesKey("amounts_hidden")	// clé du mode discret
 	private val kThemeModeKey     = stringPreferencesKey("theme_mode")		// clé de l'apparence
 	private val kOnboardingKey    = booleanPreferencesKey("onboarding_done")	// clé du premier lancement
+	private val kLastAccountKey   = stringPreferencesKey("last_account")	// clé du dernier compte utilisé
 
 	override val amountsHidden: Flow<Boolean> =
 		inDataStore.data.map { inPreferences -> inPreferences[kAmountsHiddenKey] ?: false }
@@ -92,5 +102,17 @@ class DataStoreSettingsRepository @Inject constructor(
 	override suspend fun setOnboardingDone(inDone: Boolean)
 	{
 		inDataStore.edit { inPreferences -> inPreferences[kOnboardingKey] = inDone }
+	}
+
+	override val lastAccountId: Flow<String?> =
+		inDataStore.data.map { inPreferences -> inPreferences[kLastAccountKey] }
+
+	/*
+		Mémorise le compte de la dernière opération saisie.
+		inId : compte
+	*/
+	override suspend fun setLastAccountId(inId: String)
+	{
+		inDataStore.edit { inPreferences -> inPreferences[kLastAccountKey] = inId }
 	}
 }
