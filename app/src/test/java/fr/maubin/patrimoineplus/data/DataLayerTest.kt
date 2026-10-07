@@ -9,6 +9,7 @@ import fr.maubin.patrimoineplus.data.demo.DemoRepository
 import fr.maubin.patrimoineplus.data.repo.AccountRepository
 import fr.maubin.patrimoineplus.data.repo.CategoryRepository
 import fr.maubin.patrimoineplus.data.repo.MarketRepository
+import fr.maubin.patrimoineplus.data.repo.Opening
 import fr.maubin.patrimoineplus.data.repo.SaveResult
 import fr.maubin.patrimoineplus.data.repo.TransactionRepository
 import fr.maubin.patrimoineplus.domain.calc.Ledger
@@ -204,7 +205,7 @@ class DataLayerTest
 		val vB = account("B", AccountType.SAVINGS)								// autre compte
 		val vC = account("C", AccountType.SAVINGS)								// compte vide
 		fTransactions.save(transferTx(vA, vB, 500))
-		assertEquals(1, fAccounts.usage(vA.id))
+		assertEquals(1, fAccounts.operationCount(vA.id))
 		assertFalse(fAccounts.deleteIfUnused(vA.id))
 		assertTrue(fAccounts.deleteIfUnused(vC.id))
 		var vRefused = false													// refus de la base
@@ -298,5 +299,51 @@ class DataLayerTest
 	fun schemaIsExported()
 	{
 		assertTrue(File("schemas/fr.maubin.patrimoineplus.data.db.PatrimoineDatabase/1.json").exists())
+	}
+
+	/*
+		Solde initial : créé avec le compte, modifiable, supprimé à zéro ; il ne
+		compte pas comme une opération et part avec une suppression simple.
+	*/
+	@Test
+	fun openingBalanceLifecycle() = runTest {
+		val vDay  = LocalDate.parse("2026-10-01")								// date du solde
+		val vId   = (fAccounts.create("Courant", AccountType.CHECKING, null, 100, Opening(150_000, vDay)) as SaveResult.Saved).id	// compte
+		assertEquals(Opening(150_000, vDay), fAccounts.openingOf(vId))
+		assertEquals(0, fAccounts.operationCount(vId))
+		fAccounts.setOpening(vId, Opening(-2_500, vDay.plusDays(2)))
+		assertEquals(Opening(-2_500, vDay.plusDays(2)), fAccounts.openingOf(vId))
+		assertEquals(1, fTransactions.observeTransactions().first().size)
+		fAccounts.setOpening(vId, Opening(0, vDay))
+		assertEquals(null, fAccounts.openingOf(vId))
+		assertTrue(fTransactions.observeTransactions().first().isEmpty())
+		fAccounts.setOpening(vId, Opening(1_000, vDay))
+		assertTrue(fAccounts.deleteIfUnused(vId))
+		assertTrue(fTransactions.observeTransactions().first().isEmpty())
+		assertTrue(fAccounts.observeAccounts().first().isEmpty())
+	}
+
+	/*
+		Le type d'un compte ne change plus dès qu'il a une opération (hors solde
+		initial).
+	*/
+	@Test
+	fun typeLockedOnceUsed() = runTest {
+		val vA = account("A", AccountType.CHECKING)								// compte modifié
+		val vB = account("B", AccountType.SAVINGS)								// autre compte
+		assertTrue(fAccounts.update(vA.copy(type = AccountType.SAVINGS)) is SaveResult.Saved)
+		fTransactions.save(transferTx(vA.copy(type = AccountType.SAVINGS), vB, 500))
+		assertEquals(SaveResult.Rejected(listOf(SetupError.TypeLocked)), fAccounts.update(vA.copy(type = AccountType.CHECKING)))
+		assertTrue(fAccounts.update(vA.copy(type = AccountType.SAVINGS, name = "Renommé")) is SaveResult.Saved)
+	}
+
+	/*
+		Ordre des catégories : enregistré tel que choisi.
+	*/
+	@Test
+	fun categoriesReorder() = runTest {
+		val vIds = listOf("Logement", "Courses", "Loisirs").map { category(it) }	// catégories
+		fCategories.reorder(vIds.reversed())
+		assertEquals(listOf("Loisirs", "Courses", "Logement"), fCategories.observeCategories().first().sortedBy { it.sortOrder }.map { it.name })
 	}
 }

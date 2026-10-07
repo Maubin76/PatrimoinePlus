@@ -27,6 +27,15 @@ interface SettingsRepository
 	// Apparence choisie : suivre le système, clair ou sombre.
 	val themeMode: Flow<ThemeMode>
 
+	// Vrai une fois l'assistant du premier lancement terminé ou passé.
+	val onboardingDone: Flow<Boolean>
+
+	/*
+		Marque l'assistant du premier lancement comme terminé (ou à refaire).
+		inDone : vrai si terminé
+	*/
+	suspend fun setOnboardingDone(inDone: Boolean)
+
 	/*
 		Fixe l'apparence de l'application.
 		inMode : apparence choisie
@@ -45,6 +54,7 @@ class DataStoreSettingsRepository @Inject constructor(
 {
 	private val kAmountsHiddenKey = booleanPreferencesKey("amounts_hidden")	// clé du mode discret
 	private val kThemeModeKey     = stringPreferencesKey("theme_mode")		// clé de l'apparence
+	private val kOnboardingKey    = booleanPreferencesKey("onboarding_done")	// clé du premier lancement
 
 	override val amountsHidden: Flow<Boolean> =
 		inDataStore.data.map { inPreferences -> inPreferences[kAmountsHiddenKey] ?: false }
@@ -70,5 +80,17 @@ class DataStoreSettingsRepository @Inject constructor(
 	override suspend fun setThemeMode(inMode: ThemeMode)
 	{
 		inDataStore.edit { inPreferences -> inPreferences[kThemeModeKey] = inMode.name }
+	}
+
+	override val onboardingDone: Flow<Boolean> =
+		inDataStore.data.map { inPreferences -> inPreferences[kOnboardingKey] ?: false }
+
+	/*
+		Enregistre la fin (ou la remise à zéro) de l'assistant du premier lancement.
+		inDone : vrai si terminé
+	*/
+	override suspend fun setOnboardingDone(inDone: Boolean)
+	{
+		inDataStore.edit { inPreferences -> inPreferences[kOnboardingKey] = inDone }
 	}
 }

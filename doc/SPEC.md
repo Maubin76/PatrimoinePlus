@@ -51,7 +51,8 @@ d'une opération sur plusieurs catégories, multi-devises.
 - Pas de carte à débit différé : une dépense par carte est datée du jour du
   débit sur le compte courant.
 - Pas de date de départ globale : chaque compte reçoit une opération
-  « Solde initial » à la date de son choix (par défaut : le 1er du mois courant).
+  « Solde initial » à la date de son choix (par défaut : aujourd'hui, décidé à
+  l'étape 3).
 - Téléphone : Android 16 (API 36). minSdk 30 conservé comme demandé ; le
   téléphone est couvert.
 

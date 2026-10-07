@@ -6,8 +6,22 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
-import fr.maubin.patrimoineplus.ui.accounts.AccountsScreen
-import fr.maubin.patrimoineplus.ui.categories.CategoriesScreen
+import fr.maubin.patrimoineplus.ui.accounts.AccountItem
+import fr.maubin.patrimoineplus.ui.accounts.AccountSheet
+import fr.maubin.patrimoineplus.ui.accounts.AccountsContent
+import fr.maubin.patrimoineplus.ui.accounts.AccountsUiState
+import fr.maubin.patrimoineplus.ui.accounts.AccountForm
+import fr.maubin.patrimoineplus.ui.onboarding.OnboardingScreen
+import fr.maubin.patrimoineplus.ui.onboarding.ProposedAccount
+import fr.maubin.patrimoineplus.domain.calc.accountValue
+import fr.maubin.patrimoineplus.domain.model.CategoryKind
+import fr.maubin.patrimoineplus.domain.model.DefaultCatalog
+import com.github.takahirom.roborazzi.captureScreenRoboImage
+import androidx.compose.ui.test.junit4.createComposeRule
+import org.junit.Rule
+import fr.maubin.patrimoineplus.ui.categories.CategoriesContent
+import fr.maubin.patrimoineplus.ui.categories.CategoriesUiState
+import fr.maubin.patrimoineplus.ui.categories.CategoryItem
 import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
 import fr.maubin.patrimoineplus.data.settings.ThemeMode
 import fr.maubin.patrimoineplus.domain.model.AccountType
@@ -42,6 +56,67 @@ private const val kOutDir = "build/outputs/roborazzi"						// dossier des captur
 @Config(sdk = [35], qualifiers = "w360dp-h780dp-xxhdpi")
 class ScreenshotTest
 {
+	@get:Rule
+	val fCompose = createComposeRule()											// pour les captures d'écran entier (feuilles)
+
+	private val kToday = LocalDate.parse("2026-10-07")							// date des captures
+	private val kDemo  = buildDemoData(kToday)									// démonstration
+
+	/*
+		État de l'écran des comptes calculé depuis la démonstration ; un compte archivé ajouté.
+	*/
+	private fun demoAccounts(): AccountsUiState
+	{
+		val vLedger = Ledger(kDemo.transactions)								// grand livre
+		val vItems  = kDemo.accounts.map { inAccount ->
+			AccountItem(inAccount, accountValue(inAccount, vLedger, kToday, kDemo.prices).valueCents,
+				kDemo.transactions.count { inTx -> inTx.postings.any { it.accountId == inAccount.id } } - 1)
+		}																		// comptes valorisés
+		val vOld    = AccountItem(kDemo.accounts[2].copy(id = "ancien", name = "Ancien livret", archived = true), 0, 3)	// compte archivé
+		return AccountsUiState(true, vItems, listOf(vOld))
+	}
+
+	/*
+		État de l'écran des catégories calculé depuis la démonstration.
+	*/
+	private fun demoCategories(): CategoriesUiState
+	{
+		val vUsage = kDemo.transactions.mapNotNull { it.categoryId }.groupingBy { it }.eachCount()	// utilisations
+		val vItems = kDemo.categories.map { CategoryItem(it, vUsage[it.id] ?: 0) }						// catégories
+		return CategoriesUiState(true, vItems.filter { it.category.kind == CategoryKind.EXPENSE }, vItems.filter { it.category.kind == CategoryKind.INCOME })
+	}
+
+	/*
+		Assistant du premier lancement.
+	*/
+	@Test
+	fun onboarding() = captureRoboImage("$kOutDir/onboarding.png") {
+		PatrimoineTheme(inDarkTheme = false) {
+			OnboardingScreen(
+				listOf(ProposedAccount("Compte courant", AccountType.CHECKING, opening = "2 450,12"), ProposedAccount("Livret A", AccountType.SAVINGS),
+					ProposedAccount("LDDS", AccountType.SAVINGS, selected = false), ProposedAccount("PEA", AccountType.BROKERAGE)),
+				DefaultCatalog.categories().map { it.name }, { _, _, _ -> }, {}
+			)
+		}
+	}
+
+	/*
+		Feuille de création d'un compte, au-dessus de l'écran des comptes.
+	*/
+	@Test
+	fun accountSheet()
+	{
+		fCompose.setContent {
+			PatrimoineTheme(inDarkTheme = false) {
+				AccountsContent(demoAccounts(), {}, {}, {}, {})
+				AccountSheet(AccountForm(name = "Compte joint", institution = "Banque démo", share = "50", opening = "1 200", openingDate = kToday),
+					null, false, { _, _ -> }, {}, {}, {})
+			}
+		}
+		fCompose.waitForIdle()
+		captureScreenRoboImage("$kOutDir/account-sheet.png")
+	}
+
 	/*
 		Enveloppe un écran dans le thème et le cadre réel (pilule, bouton de saisie).
 		inDark     : mode sombre
@@ -108,7 +183,7 @@ class ScreenshotTest
 	*/
 	@Test
 	fun accounts() = captureRoboImage("$kOutDir/accounts.png", content = shell(false, false, TopLevelDestination.Accounts) {
-		AccountsScreen({})
+		AccountsContent(demoAccounts(), {}, {}, {}, {})
 	})
 
 	/*
@@ -144,7 +219,7 @@ class ScreenshotTest
 	*/
 	@Test
 	fun categories() = captureRoboImage("$kOutDir/categories.png", content = shell(false, false, TopLevelDestination.Categories) {
-		CategoriesScreen()
+		CategoriesContent(demoCategories(), {}, {}, {})
 	})
 
 	/*

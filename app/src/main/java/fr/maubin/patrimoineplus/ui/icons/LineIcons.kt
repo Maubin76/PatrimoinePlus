@@ -16,7 +16,7 @@ private const val kStroke = 1.6f											// épaisseur du trait, sur une grill
 	inName  : nom de l'icône
 	inPaths : tracés SVG, chacun dessiné en contour
 */
-private fun lineIcon(
+internal fun lineIcon(
 	inName  : String,
 	vararg inPaths : String
 ): ImageVector
@@ -46,7 +46,7 @@ private fun lineIcon(
 	inX, inY : centre
 	inR      : rayon
 */
-private fun circle(
+internal fun circle(
 	inX : Float,
 	inY : Float,
 	inR : Float

@@ -59,6 +59,13 @@ interface AccountDao
 	suspend fun transactionIdsOf(inId: String): List<String>
 
 	/*
+		Opérations de solde initial d'un compte.
+		inId : compte
+	*/
+	@Query("SELECT DISTINCT t.id FROM txn t JOIN posting p ON p.transactionId = t.id WHERE t.kind = 'OPENING' AND p.accountId = :inId")
+	suspend fun openingIdsOf(inId: String): List<String>
+
+	/*
 		Change l'ordre d'affichage d'un compte.
 		inId    : compte
 		inOrder : nouvel ordre
@@ -116,6 +123,15 @@ interface CategoryDao
 	suspend fun usage(inId: String): Int
 
 	/*
+		Change l'ordre d'affichage d'une catégorie.
+		inId    : catégorie
+		inOrder : nouvel ordre
+		inNow   : horodatage de modification
+	*/
+	@Query("UPDATE category SET sortOrder = :inOrder, updatedAt = :inNow WHERE id = :inId")
+	suspend fun setSortOrder(inId: String, inOrder: Int, inNow: Long)
+
+	/*
 		Supprime une catégorie (refusé par la base si elle est utilisée).
 		inId : identifiant
 	*/
@@ -145,6 +161,14 @@ interface TransactionDao
 	*/
 	@Query("SELECT * FROM txn WHERE id = :inId")
 	suspend fun getById(inId: String): TransactionEntity?
+
+	/*
+		Une opération complète par identifiant.
+		inId : identifiant
+	*/
+	@Transaction
+	@Query("SELECT * FROM txn WHERE id = :inId")
+	suspend fun getDetails(inId: String): TransactionWithDetails?
 
 	/*
 		Ajoute ou remplace l'en-tête d'une opération.

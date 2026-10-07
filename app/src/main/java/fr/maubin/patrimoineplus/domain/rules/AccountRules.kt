@@ -23,6 +23,9 @@ sealed class SetupError(val message: String)
 	// La catégorie est utilisée : il faut choisir une catégorie de remplacement.
 	data object CategoryInUse : SetupError("Cette catégorie est utilisée : choisissez une catégorie de remplacement.")
 
+	// Le type d'un compte qui a des opérations ne peut plus changer.
+	data object TypeLocked : SetupError("Le type ne peut plus changer : ce compte a des opérations.")
+
 	// Élément introuvable (supprimé entre-temps).
 	data object NotFound : SetupError("Élément introuvable.")
 }

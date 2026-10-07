@@ -3,7 +3,12 @@ package fr.maubin.patrimoineplus.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.Modifier
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.SnackbarHostState
@@ -25,6 +30,8 @@ import fr.maubin.patrimoineplus.ui.accounts.AccountsScreen
 import fr.maubin.patrimoineplus.ui.categories.CategoriesScreen
 import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
 import fr.maubin.patrimoineplus.ui.home.HomeScreen
+import fr.maubin.patrimoineplus.ui.onboarding.OnboardingScreen
+import fr.maubin.patrimoineplus.ui.onboarding.OnboardingViewModel
 import fr.maubin.patrimoineplus.ui.navigation.MainRoute
 import fr.maubin.patrimoineplus.ui.navigation.TopLevelDestination
 import fr.maubin.patrimoineplus.BuildConfig
@@ -53,8 +60,34 @@ fun PatrimoineApp(inAppViewModel: AppViewModel = hiltViewModel())
 
 	CompositionLocalProvider(LocalAmountsHidden provides vHidden) {
 		NavHost(navController = vNavController, startDestination = MainRoute) {
-			composable<MainRoute> { MainTabs(inAppViewModel) }
+			composable<MainRoute> { MainOrOnboarding(inAppViewModel) }
 		}
+	}
+}
+
+/*
+	Assistant du premier lancement s'il est dû, écran principal sinon ; fond
+	vide le temps de lire la base, pour éviter un clignotement.
+	inAppViewModel : état partagé (mode discret, apparence)
+	inOnboarding   : ViewModel de l'assistant
+*/
+@Composable
+private fun MainOrOnboarding(
+	inAppViewModel : AppViewModel,
+	inOnboarding   : OnboardingViewModel = hiltViewModel()
+)
+{
+	val vNeeds by inOnboarding.needsOnboarding.collectAsStateWithLifecycle()	// assistant à afficher
+	when (vNeeds)
+	{
+		true  -> OnboardingScreen(
+			inProposals     = inOnboarding.proposals,
+			inCategoryNames = inOnboarding.categoryNames,
+			inOnFinish      = inOnboarding::finish,
+			inOnSkip        = inOnboarding::skip
+		)
+		false -> MainTabs(inAppViewModel)
+		null  -> Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface))
 	}
 }
 

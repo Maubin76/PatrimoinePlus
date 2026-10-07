@@ -77,6 +77,13 @@ inspirée de deux maquettes de référence fournies le 2026-10-07.
   `ScreenScaffold`.
 - Apparence : Système (suit le téléphone), Clair ou Sombre, au choix dans
   Réglages ; mémorisée en DataStore, les barres système suivent.
+- Comptes et catégories : listes réordonnables par glisser-déposer (actions
+  « Monter » / « Descendre » pour TalkBack), création et modification en feuille
+  du bas, archivage, suppression (simple, ou définitive avec double
+  confirmation ; réaffectation des opérations pour une catégorie). Icônes de
+  catégories au trait fin (`ui/icons/CategoryIcons.kt`).
+- Premier lancement : assistant qui propose comptes (avec solde du jour) et
+  catégories ; réapparaît après « Tout effacer » (debug).
 - Mode discret : l'œil de la barre du haut ou le réglage masque tous les
   montants ; mémorisé en DataStore.
 - Contexte de conception : `PRODUCT.md`, `DESIGN.md` et `.impeccable/`.

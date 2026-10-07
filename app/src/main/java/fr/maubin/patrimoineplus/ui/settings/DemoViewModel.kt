@@ -4,17 +4,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import fr.maubin.patrimoineplus.data.demo.DemoRepository
+import fr.maubin.patrimoineplus.data.settings.SettingsRepository
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /*
 	Actions de démonstration, proposées dans les Réglages en version debug
 	seulement.
-	inDemo : dépôt des données de démonstration
+	inDemo     : dépôt des données de démonstration
+	inSettings : réglages (assistant du premier lancement)
 */
 @HiltViewModel
 class DemoViewModel @Inject constructor(
-	private val inDemo : DemoRepository
+	private val inDemo     : DemoRepository,
+	private val inSettings : SettingsRepository
 ) : ViewModel()
 {
 	/*
@@ -25,18 +28,20 @@ class DemoViewModel @Inject constructor(
 	{
 		viewModelScope.launch {
 			inDemo.loadDemo()
+			inSettings.setOnboardingDone(true)
 			inOnDone()
 		}
 	}
 
 	/*
-		Efface toutes les données.
+		Efface toutes les données ; l'assistant du premier lancement réapparaît.
 		inOnDone : appelé une fois l'effacement terminé
 	*/
 	fun clearAll(inOnDone: () -> Unit)
 	{
 		viewModelScope.launch {
 			inDemo.clearAll()
+			inSettings.setOnboardingDone(false)
 			inOnDone()
 		}
 	}

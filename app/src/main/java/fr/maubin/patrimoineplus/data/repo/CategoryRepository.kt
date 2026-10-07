@@ -107,4 +107,22 @@ class CategoryRepository @Inject constructor(
 			fDao.deleteById(inId)
 			SaveResult.Saved(inId)
 		}
+
+	/*
+		Fixe l'ordre d'affichage des catégories (d'une même nature).
+		inIds : identifiants, dans l'ordre voulu
+	*/
+	suspend fun reorder(inIds: List<String>)
+	{
+		val vNow = inClock.millis()												// horodatage
+		inDb.withTransaction {
+			inIds.forEachIndexed { inIndex, inId -> fDao.setSortOrder(inId, inIndex, vNow) }
+		}
+	}
+
+	/*
+		Nombre d'opérations qui utilisent une catégorie.
+		inId : catégorie
+	*/
+	suspend fun usage(inId: String): Int = fDao.usage(inId)
 }
