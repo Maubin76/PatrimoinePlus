@@ -175,7 +175,7 @@ components:
 
 Noir sur blanc, rien d'autre. Le patrimoine total est le seul élément en très grand, centré comme le solde d'un relevé ; ses chiffres roulent quand la valeur change. Tout le reste est du texte calme en une seule grotesque, des filets gris très clair et des cartes bordées de 1 dp. Il n'y a aucune couleur d'accent : la hiérarchie vient de la taille, de la graisse (demi-gras pour les titres) et du gris secondaire. Le mode sombre suit le système et inverse simplement l'encre et le papier.
 
-La navigation est une pilule blanche flottante, à icônes seules, posée en bas au centre avec une ombre douce ; l'onglet actif s'y loge dans une pastille grise. Le bouton de saisie est un rond noir plat, au-dessus de la pilule à droite, présent sur Accueil et Comptes seulement. Les écrans sont des colonnes uniques : titres de section en gras à gauche, lien souligné à droite, puis une carte bordée qui regroupe les lignes.
+La navigation est une pilule blanche flottante, posée en bas au centre avec une ombre douce, aux icônes au trait fin ; l'onglet actif devient une capsule à l'encre qui s'élargit pour afficher son nom. Le bouton de saisie est un rond noir plat, au-dessus de la pilule à droite, présent sur Accueil et Comptes seulement. Les écrans sont des colonnes uniques : titres de section en gras à gauche, lien souligné à droite, puis une carte bordée qui regroupe les lignes.
 
 Rejets confirmés par le contrat de direction : la carte colorée en tête, les dégradés, les tuiles d'icônes décoratives et la barre de navigation Material pleine largeur.
 
@@ -197,7 +197,7 @@ Une encre presque noire sur un blanc pur, des gris pour le secondaire, les filet
 - **Blanc** (white) / **Noir** (black, sombre) : fond de l'écran, de la barre du haut, des cartes et de la pastille d'information ; tout est posé sur le même fond.
 - **Gris secondaire** (grey-secondary, 5,3:1 sur blanc) / **Gris secondaire sombre** (grey-secondary-dark) : rôle `onSurfaceVariant`. Type d'un compte, explications, pourcentages, texte de la pastille, réglages à venir, afficheur vide, masque du mode discret.
 - **Filet** (rule) / **Filet sombre** (rule-dark) : rôle `outlineVariant`. Bordures de 1 dp des cartes et de la pastille, filets entre lignes, filet sous la barre du haut au défilement, liseré de la pilule en mode sombre.
-- **Gris de sélection** (grey-selection) / **Gris de sélection sombre** (grey-selection-dark) : rôles `secondaryContainer` et `surfaceContainerHigh`. Pastille de l'onglet actif et rail de la barre de répartition.
+- **Gris de sélection** (grey-selection) / **Gris de sélection sombre** (grey-selection-dark) : rôles `secondaryContainer` et `surfaceContainerHigh`. Rail de la barre de répartition.
 - **Pilule nocturne** (night-pill) : rôle `surfaceBright` en sombre ; fond de la pilule de navigation, un cran au-dessus du noir. En clair, la pilule est blanche.
 - **Contour** (outline / outline-dark) : rôle `outline`, réservé aux contours de champs Material.
 
@@ -257,7 +257,7 @@ Le système est plat par défaut. Les cartes, la pastille et la barre du haut n'
 
 ## Shapes
 
-Deux familles. Les pilules et les ronds pour ce qui se touche ou marque : pilule de navigation et ses onglets (68 × 48 dp), pastille d'information, bouton plein, bouton de saisie rond de 56 dp, points de série de 10 dp, barre de répartition à bouts arrondis (segments séparés de 3 dp sur un rail gris). Les cartes, seules surfaces rectangulaires, ont des coins de 16 dp et une bordure de 1 dp. Tout le reste est rectiligne : filets, bords d'écran.
+Deux familles. Les pilules et les ronds pour ce qui se touche ou marque : pilule de navigation et ses onglets (48 × 52 dp au repos, capsule légendée quand actif), pastille d'information, bouton plein, bouton de saisie rond de 56 dp, points de série de 10 dp, barre de répartition à bouts arrondis (segments séparés de 3 dp sur un rail gris). Les cartes, seules surfaces rectangulaires, ont des coins de 16 dp et une bordure de 1 dp. Tout le reste est rectiligne : filets, bords d'écran.
 
 ### Named Rules
 **The Pill or Card Rule.** Une forme interactive est une pilule ou un rond ; un groupe de lignes est une carte de 16 dp. Pas de coins intermédiaires.
@@ -285,7 +285,7 @@ Deux familles. Les pilules et les ronds pour ce qui se touche ou marque : pilule
 
 ### Navigation
 - **Barre du haut :** sur le fond de l'écran, titre centré en titleMedium, actions à droite. Un filet de 1 dp apparaît dessous dès que le contenu défile ; la couleur de la barre ne change jamais.
-- **Pilule de navigation :** capsule flottante centrée en bas, 12 dp au-dessus de la barre système, 8 dp de marge interne et d'écart entre onglets. Quatre onglets à icônes seules (Accueil, Comptes, Catégories, Réglages), annoncés par leur nom à TalkBack. Au repos, icône Material contour en encre ; l'onglet actif passe en icône pleine dans une pastille grise. Changement d'onglet : fondu sortant de 90 ms puis fondu entrant de 220 ms.
+- **Pilule de navigation :** capsule flottante centrée en bas, 12 dp au-dessus de la barre système, 6 dp de marge interne et 8 dp d'écart entre onglets. Quatre onglets (Accueil, Comptes, Catégories, Réglages), annoncés par leur nom à TalkBack. Icônes maison du jeu `LineIcons` (`ui/icons`) : trait de 1,6 sur grille de 24, extrémités arrondies, aucun aplat (maison, portefeuille, grille, réglettes). Au repos, icône seule en gris secondaire, cible de 48 × 52 dp. Actif : capsule pleine à l'encre (papier en sombre), icône et nom en labelLarge couleur du fond, 16 dp de marge ; l'élargissement, le fondu du nom et le changement de couleur durent 220 ms. Changement d'écran : fondu sortant de 90 ms puis fondu entrant de 220 ms.
 
 ### Total (signature)
 Le montant centré à la plus grande taille d'afficheur qui tient sur une ligne, puis la pastille « Calculé au … ». Quand la valeur change, chaque caractère qui change roule verticalement (320 ms, vers le haut si le chiffre augmente) ; les positions se repèrent depuis la droite pour que les centimes restent en place. Si l'échelle d'animation du système vaut 0, le montant change d'un coup. Sans compte, l'afficheur montre « – – –,– – € » en gris secondaire et la pastille dit « Rien à calculer pour l'instant » : jamais un chiffre inventé.
@@ -314,6 +314,6 @@ Dans une carte bordée : titre en titleMedium, explication en bodyMedium gris se
 - **Don't** introduire une couleur d'accent, un dégradé ou une carte colorée en tête ; le seul rouge est celui des montants négatifs.
 - **Don't** utiliser les couleurs dynamiques Material You ni teinter une surface par l'élévation.
 - **Don't** poser une ombre ailleurs que sous la pilule de navigation, ni donner une élévation au bouton de saisie.
-- **Don't** remplacer la pilule flottante par une barre de navigation Material pleine largeur, ni ajouter des libellés sous ses icônes.
+- **Don't** remplacer la pilule flottante par une barre de navigation Material pleine largeur, ni ajouter des libellés aux onglets inactifs, ni revenir aux icônes Material pleines ou contour.
 - **Don't** décorer une ligne par une tuile d'icône ; un type de compte s'identifie par son libellé et, dans la répartition, par un point gris.
 - **Don't** afficher un chiffre inventé dans un état vide ; montrer l'afficheur « – – –,– – € ».

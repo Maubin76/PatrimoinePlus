@@ -1,15 +1,7 @@
 package fr.maubin.patrimoineplus.ui.navigation
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.AccountBalance
-import androidx.compose.material.icons.outlined.Category
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
+import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import kotlinx.serialization.Serializable
 
 /*
@@ -38,22 +30,20 @@ data object SettingsRoute
 
 /*
 	Destinations de la pilule de navigation.
-	route        : route de navigation associée
-	label        : nom de l'onglet, lu par TalkBack
-	icon         : icône au repos (contour)
-	selectedIcon : icône de l'onglet actif (pleine)
-	hasEntry     : l'onglet montre le bouton de saisie
+	route    : route de navigation associée
+	label    : nom de l'onglet, affiché quand il est actif et lu par TalkBack
+	icon     : icône au trait fin
+	hasEntry : l'onglet montre le bouton de saisie
 */
 enum class TopLevelDestination(
-	val route        : Any,
-	val label        : String,
-	val icon         : ImageVector,
-	val selectedIcon : ImageVector,
-	val hasEntry     : Boolean
+	val route    : Any,
+	val label    : String,
+	val icon     : ImageVector,
+	val hasEntry : Boolean
 )
 {
-	Home(HomeRoute, "Accueil", Icons.Outlined.Home, Icons.Filled.Home, true),
-	Accounts(AccountsRoute, "Comptes", Icons.Outlined.AccountBalance, Icons.Filled.AccountBalance, true),
-	Categories(CategoriesRoute, "Catégories", Icons.Outlined.Category, Icons.Filled.Category, false),
-	Settings(SettingsRoute, "Réglages", Icons.Outlined.Settings, Icons.Filled.Settings, false)
+	Home(HomeRoute, "Accueil", LineIcons.Home, true),
+	Accounts(AccountsRoute, "Comptes", LineIcons.Wallet, true),
+	Categories(CategoriesRoute, "Catégories", LineIcons.Grid, false),
+	Settings(SettingsRoute, "Réglages", LineIcons.Sliders, false)
 }

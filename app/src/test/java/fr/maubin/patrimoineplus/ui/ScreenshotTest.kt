@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import fr.maubin.patrimoineplus.ui.accounts.AccountsScreen
+import fr.maubin.patrimoineplus.ui.categories.CategoriesScreen
 import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
 import fr.maubin.patrimoineplus.data.settings.ThemeMode
 import fr.maubin.patrimoineplus.domain.model.AccountType
@@ -124,5 +125,13 @@ class ScreenshotTest
 			{},
 			{}
 		)
+	})
+
+	/*
+		Onglet des catégories : libellé actif le plus long de la pilule.
+	*/
+	@Test
+	fun categories() = captureRoboImage("$kOutDir/categories.png", content = shell(false, false, TopLevelDestination.Categories) {
+		CategoriesScreen()
 	})
 }

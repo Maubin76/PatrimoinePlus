@@ -1,6 +1,15 @@
 package fr.maubin.patrimoineplus.ui.shell
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.runtime.getValue
+import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.height
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -44,7 +53,8 @@ import fr.maubin.patrimoineplus.ui.navigation.TopLevelDestination
 import kotlinx.coroutines.launch
 
 private val kPillClearance  = 96.dp										// pilule (64) + marges (12 + 20)
-private val kEntryClearance = 72.dp										// bouton de saisie (56) + écart (16)
+private val kEntryClearance = 72.dp
+private const val kTabMillis = 220										// changement d'onglet actif										// bouton de saisie (56) + écart (16)
 
 /*
 	Cadre de l'application : le contenu occupe tout l'écran ; par-dessus, en
@@ -96,9 +106,10 @@ fun AppFrame(
 
 /*
 	Pilule de navigation flottante : capsule à ombre douce (liseré en mode
-	sombre, où l'ombre ne se voit pas), icônes seules ;
-	l'onglet actif est posé dans une pastille grise et passe en icône pleine.
-	Chaque onglet est annoncé par son nom à TalkBack.
+	sombre, où l'ombre ne se voit pas), icônes au trait fin. L'onglet actif
+	devient une capsule pleine à l'encre qui s'élargit pour afficher son nom ;
+	les autres restent des icônes grises. Chaque onglet est annoncé par son
+	nom à TalkBack.
 	inSelected : onglet courant
 	inOnSelect : ouvre un onglet
 */
@@ -108,35 +119,75 @@ fun FloatingNavBar(
 	inOnSelect : (TopLevelDestination) -> Unit
 )
 {
-	val vDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f			// mode sombre : l'ombre ne se voit pas
+	val vColors = MaterialTheme.colorScheme								// palette courante
+	val vDark   = vColors.surface.luminance() < 0.5f						// mode sombre : l'ombre ne se voit pas
 	Surface(
 		shape           = CircleShape,
-		color           = MaterialTheme.colorScheme.surfaceBright,
+		color           = vColors.surfaceBright,
 		shadowElevation = 10.dp,
-		border          = if (vDark) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null
+		border          = if (vDark) BorderStroke(1.dp, vColors.outlineVariant) else null
 	) {
 		Row(
-			modifier              = Modifier.padding(8.dp).selectableGroup(),
+			modifier              = Modifier.padding(6.dp).selectableGroup(),
 			horizontalArrangement = Arrangement.spacedBy(8.dp)
 		) {
 			TopLevelDestination.entries.forEach { inDestination ->
-				val vSelected = inDestination == inSelected					// onglet actif
-				Box(
-					modifier         = Modifier
-						.size(width = 68.dp, height = 48.dp)
-						.clip(CircleShape)
-						.background(if (vSelected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceBright)
-						.selectable(selected = vSelected, role = Role.Tab, onClick = { inOnSelect(inDestination) })
-						.semantics { contentDescription = inDestination.label },
-					contentAlignment = Alignment.Center
-				) {
-					Icon(
-						imageVector        = if (vSelected) inDestination.selectedIcon else inDestination.icon,
-						contentDescription = null,
-						tint               = MaterialTheme.colorScheme.onSurface
-					)
-				}
+				NavTab(inDestination, inDestination == inSelected) { inOnSelect(inDestination) }
 			}
+		}
+	}
+}
+
+/*
+	Onglet de la pilule. Actif : capsule à l'encre, icône et nom en couleur
+	du fond. Inactif : icône grise seule, cible de 48 × 52 dp.
+	inDestination : onglet représenté
+	inSelected    : vrai si l'onglet est actif
+	inOnClick     : ouvre l'onglet
+*/
+@Composable
+private fun NavTab(
+	inDestination : TopLevelDestination,
+	inSelected    : Boolean,
+	inOnClick     : () -> Unit
+)
+{
+	val vColors     = MaterialTheme.colorScheme							// palette courante
+	val vContainer  by animateColorAsState(									// fond de l'onglet
+		targetValue   = if (inSelected) vColors.onSurface else vColors.surfaceBright,
+		animationSpec = tween(kTabMillis),
+		label         = "fond onglet"
+	)
+	val vContent    by animateColorAsState(									// couleur de l'icône et du nom
+		targetValue   = if (inSelected) vColors.surface else vColors.onSurfaceVariant,
+		animationSpec = tween(kTabMillis),
+		label         = "contenu onglet"
+	)
+	Row(
+		modifier          = Modifier
+			.height(52.dp)
+			.widthIn(min = 48.dp)
+			.clip(CircleShape)
+			.background(vContainer)
+			.selectable(selected = inSelected, role = Role.Tab, onClick = inOnClick)
+			.semantics { contentDescription = inDestination.label }
+			.animateContentSize(tween(kTabMillis))
+			.padding(horizontal = if (inSelected) 16.dp else 12.dp),
+		verticalAlignment = Alignment.CenterVertically
+	) {
+		Icon(inDestination.icon, contentDescription = null, tint = vContent)
+		AnimatedVisibility(
+			visible = inSelected,
+			enter   = fadeIn(tween(kTabMillis)) + expandHorizontally(tween(kTabMillis)),
+			exit    = fadeOut(tween(kTabMillis / 2)) + shrinkHorizontally(tween(kTabMillis))
+		) {
+			Text(
+				text     = inDestination.label,
+				style    = MaterialTheme.typography.labelLarge,
+				color    = vContent,
+				maxLines = 1,
+				modifier = Modifier.padding(start = 8.dp).clearAndSetSemantics {}
+			)
 		}
 	}
 }
