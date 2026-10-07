@@ -1,15 +1,9 @@
 package fr.maubin.patrimoineplus.ui.shell
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.runtime.getValue
-import androidx.compose.material3.Text
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.height
-import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -23,9 +17,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
@@ -38,23 +32,38 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.State
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.ui.navigation.TopLevelDestination
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 private val kPillClearance  = 96.dp										// pilule (64) + marges (12 + 20)
-private val kEntryClearance = 72.dp
-private const val kTabMillis = 220										// changement d'onglet actif										// bouton de saisie (56) + écart (16)
+private val kEntryClearance = 72.dp										// bouton de saisie (56) + écart (16)
+private val kTabCollapsed   = 48.dp										// largeur d'un onglet au repos
+private val kPadCollapsed   = 12.dp										// marge de l'icône au repos
+private val kPadExpanded    = 16.dp										// marge de l'onglet actif
+private val kTabSpring      = spring<Float>(							// ressort du changement d'onglet, sans rebond
+	dampingRatio = Spring.DampingRatioNoBouncy,
+	stiffness    = Spring.StiffnessMediumLow
+)
 
 /*
 	Cadre de l'application : le contenu occupe tout l'écran ; par-dessus, en
@@ -139,8 +148,11 @@ fun FloatingNavBar(
 }
 
 /*
-	Onglet de la pilule. Actif : capsule à l'encre, icône et nom en couleur
-	du fond. Inactif : icône grise seule, cible de 48 × 52 dp.
+	Onglet de la pilule. Une seule valeur animée (0 au repos, 1 actif, sur un
+	ressort sans rebond) pilote à la fois la largeur, la marge, la couleur et
+	l'opacité du nom. Elle n'est lue qu'aux phases de mise en page et de
+	dessin : l'animation ne recompose pas l'onglet à chaque image. Au repos,
+	icône grise seule, cible de 48 × 52 dp.
 	inDestination : onglet représenté
 	inSelected    : vrai si l'onglet est actif
 	inOnClick     : ouvre l'onglet
@@ -152,45 +164,86 @@ private fun NavTab(
 	inOnClick     : () -> Unit
 )
 {
-	val vColors     = MaterialTheme.colorScheme							// palette courante
-	val vContainer  by animateColorAsState(									// fond de l'onglet
-		targetValue   = if (inSelected) vColors.onSurface else vColors.surfaceBright,
-		animationSpec = tween(kTabMillis),
-		label         = "fond onglet"
-	)
-	val vContent    by animateColorAsState(									// couleur de l'icône et du nom
-		targetValue   = if (inSelected) vColors.surface else vColors.onSurfaceVariant,
-		animationSpec = tween(kTabMillis),
-		label         = "contenu onglet"
+	val vColors   = MaterialTheme.colorScheme								// palette courante
+	val vRest     = vColors.surfaceBright									// fond au repos
+	val vActive   = vColors.onSurface										// fond actif
+	val vProgress = animateFloatAsState(									// 0 au repos, 1 actif
+		targetValue   = if (inSelected) 1f else 0f,
+		animationSpec = kTabSpring,
+		label         = "onglet"
 	)
 	Row(
 		modifier          = Modifier
 			.height(52.dp)
-			.widthIn(min = 48.dp)
 			.clip(CircleShape)
-			.background(vContainer)
+			.drawBehind { drawRect(lerp(vRest, vActive, vProgress.value)) }
 			.selectable(selected = inSelected, role = Role.Tab, onClick = inOnClick)
 			.semantics { contentDescription = inDestination.label }
-			.animateContentSize(tween(kTabMillis))
-			.padding(horizontal = if (inSelected) 16.dp else 12.dp),
+			.tabWidth(vProgress),
 		verticalAlignment = Alignment.CenterVertically
 	) {
-		Icon(inDestination.icon, contentDescription = null, tint = vContent)
-		AnimatedVisibility(
-			visible = inSelected,
-			enter   = fadeIn(tween(kTabMillis)) + expandHorizontally(tween(kTabMillis)),
-			exit    = fadeOut(tween(kTabMillis / 2)) + shrinkHorizontally(tween(kTabMillis))
-		) {
-			Text(
-				text     = inDestination.label,
-				style    = MaterialTheme.typography.labelLarge,
-				color    = vContent,
-				maxLines = 1,
-				modifier = Modifier.padding(start = 8.dp).clearAndSetSemantics {}
-			)
-		}
+		TabIcon(inDestination, vProgress)
+		Text(
+			text     = inDestination.label,
+			style    = MaterialTheme.typography.labelLarge,
+			color    = vColors.surface,
+			maxLines = 1,
+			softWrap = false,
+			modifier = Modifier
+				.padding(start = 8.dp)
+				.graphicsLayer { alpha = vProgress.value }
+				.clearAndSetSemantics {}
+		)
 	}
 }
+
+/*
+	Icône d'onglet : deux exemplaires superposés (gris au repos, couleur du
+	fond quand actif) dont l'opacité se croise, pour animer la teinte sans
+	recomposer.
+	inDestination : onglet représenté
+	inProgress    : avancement de l'animation (0 au repos, 1 actif)
+*/
+@Composable
+private fun TabIcon(
+	inDestination : TopLevelDestination,
+	inProgress    : State<Float>
+)
+{
+	Box {
+		Icon(
+			imageVector        = inDestination.icon,
+			contentDescription = null,
+			tint               = MaterialTheme.colorScheme.onSurfaceVariant,
+			modifier           = Modifier.graphicsLayer { alpha = 1f - inProgress.value }
+		)
+		Icon(
+			imageVector        = inDestination.icon,
+			contentDescription = null,
+			tint               = MaterialTheme.colorScheme.surface,
+			modifier           = Modifier.graphicsLayer { alpha = inProgress.value }
+		)
+	}
+}
+
+/*
+	Largeur d'un onglet interpolée entre le repos (icône seule, 48 dp) et
+	l'état actif (icône et nom) ; le contenu est mesuré une fois à sa largeur
+	naturelle puis découpé par la capsule.
+	inProgress : avancement de l'animation (0 au repos, 1 actif)
+*/
+private fun Modifier.tabWidth(inProgress: State<Float>): Modifier =
+	layout { inMeasurable, inConstraints ->
+		val vPlaceable = inMeasurable.measure(inConstraints.copy(minWidth = 0, maxWidth = Constraints.Infinity))	// contenu entier
+		val vP         = inProgress.value										// avancement
+		val vPadRest   = kPadCollapsed.toPx()									// marge au repos
+		val vPadActive = kPadExpanded.toPx()									// marge active
+		val vCollapsed = kTabCollapsed.toPx()									// largeur au repos
+		val vExpanded  = vPlaceable.width + 2 * vPadActive						// largeur active
+		val vWidth     = (vCollapsed + (vExpanded - vCollapsed) * vP).roundToInt()	// largeur courante
+		val vStart     = (vPadRest + (vPadActive - vPadRest) * vP).roundToInt()	// décalage du contenu
+		layout(vWidth, vPlaceable.height) { vPlaceable.placeRelative(vStart, 0) }
+	}
 
 /*
 	Bouton de saisie : rond noir (blanc en mode sombre), sans ombre.

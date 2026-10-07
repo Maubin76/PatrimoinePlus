@@ -23,8 +23,13 @@ android {
 	}
 
 	buildTypes {
+		// Version optimisée (R8), signée avec la clé de debug pour pouvoir
+		// l'installer directement sur le téléphone : c'est elle qui reflète la
+		// fluidité réelle des animations.
 		release {
-			isMinifyEnabled = false
+			isMinifyEnabled   = true
+			isShrinkResources = true
+			signingConfig     = signingConfigs.getByName("debug")
 			proguardFiles(
 				getDefaultProguardFile("proguard-android-optimize.txt"),
 				"proguard-rules.pro"

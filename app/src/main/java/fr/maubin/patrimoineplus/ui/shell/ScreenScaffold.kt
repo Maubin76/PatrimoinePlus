@@ -64,7 +64,7 @@ fun ScreenScaffold(
 					title          = { Text(inTitle, style = MaterialTheme.typography.titleMedium) },
 					actions        = inActions,
 					scrollBehavior = vScroll,
-					colors         = TopAppBarDefaults.centerAlignedTopAppBarColors(
+					colors         = TopAppBarDefaults.topAppBarColors(
 						containerColor         = vSurface,
 						scrolledContainerColor = vSurface
 					)

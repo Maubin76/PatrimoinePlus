@@ -13,6 +13,8 @@ dans [`doc/SPEC.md`](doc/SPEC.md) ; la couverture des tests dans
 ```sh
 ./gradlew :app:assembleDebug        # APK : app/build/outputs/apk/debug/app-debug.apk
 ./gradlew :app:testDebugUnitTest    # tests JVM
+./gradlew :app:assembleRelease      # APK optimisé (R8), signé avec la clé de debug :
+                                    # app/build/outputs/apk/release/app-release.apk
 ```
 
 ## Socle technique

@@ -29,8 +29,7 @@ import fr.maubin.patrimoineplus.ui.navigation.TopLevelDestination
 import fr.maubin.patrimoineplus.ui.settings.SettingsScreen
 import fr.maubin.patrimoineplus.ui.shell.AppFrame
 
-private const val kFadeInMillis  = 220										// apparition d'un onglet
-private const val kFadeOutMillis = 90										// disparition d'un onglet
+private const val kFadeMillis = 200											// fondu enchaîné entre deux écrans
 
 /*
 	Coque de l'application : mode discret partagé, cadre avec la pilule de
@@ -58,10 +57,10 @@ fun PatrimoineApp(inAppViewModel: AppViewModel = hiltViewModel())
 			NavHost(
 				navController      = vNavController,
 				startDestination   = HomeRoute,
-				enterTransition    = { fadeIn(tween(kFadeInMillis, delayMillis = kFadeOutMillis)) },
-				exitTransition     = { fadeOut(tween(kFadeOutMillis)) },
-				popEnterTransition = { fadeIn(tween(kFadeInMillis, delayMillis = kFadeOutMillis)) },
-				popExitTransition  = { fadeOut(tween(kFadeOutMillis)) }
+				enterTransition    = { fadeIn(tween(kFadeMillis)) },
+				exitTransition     = { fadeOut(tween(kFadeMillis)) },
+				popEnterTransition = { fadeIn(tween(kFadeMillis)) },
+				popExitTransition  = { fadeOut(tween(kFadeMillis)) }
 			) {
 				composable<HomeRoute> {
 					HomeScreen(
