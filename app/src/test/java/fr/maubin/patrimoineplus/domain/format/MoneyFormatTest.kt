@@ -67,4 +67,13 @@ class MoneyFormatTest
 		assertEquals(expected("92_233_720_368_547_758,07~€"), formatEuros(Long.MAX_VALUE))
 		assertEquals(expected("-92_233_720_368_547_758,08~€"), formatEuros(Long.MIN_VALUE))
 	}
+
+	/*
+		Le montant masqué ne révèle ni le signe ni l'ordre de grandeur.
+	*/
+	@Test
+	fun maskedAmount()
+	{
+		assertEquals(expected("\u2022\u2022\u2022\u2022\u2022~€"), kMaskedAmount)
+	}
 }

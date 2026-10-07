@@ -5,6 +5,7 @@ plugins {
 	alias(libs.plugins.kotlin.serialization)
 	alias(libs.plugins.ksp)
 	alias(libs.plugins.hilt)
+	alias(libs.plugins.roborazzi)
 }
 
 android {
@@ -39,6 +40,11 @@ android {
 	buildFeatures {
 		compose = true
 	}
+
+	// Ressources Android disponibles dans les tests JVM (captures Robolectric).
+	testOptions {
+		unitTests.isIncludeAndroidResources = true
+	}
 }
 
 dependencies {
@@ -57,11 +63,19 @@ dependencies {
 	implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
 	implementation(libs.kotlinx.coroutines.android)
 	implementation(libs.kotlinx.serialization.json)
+	implementation(libs.androidx.datastore.preferences)
 	ksp(libs.hilt.compiler)
 	debugImplementation(libs.androidx.compose.ui.tooling)
 
 	testImplementation(libs.junit)
 	testImplementation(libs.kotlinx.coroutines.test)
+	testImplementation(libs.robolectric)
+	testImplementation(libs.roborazzi)
+	testImplementation(libs.roborazzi.compose)
+	testImplementation(libs.androidx.junit)
+	testImplementation(platform(libs.androidx.compose.bom))
+	testImplementation(libs.androidx.compose.ui.test.junit4)
+	debugImplementation(libs.androidx.compose.ui.test.manifest)
 	androidTestImplementation(libs.androidx.junit)
 	androidTestImplementation(libs.androidx.espresso.core)
 }

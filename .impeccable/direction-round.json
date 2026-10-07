@@ -1,0 +1,151 @@
+{
+  "title": "Choisir l'univers visuel de PatrimoinePlus",
+  "question": "Le tirage a désigné « Calculatrice Braun ». Garde-la, prends une alternative, ou relance.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Calculatrice Braun",
+      "kicker": "LE TIRAGE",
+      "lineage": "Calculatrice Braun ET66 et design Dieter Rams (1960-1987)",
+      "thesis": "Le patrimoine affiché comme le résultat d'une addition : tout est calculé, le total vient après le « = ».",
+      "palette": ["#EEECE7", "#2A2724", "#E2A72E", "#5F7F4A", "#B6B1A8"],
+      "materials": ["aluminium mat gris chaud", "touches rondes", "chiffres tabulaires d'afficheur"],
+      "viewport": "Total en très grand précédé d'un rond jaune « = », comptes alignés à droite comme les lignes d'une addition, FAB rond jaune en bas à droite.",
+      "risk": "Remplace les couleurs dynamiques Material You par une palette fixe ; austère si le total n'est pas assez affirmé.",
+      "raised": [
+        {"from": "challenger-specimen", "raise": "Hiérarchie par le seul contraste d'échelle : total géant, libellés petits, pas de piles de cartes."},
+        {"from": "challenger-feed", "raise": "Un mois occupe l'écran ; on passe au suivant d'un glissement horizontal aimanté."},
+        {"from": "challenger-folio", "raise": "Les graphiques gardent la même échelle d'un mois à l'autre, pour comparer sans tromper."},
+        {"from": "challenger-atlas", "raise": "Répartition lue sur une rampe fixe : une barre proportionnelle unique, pas de camembert."},
+        {"from": "challenger-annual", "raise": "Filets de 1 dp au lieu d'ombres et de cartes pour séparer les blocs."}
+      ],
+      "wireframe": {"cols": 12, "rows": 20, "regions": [
+        {"label": "titre", "x": 0, "y": 0, "w": 12, "h": 1},
+        {"label": "= total", "x": 0, "y": 2, "w": 12, "h": 3, "accent": true},
+        {"label": "barre répartition", "x": 0, "y": 6, "w": 12, "h": 1},
+        {"label": "comptes (addition)", "x": 0, "y": 8, "w": 12, "h": 8},
+        {"label": "FAB", "x": 9, "y": 16, "w": 3, "h": 2, "accent": true},
+        {"label": "navigation", "x": 0, "y": 18, "w": 12, "h": 2}
+      ]}
+    },
+    {
+      "id": "model-pick",
+      "label": "Rapport annuel",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "rapports annuels de style typographique suisse",
+      "thesis": "Chaque écran comme une page de rapport annuel : grand chiffre, filets fins, colonnes de chiffres impeccables.",
+      "palette": ["#FAFAF8", "#151515", "#8A8A86", "#1F6F78"],
+      "materials": ["papier blanc couché", "filets 1 px", "grotesque unique"],
+      "viewport": "Total en display à gauche, variation du mois dessous, tableau des comptes en colonnes, FAB pétrole.",
+      "risk": "La direction où aboutissent la plupart des applis de finance épurées : familière, peu distinctive.",
+      "wireframe": {"cols": 12, "rows": 20, "regions": [
+        {"label": "titre", "x": 0, "y": 0, "w": 12, "h": 1},
+        {"label": "total", "x": 0, "y": 2, "w": 8, "h": 3, "accent": true},
+        {"label": "tableau des comptes", "x": 0, "y": 6, "w": 12, "h": 10},
+        {"label": "FAB", "x": 9, "y": 16, "w": 3, "h": 2},
+        {"label": "navigation", "x": 0, "y": 18, "w": 12, "h": 2}
+      ]}
+    },
+    {
+      "id": "challenger-transit",
+      "label": "Plan de lignes",
+      "verdict": "competitive",
+      "lineage": "plans de métro émaillés",
+      "thesis": "Chaque compte est une ligne colorée ; un virement est une correspondance entre deux lignes.",
+      "palette": ["#14213D", "#F4F1EA", "#D7263D", "#2E5EAA", "#F2A541", "#3A9D5D"],
+      "materials": ["émail bleu nuit", "porcelaine blanche", "lignes à 45°"],
+      "viewport": "Total en haut, puis les comptes comme lignes parallèles, les virements du mois dessinés en correspondances.",
+      "case": "Rend le virement à deux jambes visible, mais le bleu nuit glisse vers le look banque que tu refuses.",
+      "risk": "Costume de plan de métro si les lignes envahissent les écrans de saisie.",
+      "hero": "https://impeccable.style/worlds/cards/wayfinding-cartography-signage-midnight-transit-diagram-hero.webp",
+      "wireframe": {"cols": 12, "rows": 20, "regions": [
+        {"label": "total", "x": 0, "y": 1, "w": 12, "h": 3, "accent": true},
+        {"label": "lignes des comptes", "x": 0, "y": 5, "w": 12, "h": 10},
+        {"label": "FAB", "x": 9, "y": 16, "w": 3, "h": 2},
+        {"label": "navigation", "x": 0, "y": 18, "w": 12, "h": 2}
+      ]}
+    },
+    {
+      "id": "challenger-annual",
+      "label": "Planches d'annuel de design",
+      "verdict": "declined",
+      "lineage": "annuels de design imprimés",
+      "thesis": "Une feuille continue de planches repérées par des croix de calage.",
+      "palette": ["#F5F4F6", "#16181A", "#DCDDF3", "#C9C7C4"],
+      "materials": ["papier non couché", "croix de repérage"],
+      "viewport": "Barre de jetons mono, planches en grille.",
+      "case": "Quasi-doublon du Rapport annuel, en plus décoratif.",
+      "kept": "Filets de 1 dp à la place des ombres.",
+      "risk": "Décor d'imprimerie sans rôle sur un écran de saisie.",
+      "hero": "https://impeccable.style/worlds/cards/design-annual-s-plate-section-hero.webp"
+    },
+    {
+      "id": "challenger-specimen",
+      "label": "Spécimen typographique",
+      "verdict": "declined",
+      "lineage": "spécimens de fonderie interactifs",
+      "thesis": "Une lettre géante pilotée par un curseur.",
+      "palette": ["#FAFAF7", "#111111", "#FF4F1F"],
+      "materials": ["papier blanc", "encre noire"],
+      "viewport": "Glyphe plein écran, grille dessous.",
+      "case": "Rien à voir avec la finance personnelle.",
+      "kept": "Hiérarchie par le contraste d'échelle seul.",
+      "risk": "Exercice de style.",
+      "hero": "https://impeccable.style/worlds/cards/variable-font-specimen-hero.webp"
+    },
+    {
+      "id": "challenger-feed",
+      "label": "Flux vertical plein écran",
+      "verdict": "declined",
+      "lineage": "flux vidéo verticaux",
+      "thesis": "Un élément occupe tout l'écran, le suivant à un geste.",
+      "palette": ["#000000", "#FFFFFF"],
+      "materials": ["média plein cadre", "voile bas"],
+      "viewport": "Un élément plein écran, actions à droite.",
+      "case": "Codes de réseau social, contraires au calme voulu.",
+      "kept": "Un mois par écran, glissement aimanté.",
+      "risk": "Ludique, à l'opposé du brief.",
+      "hero": "https://impeccable.style/worlds/cards/pop-culture-shelf-vertical-video-feed-surface-hero.webp"
+    },
+    {
+      "id": "challenger-folio",
+      "label": "Folio botanique",
+      "verdict": "declined",
+      "lineage": "planches botaniques saisonnières",
+      "thesis": "Une plante suivie saison par saison à échelle fixe.",
+      "palette": ["#F3EBDD", "#5B4A3A", "#3F6B3A", "#B4232A"],
+      "materials": ["papier crème", "filets sépia"],
+      "viewport": "Cinq planches alignées sur une même tige.",
+      "case": "Métaphore de croissance trop appuyée pour un outil quotidien.",
+      "kept": "Échelle fixe d'une période à l'autre.",
+      "risk": "Crème et sépia : le rendu par défaut.",
+      "hero": "https://impeccable.style/worlds/cards/editorial-sequence-montage-botanical-folio-season-hero.webp"
+    },
+    {
+      "id": "challenger-atlas",
+      "label": "Atlas céleste",
+      "verdict": "declined",
+      "lineage": "atlas d'étoiles",
+      "thesis": "Des magnitudes en points de diamètre gradué.",
+      "palette": ["#0F1A33", "#F2F2EE", "#E0533B"],
+      "materials": ["fond bleu nuit", "points à la craie"],
+      "viewport": "Carte étoilée avec index.",
+      "case": "Poétique mais illisible pour des montants exacts.",
+      "kept": "Une rampe fixe pour les proportions.",
+      "risk": "Décor nocturne.",
+      "hero": "https://impeccable.style/worlds/cards/notation-diagram-systems-star-atlas-hero.webp"
+    }
+  ],
+  "reroll": {"registers": ["safer", "bolder"]},
+  "buildPath": {"value": "code"},
+  "canon": true,
+  "canonCard": {
+    "label": "Material You standard",
+    "thesis": "Material 3 tel quel : couleurs du fond d'écran, cartes tonales, Roboto.",
+    "palette": ["#FEF7FF", "#1D1B20", "#6750A4", "#E8DEF8"],
+    "materials": ["surfaces tonales", "cartes arrondies"],
+    "viewport": "Carte du total en haut, liste de comptes en cartes, FAB tonal.",
+    "risk": "Indiscernable de n'importe quelle appli Material."
+  },
+  "steer": true
+}

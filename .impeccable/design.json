@@ -1,0 +1,712 @@
+{
+	"schemaVersion": 2,
+	"generatedAt": "2026-10-07T11:56:19+00:00",
+	"title": "Design System: PatrimoinePlus",
+	"extensions": {
+		"colorMeta": {
+			"aluminium": {
+				"role": "neutral",
+				"displayName": "Aluminium",
+				"canonical": "#EEECE7",
+				"mode": "light",
+				"tonalRamp": [
+					"#0C0B08",
+					"#262521",
+					"#43423E",
+					"#63615D",
+					"#84827E",
+					"#A7A5A0",
+					"#CBC9C4",
+					"#F0EEE9"
+				]
+			},
+			"aluminium-lowest": {
+				"role": "neutral",
+				"displayName": "Aluminium le plus clair",
+				"canonical": "#F7F6F2",
+				"mode": "light",
+				"tonalRamp": [
+					"#0C0B09",
+					"#262522",
+					"#43423F",
+					"#62615E",
+					"#83827F",
+					"#A6A5A1",
+					"#CAC9C5",
+					"#EFEEEA"
+				]
+			},
+			"aluminium-low": {
+				"role": "neutral",
+				"displayName": "Aluminium bas",
+				"canonical": "#E8E6E0",
+				"mode": "light",
+				"tonalRamp": [
+					"#0C0B07",
+					"#262521",
+					"#43423D",
+					"#63615C",
+					"#84827D",
+					"#A7A59F",
+					"#CBC9C3",
+					"#F0EEE8"
+				]
+			},
+			"aluminium-mid": {
+				"role": "neutral",
+				"displayName": "Aluminium moyen",
+				"canonical": "#E3E0DA",
+				"mode": "light",
+				"tonalRamp": [
+					"#0D0B07",
+					"#272520",
+					"#44423D",
+					"#63615C",
+					"#85827D",
+					"#A7A59F",
+					"#CCC9C3",
+					"#F1EEE8"
+				]
+			},
+			"aluminium-high": {
+				"role": "neutral",
+				"displayName": "Aluminium haut",
+				"canonical": "#DCD9D2",
+				"mode": "light",
+				"tonalRamp": [
+					"#0D0B07",
+					"#272520",
+					"#44423C",
+					"#64615B",
+					"#85827C",
+					"#A8A59E",
+					"#CCC9C2",
+					"#F1EEE7"
+				]
+			},
+			"aluminium-highest": {
+				"role": "neutral",
+				"displayName": "Aluminium le plus haut",
+				"canonical": "#D5D2CA",
+				"mode": "light",
+				"tonalRamp": [
+					"#0D0B06",
+					"#27251F",
+					"#44423B",
+					"#64615A",
+					"#85827B",
+					"#A8A59D",
+					"#CCC9C1",
+					"#F1EEE6"
+				]
+			},
+			"anthracite": {
+				"role": "primary",
+				"displayName": "Anthracite",
+				"canonical": "#2A2724",
+				"mode": "light",
+				"tonalRamp": [
+					"#0D0B08",
+					"#272421",
+					"#45413E",
+					"#64605D",
+					"#85827E",
+					"#A8A4A0",
+					"#CCC8C4",
+					"#F2EEEA"
+				]
+			},
+			"warm-grey": {
+				"role": "neutral",
+				"displayName": "Gris tiède",
+				"canonical": "#5E5A54",
+				"mode": "light",
+				"tonalRamp": [
+					"#0E0B06",
+					"#28241F",
+					"#45413C",
+					"#65615A",
+					"#86827B",
+					"#A9A49E",
+					"#CDC8C1",
+					"#F2EEE7"
+				]
+			},
+			"rule-light": {
+				"role": "neutral",
+				"displayName": "Filet clair",
+				"canonical": "#CFCBC3",
+				"mode": "light",
+				"tonalRamp": [
+					"#0D0B06",
+					"#28251F",
+					"#45423B",
+					"#64615A",
+					"#86827A",
+					"#A8A59D",
+					"#CDC9C1",
+					"#F2EEE6"
+				]
+			},
+			"outline-light": {
+				"role": "neutral",
+				"displayName": "Contour clair",
+				"canonical": "#8C877F",
+				"mode": "light",
+				"tonalRamp": [
+					"#0E0B06",
+					"#28241E",
+					"#46413A",
+					"#656159",
+					"#87827A",
+					"#A9A49C",
+					"#CEC8C0",
+					"#F3EEE5"
+				]
+			},
+			"equals-yellow": {
+				"role": "primary",
+				"displayName": "Jaune touche égale",
+				"canonical": "#E2A72E",
+				"mode": "both",
+				"tonalRamp": [
+					"#260000",
+					"#471200",
+					"#683300",
+					"#8B5400",
+					"#AF7600",
+					"#D49916",
+					"#FABE4B",
+					"#FFE374"
+				]
+			},
+			"olive": {
+				"role": "secondary",
+				"displayName": "Olive",
+				"canonical": "#5F7F4A",
+				"mode": "light",
+				"tonalRamp": [
+					"#001100",
+					"#112D00",
+					"#2E4B18",
+					"#4D6C38",
+					"#6D8E58",
+					"#8FB17A",
+					"#B3D69D",
+					"#D7FCC1"
+				]
+			},
+			"ochre": {
+				"role": "tertiary",
+				"displayName": "Ocre",
+				"canonical": "#A9742A",
+				"mode": "light",
+				"tonalRamp": [
+					"#240000",
+					"#441500",
+					"#653400",
+					"#875400",
+					"#AB762C",
+					"#D09952",
+					"#F6BD76",
+					"#FFE39B"
+				]
+			},
+			"ochre-container": {
+				"role": "tertiary",
+				"displayName": "Conteneur ocre",
+				"canonical": "#F1DDB8",
+				"mode": "light",
+				"tonalRamp": [
+					"#160800",
+					"#322201",
+					"#503F1F",
+					"#705F3D",
+					"#92805E",
+					"#B6A37F",
+					"#DAC7A2",
+					"#FFECC7"
+				]
+			},
+			"error-red": {
+				"role": "error",
+				"displayName": "Rouge erreur",
+				"canonical": "#B0392B",
+				"mode": "light",
+				"tonalRamp": [
+					"#360000",
+					"#5B0000",
+					"#810000",
+					"#A83124",
+					"#CF5646",
+					"#F87A68",
+					"#FF9F8B",
+					"#FFC4AF"
+				]
+			},
+			"error-container": {
+				"role": "error",
+				"displayName": "Conteneur erreur",
+				"canonical": "#F5D9D3",
+				"mode": "light",
+				"tonalRamp": [
+					"#170604",
+					"#331F1B",
+					"#523C37",
+					"#735B56",
+					"#957C76",
+					"#B89E99",
+					"#DDC2BC",
+					"#FFE7E1"
+				]
+			},
+			"error-ink": {
+				"role": "error",
+				"displayName": "Encre erreur",
+				"canonical": "#5C1A12",
+				"mode": "light",
+				"tonalRamp": [
+					"#280000",
+					"#4A0703",
+					"#6D2920",
+					"#914A3F",
+					"#B66B5F",
+					"#DC8D80",
+					"#FFB1A3",
+					"#FFD6C8"
+				]
+			},
+			"body": {
+				"role": "neutral",
+				"displayName": "Corps brun-noir",
+				"canonical": "#1C1A18",
+				"mode": "dark",
+				"tonalRamp": [
+					"#0D0B09",
+					"#272523",
+					"#44413F",
+					"#63615E",
+					"#84827F",
+					"#A7A4A2",
+					"#CBC8C6",
+					"#F1EEEB"
+				]
+			},
+			"body-lowest": {
+				"role": "neutral",
+				"displayName": "Corps le plus bas",
+				"canonical": "#171513",
+				"mode": "dark",
+				"tonalRamp": [
+					"#0D0B09",
+					"#272522",
+					"#44413F",
+					"#63615E",
+					"#84827F",
+					"#A7A4A2",
+					"#CBC8C6",
+					"#F1EEEB"
+				]
+			},
+			"body-low": {
+				"role": "neutral",
+				"displayName": "Corps bas",
+				"canonical": "#22201E",
+				"mode": "dark",
+				"tonalRamp": [
+					"#0D0B09",
+					"#272523",
+					"#44413F",
+					"#63615E",
+					"#84827F",
+					"#A7A4A2",
+					"#CBC8C6",
+					"#F1EEEB"
+				]
+			},
+			"body-mid": {
+				"role": "neutral",
+				"displayName": "Corps moyen",
+				"canonical": "#282624",
+				"mode": "dark",
+				"tonalRamp": [
+					"#0D0B09",
+					"#272523",
+					"#44413F",
+					"#63615E",
+					"#84827F",
+					"#A7A4A2",
+					"#CBC9C6",
+					"#F1EEEB"
+				]
+			},
+			"body-high": {
+				"role": "neutral",
+				"displayName": "Corps haut",
+				"canonical": "#2E2B29",
+				"mode": "dark",
+				"tonalRamp": [
+					"#0D0B09",
+					"#272422",
+					"#44413F",
+					"#64605E",
+					"#85817F",
+					"#A8A4A2",
+					"#CCC8C6",
+					"#F2EEEB"
+				]
+			},
+			"body-highest": {
+				"role": "neutral",
+				"displayName": "Corps le plus haut",
+				"canonical": "#363330",
+				"mode": "dark",
+				"tonalRamp": [
+					"#0D0B08",
+					"#272422",
+					"#44413E",
+					"#64615D",
+					"#85827E",
+					"#A8A4A1",
+					"#CCC8C5",
+					"#F2EEEA"
+				]
+			},
+			"key-light": {
+				"role": "primary",
+				"displayName": "Gris clair chaud",
+				"canonical": "#ECE8E0",
+				"mode": "dark",
+				"tonalRamp": [
+					"#0D0B06",
+					"#28251F",
+					"#45423B",
+					"#64615A",
+					"#85827B",
+					"#A8A59D",
+					"#CDC9C1",
+					"#F2EEE6"
+				]
+			},
+			"key-grey": {
+				"role": "neutral",
+				"displayName": "Gris clé",
+				"canonical": "#B5AFA6",
+				"mode": "dark",
+				"tonalRamp": [
+					"#0E0A05",
+					"#29241D",
+					"#46413A",
+					"#666058",
+					"#878179",
+					"#AAA49B",
+					"#CEC8BF",
+					"#F4EEE4"
+				]
+			},
+			"rule-dark": {
+				"role": "neutral",
+				"displayName": "Filet sombre",
+				"canonical": "#45413D",
+				"mode": "dark",
+				"tonalRamp": [
+					"#0E0A07",
+					"#282421",
+					"#45413D",
+					"#65605C",
+					"#86817D",
+					"#A9A49F",
+					"#CDC8C3",
+					"#F3EDE8"
+				]
+			},
+			"outline-dark": {
+				"role": "neutral",
+				"displayName": "Contour sombre",
+				"canonical": "#8A847B",
+				"mode": "dark",
+				"tonalRamp": [
+					"#0F0A05",
+					"#29241D",
+					"#464139",
+					"#666058",
+					"#878178",
+					"#AAA49B",
+					"#CFC8BE",
+					"#F4EDE3"
+				]
+			},
+			"olive-light": {
+				"role": "secondary",
+				"displayName": "Olive clair",
+				"canonical": "#9DB884",
+				"mode": "dark",
+				"tonalRamp": [
+					"#021000",
+					"#172C00",
+					"#344A1A",
+					"#526A3A",
+					"#738C5A",
+					"#95AF7C",
+					"#B8D49F",
+					"#DDFAC3"
+				]
+			},
+			"ochre-light": {
+				"role": "tertiary",
+				"displayName": "Ocre clair",
+				"canonical": "#D9A85A",
+				"mode": "dark",
+				"tonalRamp": [
+					"#220000",
+					"#411800",
+					"#623700",
+					"#845700",
+					"#A77926",
+					"#CC9C4D",
+					"#F2C072",
+					"#FFE597"
+				]
+			},
+			"ochre-container-dark": {
+				"role": "tertiary",
+				"displayName": "Conteneur ocre sombre",
+				"canonical": "#4A3816",
+				"mode": "dark",
+				"tonalRamp": [
+					"#160700",
+					"#332200",
+					"#513F1D",
+					"#715E3C",
+					"#947F5C",
+					"#B7A27E",
+					"#DCC6A1",
+					"#FFEBC5"
+				]
+			},
+			"error-salmon": {
+				"role": "error",
+				"displayName": "Saumon erreur",
+				"canonical": "#F0A597",
+				"mode": "dark",
+				"tonalRamp": [
+					"#270000",
+					"#480B05",
+					"#6A2C22",
+					"#8E4C40",
+					"#B36D60",
+					"#D88F82",
+					"#FFB3A5",
+					"#FFD8C9"
+				]
+			}
+		},
+		"typographyMeta": {
+			"display-large": {
+				"displayName": "Afficheur",
+				"purpose": "Total du patrimoine ; premier candidat de la taille ajustée."
+			},
+			"display-medium": {
+				"displayName": "Afficheur moyen",
+				"purpose": "Repli du total quand displayLarge ne tient pas sur une ligne."
+			},
+			"display-small": {
+				"displayName": "Afficheur petit",
+				"purpose": "Repli du total."
+			},
+			"headline-large": {
+				"displayName": "Titre de tête grand",
+				"purpose": "Repli du total."
+			},
+			"headline-medium": {
+				"displayName": "Titre de tête moyen",
+				"purpose": "Dernier repli du total."
+			},
+			"title-large": {
+				"displayName": "Titre d'écran",
+				"purpose": "Titre de la barre du haut."
+			},
+			"title-medium": {
+				"displayName": "Titre de ligne",
+				"purpose": "Nom et montant d'un compte ; titre d'un état vide."
+			},
+			"title-small": {
+				"displayName": "Titre de groupe",
+				"purpose": "Titres de groupes de réglages."
+			},
+			"body-large": {
+				"displayName": "Corps grand",
+				"purpose": "Éléments de liste des réglages."
+			},
+			"body-medium": {
+				"displayName": "Corps",
+				"purpose": "Date de calcul, explications d'état vide."
+			},
+			"label-large": {
+				"displayName": "Libellé",
+				"purpose": "Sous-totaux, boutons."
+			}
+		},
+		"shadows": [],
+		"borders": [
+			{
+				"name": "rule",
+				"value": "1dp solid outlineVariant (#CFCBC3 clair / #45413D sombre)",
+				"purpose": "Unique séparateur : au-dessus de la barre de navigation, sous la barre du haut au défilement, entre opérandes et résultat, entre groupes de réglages."
+			}
+		],
+		"motion": [
+			{
+				"name": "digit-roll",
+				"value": "slide vertical + fondu, tween 320ms (FastOutSlowIn), par caractère repéré depuis la droite",
+				"purpose": "Les chiffres du total roulent quand sa valeur change, vers le haut si le chiffre augmente. Coupure nette si l'échelle d'animation du système vaut 0."
+			},
+			{
+				"name": "mask-crossfade",
+				"value": "fondu enchaîné, tween 180ms",
+				"purpose": "Bascule montant / masque du mode discret ; icône œil."
+			},
+			{
+				"name": "tab-fade-out",
+				"value": "fondu sortant, tween 90ms",
+				"purpose": "Sortie d'un onglet."
+			},
+			{
+				"name": "tab-fade-in",
+				"value": "fondu entrant, tween 220ms, délai 90ms",
+				"purpose": "Entrée d'un onglet, après la sortie du précédent."
+			}
+		],
+		"breakpoints": []
+	},
+	"components": [
+		{
+			"name": "Bouton de saisie (FAB)",
+			"kind": "button",
+			"refersTo": "entry-fab",
+			"description": "Seule touche d'action jaune, ronde, sans ombre ; Accueil et Comptes.",
+			"html": "<button class=\"ds-fab\" aria-label=\"Nouvelle opération\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\"><path d=\"M12 5v14M5 12h14\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg></button>",
+			"css": ".ds-fab{width:56px;height:56px;border-radius:50%;border:none;background:#E2A72E;color:#2A2724;display:grid;place-items:center;box-shadow:none;cursor:pointer;transition:background .15s} .ds-fab:hover{background:#D49C28} .ds-fab:focus-visible{outline:2px solid #2A2724;outline-offset:2px} .ds-fab:active{background:#C8932A}"
+		},
+		{
+			"name": "Touche « = » et afficheur du total",
+			"kind": "custom",
+			"refersTo": "equals-key",
+			"description": "Rond jaune non cliquable qui précède le total, affiché à la plus grande taille qui tient sur une ligne.",
+			"html": "<div class=\"ds-total\"><span class=\"ds-eq\"><i></i><i></i></span><span class=\"ds-total-amount\">76 549,70 €</span></div><div class=\"ds-total-date\">Calculé au 7 octobre 2026</div>",
+			"css": ".ds-total{display:flex;align-items:center;gap:14px;background:#EEECE7;padding:8px 16px} .ds-eq{width:36px;height:36px;border-radius:50%;background:#E2A72E;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;flex:none} .ds-eq i{display:block;width:14px;height:2.5px;border-radius:2px;background:#2A2724} .ds-total-amount{font-family:'Hanken Grotesk',sans-serif;font-size:57px;line-height:64px;font-weight:500;letter-spacing:-0.03em;color:#2A2724;white-space:nowrap} .ds-total-date{font-family:'Hanken Grotesk',sans-serif;background:#EEECE7;padding:0 16px 8px;font-size:14px;line-height:20px;color:#5E5A54}"
+		},
+		{
+			"name": "Barre de répartition",
+			"kind": "custom",
+			"refersTo": "proportion-bar",
+			"description": "Rampe proportionnelle pleine largeur, segments arrondis séparés de 2 dp, sur un rail.",
+			"html": "<div class=\"ds-bar\"><span style=\"flex:3.7;background:#2A2724\"></span><span style=\"flex:45.7;background:#5F7F4A\"></span><span style=\"flex:50.6;background:#A9742A\"></span></div>",
+			"css": ".ds-bar{display:flex;gap:2px;height:8px;border-radius:4px;background:#D5D2CA;width:100%} .ds-bar span{border-radius:4px}"
+		},
+		{
+			"name": "Ligne de compte et sous-total",
+			"kind": "custom",
+			"refersTo": "account-row",
+			"description": "Opérande de l'addition : point de série, nom, montant calé à droite ; sous-total en retrait.",
+			"html": "<div class=\"ds-row\"><span class=\"ds-dot\" style=\"background:#5F7F4A\"></span><span class=\"ds-row-name\">Livret A</span><span class=\"ds-row-amt\">22 950,00 €</span></div><div class=\"ds-sub\"><span>Total livrets</span><span>34 991,18 €</span></div>",
+			"css": ".ds-row,.ds-sub{font-family:'Hanken Grotesk',sans-serif;display:flex;align-items:center;background:#EEECE7;padding:0 16px;color:#2A2724} .ds-row{min-height:52px;font-size:16px;line-height:24px;font-weight:500;letter-spacing:0.15px} .ds-dot{width:10px;height:10px;border-radius:50%;margin-right:14px;flex:none} .ds-row-name{flex:1} .ds-row-amt{margin-left:16px} .ds-sub{min-height:32px;padding-left:40px;justify-content:space-between;font-size:14px;line-height:20px;font-weight:500;color:#5E5A54}"
+		},
+		{
+			"name": "Bouton contour",
+			"kind": "button",
+			"refersTo": "button-outlined",
+			"description": "Action unique d'un état vide.",
+			"html": "<button class=\"ds-btn-outline\">Créer mes comptes</button>",
+			"css": ".ds-btn-outline{font-family:'Hanken Grotesk',sans-serif;height:40px;padding:0 24px;border-radius:20px;border:1px solid #8C877F;background:transparent;color:#2A2724;font-size:14px;font-weight:500;letter-spacing:0.1px;cursor:pointer;transition:background .15s} .ds-btn-outline:hover{background:rgba(42,39,36,.08)} .ds-btn-outline:focus-visible{outline:2px solid #2A2724;outline-offset:2px} .ds-btn-outline:active{background:rgba(42,39,36,.12)}"
+		},
+		{
+			"name": "Barre de navigation",
+			"kind": "nav",
+			"refersTo": "nav-bar",
+			"description": "Quatre onglets sur le fond, filet au-dessus, indicateur pilule sur l'onglet actif.",
+			"html": "<nav class=\"ds-nav\"><a class=\"ds-nav-item is-active\" href=\"#\"><span class=\"ds-ind\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M4 10l8-6 8 6v10h-5v-6H9v6H4z\"/></svg></span>Accueil</a><a class=\"ds-nav-item\" href=\"#\"><span class=\"ds-ind\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M3 9l9-5 9 5M5 9v9M10 9v9M14 9v9M19 9v9M3 20h18\"/></svg></span>Comptes</a></nav>",
+			"css": ".ds-nav{font-family:'Hanken Grotesk',sans-serif;display:flex;justify-content:space-around;background:#EEECE7;border-top:1px solid #CFCBC3;height:80px;align-items:center} .ds-nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:#5E5A54;font-size:12px;font-weight:500;letter-spacing:0.5px} .ds-ind{width:64px;height:32px;border-radius:16px;display:grid;place-items:center;transition:background .2s} .ds-nav-item.is-active{color:#2A2724} .ds-nav-item.is-active .ds-ind{background:#D5D2CA} .ds-nav-item:hover .ds-ind{background:rgba(42,39,36,.08)} .ds-nav-item:focus-visible{outline:2px solid #2A2724;outline-offset:2px}"
+		},
+		{
+			"name": "Barre du haut",
+			"kind": "nav",
+			"refersTo": "top-bar",
+			"description": "Titre et action « œil » sur le fond ; filet seulement quand le contenu défile dessous.",
+			"html": "<header class=\"ds-top is-scrolled\"><span>Patrimoine</span><button class=\"ds-eye\" aria-label=\"Masquer les montants\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg></button></header>",
+			"css": ".ds-top{font-family:'Hanken Grotesk',sans-serif;display:flex;align-items:center;justify-content:space-between;height:64px;padding:0 4px 0 16px;background:#EEECE7;color:#2A2724;font-size:22px;line-height:28px;font-weight:500} .ds-top.is-scrolled{border-bottom:1px solid #CFCBC3} .ds-eye{width:48px;height:48px;border-radius:50%;border:none;background:transparent;color:#5E5A54;display:grid;place-items:center;cursor:pointer} .ds-eye:hover{background:rgba(42,39,36,.08)} .ds-eye:focus-visible{outline:2px solid #2A2724}"
+		},
+		{
+			"name": "État vide",
+			"kind": "custom",
+			"refersTo": "empty-state",
+			"description": "Afficheur remis à zéro, puis ce qui manque, pourquoi, et l'action pour y remédier.",
+			"html": "<div class=\"ds-empty\"><div class=\"ds-empty-display\">– – –,– – €</div><hr><div class=\"ds-empty-title\">Aucun compte à additionner</div><div class=\"ds-empty-body\">Le total se calcule à partir des comptes et de leurs opérations.</div></div>",
+			"css": ".ds-empty{font-family:'Hanken Grotesk',sans-serif;background:#EEECE7;padding:8px 16px;color:#2A2724} .ds-empty-display{font-size:45px;line-height:52px;font-weight:500;letter-spacing:-0.025em;color:#5E5A54} .ds-empty hr{border:none;border-top:1px solid #CFCBC3;margin:24px 0 12px} .ds-empty-title{font-size:16px;line-height:24px;font-weight:500} .ds-empty-body{margin-top:6px;font-size:14px;line-height:20px;color:#5E5A54}"
+		}
+	],
+	"narrative": {
+		"northStar": "La Calculatrice Braun",
+		"overview": "Le patrimoine est le résultat d'une addition, et l'interface le montre comme une calculatrice Braun ET66 dessinée par Dieter Rams : un boîtier aluminium gris chaud (ou brun-noir en sombre), des chiffres anthracite à chasse fixe, et une seule touche jaune, la touche « = », qui précède le résultat et porte l'action. Les comptes s'alignent comme les opérandes d'une addition (point de série, nom, montant calé à droite), un filet de 1 dp les sépare du total, et le total roule chiffre par chiffre comme un afficheur quand sa valeur change.\n\nLe système est plat, dense sans être serré, et sobre en graisses : la hiérarchie vient de la taille seule. Il n'y a ni carte, ni tuile teintée, ni ombre ; les surfaces se séparent par des filets. La palette est fixe : Material You est volontairement écarté pour que le jaune de la touche égale reste identique quel que soit le fond d'écran. Le mode sombre suit le système et reprend exactement les mêmes rôles.\n\nRejet confirmé dans le contrat de direction : l'arrangement par défaut des applis bancaires (carte colorée en tête, tuiles de comptes ombrées, icônes de tirelire).",
+		"keyCharacteristics": [
+			"Palette fixe aluminium / anthracite, un seul jaune « touche égale » réservé à l'action et au résultat.",
+			"Une grotesque unique, Hanken Grotesk, en 400 et 500, chiffres tabulaires natifs.",
+			"Formes rondes pour les touches et les repères (FAB, touche « = », points de série) ; filets de 1 dp au lieu d'ombres.",
+			"Le total s'affiche à la plus grande taille d'afficheur qui tient sur une ligne.",
+			"Mouvement d'afficheur : les chiffres roulent ; coupure nette quand les animations système sont désactivées."
+		],
+		"rules": [
+			{
+				"name": "The One Yellow Rule",
+				"body": "Le jaune touche égale n'apparaît que sur la touche d'action (FAB de saisie) et sur la touche « = » du résultat. Jamais sur un lien, une puce, un surlignage, un graphique ou un état sélectionné.",
+				"section": "colors"
+			},
+			{
+				"name": "The Fixed Palette Rule",
+				"body": "Pas de couleurs dynamiques Material You ; `surfaceTint` est transparent pour qu'aucune élévation ne teinte une surface.",
+				"section": "colors"
+			},
+			{
+				"name": "The Series Rule",
+				"body": "Anthracite, olive et ocre identifient les types de compte (courant, livrets, compte-titres) et n'existent qu'en point de série et en segment de barre ; ce ne sont pas des couleurs décoratives.",
+				"section": "colors"
+			},
+			{
+				"name": "The Scale-Only Rule",
+				"body": "La hiérarchie vient de la taille. Les graisses se limitent à 400 (corps) et 500 (tout le reste) ; la graisse 600 est chargée mais n'a aucun rôle.",
+				"section": "typography"
+			},
+			{
+				"name": "The Tabular Digits Rule",
+				"body": "Tous les montants restent en Hanken Grotesk, dont les dix chiffres ont la même chasse : les montants s'alignent à droite et un chiffre qui roule ne décale pas ses voisins. Ne pas introduire une police à chiffres proportionnels pour un montant.",
+				"section": "typography"
+			},
+			{
+				"name": "The Rule-Not-Shadow Rule",
+				"body": "Toute séparation est un filet de 1 dp ou un espace ; jamais une ombre, une carte ou une teinte de conteneur.",
+				"section": "elevation"
+			},
+			{
+				"name": "The Round Key Rule",
+				"body": "Ce qui se presse comme une touche ou marque une série est un cercle ; aucune forme carrée ou à coins arrondis pour ces rôles.",
+				"section": "shapes"
+			}
+		],
+		"dos": [
+			"**Do** réserver le jaune touche égale (equals-yellow) au FAB de saisie et à la touche « = » du résultat.",
+			"**Do** séparer les zones par un filet de 1 dp en `outlineVariant` ou par l'espace, et laisser chaque surface sur le fond de l'écran.",
+			"**Do** caler les montants à droite en Hanken Grotesk et les faire passer par le composant de montant, pour le format français et le mode discret.",
+			"**Do** dimensionner un chiffre clé à la plus grande taille de l'échelle qui tient sur une ligne, en respectant l'échelle de police du système.",
+			"**Do** identifier un type de compte par un point de série de 10 dp et le même ton dans la barre de répartition (anthracite, olive, ocre).",
+			"**Do** couper net toute animation de chiffre quand l'échelle d'animation du système vaut 0."
+		],
+		"donts": [
+			"**Don't** utiliser les couleurs dynamiques Material You ni teinter une surface par l'élévation.",
+			"**Don't** ajouter d'ombre, de carte, de tuile teintée ou d'élévation au FAB.",
+			"**Don't** mettre le jaune sur un lien, un état sélectionné, un graphique ou un surlignage.",
+			"**Don't** créer de hiérarchie par la graisse : rien au-delà de 500.",
+			"**Don't** afficher un chiffre inventé dans un état vide ; montrer l'afficheur remis à zéro (« – – –,– – € »).",
+			"**Don't** employer olive ou ocre comme couleurs d'accent hors des séries de données."
+		]
+	}
+}

@@ -5,6 +5,7 @@ import kotlin.math.abs
 const val kThousandsSeparator = '\u202F'							// espace fine insécable entre les milliers
 const val kCurrencySeparator  = '\u00A0'							// espace insécable avant le symbole €
 const val kCentsPerEuro       = 100L								// nombre de centimes dans un euro
+const val kMaskedAmount       = "\u2022\u2022\u2022\u2022\u2022\u00A0€"		// montant masqué en mode discret
 
 /*
 	Formate un montant en centimes au format français : « 1 234,56 € ».

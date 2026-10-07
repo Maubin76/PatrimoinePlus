@@ -13,3 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Captures de relecture Impeccable (régénérables)
+/.impeccable/review/
+/.impeccable/questions/

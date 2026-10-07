@@ -20,10 +20,12 @@ dans [`doc/SPEC.md`](doc/SPEC.md) ; la couverture des tests dans
 | Élément          | Choix                                                                    |
 |------------------|--------------------------------------------------------------------------|
 | Langage          | Kotlin (intégré à AGP 9), JVM 17                                         |
-| Interface        | Jetpack Compose + Material 3 (couleurs dynamiques), icônes Material      |
+| Interface        | Jetpack Compose + Material 3, palette fixe « Calculatrice Braun », police Hanken Grotesk |
 | Navigation       | `navigation-compose`, routes typées (`kotlinx.serialization`)             |
 | Injection        | Hilt (KSP)                                                               |
 | Asynchronisme    | Coroutines et Flow                                                       |
+| Réglages         | DataStore Preferences (mode discret)                                     |
+| Captures         | Roborazzi + Robolectric (rendu JVM, sans émulateur)                      |
 | Base de données  | Room (à partir de l'étape 2)                                             |
 | SDK              | minSdk 30, targetSdk 35, compileSdk 37                                   |
 | Versions         | catalogue `gradle/libs.versions.toml`                                    |
@@ -40,7 +42,8 @@ Package racine : `fr.maubin.patrimoineplus`.
 domain/   modèles, règles de saisie, calculs — Kotlin pur, sans Android, testé en JVM
 data/     entités et DAO Room, dépôts (étape 2)
 di/       modules Hilt (horloge, base, dépôts)
-ui/       écrans Compose, ViewModels, thème, navigation
+ui/       écrans Compose, ViewModels, thème, navigation, composants
+data/settings/  réglages DataStore
 ```
 
 Règles :
@@ -50,6 +53,27 @@ Règles :
 - montants en centimes (`Long`), jamais en virgule flottante ;
 - la date courante vient d'une `Clock` injectée, jamais de `LocalDate.now()`
   appelé directement dans la logique.
+
+## Interface
+
+Direction visuelle « Calculatrice Braun » (design Dieter Rams) : le patrimoine
+s'affiche comme le résultat d'une addition, précédé d'une touche « = » jaune.
+
+- Palette fixe (`ui/theme/Color.kt`) : aluminium gris chaud, anthracite, un
+  seul jaune réservé au bouton de saisie et au résultat ; olive et ocre pour
+  les livrets et le compte-titres. Les couleurs dynamiques Material You sont
+  volontairement écartées. Mode sombre : corps brun-noir.
+- Police unique Hanken Grotesk (OFL, `res/font`, licence dans
+  `doc/licenses/`) ; ses chiffres sont à chasse fixe, les montants s'alignent.
+- Séparations par filets de 1 dp, sans ombres ni cartes.
+- Composants : `AmountText` (masqué en mode discret, chiffres qui roulent),
+  `EqualsKey`, `ProportionBar`, `EmptyState`, `ScreenScaffold`.
+- Mode discret : l'œil de la barre du haut ou le réglage masque tous les
+  montants ; mémorisé en DataStore.
+- Contexte de conception : `PRODUCT.md` et `.impeccable/`.
+
+Captures de relecture : `./gradlew :app:recordRoborazziDebug` écrit les PNG
+dans `app/build/outputs/roborazzi/`.
 
 ## Modèle de données
 
