@@ -28,7 +28,7 @@ dans [`doc/SPEC.md`](doc/SPEC.md) ; la couverture des tests dans
 | Asynchronisme    | Coroutines et Flow                                                       |
 | Réglages         | DataStore Preferences (mode discret)                                     |
 | Captures         | Roborazzi + Robolectric (rendu JVM, sans émulateur)                      |
-| Base de données  | Room (à partir de l'étape 2)                                             |
+| Base de données  | Room 2.8, schéma exporté (`app/schemas`)                                  |
 | SDK              | minSdk 30, targetSdk 35, compileSdk 37                                   |
 | Versions         | catalogue `gradle/libs.versions.toml`                                    |
 
@@ -42,7 +42,7 @@ Package racine : `fr.maubin.patrimoineplus`.
 
 ```
 domain/   modèles, règles de saisie, calculs — Kotlin pur, sans Android, testé en JVM
-data/     entités et DAO Room, dépôts (étape 2)
+data/     base Room (db), dépôts (repo), réglages (settings), démonstration (demo)
 di/       modules Hilt (horloge, base, dépôts)
 ui/       écrans Compose, ViewModels, thème, navigation, composants
 data/settings/  réglages DataStore
@@ -86,7 +86,26 @@ dans `app/build/outputs/roborazzi/`.
 
 ## Modèle de données
 
-Voir [`doc/SPEC.md` § 2](doc/SPEC.md#2-modèle-de-données). Implémenté à l'étape 2.
+Détail complet : [`doc/SPEC.md` § 2](doc/SPEC.md#2-modèle-de-données).
+
+- **Base Room** (`data/db`), seule source de données, schéma exporté dans
+  `app/schemas` (version 1). Tables : `account`, `category`, `asset`, `txn`
+  (opérations), `posting` (jambes), `trade` (ordres), `account_statement`
+  (relevés), `asset_price` (cours). Aucun solde ni total stocké.
+- **Comptes** créés dans l'application, trois types : Courant, Épargne, Bourse ;
+  établissement et part détenue (compte joint) facultatifs.
+- **Opérations à jambes** : dépense ou revenu (1 jambe), virement (2 jambes de
+  somme nulle), ordre de bourse (1 jambe + 1 ordre), solde initial.
+- **Montants** en centimes ; quantités et cours en dix-millièmes.
+- **Dépôts** (`data/repo`) : toute opération passe par `TransactionValidator`
+  avant d'atteindre la base ; suppression d'un compte (simple, archivage ou
+  définitive), réaffectation d'une catégorie avant suppression.
+- **Domaine** (`domain/calc`) : `Ledger` (soldes, synthèse mensuelle,
+  synthèse par catégorie), `Portfolio` (PRU, positions, plus-values),
+  `Wealth` (valeur des comptes, patrimoine avec part détenue, séries, écart de
+  relevé).
+- **Démonstration** (`data/demo`) : six mois de données fictives, chargeables
+  depuis les Réglages en version debug seulement.
 
 ## Sauvegarde
 

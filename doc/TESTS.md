@@ -1,28 +1,50 @@
 # Tests
 
-Tous les tests sont des tests JVM (`app/src/test`), lancés par :
+Tous les tests tournent sur la JVM (`app/src/test`), sans émulateur :
 
 ```sh
-./gradlew :app:testDebugUnitTest
+./gradlew :app:testDebugUnitTest        # 64 tests
+./gradlew :app:recordRoborazziDebug     # régénère les captures d'écran
 ```
+
+Les tests de la couche `domain` sont du Kotlin pur. Ceux de la couche `data`
+et les captures utilisent Robolectric (Android simulé sur la JVM).
 
 ## Ce qui est couvert
 
-| Classe de test     | Code testé                         | Ce qui est vérifié |
-|--------------------|------------------------------------|--------------------|
-| `MoneyFormatTest`  | `domain/format/MoneyFormat.kt`     | montant masqué du mode discret ; zéro ; centimes complétés à deux chiffres ; séparateur des milliers (espace fine insécable) ; espace insécable avant « € » ; signe négatif ; signe « + » optionnel et jamais devant zéro ; bornes `Long.MIN_VALUE` / `Long.MAX_VALUE` |
-| `ScreenshotTest`   | écrans Compose (Robolectric)       | **aucune assertion** : produit des captures (accueil clair, sombre, discret, vide ; comptes ; réglages) pour relecture humaine, via `./gradlew :app:recordRoborazziDebug`. Données synthétiques. Pas de comparaison automatique avec des images de référence. |
+| Classe de test | Code testé | Ce qui est vérifié |
+|---|---|---|
+| `MoneyFormatTest` (6) | `domain/format` | format français des montants : centimes, milliers, espaces insécables, signes, bornes `Long` ; montant masqué |
+| `MoneyMathTest` (5) | `domain/calc/MoneyMath` | arrondi commercial symétrique ; part détenue au centime (positif, négatif) ; montant brut quantité × cours ; grands produits sans débordement ; signe et frais des ordres |
+| `LedgerTest` (10) | `domain/calc/Ledger` | solde à une date (jour inclus) ; **ouverture d'un mois = clôture du précédent** ; **invariant ouverture + ventilation = clôture** pour chaque compte et chaque mois ; classement des virements (épargne / internes) des deux côtés ; remboursement ; opérations à venir exclues du solde du jour mais incluses dans la clôture du mois ; synthèse par catégorie (remboursements déduits, tri, pourcentages, bornes) **compte par compte à 100 %** |
+| `PortfolioTest` (8) | `domain/calc/Portfolio` | PRU moyen pondéré frais inclus ; PRU inchangé par une vente ; plus-value réalisée ; espèces = solde ; dernier cours connu à la date (cours postérieur ignoré) ; position sans cours valorisée au prix de revient ; positions initiales ; quantité détenue ; position soldée |
+| `WealthTest` (5) | `domain/calc/Wealth` | patrimoine avec part détenue (joint à 50 %), compte Bourse valorisé, compte archivé inclus ; virement neutre ; répartition par type ; série mensuelle (mois en cours arrêté à la date, opérations à venir exclues) ; écart de relevé |
+| `TransactionValidatorTest` (6) | `domain/rules/TransactionValidator` | chaque nature d'opération valide ; chaque violation : libellé, nombre de jambes, compte inconnu, montant nul, catégorie manquante ou inattendue, virement déséquilibré ou sur un seul compte, compte non Bourse, montant d'ordre incohérent, valeurs d'ordre, actif inconnu, **vente à découvert**, position initiale en vente |
+| `AccountRulesTest` (2) | `domain/rules/AccountRules` | nom et part détenue d'un compte ; réaffectation de catégorie (même nature, autre catégorie) |
+| `DataLayerTest` (10) | `data/db`, `data/repo`, `data/demo` (Room en mémoire) | création de comptes et règles ; ordre, modification ; **aller-retour complet** dépense / virement / ordre ; opération invalide refusée et absente de la base ; modification qui remplace les jambes ; suppression refusée pour un compte utilisé, **contrainte SQL** qui interdit d'orpheliner des jambes ; archivage ; **suppression définitive** (virement supprimé en entier, relevés en cascade) ; réaffectation de catégorie ; un cours par actif et par jour ; chargement et effacement de la démo ; schéma exporté |
+| `DemoDataTest` (2) | `data/demo/DemoData` | toutes les opérations de démo passent les règles de saisie, pour plusieurs dates du jour ; aucun compte à découvert ; une opération à venir ; écart de relevé de 38,20 € |
+| `ScreenshotTest` (10) | écrans Compose | **aucune assertion** : produit des captures (accueil clair, sombre, discret, vide, police à 130 %, **calculé depuis la démo** ; comptes ; catégories ; réglages ; pilule à mi-glissement) pour relecture humaine. |
+
+## Vérifications par mutation (2026-10-07)
+
+Chaque règle a été cassée volontairement, la suite relancée, puis le code restauré.
+
+| Règle cassée | Tests qui ont échoué |
+|---|---|
+| Ouverture d'un mois = solde au 1er du mois (au lieu de la clôture du mois précédent) | `LedgerTest.openingIsPreviousClosing`, `LedgerTest.monthBreakdownAddsUpToClosing` |
+| Virement déséquilibré accepté | `TransactionValidatorTest.transferRules` |
+| Une vente fait sortir tout le prix de revient (PRU faux) | `PortfolioTest.saleKeepsAverageAndRealizesGain`, `PortfolioTest.valuationUsesLastKnownPrice` |
 
 ## Ce qui n'est pas couvert
 
-- **Interface Compose, navigation, injection Hilt** : aucun test automatisé du
-  comportement (clics, navigation, persistance du mode discret, animations).
-  Les captures JVM montrent le rendu statique seulement ; vérification
-  manuelle sur le téléphone.
-- **Tests instrumentés** (`androidTest`) : aucun pour l'instant. La base Room
-  et ses migrations seront testées à l'étape 2 ; le choix entre tests
-  instrumentés et Robolectric y sera documenté.
-
-## Vérifications par mutation
-
-Aucune à ce stade : la première portera sur les calculs de soldes de l'étape 2.
+- **Migrations Room** : il n'y a encore qu'une version du schéma. Le premier
+  changement de schéma devra ajouter une migration et un test qui l'applique
+  sur le schéma 1 exporté (`room-testing` est déjà en place).
+- **Interface** : pas de test automatisé du comportement (clics, glissement,
+  navigation, mode discret persistant, apparence, animations). Les captures ne
+  montrent que des états figés ; vérification manuelle sur le téléphone.
+- **ViewModels** : la combinaison des flux (`HomeViewModel`) n'est pas testée
+  en tant que telle ; sa mise en forme (`toHomeUiState`) l'est indirectement par
+  la capture `home-demo.png`, sans assertion.
+- **DataStore** (mode discret, apparence) : non testé.
+- **Version release (R8)** : construite, jamais exécutée par les tests.

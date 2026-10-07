@@ -70,7 +70,9 @@ Horodatages : millisecondes epoch (`Long`).
 |--------------|---------|--------------------------------------------------|
 | `id`         | TEXT PK | UUID                                             |
 | `name`       | TEXT    |                                                  |
-| `type`       | TEXT    | `CHECKING` (courant), `SAVINGS` (livret), `BROKERAGE` (compte-titres) |
+| `type`       | TEXT    | `CHECKING` (Courant), `SAVINGS` (Épargne), `BROKERAGE` (Bourse) |
+| `institution`| TEXT ?  | établissement (banque, courtier), facultatif     |
+| `sharePercent`| INTEGER | part détenue, 1 à 100 (100 par défaut ; 50 pour un compte joint) |
 | `sortOrder`  | INTEGER | ordre d'affichage                                |
 | `archived`   | INTEGER | masqué des listes de saisie, conservé dans l'historique et le patrimoine |
 | `createdAt`, `updatedAt` | INTEGER |                                    |
@@ -105,7 +107,7 @@ l'opération (virement vers un livret ou un compte-titres), pas à une catégori
 |-----------------|---------|----------------------------------------------|
 | `id`            | TEXT PK | UUID                                         |
 | `transactionId` | TEXT FK | suppression en cascade                       |
-| `accountId`     | TEXT FK | suppression interdite tant qu'il y a des jambes |
+| `accountId`     | TEXT FK | suppression du compte interdite au niveau SQL tant qu'il a des jambes ; la suppression définitive passe par le dépôt, qui efface d'abord les opérations concernées |
 | `amountCents`   | INTEGER | signé : positif = entrée sur le compte       |
 
 **`asset`** — actif (titre, ETF…)
@@ -148,6 +150,24 @@ actif) est scindée en `account_statement` et `asset_price`. Les deux n'ont pas 
 même unité (solde en centimes, cours unitaire) et une colonne « l'un ou l'autre »
 ne peut pas être garantie par une clé étrangère.
 
+### 2.1 bis Règles de gestion (décidées le 2026-10-07)
+
+- **Comptes** : créés, modifiés et supprimés dans l'application ; trois types,
+  Courant, Épargne, Bourse. Aucun compte n'est déclaré dans le code.
+- **Suppression d'un compte** : un compte sans opération se supprime ; sinon on
+  l'**archive** (par défaut) ou on le **supprime définitivement** après double
+  confirmation, avec toutes ses opérations — un virement est alors supprimé en
+  entier, ce qui modifie aussi l'autre compte.
+- **Suppression d'une catégorie utilisée** : ses opérations sont d'abord
+  **réaffectées** à une autre catégorie de même nature ; l'archivage reste possible.
+- **Actifs** : catalogue partagé entre comptes Bourse ; un cours saisi une fois
+  valorise l'actif partout.
+- **Épargne** : valeur = solde des opérations ; un relevé sert de contrôle
+  (écart affiché, opération d'ajustement générée sur demande).
+- **Opérations à venir** : une date future est permise ; l'opération est « à
+  venir », exclue du solde du jour, incluse dans la clôture de son mois.
+- **Données de démonstration** : bouton en version debug seulement.
+
 ### 2.2 Types d'opérations et invariants
 
 Vérifiés par la couche `domain` avant tout enregistrement (règles de saisie
@@ -174,8 +194,9 @@ L'utilisateur ne saisit jamais de signe : il est déduit du type d'opération.
   - *virements internes* : autres virements (entre deux comptes courants) ;
   - *ordres* : jambes `TRADE` (compte-titres uniquement).
   Invariant testé : ouverture + Σ ventilation = clôture.
-- **Synthèse par catégorie** : dépense nette par catégorie sur une période
-  (remboursements déduits), triée, avec la part en %.
+- **Synthèse par catégorie** : calculée **compte par compte**, à 100 % (la part
+  détenue ne s'applique qu'au patrimoine) : dépense nette par catégorie sur une
+  période (remboursements déduits), triée, avec la part en %.
 - **Compte-titres**, à une date :
   - espèces = solde du compte ;
   - par actif : quantité détenue, **PRU moyen pondéré frais inclus** (inchangé
@@ -186,8 +207,10 @@ L'utilisateur ne saisit jamais de signe : il est déduit du type d'opération.
   - plus-value réalisée d'une vente = produit net − quantité × PRU.
 - **Livret** : écart = relevé − solde calculé à la date du relevé.
   Sur demande, génération d'une opération « Intérêts » égale à l'écart.
-- **Patrimoine à une date** = Σ soldes des comptes courants et livrets
-  + Σ valeurs des comptes-titres (comptes archivés compris).
+- **Valeur d'un compte à une date** : solde pour Courant et Épargne ; espèces
+  + positions valorisées pour Bourse.
+- **Patrimoine à une date** = Σ (valeur du compte × part détenue), comptes
+  archivés compris, arrondi au centime par compte.
 - **Séries de graphiques** : une valeur par fin de mois, de la première
   opération jusqu'au mois courant ; répartition par type de compte.
 
@@ -256,7 +279,7 @@ L'utilisateur ne saisit jamais de signe : il est déduit du type d'opération.
 |-------|---------|
 | 0 | Cadrage, cette spécification |
 | 1 | Socle : Kotlin, Compose, Material 3, Hilt, KSP, navigation ; package `fr.maubin.patrimoineplus` ; versions SDK ; `allowBackup=false` ; écran de démarrage ; un test JVM ; README |
-| 2 | Modèle : entités, DAO, base Room (schéma exporté), dépôts ; `domain` : règles de saisie, soldes mensuels, synthèses par catégorie, compte-titres (PRU, valeur, plus-values), patrimoine, séries ; tests JVM complets ; vérification par mutation ; `doc/TESTS.md` |
+| 2 | Modèle : entités, DAO, base Room (schéma exporté), dépôts ; `domain` : règles de saisie, soldes mensuels, synthèses par catégorie, compte-titres (PRU, valeur, plus-values), patrimoine (part détenue), séries ; tests JVM complets ; vérification par mutation ; `doc/TESTS.md` ; Accueil branché sur la base ; données de démo (debug) |
 | 3 | Comptes et catégories : création, modification, archivage, ordre ; assistant du premier lancement et soldes initiaux |
 | 4 | Compte courant, vue mois par mois : navigation entre mois, synthèse, saisie / modification / suppression (unitaire et multiple), répartition par catégorie, évolution du solde |
 | 5 | Virements en une saisie ; livrets (intérêts, relevés, écart) ; compte-titres (actifs, ordres, relevés de cours, positions, plus-values) |

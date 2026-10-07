@@ -12,7 +12,12 @@ import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
 import fr.maubin.patrimoineplus.data.settings.ThemeMode
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.ui.home.HomeAccountLine
+import fr.maubin.patrimoineplus.data.demo.buildDemoData
+import fr.maubin.patrimoineplus.domain.calc.Ledger
+import fr.maubin.patrimoineplus.domain.calc.wealthAt
 import fr.maubin.patrimoineplus.ui.home.HomeContent
+import fr.maubin.patrimoineplus.ui.home.toHomeUiState
+import java.time.LocalDate
 import fr.maubin.patrimoineplus.ui.home.HomeGroup
 import fr.maubin.patrimoineplus.ui.home.HomeUiState
 import fr.maubin.patrimoineplus.ui.home.kPreviewState
@@ -125,8 +130,8 @@ class ScreenshotTest
 			HomeUiState(
 				asOf   = "7 octobre 2026",
 				groups = listOf(
-					HomeGroup(AccountType.CHECKING, listOf(HomeAccountLine("Compte joint du ménage", 1_284_312))),
-					HomeGroup(AccountType.BROKERAGE, listOf(HomeAccountLine("PEA", 123_456_789)))
+					HomeGroup(AccountType.CHECKING, listOf(HomeAccountLine("Compte joint du ménage", "Courant · 50 %", 2_568_624, 1_284_312))),
+					HomeGroup(AccountType.BROKERAGE, listOf(HomeAccountLine("PEA", "Bourse", 123_456_789)))
 				)
 			),
 			{},
@@ -150,4 +155,19 @@ class ScreenshotTest
 	fun navMidSwipe() = captureRoboImage("$kOutDir/nav-mi-glissement.png", content = shell(false, false, TopLevelDestination.Home, 0.5f) {
 		HomeContent(kPreviewState, {}, {})
 	})
+
+	/*
+		Accueil calculé de bout en bout à partir des données de démonstration
+		(domaine réel : soldes, part détenue, valorisation du PEA).
+	*/
+	@Test
+	fun homeFromDemo()
+	{
+		val vToday = LocalDate.parse("2026-10-07")								// date de calcul
+		val vDemo  = buildDemoData(vToday)										// démonstration
+		val vState = toHomeUiState(wealthAt(vDemo.accounts, Ledger(vDemo.transactions), vToday, vDemo.prices))	// état calculé
+		captureRoboImage("$kOutDir/home-demo.png", content = shell(false, false, TopLevelDestination.Home) {
+			HomeContent(vState, {}, {})
+		})
+	}
 }

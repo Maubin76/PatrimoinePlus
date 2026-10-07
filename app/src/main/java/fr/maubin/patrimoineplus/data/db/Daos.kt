@@ -1,0 +1,278 @@
+package fr.maubin.patrimoineplus.data.db
+
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Transaction
+import androidx.room.Update
+import androidx.room.Upsert
+import kotlinx.coroutines.flow.Flow
+
+/*
+	Accès aux comptes.
+*/
+@Dao
+interface AccountDao
+{
+	// Tous les comptes, dans l'ordre d'affichage, mis à jour en continu.
+	@Query("SELECT * FROM account ORDER BY sortOrder, name")
+	fun observeAll(): Flow<List<AccountEntity>>
+
+	/*
+		Un compte par identifiant.
+		inId : identifiant
+	*/
+	@Query("SELECT * FROM account WHERE id = :inId")
+	suspend fun getById(inId: String): AccountEntity?
+
+	/*
+		Ajoute un compte.
+		inAccount : compte
+	*/
+	@Insert
+	suspend fun insert(inAccount: AccountEntity)
+
+	/*
+		Met à jour un compte.
+		inAccount : compte
+	*/
+	@Update
+	suspend fun update(inAccount: AccountEntity)
+
+	/*
+		Supprime un compte (refusé par la base s'il a des jambes).
+		inId : identifiant
+	*/
+	@Query("DELETE FROM account WHERE id = :inId")
+	suspend fun deleteById(inId: String)
+
+	// Plus grand ordre d'affichage utilisé ; -1 sans compte.
+	@Query("SELECT COALESCE(MAX(sortOrder), -1) FROM account")
+	suspend fun maxSortOrder(): Int
+
+	/*
+		Opérations qui ont au moins une jambe sur un compte.
+		inId : compte
+	*/
+	@Query("SELECT DISTINCT transactionId FROM posting WHERE accountId = :inId")
+	suspend fun transactionIdsOf(inId: String): List<String>
+
+	/*
+		Change l'ordre d'affichage d'un compte.
+		inId    : compte
+		inOrder : nouvel ordre
+		inNow   : horodatage de modification
+	*/
+	@Query("UPDATE account SET sortOrder = :inOrder, updatedAt = :inNow WHERE id = :inId")
+	suspend fun setSortOrder(inId: String, inOrder: Int, inNow: Long)
+}
+
+/*
+	Accès aux catégories.
+*/
+@Dao
+interface CategoryDao
+{
+	// Toutes les catégories, dans l'ordre d'affichage.
+	@Query("SELECT * FROM category ORDER BY kind, sortOrder, name")
+	fun observeAll(): Flow<List<CategoryEntity>>
+
+	/*
+		Une catégorie par identifiant.
+		inId : identifiant
+	*/
+	@Query("SELECT * FROM category WHERE id = :inId")
+	suspend fun getById(inId: String): CategoryEntity?
+
+	/*
+		Ajoute des catégories.
+		inCategories : catégories
+	*/
+	@Insert
+	suspend fun insertAll(inCategories: List<CategoryEntity>)
+
+	/*
+		Met à jour une catégorie.
+		inCategory : catégorie
+	*/
+	@Update
+	suspend fun update(inCategory: CategoryEntity)
+
+	/*
+		Déplace toutes les opérations d'une catégorie vers une autre.
+		inFrom : catégorie quittée
+		inTo   : catégorie de destination
+		inNow  : horodatage de modification
+	*/
+	@Query("UPDATE txn SET categoryId = :inTo, updatedAt = :inNow WHERE categoryId = :inFrom")
+	suspend fun reassign(inFrom: String, inTo: String, inNow: Long)
+
+	/*
+		Nombre d'opérations qui utilisent une catégorie.
+		inId : catégorie
+	*/
+	@Query("SELECT COUNT(*) FROM txn WHERE categoryId = :inId")
+	suspend fun usage(inId: String): Int
+
+	/*
+		Supprime une catégorie (refusé par la base si elle est utilisée).
+		inId : identifiant
+	*/
+	@Query("DELETE FROM category WHERE id = :inId")
+	suspend fun deleteById(inId: String)
+}
+
+/*
+	Accès aux opérations, avec leurs jambes et leurs ordres.
+*/
+@Dao
+interface TransactionDao
+{
+	// Toutes les opérations complètes, mises à jour en continu.
+	@Transaction
+	@Query("SELECT * FROM txn ORDER BY date, createdAt")
+	fun observeAll(): Flow<List<TransactionWithDetails>>
+
+	// Toutes les opérations complètes, lues une fois.
+	@Transaction
+	@Query("SELECT * FROM txn ORDER BY date, createdAt")
+	suspend fun getAll(): List<TransactionWithDetails>
+
+	/*
+		Une opération par identifiant.
+		inId : identifiant
+	*/
+	@Query("SELECT * FROM txn WHERE id = :inId")
+	suspend fun getById(inId: String): TransactionEntity?
+
+	/*
+		Ajoute ou remplace l'en-tête d'une opération.
+		inTx : opération
+	*/
+	@Upsert
+	suspend fun upsertHeader(inTx: TransactionEntity)
+
+	/*
+		Ajoute des jambes.
+		inPostings : jambes
+	*/
+	@Insert
+	suspend fun insertPostings(inPostings: List<PostingEntity>)
+
+	/*
+		Ajoute des ordres.
+		inTrades : ordres
+	*/
+	@Insert
+	suspend fun insertTrades(inTrades: List<TradeEntity>)
+
+	/*
+		Supprime les jambes d'une opération.
+		inId : opération
+	*/
+	@Query("DELETE FROM posting WHERE transactionId = :inId")
+	suspend fun deletePostingsOf(inId: String)
+
+	/*
+		Supprime les ordres d'une opération.
+		inId : opération
+	*/
+	@Query("DELETE FROM trade WHERE transactionId = :inId")
+	suspend fun deleteTradesOf(inId: String)
+
+	/*
+		Supprime des opérations (jambes et ordres suivent en cascade).
+		inIds : identifiants
+	*/
+	@Query("DELETE FROM txn WHERE id IN (:inIds)")
+	suspend fun deleteByIds(inIds: List<String>)
+
+	/*
+		Enregistre une opération complète, en remplaçant ses jambes et ordres.
+		inTx       : en-tête
+		inPostings : jambes
+		inTrades   : ordres
+	*/
+	@Transaction
+	suspend fun save(
+		inTx       : TransactionEntity,
+		inPostings : List<PostingEntity>,
+		inTrades   : List<TradeEntity>
+	)
+	{
+		upsertHeader(inTx)
+		deletePostingsOf(inTx.id)
+		deleteTradesOf(inTx.id)
+		insertPostings(inPostings)
+		insertTrades(inTrades)
+	}
+}
+
+/*
+	Accès aux actifs et à leurs cours.
+*/
+@Dao
+interface AssetDao
+{
+	// Tous les actifs, par nom.
+	@Query("SELECT * FROM asset ORDER BY name")
+	fun observeAll(): Flow<List<AssetEntity>>
+
+	// Tous les cours relevés.
+	@Query("SELECT * FROM asset_price ORDER BY assetId, date")
+	fun observePrices(): Flow<List<AssetPriceEntity>>
+
+	/*
+		Ajoute des actifs.
+		inAssets : actifs
+	*/
+	@Insert
+	suspend fun insertAll(inAssets: List<AssetEntity>)
+
+	/*
+		Met à jour un actif.
+		inAsset : actif
+	*/
+	@Update
+	suspend fun update(inAsset: AssetEntity)
+
+	/*
+		Enregistre un cours ; remplace celui du même jour pour le même actif.
+		inPrice : cours
+	*/
+	@Insert(onConflict = OnConflictStrategy.REPLACE)
+	suspend fun putPrice(inPrice: AssetPriceEntity)
+
+	/*
+		Supprime un cours.
+		inId : identifiant
+	*/
+	@Query("DELETE FROM asset_price WHERE id = :inId")
+	suspend fun deletePrice(inId: String)
+}
+
+/*
+	Accès aux relevés de solde.
+*/
+@Dao
+interface StatementDao
+{
+	// Tous les relevés.
+	@Query("SELECT * FROM account_statement ORDER BY accountId, date")
+	fun observeAll(): Flow<List<AccountStatementEntity>>
+
+	/*
+		Ajoute ou remplace un relevé.
+		inStatement : relevé
+	*/
+	@Upsert
+	suspend fun upsert(inStatement: AccountStatementEntity)
+
+	/*
+		Supprime un relevé.
+		inId : identifiant
+	*/
+	@Query("DELETE FROM account_statement WHERE id = :inId")
+	suspend fun deleteById(inId: String)
+}

@@ -27,6 +27,9 @@ import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
 import fr.maubin.patrimoineplus.ui.home.HomeScreen
 import fr.maubin.patrimoineplus.ui.navigation.MainRoute
 import fr.maubin.patrimoineplus.ui.navigation.TopLevelDestination
+import fr.maubin.patrimoineplus.BuildConfig
+import fr.maubin.patrimoineplus.ui.settings.DemoActions
+import fr.maubin.patrimoineplus.ui.settings.DemoViewModel
 import fr.maubin.patrimoineplus.ui.settings.SettingsScreen
 import fr.maubin.patrimoineplus.ui.shell.AppFrame
 import kotlinx.coroutines.flow.drop
@@ -108,7 +111,8 @@ private fun MainTabs(inAppViewModel: AppViewModel)
 					inThemeMode   = vThemeMode,
 					inOnThemeMode = inAppViewModel::setThemeMode,
 					inHidden      = vHidden,
-					inOnHidden    = inAppViewModel::setAmountsHidden
+					inOnHidden    = inAppViewModel::setAmountsHidden,
+					inDemo        = demoActions(vSnackbar)
 				)
 			}
 		}
@@ -122,3 +126,22 @@ private fun MainTabs(inAppViewModel: AppViewModel)
 */
 private fun pagerPosition(inPager: PagerState): Float =
 	inPager.currentPage + inPager.currentPageOffsetFraction
+
+/*
+	Actions de démonstration, en version debug seulement ; null en release.
+	inSnackbar : hôte où confirmer l'action
+*/
+@Composable
+private fun demoActions(inSnackbar: SnackbarHostState): DemoActions?
+{
+	if (!BuildConfig.DEBUG)
+	{
+		return null
+	}
+	val vDemo  = hiltViewModel<DemoViewModel>()								// actions de démo
+	val vScope = rememberCoroutineScope()										// portée des messages
+	return DemoActions(
+		onLoad  = { vDemo.loadDemo { vScope.launch { inSnackbar.showSnackbar("Données de démonstration chargées.") } } },
+		onClear = { vDemo.clearAll { vScope.launch { inSnackbar.showSnackbar("Toutes les données ont été effacées.") } } }
+	)
+}

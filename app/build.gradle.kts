@@ -5,6 +5,7 @@ plugins {
 	alias(libs.plugins.kotlin.serialization)
 	alias(libs.plugins.ksp)
 	alias(libs.plugins.hilt)
+	alias(libs.plugins.room)
 	alias(libs.plugins.roborazzi)
 }
 
@@ -43,7 +44,8 @@ android {
 	}
 
 	buildFeatures {
-		compose = true
+		compose     = true
+		buildConfig = true
 	}
 
 	// Ressources Android disponibles dans les tests JVM (captures Robolectric).
@@ -70,11 +72,15 @@ dependencies {
 	implementation(libs.kotlinx.serialization.json)
 	implementation(libs.androidx.datastore.preferences)
 	ksp(libs.hilt.compiler)
+	implementation(libs.androidx.room.runtime)
+	implementation(libs.androidx.room.ktx)
+	ksp(libs.androidx.room.compiler)
 	debugImplementation(libs.androidx.compose.ui.tooling)
 
 	testImplementation(libs.junit)
 	testImplementation(libs.kotlinx.coroutines.test)
 	testImplementation(libs.robolectric)
+	testImplementation(libs.androidx.room.testing)
 	testImplementation(libs.roborazzi)
 	testImplementation(libs.roborazzi.compose)
 	testImplementation(libs.androidx.junit)
@@ -83,4 +89,9 @@ dependencies {
 	debugImplementation(libs.androidx.compose.ui.test.manifest)
 	androidTestImplementation(libs.androidx.junit)
 	androidTestImplementation(libs.androidx.espresso.core)
+}
+
+// Schéma Room exporté et versionné : toute évolution passe par une migration.
+room {
+	schemaDirectory("$projectDir/schemas")
 }

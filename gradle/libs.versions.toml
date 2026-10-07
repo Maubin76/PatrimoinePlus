@@ -12,6 +12,7 @@ coreKtx               = "1.19.1"
 coroutines            = "1.11.0"
 serialization         = "1.11.0"
 datastore             = "1.2.1"
+room                  = "2.8.5"
 roborazzi             = "1.76.0"
 robolectric           = "4.17"
 junit                 = "4.13.2"
@@ -43,6 +44,10 @@ roborazzi-compose                      = { group = "io.github.takahirom.roborazz
 robolectric                            = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 androidx-compose-ui-test-junit4        = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-compose-ui-test-manifest      = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-room-runtime                  = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-room-ktx                      = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+androidx-room-compiler                 = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-room-testing                  = { group = "androidx.room", name = "room-testing", version.ref = "room" }
 junit                                  = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit                         = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core                 = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -53,4 +58,5 @@ kotlin-serialization  = { id = "org.jetbrains.kotlin.plugin.serialization", vers
 kotlin-compose        = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp                   = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 roborazzi             = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
+room                  = { id = "androidx.room", version.ref = "room" }
 hilt                  = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

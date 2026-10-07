@@ -13,7 +13,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -38,13 +45,15 @@ import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
 	inOnThemeMode : change l'apparence
 	inHidden      : vrai si le mode discret est actif
 	inOnHidden    : active ou désactive le mode discret
+	inDemo        : actions de démonstration ; null en version release
 */
 @Composable
 fun SettingsScreen(
 	inThemeMode   : ThemeMode,
 	inOnThemeMode : (ThemeMode) -> Unit,
 	inHidden      : Boolean,
-	inOnHidden    : (Boolean) -> Unit
+	inOnHidden    : (Boolean) -> Unit,
+	inDemo        : DemoActions? = null
 )
 {
 	ScreenScaffold(inTitle = "Réglages") { inPadding ->
@@ -98,6 +107,11 @@ fun SettingsScreen(
 				UpcomingRow("Exporter", "Fichier JSON complet, rangé où vous voulez (étape 7).")
 				HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = MaterialTheme.colorScheme.outlineVariant)
 				UpcomingRow("Importer", "Remplace toutes les données par celles d’un export (étape 7).")
+			}
+			if (inDemo != null)
+			{
+				Spacer(Modifier.height(32.dp))
+				DemoSection(inDemo)
 			}
 		}
 	}
@@ -183,5 +197,58 @@ private fun ThemeModeSelector(
 				label    = { Text(inEntry.label) }
 			)
 		}
+	}
+}
+
+/*
+	Actions de démonstration (version debug seulement).
+	onLoad  : remplace les données par la démonstration
+	onClear : efface toutes les données
+*/
+data class DemoActions(
+	val onLoad  : () -> Unit,
+	val onClear : () -> Unit
+)
+
+/*
+	Section « Démonstration » : charger des données fictives ou tout effacer.
+	L'effacement demande une confirmation : il est irréversible.
+	inDemo : actions de démonstration
+*/
+@Composable
+private fun DemoSection(inDemo: DemoActions)
+{
+	var vAsk by remember { mutableStateOf<String?>(null) }						// action à confirmer
+	SectionHeader(inTitle = "Démonstration")
+	Spacer(Modifier.height(8.dp))
+	BorderedCard {
+		Column(Modifier.padding(20.dp)) {
+			SettingText(
+				inTitle  = "Données fictives (version debug)",
+				inDetail = "Six mois de comptes et d’opérations inventés, pour essayer l’appli. Remplacent toutes les données.",
+				inMuted  = false
+			)
+			Spacer(Modifier.height(16.dp))
+			Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+				OutlinedButton(onClick = { vAsk = "load" }) { Text("Charger la démo") }
+				OutlinedButton(onClick = { vAsk = "clear" }) { Text("Tout effacer") }
+			}
+		}
+	}
+	if (vAsk != null)
+	{
+		val vLoad = vAsk == "load"												// chargement ou effacement
+		AlertDialog(
+			onDismissRequest = { vAsk = null },
+			title            = { Text(if (vLoad) "Charger la démo ?" else "Tout effacer ?") },
+			text             = { Text(if (vLoad) "Toutes les données actuelles seront remplacées par des données fictives." else "Toutes les données seront supprimées. C’est irréversible.") },
+			confirmButton    = {
+				TextButton(onClick = {
+					vAsk = null
+					if (vLoad) inDemo.onLoad() else inDemo.onClear()
+				}) { Text(if (vLoad) "Charger" else "Effacer") }
+			},
+			dismissButton    = { TextButton(onClick = { vAsk = null }) { Text("Annuler") } }
+		)
 	}
 }

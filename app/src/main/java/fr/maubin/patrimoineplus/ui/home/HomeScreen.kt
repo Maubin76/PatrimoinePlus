@@ -209,28 +209,25 @@ private fun AccountsCard(
 		}
 		else
 		{
-			val vLines = inState.groups.flatMap { inGroup -> inGroup.lines.map { inGroup.type to it } }	// comptes à plat
-			vLines.forEachIndexed { inIndex, (inType, inLine) ->
+			val vLines = inState.groups.flatMap { it.lines }							// comptes à plat
+			vLines.forEachIndexed { inIndex, inLine ->
 				if (inIndex > 0)
 				{
 					HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = MaterialTheme.colorScheme.outlineVariant)
 				}
-				AccountRow(inLine, inType)
+				AccountRow(inLine)
 			}
 		}
 	}
 }
 
 /*
-	Ligne d'un compte : nom et type à gauche, montant à droite.
+	Ligne d'un compte : nom et détail (type, établissement, part détenue) à
+	gauche, valeur entière du compte à droite.
 	inLine : compte affiché
-	inType : type du compte
 */
 @Composable
-private fun AccountRow(
-	inLine : HomeAccountLine,
-	inType : AccountType
-)
+private fun AccountRow(inLine: HomeAccountLine)
 {
 	Row(
 		modifier          = Modifier
@@ -247,16 +244,16 @@ private fun AccountRow(
 				overflow = TextOverflow.Ellipsis
 			)
 			Text(
-				text  = typeName(inType),
+				text  = inLine.detail,
 				style = MaterialTheme.typography.bodyMedium,
 				color = MaterialTheme.colorScheme.onSurfaceVariant
 			)
 		}
 		Spacer(Modifier.width(16.dp))
 		AmountText(
-			inCents = inLine.cents,
+			inCents = inLine.valueCents,
 			inStyle = MaterialTheme.typography.titleMedium,
-			inColor = if (inLine.cents < 0) MaterialTheme.colorScheme.error else Color.Unspecified
+			inColor = if (inLine.valueCents < 0) MaterialTheme.colorScheme.error else Color.Unspecified
 		)
 	}
 }
@@ -291,7 +288,7 @@ private fun RepartitionBlock(inState: HomeUiState)
 					modifier = Modifier.weight(1f)
 				)
 				Text(
-					text  = "$vPercent %",
+					text  = "$vPercent\u202F%",
 					style = MaterialTheme.typography.bodyLarge,
 					color = MaterialTheme.colorScheme.onSurfaceVariant
 				)
@@ -319,21 +316,9 @@ private fun repartitionDescription(
 	val vTotal = inState.groups.sumOf { maxOf(it.subtotalCents, 0L) }	// base des pourcentages
 	return "Répartition : " + inState.groups.joinToString(", ") { inGroup ->
 		val vPercent = if (vTotal > 0) inGroup.subtotalCents.coerceAtLeast(0L) * 100 / vTotal else 0L	// part arrondie
-		"${inGroup.type.label} $vPercent %"
+		"${inGroup.type.label} $vPercent\u202F%"
 	}
 }
-
-/*
-	Nom d'un type de compte au singulier, sous le nom du compte.
-	inType : type de compte
-*/
-private fun typeName(inType: AccountType): String =
-	when (inType)
-	{
-		AccountType.CHECKING  -> "Compte courant"
-		AccountType.SAVINGS   -> "Livret"
-		AccountType.BROKERAGE -> "Compte-titres"
-	}
 
 /*
 	Couleur de série d'un type de compte : noir, gris moyen, gris clair.
@@ -352,9 +337,12 @@ fun typeColor(inType: AccountType): Color =
 internal val kPreviewState = HomeUiState(
 	asOf   = "7 octobre 2026",
 	groups = listOf(
-		HomeGroup(AccountType.CHECKING, listOf(HomeAccountLine("Compte principal", 284_312))),
-		HomeGroup(AccountType.SAVINGS, listOf(HomeAccountLine("Livret A", 2_295_000), HomeAccountLine("LDDS", 1_204_118))),
-		HomeGroup(AccountType.BROKERAGE, listOf(HomeAccountLine("PEA", 3_871_540)))
+		HomeGroup(AccountType.CHECKING, listOf(
+			HomeAccountLine("Compte principal", "Courant · Banque démo", 284_312),
+			HomeAccountLine("Compte joint", "Courant · Banque démo · 50 %", 160_000, 80_000)
+		)),
+		HomeGroup(AccountType.SAVINGS, listOf(HomeAccountLine("Livret A", "Épargne", 2_295_000), HomeAccountLine("LDDS", "Épargne", 1_204_118))),
+		HomeGroup(AccountType.BROKERAGE, listOf(HomeAccountLine("PEA", "Bourse · Courtier démo", 3_871_540)))
 	)
 )
 
