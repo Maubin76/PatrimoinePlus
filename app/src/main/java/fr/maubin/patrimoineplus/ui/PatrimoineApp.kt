@@ -195,8 +195,7 @@ private fun MainTabs(
 	vEntry?.let { inForm ->
 		TransactionSheet(
 			inInitial     = inForm,
-			inAccounts    = vData.accounts,
-			inCategories  = vData.categories,
+			inData        = vData,
 			inSuggestions = inEntry::suggestions,
 			inOnSave      = { inSaved, inOnErrors -> inEntry.save(inSaved) { if (it.isEmpty) vEntry = null else inOnErrors(it) } },
 			inOnDelete    = { vEntry = null },

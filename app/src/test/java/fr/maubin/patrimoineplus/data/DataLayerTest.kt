@@ -13,6 +13,7 @@ import fr.maubin.patrimoineplus.data.repo.Opening
 import fr.maubin.patrimoineplus.data.repo.SaveResult
 import fr.maubin.patrimoineplus.data.repo.TransactionRepository
 import fr.maubin.patrimoineplus.domain.calc.Ledger
+import fr.maubin.patrimoineplus.domain.calc.valuePortfolio
 import fr.maubin.patrimoineplus.domain.model.Account
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.domain.model.CategoryKind
@@ -345,5 +346,45 @@ class DataLayerTest
 		val vIds = listOf("Logement", "Courses", "Loisirs").map { category(it) }	// catégories
 		fCategories.reorder(vIds.reversed())
 		assertEquals(listOf("Loisirs", "Courses", "Logement"), fCategories.observeCategories().first().sortedBy { it.sortOrder }.map { it.name })
+	}
+
+	/*
+		Positions initiales : ajoutées au solde initial (créé sans espèces s'il
+		n'existe pas), valorisées comme des achats, retirées une à une ; le solde
+		initial disparaît quand il ne reste ni espèces ni position.
+	*/
+	@Test
+	fun openingPositionsLifecycle() = runTest {
+		val vPea = account("PEA", AccountType.BROKERAGE)						// compte Bourse
+		val vEtf = (fMarket.createAsset("ETF") as SaveResult.Saved).id			// actif
+		val vDay = LocalDate.parse("2026-10-01")								// date du solde initial
+		fAccounts.addOpeningPosition(vPea.id, vEtf, 400_000, 850_000, vDay)
+		fAccounts.addOpeningPosition(vPea.id, vEtf, 100_000, 900_000, vDay)
+		val vPositions = fAccounts.openingPositions(vPea.id)					// positions initiales
+		assertEquals(2, vPositions.size)
+		assertEquals(Opening(0, vDay), fAccounts.openingOf(vPea.id))
+		val vValue = valuePortfolio(Ledger(fTransactions.observeTransactions().first()), vPea.id, vDay, emptyList())	// valorisation
+		assertEquals(430_000L, vValue.positions.single().costCents)				// 40 × 85 + 10 × 90 = 4 300 €
+		fAccounts.removeOpeningPosition(vPea.id, vPositions.first().id)
+		assertEquals(1, fAccounts.openingPositions(vPea.id).size)
+		fAccounts.removeOpeningPosition(vPea.id, vPositions.last().id)
+		assertTrue(fTransactions.observeTransactions().first().isEmpty())
+	}
+
+	/*
+		Mise à jour groupée des cours et suppression d'un relevé.
+	*/
+	@Test
+	fun groupedPricesAndStatementDeletion() = runTest {
+		val vA   = (fMarket.createAsset("A") as SaveResult.Saved).id			// premier actif
+		val vB   = (fMarket.createAsset("B") as SaveResult.Saved).id			// second actif
+		val vDay = LocalDate.parse("2026-10-08")								// date des cours
+		fMarket.putPrices(vDay, mapOf(vA to 1_000_000L, vB to 2_000_000L))
+		fMarket.putPrices(vDay, mapOf(vA to 1_100_000L))
+		assertEquals(mapOf(vA to 1_100_000L, vB to 2_000_000L), fMarket.observePrices().first().associate { it.assetId to it.unitPrice })
+		val vLivret = account("Livret", AccountType.SAVINGS)					// compte relevé
+		fMarket.putStatement(vLivret.id, vDay, 12_000)
+		fMarket.deleteStatement(fMarket.observeStatements().first().single().id)
+		assertTrue(fMarket.observeStatements().first().isEmpty())
 	}
 }

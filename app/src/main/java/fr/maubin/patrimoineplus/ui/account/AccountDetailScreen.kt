@@ -56,6 +56,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import fr.maubin.patrimoineplus.domain.calc.CategoryLine
 import fr.maubin.patrimoineplus.domain.calc.MonthSummary
 import fr.maubin.patrimoineplus.domain.model.AccountType
+import fr.maubin.patrimoineplus.domain.model.TransactionKind
 import fr.maubin.patrimoineplus.ui.accounts.AccountDeletion
 import fr.maubin.patrimoineplus.ui.accounts.AccountForm
 import fr.maubin.patrimoineplus.ui.accounts.AccountSheet
@@ -68,6 +69,11 @@ import fr.maubin.patrimoineplus.ui.components.EmptyState
 import fr.maubin.patrimoineplus.ui.components.MonthSwitcher
 import fr.maubin.patrimoineplus.ui.components.SectionHeader
 import fr.maubin.patrimoineplus.ui.entry.EntryForm
+import fr.maubin.patrimoineplus.ui.entry.EntryMode
+import fr.maubin.patrimoineplus.domain.format.editableEuros
+import fr.maubin.patrimoineplus.domain.model.CategoryKind
+import java.time.LocalDate
+import kotlin.math.abs
 import fr.maubin.patrimoineplus.ui.entry.EntryViewModel
 import fr.maubin.patrimoineplus.ui.entry.TransactionSheet
 import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
@@ -92,6 +98,12 @@ private val kDayFormat = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANC
 	onClearSelect : quitte la sélection
 	onDeleteSel   : demande la suppression de la sélection
 	onAdd         : nouvelle opération
+	onAddStatement: saisie d'un relevé
+	onAdjust      : opération d'ajustement d'un relevé
+	onDelStatement: suppression d'un relevé
+	onPrices      : mise à jour des cours
+	onAddOpening  : ajout d'une position initiale
+	onDelOpening  : retrait d'une position initiale
 */
 data class AccountDetailActions(
 	val onBack         : () -> Unit                    = {},
@@ -102,7 +114,13 @@ data class AccountDetailActions(
 	val onLongPress    : (OperationItem) -> Unit       = {},
 	val onClearSelect  : () -> Unit                    = {},
 	val onDeleteSel    : () -> Unit                    = {},
-	val onAdd          : () -> Unit                    = {}
+	val onAdd          : () -> Unit                    = {},
+	val onAddStatement : () -> Unit                    = {},
+	val onAdjust       : (StatementItem) -> Unit       = {},
+	val onDelStatement : (StatementItem) -> Unit       = {},
+	val onPrices       : () -> Unit                    = {},
+	val onAddOpening   : () -> Unit                    = {},
+	val onDelOpening   : (OpeningPositionItem) -> Unit = {}
 )
 
 /*
@@ -132,6 +150,10 @@ fun AccountDetailScreen(
 	var vSheet     by remember { mutableStateOf<AccountForm?>(null) }		// fiche du compte ouverte
 	var vDeleting  by remember { mutableStateOf(false) }						// suppression du compte
 	var vConfirm   by remember { mutableStateOf(false) }						// suppression de la sélection
+	val vExtras    by inViewModel.extras.collectAsStateWithLifecycle()		// relevés ou portefeuille
+	var vStatement by remember { mutableStateOf(false) }						// saisie d'un relevé
+	var vPrices    by remember { mutableStateOf(false) }						// mise à jour des cours
+	var vOpening   by remember { mutableStateOf(false) }						// ajout d'une position initiale
 	val vSnackbar  = remember { SnackbarHostState() }						// messages éphémères
 	val vScope     = rememberCoroutineScope()									// portée des messages
 	val vHaptics   = LocalHapticFeedback.current								// retour haptique
@@ -147,6 +169,7 @@ fun AccountDetailScreen(
 
 	AccountDetailContent(
 		inState     = vState,
+		inExtras    = vExtras,
 		inSelection = vSelection,
 		inSnackbar  = vSnackbar,
 		inActions   = AccountDetailActions(
@@ -161,8 +184,7 @@ fun AccountDetailScreen(
 					inOp.editable           -> vEntry = inEntry.editForm(inOp.transaction)
 					else                    -> vScope.launch {
 						vSnackbar.showSnackbar(
-							if (inOp.subtitle == "Solde initial") "Le solde initial se modifie dans la fiche du compte (crayon)."
-							else "La modification des virements et des ordres arrive à l’étape 5. Appui long pour la supprimer."
+							"Le solde initial se modifie dans la fiche du compte (crayon) ; les positions initiales, dans la carte des positions."
 						)
 					}
 				}
@@ -173,15 +195,29 @@ fun AccountDetailScreen(
 			},
 			onClearSelect  = { vSelection = emptySet() },
 			onDeleteSel    = { vConfirm = true },
-			onAdd          = { vEntry = inEntry.newForm(inViewModel.accountId) }
+			onAdd          = { vEntry = inEntry.newForm(inViewModel.accountId) },
+			onAddStatement = { vStatement = true },
+			onAdjust       = { inItem ->
+				val vIncome = inItem.gapCents > 0											// écart en faveur du compte
+				vEntry = inEntry.newForm(inViewModel.accountId).copy(
+					mode       = if (vIncome) EntryMode.INCOME else EntryMode.EXPENSE,
+					amount     = editableEuros(abs(inItem.gapCents)),
+					categoryId = if (vIncome) vEntryData.categories.firstOrNull { it.kind == CategoryKind.INCOME && it.name.startsWith("Intérêt") }?.id else null,
+					label      = if (vIncome) "Intérêts" else "Ajustement sur relevé",
+					date       = inItem.statement.date
+				)
+			},
+			onDelStatement = { inViewModel.deleteStatement(it.statement.id) },
+			onPrices       = { vPrices = true },
+			onAddOpening   = { vOpening = true },
+			onDelOpening   = { inViewModel.removeOpeningPosition(it.trade.id) }
 		)
 	)
 
 	vEntry?.let { inForm ->
 		TransactionSheet(
 			inInitial     = inForm,
-			inAccounts    = vEntryData.accounts,
-			inCategories  = vEntryData.categories,
+			inData        = vEntryData,
 			inSuggestions = inEntry::suggestions,
 			inOnSave      = { inSaved, inOnErrors -> inEntry.save(inSaved) { if (it.isEmpty) vEntry = null else inOnErrors(it) } },
 			inOnDelete    = {
@@ -189,6 +225,28 @@ fun AccountDetailScreen(
 				vEntry = null
 			},
 			inOnDismiss   = { vEntry = null }
+		)
+	}
+
+	if (vStatement)
+	{
+		StatementSheet(inViewModel.today(), { inDate, inCents -> inViewModel.addStatement(inDate, inCents); vStatement = false }, { vStatement = false })
+	}
+	if (vPrices)
+	{
+		vExtras.portfolio?.let { inPortfolio ->
+			PricesSheet(inPortfolio.valuation.positions, inPortfolio.names, inViewModel.today(), { inDate, inMap -> inViewModel.updatePrices(inDate, inMap); vPrices = false }, { vPrices = false })
+		}
+	}
+	if (vOpening)
+	{
+		OpeningPositionSheet(
+			inAssets    = vEntryData.assets.filterNot { it.archived },
+			inOnSave    = { inAsset, inName, inQty, inPru ->
+				inViewModel.addOpeningPosition(inAsset, inName, inQty, inPru, inViewModel.today())
+				vOpening = false
+			},
+			inOnDismiss = { vOpening = false }
 		)
 	}
 
@@ -223,10 +281,10 @@ fun AccountDetailScreen(
 	if (vConfirm)
 	{
 		val vPicked = (vState.upcoming + vState.days.flatMap { it.items }).filter { it.transaction.id in vSelection }	// opérations choisies
-		val vLinked = vPicked.count { !it.editable && it.subtitle != "Solde initial" }	// virements et ordres
+		val vLinked = vPicked.count { it.transaction.kind == TransactionKind.TRANSFER }	// virements
 		ConfirmDialog(
 			inTitle     = "Supprimer ${vPicked.size} opération(s) ?",
-			inText      = if (vLinked > 0) "Dont $vLinked virement(s) ou ordre(s) : ils seront supprimés en entier, ce qui modifiera aussi l’autre compte." else "Les soldes seront recalculés.",
+			inText      = if (vLinked > 0) "Dont $vLinked virement(s) : ils seront supprimés sur les deux comptes, ce qui modifiera aussi l’autre compte." else "Les soldes seront recalculés.",
 			inAction    = "Supprimer",
 			inOnConfirm = {
 				inEntry.delete(vSelection.toList())
@@ -247,6 +305,7 @@ private fun Set<String>.toggle(inId: String): Set<String> = if (inId in this) th
 /*
 	Contenu de la vue d'un compte, sans état propre (prévisualisable).
 	inState     : état du mois
+	inExtras    : relevés ou portefeuille
 	inSelection : opérations sélectionnées
 	inSnackbar  : hôte des messages éphémères
 	inActions   : actions
@@ -255,6 +314,7 @@ private fun Set<String>.toggle(inId: String): Set<String> = if (inId in this) th
 @Composable
 fun AccountDetailContent(
 	inState     : AccountDetailState,
+	inExtras    : AccountExtras,
 	inSelection : Set<String>,
 	inSnackbar  : SnackbarHostState,
 	inActions   : AccountDetailActions
@@ -313,17 +373,33 @@ fun AccountDetailContent(
 				bottom = inPadding.calculateBottomPadding() + 96.dp
 			)
 		) {
+			inExtras.portfolio?.let { inPortfolio ->
+				item { PortfolioHeader(inPortfolio) }
+				item { Spacer(Modifier.height(28.dp)) }
+				item { PositionsSection(inPortfolio, inExtras.openingPositions, inActions.onPrices, inActions.onAddOpening, inActions.onDelOpening) }
+				item { Spacer(Modifier.height(20.dp)) }
+				item { HorizontalDivider(color = vColors.outlineVariant) }
+				item { Spacer(Modifier.height(8.dp)) }
+			}
 			item { MonthSwitcher(inState.month, inState.firstMonth, inState.lastMonth, inActions.onMonth) }
 			item { Spacer(Modifier.height(8.dp)) }
 			inState.summary?.let { inSummary -> item { SummaryCard(inSummary, inState.account?.type) } }
 			item { Spacer(Modifier.height(28.dp)) }
-			item { SectionHeader(inTitle = "Dépenses par catégorie") }
-			item { Spacer(Modifier.height(8.dp)) }
-			item { ExpensesCard(inState.expenses) }
+			if (inState.account?.type == AccountType.CHECKING || inState.expenses.isNotEmpty())
+			{
+				item { SectionHeader(inTitle = "Dépenses par catégorie") }
+				item { Spacer(Modifier.height(8.dp)) }
+				item { ExpensesCard(inState.expenses) }
+			}
 			item { Spacer(Modifier.height(28.dp)) }
 			item { SectionHeader(inTitle = "Évolution du solde") }
 			item { Spacer(Modifier.height(4.dp)) }
 			item { BalanceChart(inState.series, inState.month) }
+			if (inState.account != null && inState.account.type != AccountType.BROKERAGE)
+			{
+				item { Spacer(Modifier.height(28.dp)) }
+				item { StatementsSection(inExtras.statements, inActions.onAddStatement, inActions.onAdjust, inActions.onDelStatement) }
+			}
 			item { Spacer(Modifier.height(28.dp)) }
 			item { SectionHeader(inTitle = "Opérations") }
 			if (inState.upcoming.isEmpty() && inState.days.isEmpty())

@@ -221,7 +221,14 @@ fun <T> SegmentedChoice(
 					disabledInactiveContentColor   = vColors.onSurfaceVariant,
 					disabledInactiveBorderColor    = vColors.outlineVariant
 				),
-				label    = { Text(inLabel(inOption)) }
+				label    = {
+					Text(
+						text     = inLabel(inOption),
+						style    = if (inOptions.size > 3) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
+						maxLines = 1,
+						softWrap = false
+					)
+				}
 			)
 		}
 	}

@@ -8,6 +8,7 @@ import fr.maubin.patrimoineplus.domain.kLeisure
 import fr.maubin.patrimoineplus.domain.kLivret
 import fr.maubin.patrimoineplus.domain.kSalary
 import fr.maubin.patrimoineplus.domain.model.CategoryKind
+import fr.maubin.patrimoineplus.domain.model.TradeSide
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
 import fr.maubin.patrimoineplus.domain.standard
 import fr.maubin.patrimoineplus.domain.transfer
@@ -96,5 +97,22 @@ class EntryTest
 		assertEquals(listOf(d("2026-10-03"), d("2026-10-01")), vOct.map { it.date })
 		assertEquals(eur(-100.0), amountOn(vXfer, kChecking.id))
 		assertEquals(eur(100.0), amountOn(vXfer, kLivret.id))
+	}
+
+	/*
+		Virement : deux jambes opposées sur les deux comptes, quel que soit le
+		signe tapé ; ordre : jambe = cours × quantité ± frais.
+	*/
+	@Test
+	fun buildTransferAndTrade()
+	{
+		val vXfer = buildTransfer("v", "o", "i", d("2026-10-08"), kChecking.id, kLivret.id, -15_000, "Épargne", "")	// virement
+		assertEquals(listOf(kChecking.id to -15_000L, kLivret.id to 15_000L), vXfer.postings.map { it.accountId to it.amountCents })
+		assertEquals(TransactionKind.TRANSFER, vXfer.kind)
+		val vBuy  = buildTrade("o", "p", "t", d("2026-10-08"), "pea", TradeSide.BUY, "etf", 30_000, 1_000_000, 199, "Achat", "")	// achat de 3 à 100 €
+		val vSell = buildTrade("o", "p", "t", d("2026-10-08"), "pea", TradeSide.SELL, "etf", 30_000, 1_000_000, 199, "Vente", "")	// vente
+		assertEquals(-30_199L, vBuy.postings.single().amountCents)
+		assertEquals(29_801L, vSell.postings.single().amountCents)
+		assertEquals(30_000L, vBuy.trades.single().quantity)
 	}
 }

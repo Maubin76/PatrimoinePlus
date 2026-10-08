@@ -10,6 +10,10 @@ import fr.maubin.patrimoineplus.ui.accounts.AccountItem
 import fr.maubin.patrimoineplus.ui.account.AccountDetailActions
 import fr.maubin.patrimoineplus.ui.account.AccountDetailContent
 import fr.maubin.patrimoineplus.ui.account.buildAccountDetail
+import fr.maubin.patrimoineplus.ui.account.buildAccountExtras
+import fr.maubin.patrimoineplus.ui.entry.EntryMode
+import fr.maubin.patrimoineplus.domain.model.TradeSide
+import fr.maubin.patrimoineplus.ui.entry.EntryData
 import fr.maubin.patrimoineplus.ui.entry.EntryForm
 import fr.maubin.patrimoineplus.ui.entry.TransactionSheet
 import fr.maubin.patrimoineplus.domain.calc.labelSuggestions
@@ -255,7 +259,13 @@ class ScreenshotTest
 	/*
 		État de la vue du compte courant de démonstration, mois en cours.
 	*/
-	private fun demoDetail() = buildAccountDetail(kDemo.accounts.first().id, kDemo.accounts, kDemo.categories, kDemo.transactions, java.time.YearMonth.from(kToday), kToday)
+	private fun demoDetail(inIndex: Int = 0) = buildAccountDetail(kDemo.accounts[inIndex].id, kDemo.accounts, kDemo.categories, kDemo.transactions, java.time.YearMonth.from(kToday), kToday)
+
+	/*
+		Relevés ou portefeuille d'un compte de démonstration.
+		inIndex : rang du compte dans la démonstration
+	*/
+	private fun demoExtras(inIndex: Int = 0) = buildAccountExtras(kDemo.accounts[inIndex].id, kDemo.accounts, kDemo.transactions, kDemo.statements, kDemo.prices, kDemo.assets, kToday)
 
 	/*
 		Vue d'un compte, mois en cours (synthèse, dépenses, courbe, opérations).
@@ -264,7 +274,7 @@ class ScreenshotTest
 	@Config(qualifiers = "w360dp-h2200dp-xxhdpi")
 	fun accountDetail() = captureRoboImage("$kOutDir/account-detail.png") {
 		PatrimoineTheme(inDarkTheme = false) {
-			AccountDetailContent(demoDetail(), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
+			AccountDetailContent(demoDetail(), demoExtras(), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
 		}
 	}
 
@@ -278,7 +288,7 @@ class ScreenshotTest
 		val vIds   = vState.days.first().items.take(1).map { it.transaction.id } + vState.days[1].items.take(1).map { it.transaction.id }	// sélection
 		captureRoboImage("$kOutDir/account-detail-selection.png") {
 			PatrimoineTheme(inDarkTheme = true) {
-				AccountDetailContent(vState.copy(), vIds.toSet(), remember { SnackbarHostState() }, AccountDetailActions())
+				AccountDetailContent(vState.copy(), demoExtras(), vIds.toSet(), remember { SnackbarHostState() }, AccountDetailActions())
 			}
 		}
 	}
@@ -292,14 +302,74 @@ class ScreenshotTest
 		val vCats = kDemo.categories.sortedBy { it.sortOrder }					// catégories
 		fCompose.setContent {
 			PatrimoineTheme(inDarkTheme = false) {
-				AccountDetailContent(demoDetail(), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
+				AccountDetailContent(demoDetail(), demoExtras(), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
 				TransactionSheet(
 					EntryForm(amount = "42,90", accountId = kDemo.accounts.first().id, categoryId = vCats.first { it.name == "Alimentation" }.id, label = "Su", date = kToday),
-					kDemo.accounts, vCats, { inPrefix -> labelSuggestions(kDemo.transactions, inPrefix) }, { _, _ -> }, {}, {}
+					EntryData(kDemo.accounts, vCats, kDemo.assets, kDemo.prices, kDemo.transactions), { inPrefix -> labelSuggestions(kDemo.transactions, inPrefix) }, { _, _ -> }, {}, {}
 				)
 			}
 		}
 		fCompose.waitForIdle()
 		captureScreenRoboImage("$kOutDir/entry-sheet.png")
+	}
+
+	/*
+		Vue du PEA de démonstration : valeur, plus-values, positions, puis le mois.
+	*/
+	@Test
+	@Config(qualifiers = "w360dp-h2000dp-xxhdpi")
+	fun brokerageDetail() = captureRoboImage("$kOutDir/account-bourse.png") {
+		PatrimoineTheme(inDarkTheme = false) {
+			AccountDetailContent(demoDetail(4), demoExtras(4), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
+		}
+	}
+
+	/*
+		Vue du Livret A de démonstration : relevé avec écart et ajustement proposé.
+	*/
+	@Test
+	@Config(qualifiers = "w360dp-h1600dp-xxhdpi")
+	fun savingsDetail() = captureRoboImage("$kOutDir/account-livret.png") {
+		PatrimoineTheme(inDarkTheme = false) {
+			AccountDetailContent(demoDetail(2), demoExtras(2), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
+		}
+	}
+
+	/*
+		Feuille de saisie en mode ordre (vente) : quantité détenue, montant calculé.
+	*/
+	@Test
+	@Config(qualifiers = "w360dp-h1400dp-xxhdpi")
+	fun tradeSheet()
+	{
+		val vPea = kDemo.accounts[4]											// compte Bourse
+		fCompose.setContent {
+			PatrimoineTheme(inDarkTheme = false) {
+				TransactionSheet(
+					EntryForm(mode = EntryMode.TRADE, accountId = vPea.id, assetId = kDemo.assets.first().id, side = TradeSide.SELL, quantity = "10", price = "94,50", fees = "1,99", date = kToday),
+					EntryData(kDemo.accounts, kDemo.categories, kDemo.assets, kDemo.prices, kDemo.transactions), { emptyList() }, { _, _ -> }, {}, {}
+				)
+			}
+		}
+		fCompose.waitForIdle()
+		captureScreenRoboImage("$kOutDir/entry-ordre.png")
+	}
+
+	/*
+		Feuille de saisie en mode virement.
+	*/
+	@Test
+	fun transferSheet()
+	{
+		fCompose.setContent {
+			PatrimoineTheme(inDarkTheme = false) {
+				TransactionSheet(
+					EntryForm(mode = EntryMode.TRANSFER, amount = "300", accountId = kDemo.accounts[0].id, toAccountId = kDemo.accounts[2].id, date = kToday),
+					EntryData(kDemo.accounts, kDemo.categories, kDemo.assets, kDemo.prices, kDemo.transactions), { emptyList() }, { _, _ -> }, {}, {}
+				)
+			}
+		}
+		fCompose.waitForIdle()
+		captureScreenRoboImage("$kOutDir/entry-virement.png")
 	}
 }

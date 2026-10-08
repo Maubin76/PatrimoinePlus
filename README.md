@@ -91,6 +91,12 @@ inspirée de deux maquettes de référence fournies le 2026-10-07.
   Accueil et Comptes, vue d'un compte) ; dépense ou revenu, montant sans
   signe, compte (dernier utilisé par défaut), libellé obligatoire avec
   suggestions qui reprennent la dernière catégorie, catégorie, date, notes.
+- Virements, épargne, bourse : la saisie a quatre modes (Dépense, Revenu,
+  Virement en une seule saisie, Ordre de bourse avec montant calculé en
+  direct). Un livret affiche ses relevés et l'écart au solde calculé, avec la
+  création de l'opération Intérêts. Un compte Bourse affiche sa valeur, ses
+  plus-values latente et réalisée, ses positions (quantité, PRU, cours,
+  plus-value), la mise à jour groupée des cours et ses positions initiales.
 - Premier lancement : assistant qui propose comptes (avec solde du jour) et
   catégories ; réapparaît après « Tout effacer » (debug).
 - Mode discret : l'œil de la barre du haut ou le réglage masque tous les

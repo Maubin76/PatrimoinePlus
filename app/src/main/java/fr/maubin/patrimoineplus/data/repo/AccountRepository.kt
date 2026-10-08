@@ -10,6 +10,8 @@ import fr.maubin.patrimoineplus.data.db.toTradeEntities
 import fr.maubin.patrimoineplus.domain.model.Account
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.domain.model.Posting
+import fr.maubin.patrimoineplus.domain.model.Trade
+import fr.maubin.patrimoineplus.domain.model.TradeSide
 import fr.maubin.patrimoineplus.domain.model.Transaction
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
 import fr.maubin.patrimoineplus.domain.rules.SetupError
@@ -173,6 +175,64 @@ class AccountRepository @Inject constructor(
 			}
 		}
 	}
+
+	/*
+		Ajoute une position initiale (achat au prix de revient, sans frais) au
+		solde initial d'un compte Bourse ; crée ce solde initial, sans espèces,
+		s'il n'existe pas encore.
+		inId        : compte Bourse
+		inAssetId   : actif
+		inQuantity  : quantité, en dix-millièmes
+		inUnitPrice : prix de revient unitaire, en dix-millièmes d'euro
+		inDate      : date du solde initial, s'il faut le créer
+	*/
+	suspend fun addOpeningPosition(
+		inId        : String,
+		inAssetId   : String,
+		inQuantity  : Long,
+		inUnitPrice : Long,
+		inDate      : LocalDate
+	)
+	{
+		val vNow = inClock.millis()												// horodatage
+		inDb.withTransaction {
+			val vOld   = openingTransaction(inId) ?: newOpening(inId, Opening(0, inDate))	// solde initial
+			val vTrade = Trade(UUID.randomUUID().toString(), inAssetId, TradeSide.BUY, inQuantity, inUnitPrice, 0)	// position
+			val vCreated = fTxDao.getById(vOld.id)?.createdAt ?: vNow			// création conservée
+			saveOpening(vOld.copy(trades = vOld.trades + vTrade), vCreated, vNow)
+		}
+	}
+
+	/*
+		Retire une position initiale du solde initial d'un compte Bourse.
+		inId      : compte Bourse
+		inTradeId : position retirée
+	*/
+	suspend fun removeOpeningPosition(
+		inId      : String,
+		inTradeId : String
+	)
+	{
+		val vNow = inClock.millis()												// horodatage
+		inDb.withTransaction {
+			val vOld = openingTransaction(inId) ?: return@withTransaction		// solde initial
+			val vNew = vOld.copy(trades = vOld.trades.filterNot { it.id == inTradeId })	// sans la position
+			if (vNew.trades.isEmpty() && vNew.postings.single().amountCents == 0L)
+			{
+				fTxDao.deleteByIds(listOf(vOld.id))
+			}
+			else
+			{
+				saveOpening(vNew, fTxDao.getById(vOld.id)?.createdAt ?: vNow, vNow)
+			}
+		}
+	}
+
+	/*
+		Positions initiales d'un compte Bourse.
+		inId : compte
+	*/
+	suspend fun openingPositions(inId: String): List<Trade> = openingTransaction(inId)?.trades.orEmpty()
 
 	/*
 		Archive ou désarchive un compte.

@@ -2,6 +2,8 @@ package fr.maubin.patrimoineplus.domain.calc
 
 import fr.maubin.patrimoineplus.domain.model.CategoryKind
 import fr.maubin.patrimoineplus.domain.model.Posting
+import fr.maubin.patrimoineplus.domain.model.Trade
+import fr.maubin.patrimoineplus.domain.model.TradeSide
 import fr.maubin.patrimoineplus.domain.model.Transaction
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
 import java.text.Normalizer
@@ -55,6 +57,82 @@ fun buildStandard(
 		postings   = listOf(Posting(inPostingId, inAccountId, vSigned))
 	)
 }
+
+/*
+	Construit un virement entre deux de mes comptes : une seule opération à
+	deux jambes de somme nulle.
+	inId        : identifiant de l'opération
+	inOutId     : identifiant de la jambe de départ
+	inInId      : identifiant de la jambe d'arrivée
+	inDate      : date
+	inFromId    : compte débité
+	inToId      : compte crédité
+	inCents     : montant (le signe éventuel est ignoré)
+	inLabel     : libellé
+	inNotes     : notes ; vide = aucune
+*/
+fun buildTransfer(
+	inId     : String,
+	inOutId  : String,
+	inInId   : String,
+	inDate   : LocalDate,
+	inFromId : String,
+	inToId   : String,
+	inCents  : Long,
+	inLabel  : String,
+	inNotes  : String
+): Transaction
+{
+	val vAmount = abs(inCents)													// montant viré
+	return Transaction(
+		id       = inId,
+		date     = inDate,
+		kind     = TransactionKind.TRANSFER,
+		label    = inLabel.trim(),
+		notes    = inNotes.trim().ifEmpty { null },
+		postings = listOf(Posting(inOutId, inFromId, -vAmount), Posting(inInId, inToId, vAmount))
+	)
+}
+
+/*
+	Construit un ordre de bourse : la jambe espèces vaut cours × quantité ±
+	frais (achat débité, vente créditée).
+	inId        : identifiant de l'opération
+	inPostingId : identifiant de la jambe
+	inTradeId   : identifiant de l'ordre
+	inDate      : date
+	inAccountId : compte Bourse
+	inSide      : achat ou vente
+	inAssetId   : actif
+	inQuantity  : quantité, en dix-millièmes
+	inUnitPrice : cours, en dix-millièmes d'euro
+	inFeesCents : frais
+	inLabel     : libellé
+	inNotes     : notes ; vide = aucune
+*/
+fun buildTrade(
+	inId        : String,
+	inPostingId : String,
+	inTradeId   : String,
+	inDate      : LocalDate,
+	inAccountId : String,
+	inSide      : TradeSide,
+	inAssetId   : String,
+	inQuantity  : Long,
+	inUnitPrice : Long,
+	inFeesCents : Long,
+	inLabel     : String,
+	inNotes     : String
+): Transaction =
+	Transaction(
+		id       = inId,
+		date     = inDate,
+		kind     = TransactionKind.TRADE,
+		label    = inLabel.trim(),
+		notes    = inNotes.trim().ifEmpty { null },
+		postings = listOf(Posting(inPostingId, inAccountId, tradeCashCents(inSide, inQuantity, inUnitPrice, inFeesCents))),
+		trades   = listOf(Trade(inTradeId, inAssetId, inSide, inQuantity, inUnitPrice, inFeesCents))
+	)
 
 /*
 	Suggestions de libellés pour un début de saisie : libellés déjà utilisés

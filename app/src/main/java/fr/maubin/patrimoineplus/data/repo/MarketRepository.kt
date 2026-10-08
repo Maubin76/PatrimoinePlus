@@ -1,5 +1,6 @@
 package fr.maubin.patrimoineplus.data.repo
 
+import androidx.room.withTransaction
 import fr.maubin.patrimoineplus.data.db.PatrimoineDatabase
 import fr.maubin.patrimoineplus.data.db.toDomain
 import fr.maubin.patrimoineplus.data.db.toEntity
@@ -96,5 +97,29 @@ class MarketRepository @Inject constructor(
 	)
 	{
 		fStatements.upsert(AccountStatement(UUID.randomUUID().toString(), inAccountId, inDate, inBalanceCents).toEntity())
+	}
+
+	/*
+		Enregistre plusieurs cours à une même date (mise à jour groupée).
+		inDate   : date des cours
+		inPrices : cours par actif, en dix-millièmes d'euro
+	*/
+	suspend fun putPrices(
+		inDate   : LocalDate,
+		inPrices : Map<String, Long>
+	)
+	{
+		inDb.withTransaction {
+			inPrices.forEach { (inAssetId, inPrice) -> putPrice(inAssetId, inDate, inPrice) }
+		}
+	}
+
+	/*
+		Supprime un relevé de solde.
+		inId : relevé
+	*/
+	suspend fun deleteStatement(inId: String)
+	{
+		fStatements.deleteById(inId)
 	}
 }

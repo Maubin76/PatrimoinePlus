@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,12 +36,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.domain.calc.LabelSuggestion
+import fr.maubin.patrimoineplus.domain.calc.Ledger
+import fr.maubin.patrimoineplus.domain.calc.heldQuantity
+import fr.maubin.patrimoineplus.domain.calc.tradeCashCents
+import fr.maubin.patrimoineplus.domain.format.editableScaled
+import fr.maubin.patrimoineplus.domain.format.formatEuros
+import fr.maubin.patrimoineplus.domain.format.formatScaled
+import fr.maubin.patrimoineplus.domain.format.parseEuros
+import fr.maubin.patrimoineplus.domain.format.parseScaled
 import fr.maubin.patrimoineplus.domain.model.Account
-import fr.maubin.patrimoineplus.domain.model.Category
+import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.domain.model.CategoryKind
-import fr.maubin.patrimoineplus.ui.categories.kindLabel
+import fr.maubin.patrimoineplus.domain.model.TradeSide
 import fr.maubin.patrimoineplus.ui.components.AmountInput
 import fr.maubin.patrimoineplus.ui.components.ConfirmDialog
 import fr.maubin.patrimoineplus.ui.components.DateInput
@@ -48,14 +58,14 @@ import fr.maubin.patrimoineplus.ui.components.FormSheet
 import fr.maubin.patrimoineplus.ui.components.SegmentedChoice
 import fr.maubin.patrimoineplus.ui.components.TextInput
 import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
+import kotlin.math.abs
 
 /*
-	Feuille de saisie d'une dépense ou d'un revenu : nature, montant (sans
-	signe), compte, libellé avec suggestions, catégorie, date, notes ; en
+	Feuille de saisie d'une opération : dépense, revenu, virement entre deux
+	de mes comptes, ou ordre de bourse (si un compte Bourse existe) ; en
 	modification, suppression après confirmation.
 	inInitial      : saisie de départ
-	inAccounts     : comptes actifs
-	inCategories   : catégories actives
+	inData         : comptes, catégories, actifs, cours, opérations
 	inSuggestions  : suggestions de libellés pour un début de saisie
 	inOnSave       : enregistre la saisie et renvoie les erreurs par rappel
 	inOnDelete     : supprime l'opération modifiée
@@ -64,8 +74,7 @@ import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
 @Composable
 fun TransactionSheet(
 	inInitial     : EntryForm,
-	inAccounts    : List<Account>,
-	inCategories  : List<Category>,
+	inData        : EntryData,
 	inSuggestions : (String) -> List<LabelSuggestion>,
 	inOnSave      : (EntryForm, (EntryErrors) -> Unit) -> Unit,
 	inOnDelete    : () -> Unit,
@@ -75,54 +84,23 @@ fun TransactionSheet(
 	var vForm    by remember { mutableStateOf(inInitial) }						// saisie en cours
 	var vErrors  by remember { mutableStateOf(EntryErrors()) }				// erreurs affichées
 	var vConfirm by remember { mutableStateOf(false) }						// suppression à confirmer
-	val vByKind  = inCategories.filter { it.kind == vForm.kind }				// catégories de la nature choisie
-	val vHints   = if (vForm.id == null) inSuggestions(vForm.label) else emptyList()	// suggestions affichées
+	val vHasBourse = inData.accounts.any { it.type == AccountType.BROKERAGE }	// un compte Bourse existe
+	val vModes     = EntryMode.entries.filter { it != EntryMode.TRADE || vHasBourse || vForm.mode == EntryMode.TRADE }	// modes proposés
 
 	FormSheet(inTitle = if (vForm.id == null) "Nouvelle opération" else "Modifier l’opération", inOnDismiss = inOnDismiss) {
 		SegmentedChoice(
-			inOptions  = CategoryKind.entries,
-			inSelected = vForm.kind,
-			inLabel    = ::kindLabel,
-			inOnSelect = { inKind ->
-				val vKeep = inCategories.firstOrNull { it.id == vForm.categoryId }?.kind == inKind	// catégorie encore valable
-				vForm = vForm.copy(kind = inKind, categoryId = if (vKeep) vForm.categoryId else null)
-			}
+			inOptions  = vModes,
+			inSelected = vForm.mode,
+			inLabel    = { it.label },
+			inOnSelect = { inMode -> vForm = switchMode(vForm, inMode, inData) },
+			inEnabled  = vForm.id == null
 		)
-		AmountInput(vForm.amount, { vForm = vForm.copy(amount = it.replace("-", "")) }, "Montant", vErrors.amount)
-		AccountPicker(inAccounts, vForm.accountId, vErrors.account) { vForm = vForm.copy(accountId = it) }
-		TextInput(vForm.label, { vForm = vForm.copy(label = it) }, "Libellé", vErrors.label)
-		if (vHints.isNotEmpty())
+		when (vForm.mode)
 		{
-			FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-				vHints.forEach { inHint ->
-					Pill(inText = inHint.label, inSelected = false) {
-						val vCategory = inCategories.firstOrNull { it.id == inHint.categoryId }	// catégorie de la suggestion
-						vForm = vForm.copy(
-							label      = inHint.label,
-							categoryId = vCategory?.id ?: vForm.categoryId,
-							kind       = vCategory?.kind ?: vForm.kind
-						)
-					}
-				}
-			}
+			EntryMode.EXPENSE, EntryMode.INCOME -> StandardFields(vForm, vErrors, inData, inSuggestions) { vForm = it }
+			EntryMode.TRANSFER                  -> TransferFields(vForm, vErrors, inData) { vForm = it }
+			EntryMode.TRADE                     -> TradeFields(vForm, vErrors, inData) { vForm = it }
 		}
-		Text("Catégorie", style = MaterialTheme.typography.titleSmall)
-		if (vByKind.isEmpty())
-		{
-			Text(
-				text  = "Aucune catégorie de ${kindLabel(vForm.kind).lowercase()} : créez-en une dans l’onglet Catégories.",
-				style = MaterialTheme.typography.bodyMedium,
-				color = MaterialTheme.colorScheme.onSurfaceVariant
-			)
-		}
-		FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-			vByKind.forEach { inCategory ->
-				Pill(inText = inCategory.name, inSelected = inCategory.id == vForm.categoryId, inIcon = inCategory.icon) {
-					vForm = vForm.copy(categoryId = inCategory.id)
-				}
-			}
-		}
-		vErrors.category?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
 		DateInput(vForm.date, { vForm = vForm.copy(date = it) }, "Date")
 		TextInput(vForm.notes, { vForm = vForm.copy(notes = it) }, "Notes (facultatif)")
 		vErrors.general?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
@@ -145,7 +123,8 @@ fun TransactionSheet(
 	{
 		ConfirmDialog(
 			inTitle     = "Supprimer l’opération ?",
-			inText      = "« ${vForm.label} » sera supprimée ; le solde du compte sera recalculé.",
+			inText      = if (vForm.mode == EntryMode.TRANSFER) "Le virement sera supprimé sur les deux comptes ; leurs soldes seront recalculés."
+				else "« ${vForm.label.ifBlank { proposedLabel(vForm, inData) }} » sera supprimée ; le solde sera recalculé.",
 			inAction    = "Supprimer",
 			inOnConfirm = {
 				vConfirm = false
@@ -157,28 +136,258 @@ fun TransactionSheet(
 }
 
 /*
-	Choix du compte dans une liste déroulante.
+	Change le mode de la saisie en gardant ce qui reste valable : le compte
+	passe sur un compte Bourse pour un ordre, la catégorie disparaît si elle
+	n'est plus de la bonne nature.
+	inForm : saisie
+	inMode : nouveau mode
+	inData : données
+*/
+private fun switchMode(
+	inForm : EntryForm,
+	inMode : EntryMode,
+	inData : EntryData
+): EntryForm
+{
+	val vKind     = if (inMode == EntryMode.INCOME) CategoryKind.INCOME else CategoryKind.EXPENSE	// nature des catégories
+	val vKeepCat  = inData.categories.firstOrNull { it.id == inForm.categoryId }?.kind == vKind && inMode in listOf(EntryMode.EXPENSE, EntryMode.INCOME)	// catégorie encore valable
+	val vAccount  = if (inMode == EntryMode.TRADE && inData.accounts.none { it.id == inForm.accountId && it.type == AccountType.BROKERAGE })
+		inData.accounts.firstOrNull { it.type == AccountType.BROKERAGE }?.id else inForm.accountId	// compte retenu
+	return inForm.copy(mode = inMode, categoryId = if (vKeepCat) inForm.categoryId else null, accountId = vAccount)
+}
+
+/*
+	Champs d'une dépense ou d'un revenu : montant, compte, libellé avec
+	suggestions, catégorie ; pour un revenu sur un compte Bourse, actif du
+	dividende (facultatif).
+	inForm        : saisie
+	inErrors      : erreurs
+	inData        : données
+	inSuggestions : suggestions de libellés
+	inOnChange    : saisie modifiée
+*/
+@Composable
+private fun StandardFields(
+	inForm        : EntryForm,
+	inErrors      : EntryErrors,
+	inData        : EntryData,
+	inSuggestions : (String) -> List<LabelSuggestion>,
+	inOnChange    : (EntryForm) -> Unit
+)
+{
+	val vKind   = if (inForm.mode == EntryMode.EXPENSE) CategoryKind.EXPENSE else CategoryKind.INCOME	// nature
+	val vByKind = inData.categories.filter { it.kind == vKind }					// catégories proposées
+	val vHints  = if (inForm.id == null) inSuggestions(inForm.label) else emptyList()	// suggestions affichées
+	val vBourse = inData.accounts.firstOrNull { it.id == inForm.accountId }?.type == AccountType.BROKERAGE	// compte Bourse
+	AmountInput(inForm.amount, { inOnChange(inForm.copy(amount = it.replace("-", ""))) }, "Montant", inErrors.amount)
+	AccountPicker("Compte", inData.accounts, inForm.accountId, inErrors.account) { inOnChange(inForm.copy(accountId = it)) }
+	TextInput(inForm.label, { inOnChange(inForm.copy(label = it)) }, "Libellé", inErrors.label)
+	if (vHints.isNotEmpty())
+	{
+		FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+			vHints.forEach { inHint ->
+				Pill(inText = inHint.label, inSelected = false) {
+					val vCategory = inData.categories.firstOrNull { it.id == inHint.categoryId }	// catégorie de la suggestion
+					inOnChange(inForm.copy(
+						label      = inHint.label,
+						categoryId = vCategory?.id ?: inForm.categoryId,
+						mode       = when (vCategory?.kind)
+						{
+							CategoryKind.EXPENSE -> EntryMode.EXPENSE
+							CategoryKind.INCOME  -> EntryMode.INCOME
+							null                 -> inForm.mode
+						}
+					))
+				}
+			}
+		}
+	}
+	Text("Catégorie", style = MaterialTheme.typography.titleSmall)
+	if (vByKind.isEmpty())
+	{
+		Text(
+			text  = "Aucune catégorie de ${inForm.mode.label.lowercase()} : créez-en une dans l’onglet Catégories.",
+			style = MaterialTheme.typography.bodyMedium,
+			color = MaterialTheme.colorScheme.onSurfaceVariant
+		)
+	}
+	FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+		vByKind.forEach { inCategory ->
+			Pill(inText = inCategory.name, inSelected = inCategory.id == inForm.categoryId, inIcon = inCategory.icon) {
+				inOnChange(inForm.copy(categoryId = inCategory.id))
+			}
+		}
+	}
+	inErrors.category?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
+	if (inForm.mode == EntryMode.INCOME && vBourse && inData.assets.isNotEmpty())
+	{
+		Picker(
+			inLabel    = "Actif du dividende (facultatif)",
+			inOptions  = listOf<Pair<String?, String>>(null to "Aucun") + inData.assets.filterNot { it.archived }.map { it.id to it.name },
+			inSelected = inForm.assetId,
+			inError    = null
+		) { inOnChange(inForm.copy(assetId = it)) }
+	}
+}
+
+/*
+	Champs d'un virement : montant, compte de départ, compte d'arrivée, libellé
+	(proposé s'il est laissé vide).
+	inForm     : saisie
+	inErrors   : erreurs
+	inData     : données
+	inOnChange : saisie modifiée
+*/
+@Composable
+private fun TransferFields(
+	inForm     : EntryForm,
+	inErrors   : EntryErrors,
+	inData     : EntryData,
+	inOnChange : (EntryForm) -> Unit
+)
+{
+	AmountInput(inForm.amount, { inOnChange(inForm.copy(amount = it.replace("-", ""))) }, "Montant", inErrors.amount)
+	AccountPicker("De", inData.accounts, inForm.accountId, inErrors.account) { inOnChange(inForm.copy(accountId = it)) }
+	AccountPicker("Vers", inData.accounts.filter { it.id != inForm.accountId }, inForm.toAccountId, inErrors.target) { inOnChange(inForm.copy(toAccountId = it)) }
+	TextInput(inForm.label, { inOnChange(inForm.copy(label = it)) }, "Libellé", inErrors.label, inSupport = "Vide : « ${proposedLabel(inForm, inData)} »")
+}
+
+/*
+	Champs d'un ordre de bourse : compte Bourse, achat ou vente, actif
+	(existant ou nouveau), quantité, cours, frais ; montant calculé en direct
+	et quantité détenue rappelée pour une vente.
+	inForm     : saisie
+	inErrors   : erreurs
+	inData     : données
+	inOnChange : saisie modifiée
+*/
+@Composable
+private fun TradeFields(
+	inForm     : EntryForm,
+	inErrors   : EntryErrors,
+	inData     : EntryData,
+	inOnChange : (EntryForm) -> Unit
+)
+{
+	val vColors   = MaterialTheme.colorScheme									// palette courante
+	val vQuantity = parseScaled(inForm.quantity)								// quantité lue
+	val vPrice    = parseScaled(inForm.price)									// cours lu
+	val vFees     = if (inForm.fees.isBlank()) 0L else parseEuros(inForm.fees)	// frais lus
+	AccountPicker("Compte Bourse", inData.accounts.filter { it.type == AccountType.BROKERAGE }, inForm.accountId, inErrors.account) { inOnChange(inForm.copy(accountId = it)) }
+	SegmentedChoice(
+		inOptions  = TradeSide.entries,
+		inSelected = inForm.side,
+		inLabel    = { if (it == TradeSide.BUY) "Achat" else "Vente" },
+		inOnSelect = { inOnChange(inForm.copy(side = it)) }
+	)
+	Picker(
+		inLabel    = "Actif",
+		inOptions  = inData.assets.filterNot { it.archived }.map { it.id as String? to it.name } + (kNewAsset as String? to "Nouvel actif…"),
+		inSelected = inForm.assetId,
+		inError    = inErrors.asset.takeIf { inForm.assetId != kNewAsset }
+	) { inId ->
+		val vLast = inData.prices.filter { it.assetId == inId }.maxByOrNull { it.date }	// dernier cours connu
+		inOnChange(inForm.copy(assetId = inId, price = if (inForm.price.isBlank() && vLast != null) editableScaled(vLast.unitPrice) else inForm.price))
+	}
+	if (inForm.assetId == kNewAsset)
+	{
+		TextInput(inForm.newAsset, { inOnChange(inForm.copy(newAsset = it)) }, "Nom du nouvel actif", inErrors.asset)
+	}
+	if (inForm.side == TradeSide.SELL && inForm.accountId != null && inForm.assetId != null && inForm.assetId != kNewAsset)
+	{
+		val vOthers = inData.transactions.filter { it.id != inForm.id }		// autres opérations
+		val vHeld   = heldQuantity(Ledger(vOthers), inForm.accountId, inForm.assetId, inForm.date)	// quantité détenue
+		Text("Détenu à cette date : ${formatScaled(vHeld)}", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+	}
+	DecimalField(inForm.quantity, { inOnChange(inForm.copy(quantity = it)) }, "Quantité", null, inErrors.quantity)
+	DecimalField(inForm.price, { inOnChange(inForm.copy(price = it)) }, "Cours", "€", inErrors.price)
+	AmountInput(inForm.fees, { inOnChange(inForm.copy(fees = it.replace("-", ""))) }, "Frais", inErrors.fees, inSupport = "Vide = sans frais")
+	if (vQuantity != null && vPrice != null && vFees != null)
+	{
+		val vCash = tradeCashCents(inForm.side, vQuantity, vPrice, vFees)		// montant de l'ordre
+		Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+			Text(if (inForm.side == TradeSide.BUY) "Montant débité" else "Montant crédité", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+			Text(formatEuros(abs(vCash)), style = MaterialTheme.typography.titleMedium)
+		}
+	}
+	TextInput(inForm.label, { inOnChange(inForm.copy(label = it)) }, "Libellé", inErrors.label, inSupport = "Vide : « ${proposedLabel(inForm, inData)} »")
+}
+
+/*
+	Champ décimal (quantité, cours) : jusqu'à quatre décimales.
+	inValue    : texte saisi
+	inOnChange : modification
+	inLabel    : libellé
+	inSuffix   : suffixe (« € ») ; null sans suffixe
+	inError    : message d'erreur ; null sans erreur
+*/
+@Composable
+private fun DecimalField(
+	inValue    : String,
+	inOnChange : (String) -> Unit,
+	inLabel    : String,
+	inSuffix   : String?,
+	inError    : String?
+)
+{
+	OutlinedTextField(
+		value           = inValue,
+		onValueChange   = { inText -> inOnChange(inText.filter { it.isDigit() || it in ",. " }) },
+		label           = { Text(inLabel) },
+		suffix          = inSuffix?.let { { Text(it) } },
+		singleLine      = true,
+		isError         = inError != null,
+		supportingText  = inError?.let { { Text(it) } },
+		keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+		modifier        = Modifier.fillMaxWidth()
+	)
+}
+
+/*
+	Choix d'un compte dans une liste déroulante.
+	inLabel    : libellé du champ
 	inAccounts : comptes proposés
 	inSelected : compte choisi
 	inError    : message d'erreur ; null sans erreur
 	inOnSelect : choix d'un compte
 */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AccountPicker(
+	inLabel    : String,
 	inAccounts : List<Account>,
 	inSelected : String?,
 	inError    : String?,
 	inOnSelect : (String) -> Unit
 )
 {
+	Picker(inLabel, inAccounts.map { it.id as String? to "${it.name}  ·  ${it.type.label}" }, inSelected, inError) { it?.let(inOnSelect) }
+}
+
+/*
+	Liste déroulante générique : options (identifiant, texte).
+	inLabel    : libellé du champ
+	inOptions  : options proposées
+	inSelected : identifiant choisi
+	inError    : message d'erreur ; null sans erreur
+	inOnSelect : choix d'une option
+*/
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun Picker(
+	inLabel    : String,
+	inOptions  : List<Pair<String?, String>>,
+	inSelected : String?,
+	inError    : String?,
+	inOnSelect : (String?) -> Unit
+)
+{
 	var vOpen by remember { mutableStateOf(false) }							// liste ouverte
 	ExposedDropdownMenuBox(expanded = vOpen, onExpandedChange = { vOpen = it }) {
 		OutlinedTextField(
-			value          = inAccounts.firstOrNull { it.id == inSelected }?.name.orEmpty(),
+			value          = inOptions.firstOrNull { it.first == inSelected }?.second.orEmpty(),
 			onValueChange  = {},
 			readOnly       = true,
-			label          = { Text("Compte") },
+			label          = { Text(inLabel) },
 			isError        = inError != null,
 			supportingText = inError?.let { { Text(it) } },
 			trailingIcon   = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = vOpen) },
@@ -186,11 +395,11 @@ private fun AccountPicker(
 			modifier       = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
 		)
 		ExposedDropdownMenu(expanded = vOpen, onDismissRequest = { vOpen = false }, containerColor = MaterialTheme.colorScheme.surface) {
-			inAccounts.forEach { inAccount ->
+			inOptions.forEach { (inId, inText) ->
 				DropdownMenuItem(
-					text    = { Text("${inAccount.name}  ·  ${inAccount.type.label}") },
+					text    = { Text(inText) },
 					onClick = {
-						inOnSelect(inAccount.id)
+						inOnSelect(inId)
 						vOpen = false
 					}
 				)
