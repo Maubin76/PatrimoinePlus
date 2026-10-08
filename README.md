@@ -103,6 +103,9 @@ inspirée de deux maquettes de référence fournies le 2026-10-07.
   catégories ; réapparaît après « Tout effacer » (debug).
 - Mode discret : l'œil de la barre du haut ou le réglage masque tous les
   montants ; mémorisé en DataStore.
+- Icône : deux chevrons noirs sur une pastille blanche, fond noir
+  (`res/drawable/ic_launcher_*.xml`, vectorielle) ; version monochrome pour les
+  icônes à thème d'Android 13 et plus.
 - Contexte de conception : `PRODUCT.md`, `DESIGN.md` et `.impeccable/`.
 
 Captures de relecture : `./gradlew :app:recordRoborazziDebug` écrit les PNG

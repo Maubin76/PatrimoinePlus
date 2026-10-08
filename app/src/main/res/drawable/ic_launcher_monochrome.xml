@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icône à thème (Android 13 et plus) : les deux chevrons seuls, teintés par le système. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+	android:width="108dp"
+	android:height="108dp"
+	android:viewportWidth="108"
+	android:viewportHeight="108">
+	<path
+		android:pathData="M39,37.5 L55.5,51 L39,64.5 Z"
+		android:fillColor="#FF0A0A0A" />
+	<path
+		android:pathData="M69,43.5 L52.5,57 L69,70.5 Z"
+		android:fillColor="#FF0A0A0A" />
+</vector>
