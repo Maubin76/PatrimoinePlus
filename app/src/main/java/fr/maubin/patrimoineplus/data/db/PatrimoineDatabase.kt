@@ -64,6 +64,9 @@ abstract class PatrimoineDatabase : RoomDatabase()
 	// Accès aux relevés.
 	abstract fun statementDao(): StatementDao
 
+	// Accès en bloc pour l'export et l'import.
+	abstract fun backupDao(): BackupDao
+
 	companion object
 	{
 		const val kFileName = "patrimoine.db"									// fichier de la base

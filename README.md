@@ -42,7 +42,7 @@ Package racine : `fr.maubin.patrimoineplus`.
 
 ```
 domain/   modèles, règles de saisie, calculs — Kotlin pur, sans Android, testé en JVM
-data/     base Room (db), dépôts (repo), réglages (settings), démonstration (demo)
+data/     base Room (db), dépôts (repo), réglages (settings), sauvegarde (backup), démonstration (demo)
 di/       modules Hilt (horloge, base, dépôts)
 ui/       écrans Compose, ViewModels, thème, navigation, composants
 data/settings/  réglages DataStore
@@ -135,8 +135,41 @@ Détail complet : [`doc/SPEC.md` § 2](doc/SPEC.md#2-modèle-de-données).
 
 La sauvegarde cloud Android est désactivée (`allowBackup=false`, et toutes les
 données sont exclues de `cloud-backup` pour Android 12 et plus). Le transfert
-direct entre téléphones reste possible. L'export et l'import JSON arrivent à
-l'étape 7.
+direct entre téléphones reste possible.
+
+- **Export** (Réglages › Données) : un fichier JSON complet et versionné
+  (`patrimoineplus-AAAA-MM-JJ.json`), **non chiffré**, enregistré où l'on veut
+  via le sélecteur de fichiers du système. Il contient comptes, catégories,
+  actifs, opérations (jambes et ordres), relevés et cours ; aucun total.
+- **Import** : le fichier est entièrement vérifié avant toute écriture
+  (signature, version, valeurs, identifiants, références, règles de saisie
+  rejouées dans l'ordre chronologique). Un résumé est affiché, puis, après
+  confirmation, toutes les données sont remplacées en une seule transaction
+  (tout ou rien).
+- **Rappel** : une carte sur l'Accueil invite à exporter quand il y a des
+  données et que le dernier export date de 30 jours ou plus (ou n'a jamais eu
+  lieu).
+
+## Verrou
+
+Désactivé par défaut ; interrupteur dans Réglages › Sécurité, qui demande une
+première authentification pour s'activer. Une fois activé, l'appli demande
+l'empreinte ou le code du téléphone (`BIOMETRIC_STRONG` ou `DEVICE_CREDENTIAL`)
+au démarrage et au retour après une minute ou plus en arrière-plan
+(`domain/rules/Safety.kt`, `ui/lock/`). L'écran de verrouillage se pose
+par-dessus l'appli, qui garde son état ; le contenu dessous est retiré de
+l'accessibilité. Choix assumé : l'aperçu des applis récentes et les captures
+d'écran restent permis (pas de `FLAG_SECURE`).
+
+## Reste à faire
+
+- Gestion des actifs (renommage, ISIN, archivage) : ils ne se créent que
+  depuis la saisie d'un ordre.
+- Légende de la répartition coupée avec une police système à 130 %.
+- Fond qui peut clignoter au démarrage en mode clair forcé quand le téléphone
+  est en sombre.
+- Migrations Room : à écrire au premier changement de schéma.
+- Version release : construite mais jamais exécutée par les tests.
 
 ## Conventions de code
 

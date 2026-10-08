@@ -4,6 +4,9 @@ import android.database.sqlite.SQLiteConstraintException
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import fr.maubin.patrimoineplus.data.backup.BackupRead
+import fr.maubin.patrimoineplus.data.backup.BackupRepository
+import fr.maubin.patrimoineplus.data.backup.decodeBackup
 import fr.maubin.patrimoineplus.data.db.PatrimoineDatabase
 import fr.maubin.patrimoineplus.data.demo.DemoRepository
 import fr.maubin.patrimoineplus.data.repo.AccountRepository
@@ -386,5 +389,25 @@ class DataLayerTest
 		fMarket.putStatement(vLivret.id, vDay, 12_000)
 		fMarket.deleteStatement(fMarket.observeStatements().first().single().id)
 		assertTrue(fMarket.observeStatements().first().isEmpty())
+	}
+
+	/*
+		Export puis import : la base revient exactement à l'état exporté, les
+		données ajoutées entre-temps disparaissent ; un fichier refusé ne touche
+		à rien.
+	*/
+	@Test
+	fun exportThenImportRestoresEverything() = runTest {
+		val vBackup = BackupRepository(fDb, kClock)								// sauvegarde
+		DemoRepository(fDb, kClock).loadDemo()
+		val vJson    = vBackup.exportJson()										// export
+		val vBefore  = fTransactions.observeTransactions().first().sortedBy { it.id }	// opérations exportées
+		account("Ajouté après l'export", AccountType.CHECKING)
+		assertTrue(decodeBackup("{}") is BackupRead.Invalid)
+		assertEquals(6, fAccounts.observeAccounts().first().size)
+		vBackup.replaceAll((decodeBackup(vJson) as BackupRead.Valid).file)
+		assertEquals(5, fAccounts.observeAccounts().first().size)
+		assertEquals(vBefore, fTransactions.observeTransactions().first().sortedBy { it.id })
+		assertEquals(vJson.substringAfter("\"accounts\""), vBackup.exportJson().substringAfter("\"accounts\""))
 	}
 }

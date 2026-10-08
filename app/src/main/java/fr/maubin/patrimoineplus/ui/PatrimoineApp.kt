@@ -50,6 +50,7 @@ import fr.maubin.patrimoineplus.BuildConfig
 import fr.maubin.patrimoineplus.ui.settings.DemoActions
 import fr.maubin.patrimoineplus.ui.settings.DemoViewModel
 import fr.maubin.patrimoineplus.ui.settings.SettingsScreen
+import fr.maubin.patrimoineplus.ui.settings.rememberSafetyActions
 import fr.maubin.patrimoineplus.ui.shell.AppFrame
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
@@ -177,7 +178,8 @@ private fun MainTabs(
 			{
 				TopLevelDestination.Home       -> HomeScreen(
 					inOnToggleHidden   = vToggle,
-					inOnManageAccounts = { vOpen(TopLevelDestination.Accounts) }
+					inOnManageAccounts = { vOpen(TopLevelDestination.Accounts) },
+					inOnBackup         = { vOpen(TopLevelDestination.Settings) }
 				)
 				TopLevelDestination.Accounts   -> AccountsScreen(vToggle, inOnOpenAccount)
 				TopLevelDestination.Categories -> CategoriesScreen()
@@ -186,6 +188,7 @@ private fun MainTabs(
 					inOnThemeMode = inAppViewModel::setThemeMode,
 					inHidden      = vHidden,
 					inOnHidden    = inAppViewModel::setAmountsHidden,
+					inSafety      = rememberSafetyActions(vSnackbar),
 					inDemo        = demoActions(vSnackbar)
 				)
 			}

@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -50,6 +51,24 @@ interface SettingsRepository
 		inId : compte
 	*/
 	suspend fun setLastAccountId(inId: String)
+
+	// Vrai si le verrou biométrique est activé.
+	val lockEnabled: Flow<Boolean>
+
+	/*
+		Active ou désactive le verrou biométrique.
+		inEnabled : vrai pour activer
+	*/
+	suspend fun setLockEnabled(inEnabled: Boolean)
+
+	// Instant du dernier export (ms) ; null s'il n'y en a jamais eu.
+	val lastExportAt: Flow<Long?>
+
+	/*
+		Mémorise l'instant du dernier export.
+		inAt : instant (ms)
+	*/
+	suspend fun setLastExportAt(inAt: Long)
 }
 
 /*
@@ -65,6 +84,8 @@ class DataStoreSettingsRepository @Inject constructor(
 	private val kThemeModeKey     = stringPreferencesKey("theme_mode")		// clé de l'apparence
 	private val kOnboardingKey    = booleanPreferencesKey("onboarding_done")	// clé du premier lancement
 	private val kLastAccountKey   = stringPreferencesKey("last_account")	// clé du dernier compte utilisé
+	private val kLockKey          = booleanPreferencesKey("lock_enabled")	// clé du verrou biométrique
+	private val kLastExportKey    = longPreferencesKey("last_export")		// clé du dernier export
 
 	override val amountsHidden: Flow<Boolean> =
 		inDataStore.data.map { inPreferences -> inPreferences[kAmountsHiddenKey] ?: false }
@@ -114,5 +135,29 @@ class DataStoreSettingsRepository @Inject constructor(
 	override suspend fun setLastAccountId(inId: String)
 	{
 		inDataStore.edit { inPreferences -> inPreferences[kLastAccountKey] = inId }
+	}
+
+	override val lockEnabled: Flow<Boolean> =
+		inDataStore.data.map { inPreferences -> inPreferences[kLockKey] ?: false }
+
+	/*
+		Enregistre l'activation du verrou biométrique.
+		inEnabled : vrai pour activer
+	*/
+	override suspend fun setLockEnabled(inEnabled: Boolean)
+	{
+		inDataStore.edit { inPreferences -> inPreferences[kLockKey] = inEnabled }
+	}
+
+	override val lastExportAt: Flow<Long?> =
+		inDataStore.data.map { inPreferences -> inPreferences[kLastExportKey] }
+
+	/*
+		Enregistre l'instant du dernier export.
+		inAt : instant (ms)
+	*/
+	override suspend fun setLastExportAt(inAt: Long)
+	{
+		inDataStore.edit { inPreferences -> inPreferences[kLastExportKey] = inAt }
 	}
 }

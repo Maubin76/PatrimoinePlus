@@ -47,6 +47,7 @@ import fr.maubin.patrimoineplus.ui.home.HomeGroup
 import fr.maubin.patrimoineplus.ui.home.HomeUiState
 import fr.maubin.patrimoineplus.ui.home.kPreviewState
 import fr.maubin.patrimoineplus.ui.navigation.TopLevelDestination
+import fr.maubin.patrimoineplus.ui.settings.SafetyActions
 import fr.maubin.patrimoineplus.ui.settings.SettingsScreen
 import fr.maubin.patrimoineplus.ui.shell.AppFrame
 import fr.maubin.patrimoineplus.ui.theme.PatrimoineTheme
@@ -182,6 +183,14 @@ class ScreenshotTest
 	})
 
 	/*
+		Accueil avec le rappel d'export (dernier export trop ancien).
+	*/
+	@Test
+	fun homeExportReminder() = captureRoboImage("$kOutDir/home-rappel-export.png", content = shell(false, false, TopLevelDestination.Home) {
+		HomeContent(kPreviewState.copy(exportDue = true), {}, {})
+	})
+
+	/*
 		Accueil sans compte : l'état réel tant que la base est vide.
 	*/
 	@Test
@@ -202,7 +211,7 @@ class ScreenshotTest
 	*/
 	@Test
 	fun settingsDark() = captureRoboImage("$kOutDir/settings-dark.png", content = shell(true, true, TopLevelDestination.Settings) {
-		SettingsScreen(ThemeMode.DARK, {}, true, {})
+		SettingsScreen(ThemeMode.DARK, {}, true, {}, SafetyActions(true, "8 octobre 2026", {}, {}, {}))
 	})
 
 	/*

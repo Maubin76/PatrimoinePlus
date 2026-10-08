@@ -300,3 +300,107 @@ interface StatementDao
 	@Query("DELETE FROM account_statement WHERE id = :inId")
 	suspend fun deleteById(inId: String)
 }
+
+/*
+	Accès en bloc pour l'export et l'import : lecture de toutes les tables,
+	effacement complet avant un import.
+*/
+@Dao
+interface BackupDao
+{
+	// Tous les comptes.
+	@Query("SELECT * FROM account")
+	suspend fun accounts(): List<AccountEntity>
+
+	// Toutes les catégories.
+	@Query("SELECT * FROM category")
+	suspend fun categories(): List<CategoryEntity>
+
+	// Tous les actifs.
+	@Query("SELECT * FROM asset")
+	suspend fun assets(): List<AssetEntity>
+
+	// Tous les relevés.
+	@Query("SELECT * FROM account_statement")
+	suspend fun statements(): List<AccountStatementEntity>
+
+	// Tous les cours.
+	@Query("SELECT * FROM asset_price")
+	suspend fun prices(): List<AssetPriceEntity>
+
+	/*
+		Efface toutes les données, dans l'ordre qu'imposent les clés étrangères.
+	*/
+	@Transaction
+	suspend fun deleteAll()
+	{
+		deleteTrades()
+		deletePostings()
+		deleteTransactions()
+		deletePrices()
+		deleteStatements()
+		deleteAssets()
+		deleteCategories()
+		deleteAccounts()
+	}
+
+	// Efface les ordres.
+	@Query("DELETE FROM trade")
+	suspend fun deleteTrades()
+
+	// Efface les jambes.
+	@Query("DELETE FROM posting")
+	suspend fun deletePostings()
+
+	// Efface les opérations.
+	@Query("DELETE FROM txn")
+	suspend fun deleteTransactions()
+
+	// Efface les cours.
+	@Query("DELETE FROM asset_price")
+	suspend fun deletePrices()
+
+	// Efface les relevés.
+	@Query("DELETE FROM account_statement")
+	suspend fun deleteStatements()
+
+	// Efface les actifs.
+	@Query("DELETE FROM asset")
+	suspend fun deleteAssets()
+
+	// Efface les catégories.
+	@Query("DELETE FROM category")
+	suspend fun deleteCategories()
+
+	// Efface les comptes.
+	@Query("DELETE FROM account")
+	suspend fun deleteAccounts()
+
+	/*
+		Ajoute des comptes.
+		inAccounts : comptes
+	*/
+	@Insert
+	suspend fun insertAccounts(inAccounts: List<AccountEntity>)
+
+	/*
+		Ajoute des relevés.
+		inStatements : relevés
+	*/
+	@Insert
+	suspend fun insertStatements(inStatements: List<AccountStatementEntity>)
+
+	/*
+		Ajoute des cours.
+		inPrices : cours
+	*/
+	@Insert
+	suspend fun insertPrices(inPrices: List<AssetPriceEntity>)
+
+	/*
+		Ajoute des en-têtes d'opérations.
+		inTxs : opérations
+	*/
+	@Insert
+	suspend fun insertTransactions(inTxs: List<TransactionEntity>)
+}

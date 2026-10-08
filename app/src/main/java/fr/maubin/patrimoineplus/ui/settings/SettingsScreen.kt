@@ -1,5 +1,6 @@
 package fr.maubin.patrimoineplus.ui.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,12 +40,28 @@ import fr.maubin.patrimoineplus.ui.shell.ScreenScaffold
 import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
 
 /*
-	Onglet des réglages : apparence et mode discret fonctionnent dès
-	maintenant ; verrou et sauvegarde arrivent à l'étape 7.
+	Verrou et sauvegarde, vus par l'écran des réglages.
+	lockEnabled  : vrai si le verrou est activé
+	lastExport   : date du dernier export, formatée ; null s'il n'y en a jamais eu
+	onLockChange : demande d'activer ou de désactiver le verrou
+	onExport     : lance l'export (choix du fichier)
+	onImport     : lance l'import (choix du fichier)
+*/
+data class SafetyActions(
+	val lockEnabled  : Boolean,
+	val lastExport   : String?,
+	val onLockChange : (Boolean) -> Unit,
+	val onExport     : () -> Unit,
+	val onImport     : () -> Unit
+)
+
+/*
+	Onglet des réglages : apparence, mode discret, verrou et sauvegarde.
 	inThemeMode   : apparence choisie
 	inOnThemeMode : change l'apparence
 	inHidden      : vrai si le mode discret est actif
 	inOnHidden    : active ou désactive le mode discret
+	inSafety      : verrou et sauvegarde
 	inDemo        : actions de démonstration ; null en version release
 */
 @Composable
@@ -53,6 +70,7 @@ fun SettingsScreen(
 	inOnThemeMode : (ThemeMode) -> Unit,
 	inHidden      : Boolean,
 	inOnHidden    : (Boolean) -> Unit,
+	inSafety      : SafetyActions,
 	inDemo        : DemoActions? = null
 )
 {
@@ -70,43 +88,40 @@ fun SettingsScreen(
 			SectionHeader(inTitle = "Confidentialité")
 			Spacer(Modifier.height(8.dp))
 			BorderedCard {
-				Row(
-					modifier          = Modifier
-						.fillMaxWidth()
-						.toggleable(value = inHidden, role = Role.Switch, onValueChange = inOnHidden)
-						.padding(horizontal = 20.dp, vertical = 16.dp),
-					verticalAlignment = Alignment.CenterVertically
-				) {
-					SettingText(
-						inTitle    = "Mode discret",
-						inDetail   = "Masque les montants sur tous les écrans. L’œil de la barre du haut fait de même.",
-						inMuted    = false,
-						inModifier = Modifier.weight(1f)
-					)
-					Spacer(Modifier.width(16.dp))
-					Switch(
-						checked         = inHidden,
-						onCheckedChange = null,
-						colors          = SwitchDefaults.colors(
-							checkedTrackColor = MaterialTheme.colorScheme.primary,
-							checkedThumbColor = MaterialTheme.colorScheme.onPrimary
-						)
-					)
-				}
+				SwitchRow(
+					inTitle    = "Mode discret",
+					inDetail   = "Masque les montants sur tous les écrans. L’œil de la barre du haut fait de même.",
+					inChecked  = inHidden,
+					inOnChange = inOnHidden
+				)
 			}
 			Spacer(Modifier.height(32.dp))
 			SectionHeader(inTitle = "Sécurité")
 			Spacer(Modifier.height(8.dp))
 			BorderedCard {
-				UpcomingRow("Verrou biométrique", "Empreinte ou code du téléphone, re-verrouillage après une minute (étape 7).")
+				SwitchRow(
+					inTitle    = "Verrou biométrique",
+					inDetail   = "Empreinte ou code du téléphone à l’ouverture, et au retour après une minute ou plus hors de l’appli.",
+					inChecked  = inSafety.lockEnabled,
+					inOnChange = inSafety.onLockChange
+				)
 			}
 			Spacer(Modifier.height(32.dp))
 			SectionHeader(inTitle = "Données")
 			Spacer(Modifier.height(8.dp))
 			BorderedCard {
-				UpcomingRow("Exporter", "Fichier JSON complet, rangé où vous voulez (étape 7).")
+				ActionRow(
+					inTitle   = "Exporter",
+					inDetail  = "Fichier JSON complet, non chiffré, à ranger où vous voulez. " +
+						(inSafety.lastExport?.let { "Dernier export le $it." } ?: "Aucun export pour l’instant."),
+					inOnClick = inSafety.onExport
+				)
 				HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = MaterialTheme.colorScheme.outlineVariant)
-				UpcomingRow("Importer", "Remplace toutes les données par celles d’un export (étape 7).")
+				ActionRow(
+					inTitle   = "Importer",
+					inDetail  = "Remplace toutes les données par celles d’un export, après vérification du fichier et confirmation.",
+					inOnClick = inSafety.onImport
+				)
 			}
 			if (inDemo != null)
 			{
@@ -121,14 +136,12 @@ fun SettingsScreen(
 	Titre et explication d'un réglage.
 	inTitle    : nom du réglage
 	inDetail   : explication
-	inMuted    : atténue le titre (réglage pas encore disponible)
 	inModifier : modificateur appliqué
 */
 @Composable
 private fun SettingText(
 	inTitle    : String,
 	inDetail   : String,
-	inMuted    : Boolean,
 	inModifier : Modifier = Modifier
 )
 {
@@ -136,7 +149,7 @@ private fun SettingText(
 		Text(
 			text  = inTitle,
 			style = MaterialTheme.typography.titleMedium,
-			color = if (inMuted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+			color = MaterialTheme.colorScheme.onSurface
 		)
 		Text(
 			text  = inDetail,
@@ -147,21 +160,65 @@ private fun SettingText(
 }
 
 /*
-	Réglage pas encore disponible : atténué, sans interaction.
-	inTitle  : nom du réglage
-	inDetail : ce qu'il fera, et quand
+	Réglage à interrupteur : toute la ligne bascule la valeur.
+	inTitle    : nom du réglage
+	inDetail   : explication
+	inChecked  : valeur actuelle
+	inOnChange : demande de changement
 */
 @Composable
-private fun UpcomingRow(
-	inTitle  : String,
-	inDetail : String
+private fun SwitchRow(
+	inTitle    : String,
+	inDetail   : String,
+	inChecked  : Boolean,
+	inOnChange : (Boolean) -> Unit
+)
+{
+	Row(
+		modifier          = Modifier
+			.fillMaxWidth()
+			.toggleable(value = inChecked, role = Role.Switch, onValueChange = inOnChange)
+			.padding(horizontal = 20.dp, vertical = 16.dp),
+		verticalAlignment = Alignment.CenterVertically
+	) {
+		SettingText(
+			inTitle    = inTitle,
+			inDetail   = inDetail,
+			inModifier = Modifier.weight(1f)
+		)
+		Spacer(Modifier.width(16.dp))
+		Switch(
+			checked         = inChecked,
+			onCheckedChange = null,
+			colors          = SwitchDefaults.colors(
+				checkedTrackColor = MaterialTheme.colorScheme.primary,
+				checkedThumbColor = MaterialTheme.colorScheme.onPrimary
+			)
+		)
+	}
+}
+
+/*
+	Réglage qui lance une action : toute la ligne est cliquable.
+	inTitle   : nom de l'action
+	inDetail  : explication
+	inOnClick : lance l'action
+*/
+@Composable
+private fun ActionRow(
+	inTitle   : String,
+	inDetail  : String,
+	inOnClick : () -> Unit
 )
 {
 	SettingText(
 		inTitle    = inTitle,
 		inDetail   = inDetail,
-		inMuted    = true,
-		inModifier = Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 20.dp, vertical = 16.dp)
+		inModifier = Modifier
+			.fillMaxWidth()
+			.heightIn(min = 64.dp)
+			.clickable(role = Role.Button, onClick = inOnClick)
+			.padding(horizontal = 20.dp, vertical = 16.dp)
 	)
 }
 
@@ -225,8 +282,7 @@ private fun DemoSection(inDemo: DemoActions)
 		Column(Modifier.padding(20.dp)) {
 			SettingText(
 				inTitle  = "Données fictives (version debug)",
-				inDetail = "Six mois de comptes et d’opérations inventés, pour essayer l’appli. Remplacent toutes les données.",
-				inMuted  = false
+				inDetail = "Six mois de comptes et d’opérations inventés, pour essayer l’appli. Remplacent toutes les données."
 			)
 			Spacer(Modifier.height(16.dp))
 			Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

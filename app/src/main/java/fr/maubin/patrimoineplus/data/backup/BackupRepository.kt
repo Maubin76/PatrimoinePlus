@@ -1,0 +1,79 @@
+package fr.maubin.patrimoineplus.data.backup
+
+import androidx.room.withTransaction
+import fr.maubin.patrimoineplus.data.db.AccountEntity
+import fr.maubin.patrimoineplus.data.db.AccountStatementEntity
+import fr.maubin.patrimoineplus.data.db.AssetEntity
+import fr.maubin.patrimoineplus.data.db.AssetPriceEntity
+import fr.maubin.patrimoineplus.data.db.CategoryEntity
+import fr.maubin.patrimoineplus.data.db.PatrimoineDatabase
+import fr.maubin.patrimoineplus.data.db.PostingEntity
+import fr.maubin.patrimoineplus.data.db.TradeEntity
+import fr.maubin.patrimoineplus.data.db.TransactionEntity
+import java.time.Clock
+import java.time.Instant
+import java.time.LocalDate
+import javax.inject.Inject
+import javax.inject.Singleton
+
+/*
+	Export et import de toute la base, sous forme de fichier JSON versionné.
+	L'import remplace toutes les données en une seule transaction, et seulement
+	après vérification complète du fichier (tout ou rien).
+	inDb    : base locale
+	inClock : horloge (date de l'export)
+*/
+@Singleton
+class BackupRepository @Inject constructor(
+	private val inDb    : PatrimoineDatabase,
+	private val inClock : Clock
+)
+{
+	private val fDao = inDb.backupDao()											// accès en bloc
+
+	/*
+		Produit le JSON complet de la base.
+	*/
+	suspend fun exportJson(): String =
+		inDb.withTransaction {
+			encodeBackup(
+				BackupFile(
+					format       = kBackupFormat,
+					version      = kBackupVersion,
+					exportedAt   = Instant.now(inClock).toString(),
+					accounts     = fDao.accounts().map { AccountDto(it.id, it.name, it.type, it.institution, it.sharePercent, it.sortOrder, it.archived, it.createdAt, it.updatedAt) },
+					categories   = fDao.categories().map { CategoryDto(it.id, it.name, it.icon, it.kind, it.sortOrder, it.archived, it.createdAt, it.updatedAt) },
+					assets       = fDao.assets().map { AssetDto(it.id, it.name, it.isin, it.archived, it.createdAt, it.updatedAt) },
+					transactions = inDb.transactionDao().getAll().map { inTx ->
+						val vHead = inTx.transaction										// en-tête
+						TransactionDto(
+							vHead.id, vHead.date.toString(), vHead.kind, vHead.label, vHead.categoryId, vHead.assetId, vHead.notes, vHead.createdAt, vHead.updatedAt,
+							inTx.postings.map { PostingDto(it.id, it.accountId, it.amountCents) },
+							inTx.trades.map { TradeDto(it.id, it.assetId, it.side, it.quantity, it.unitPrice, it.feesCents) }
+						)
+					},
+					statements   = fDao.statements().map { StatementDto(it.id, it.accountId, it.date.toString(), it.balanceCents) },
+					prices       = fDao.prices().map { PriceDto(it.id, it.assetId, it.date.toString(), it.unitPrice) }
+				)
+			)
+		}
+
+	/*
+		Remplace toutes les données par celles d'un fichier déjà vérifié.
+		inFile : contenu valide (voir decodeBackup)
+	*/
+	suspend fun replaceAll(inFile: BackupFile)
+	{
+		inDb.withTransaction {
+			fDao.deleteAll()
+			fDao.insertAccounts(inFile.accounts.map { AccountEntity(it.id, it.name, it.type, it.institution, it.sharePercent, it.sortOrder, it.archived, it.createdAt, it.updatedAt) })
+			inDb.categoryDao().insertAll(inFile.categories.map { CategoryEntity(it.id, it.name, it.icon, it.kind, it.sortOrder, it.archived, it.createdAt, it.updatedAt) })
+			inDb.assetDao().insertAll(inFile.assets.map { AssetEntity(it.id, it.name, it.isin, it.archived, it.createdAt, it.updatedAt) })
+			fDao.insertTransactions(inFile.transactions.map { TransactionEntity(it.id, LocalDate.parse(it.date), it.kind, it.label, it.categoryId, it.assetId, it.notes, it.createdAt, it.updatedAt) })
+			inDb.transactionDao().insertPostings(inFile.transactions.flatMap { inTx -> inTx.postings.map { PostingEntity(it.id, inTx.id, it.accountId, it.amountCents) } })
+			inDb.transactionDao().insertTrades(inFile.transactions.flatMap { inTx -> inTx.trades.map { TradeEntity(it.id, inTx.id, it.assetId, it.side, it.quantity, it.unitPrice, it.feesCents) } })
+			fDao.insertStatements(inFile.statements.map { AccountStatementEntity(it.id, it.accountId, LocalDate.parse(it.date), it.balanceCents) })
+			fDao.insertPrices(inFile.prices.map { AssetPriceEntity(it.id, it.assetId, LocalDate.parse(it.date), it.unitPrice) })
+		}
+	}
+}
