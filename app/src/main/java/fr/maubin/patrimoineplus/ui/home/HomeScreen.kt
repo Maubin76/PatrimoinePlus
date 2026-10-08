@@ -1,5 +1,6 @@
 package fr.maubin.patrimoineplus.ui.home
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -36,6 +37,7 @@ import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.ui.components.AmountText
 import fr.maubin.patrimoineplus.ui.components.BarSegment
+import fr.maubin.patrimoineplus.ui.components.BalanceChart
 import fr.maubin.patrimoineplus.ui.components.BorderedCard
 import fr.maubin.patrimoineplus.ui.components.EmptyState
 import fr.maubin.patrimoineplus.ui.components.InfoPill
@@ -110,9 +112,16 @@ fun HomeContent(
 			}
 			else
 			{
+				if (inState.series.size > 1)
+				{
+					item { SectionHeader(inTitle = "Évolution") }
+					item { Spacer(Modifier.height(4.dp)) }
+					item { BalanceChart(inState.series, inState.series.last().month) }
+					item { Spacer(Modifier.height(32.dp)) }
+				}
 				item { SectionHeader(inTitle = "Répartition") }
 				item { Spacer(Modifier.height(4.dp)) }
-				item { RepartitionBlock(inState) }
+				item { RepartitionBlock(inState, inOnManageAccounts) }
 			}
 		}
 	}
@@ -157,6 +166,14 @@ private fun TotalBlock(inState: HomeUiState)
 			}
 		}
 		Spacer(Modifier.height(16.dp))
+		if (!inState.isEmpty)
+		{
+			Row(verticalAlignment = Alignment.CenterVertically) {
+				AmountText(inCents = inState.monthChange, inStyle = MaterialTheme.typography.titleMedium, inShowPlusSign = true)
+				Text(" ce mois-ci", style = MaterialTheme.typography.titleMedium, color = vColors.onSurfaceVariant)
+			}
+			Spacer(Modifier.height(16.dp))
+		}
 		InfoPill(if (inState.isEmpty) "Rien à calculer pour l’instant" else "Calculé au ${inState.asOf}")
 	}
 }
@@ -190,10 +207,15 @@ private fun fittingStyle(
 /*
 	Répartition par type de compte : barre en niveaux de gris, puis une
 	légende par type avec sa part et son sous-total.
-	inState : état de l'accueil
+	Toucher une ligne ouvre l'onglet Comptes.
+	inState  : état de l'accueil
+	inOnOpen : ouvre l'onglet Comptes
 */
 @Composable
-private fun RepartitionBlock(inState: HomeUiState)
+private fun RepartitionBlock(
+	inState  : HomeUiState,
+	inOnOpen : () -> Unit
+)
 {
 	val vHidden = LocalAmountsHidden.current								// mode discret actif
 	val vBase   = inState.groups.sumOf { maxOf(it.subtotalCents, 0L) }	// base des pourcentages
@@ -206,7 +228,7 @@ private fun RepartitionBlock(inState: HomeUiState)
 		inState.groups.forEach { inGroup ->
 			val vPercent = if (vBase > 0) inGroup.subtotalCents.coerceAtLeast(0L) * 100 / vBase else 0L	// part arrondie
 			Row(
-				modifier          = Modifier.fillMaxWidth().heightIn(min = 40.dp),
+				modifier          = Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(onClickLabel = "Voir les comptes", onClick = inOnOpen),
 				verticalAlignment = Alignment.CenterVertically
 			) {
 				SeriesDot(typeColor(inGroup.type))

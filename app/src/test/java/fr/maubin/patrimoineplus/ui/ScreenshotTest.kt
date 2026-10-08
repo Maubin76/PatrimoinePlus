@@ -39,6 +39,7 @@ import fr.maubin.patrimoineplus.ui.home.HomeAccountLine
 import fr.maubin.patrimoineplus.data.demo.buildDemoData
 import fr.maubin.patrimoineplus.domain.calc.Ledger
 import fr.maubin.patrimoineplus.domain.calc.wealthAt
+import fr.maubin.patrimoineplus.domain.calc.wealthSeries
 import fr.maubin.patrimoineplus.ui.home.HomeContent
 import fr.maubin.patrimoineplus.ui.home.toHomeUiState
 import java.time.LocalDate
@@ -246,11 +247,12 @@ class ScreenshotTest
 		(domaine réel : soldes, part détenue, valorisation du PEA).
 	*/
 	@Test
+	@Config(qualifiers = "w360dp-h1300dp-xxhdpi")
 	fun homeFromDemo()
 	{
 		val vToday = LocalDate.parse("2026-10-07")								// date de calcul
 		val vDemo  = buildDemoData(vToday)										// démonstration
-		val vState = toHomeUiState(wealthAt(vDemo.accounts, Ledger(vDemo.transactions), vToday, vDemo.prices))	// état calculé
+		val vState = toHomeUiState(wealthAt(vDemo.accounts, Ledger(vDemo.transactions), vToday, vDemo.prices), wealthSeries(vDemo.accounts, Ledger(vDemo.transactions), vDemo.prices, vToday))	// état calculé
 		captureRoboImage("$kOutDir/home-demo.png", content = shell(false, false, TopLevelDestination.Home) {
 			HomeContent(vState, {}, {})
 		})

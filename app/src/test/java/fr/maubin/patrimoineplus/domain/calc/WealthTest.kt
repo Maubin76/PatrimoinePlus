@@ -105,4 +105,17 @@ class WealthTest
 		val vStatement = AccountStatement(id("s"), kLivret.id, d("2026-01-31"), eur(10_012.5))	// relevé
 		assertEquals(eur(12.5), statementGap(vStatement, Ledger(kOps)))
 	}
+
+	/*
+		Variation du mois : dernier point moins le précédent ; depuis zéro si la
+		série commence ce mois-ci ; nulle sans série.
+	*/
+	@Test
+	fun monthChangeFromSeries()
+	{
+		val vSeries = wealthSeries(kAccounts, Ledger(kOps), emptyList(), d("2026-03-10"))	// série
+		assertEquals(eur(-100.0), monthChange(vSeries))							// joint −200 compté à 50 %
+		assertEquals(eur(12_550.5), monthChange(vSeries.take(1)))
+		assertEquals(0L, monthChange(emptyList()))
+	}
 }

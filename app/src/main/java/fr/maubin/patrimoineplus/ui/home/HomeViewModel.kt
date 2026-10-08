@@ -8,7 +8,10 @@ import fr.maubin.patrimoineplus.data.repo.MarketRepository
 import fr.maubin.patrimoineplus.data.repo.TransactionRepository
 import fr.maubin.patrimoineplus.domain.calc.Ledger
 import fr.maubin.patrimoineplus.domain.calc.Wealth
+import fr.maubin.patrimoineplus.domain.calc.SeriesPoint
+import fr.maubin.patrimoineplus.domain.calc.monthChange
 import fr.maubin.patrimoineplus.domain.calc.wealthAt
+import fr.maubin.patrimoineplus.domain.calc.wealthSeries
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,6 +25,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
 
+private const val kHomeSeriesMonths = 12									// mois de la courbe de l'accueil
 private val kDateFormat = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)	// format de la date de calcul
 
 /*
@@ -54,12 +58,16 @@ data class HomeGroup(
 
 /*
 	État de l'écran d'accueil.
-	asOf   : date à laquelle le patrimoine est calculé, formatée
-	groups : groupes de comptes non vides, dans l'ordre des types
+	asOf        : date à laquelle le patrimoine est calculé, formatée
+	groups      : groupes de comptes non vides, dans l'ordre des types
+	series      : patrimoine en fin de mois, douze derniers mois au plus
+	monthChange : variation depuis la fin du mois précédent
 */
 data class HomeUiState(
-	val asOf   : String,
-	val groups : List<HomeGroup>
+	val asOf        : String,
+	val groups      : List<HomeGroup>,
+	val series      : List<SeriesPoint> = emptyList(),
+	val monthChange : Long              = 0L
 )
 {
 	// Patrimoine total, en centimes : somme des valeurs comptées.
@@ -88,8 +96,10 @@ class HomeViewModel @Inject constructor(
 	// État exposé à l'écran, recalculé à chaque changement de la base.
 	val uiState: StateFlow<HomeUiState> =
 		combine(inAccounts.observeAccounts(), inTransactions.observeTransactions(), inMarket.observePrices()) { inAccountList, inTxs, inPrices ->
-			val vToday = LocalDate.now(inClock)									// date de calcul
-			toHomeUiState(wealthAt(inAccountList, Ledger(inTxs), vToday, inPrices))
+			val vToday  = LocalDate.now(inClock)									// date de calcul
+			val vLedger = Ledger(inTxs)												// grand livre
+			val vSeries = wealthSeries(inAccountList, vLedger, inPrices, vToday)	// patrimoine mois par mois
+			toHomeUiState(wealthAt(inAccountList, vLedger, vToday, inPrices), vSeries)
 		}
 			.flowOn(Dispatchers.Default)
 			.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState(today(), emptyList()))
@@ -101,14 +111,21 @@ class HomeViewModel @Inject constructor(
 }
 
 /*
-	Met en forme le patrimoine calculé : groupes par type ; un compte archivé
-	n'apparaît que s'il a encore une valeur.
+	Met en forme le patrimoine calculé : groupes par type (un compte archivé
+	n'apparaît que s'il a encore une valeur), évolution sur douze mois au plus
+	et variation du mois.
 	inWealth : patrimoine calculé
+	inSeries : patrimoine mois par mois depuis la première opération
 */
-internal fun toHomeUiState(inWealth: Wealth): HomeUiState =
+internal fun toHomeUiState(
+	inWealth : Wealth,
+	inSeries : List<SeriesPoint> = emptyList()
+): HomeUiState =
 	HomeUiState(
-		asOf   = inWealth.date.format(kDateFormat),
-		groups = AccountType.entries.mapNotNull { inType ->
+		series      = inSeries.takeLast(kHomeSeriesMonths),
+		monthChange = monthChange(inSeries),
+		asOf        = inWealth.date.format(kDateFormat),
+		groups      = AccountType.entries.mapNotNull { inType ->
 			val vLines = inWealth.accounts
 				.filter { it.account.type == inType && (!it.account.archived || it.valueCents != 0L) }
 				.map { inValue ->
