@@ -22,8 +22,9 @@ dans [`doc/SPEC.md`](doc/SPEC.md) ; la couverture des tests dans
 
 ## Intégration continue
 
-GitHub Actions (`.github/workflows/ci.yml`) : à chaque push, sur toutes les
-branches, et sur chaque pull request, la CI installe le JDK 21, lance tous les
+GitHub Actions (`.github/workflows/ci.yml`) : à chaque push sur `main`
+seulement (les branches de travail ne la déclenchent pas ; lancement manuel
+possible depuis l'onglet Actions), la CI installe le JDK 21, lance tous les
 tests JVM (`:app:testDebugUnitTest`) puis construit l'APK debug. En cas
 d'échec, les rapports de tests sont joints à l'exécution (artefact
 « rapports-tests », 14 jours). Un nouveau push sur la même branche annule

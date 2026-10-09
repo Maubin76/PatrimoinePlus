@@ -1,11 +1,12 @@
-# Intégration continue : à chaque push (toutes branches) et sur chaque pull request,
-# lance tous les tests JVM puis construit l'APK debug. Les rapports de tests sont
-# joints à l'exécution en cas d'échec.
+# Intégration continue : à chaque push sur main (seulement), lance tous les tests
+# JVM puis construit l'APK debug. Les rapports de tests sont joints à l'exécution
+# en cas d'échec. Les branches de travail ne la déclenchent pas ; elle reste
+# lançable à la main depuis l'onglet Actions (workflow_dispatch).
 name: CI
 
 on:
   push:
-  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 # Un nouveau push sur la même branche annule l'exécution précédente, devenue inutile.
