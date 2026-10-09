@@ -15,7 +15,8 @@ dans [`doc/SPEC.md`](doc/SPEC.md) ; la couverture des tests dans
 
 ```sh
 ./gradlew :app:assembleDebug        # APK : app/build/outputs/apk/debug/app-debug.apk
-./gradlew :app:testDebugUnitTest    # tests JVM
+./gradlew :core:test                # tests du module commun (Kotlin pur)
+./gradlew :app:testDebugUnitTest    # tests de l'appli Android (Robolectric)
 ./gradlew :app:assembleRelease      # APK optimisé (R8), signé avec la clé de debug :
                                     # app/build/outputs/apk/release/app-release.apk
 ```
@@ -25,7 +26,8 @@ dans [`doc/SPEC.md`](doc/SPEC.md) ; la couverture des tests dans
 GitHub Actions (`.github/workflows/ci.yml`) : à chaque push sur `main`
 seulement (les branches de travail ne la déclenchent pas ; lancement manuel
 possible depuis l'onglet Actions), la CI installe le JDK 21, lance tous les
-tests JVM (`:app:testDebugUnitTest`) puis construit l'APK debug. En cas
+tests JVM (`:core:test` et `:app:testDebugUnitTest`) puis construit l'APK
+debug. En cas
 d'échec, les rapports de tests sont joints à l'exécution (artefact
 « rapports-tests », 14 jours). Un nouveau push sur la même branche annule
 l'exécution en cours. Les tests ne dépendent ni du fuseau horaire ni de la
@@ -52,15 +54,26 @@ compatibles (`minSdk`) ni le comportement à l'exécution (`targetSdk`).
 
 ## Architecture
 
-Package racine : `fr.maubin.patrimoineplus`.
+Package racine : `fr.maubin.patrimoineplus`. Le projet est découpé en modules
+Gradle ; un module ne peut utiliser que ce dont il dépend, ce qui garantit les
+frontières :
 
 ```
-domain/   modèles, règles de saisie, calculs — Kotlin pur, sans Android, testé en JVM
-data/     base Room (db), dépôts (repo), réglages (settings), sauvegarde (backup), démonstration (demo)
-di/       modules Hilt (horloge, base, dépôts)
-ui/       écrans Compose, ViewModels, thème, navigation, composants
-data/settings/  réglages DataStore
+:core   Kotlin pur sur la JVM, sans Android ni interface — partagé par les applis
+        domain/        modèles, règles de saisie, calculs, formats d'affichage
+        data/backup/   format de sauvegarde (classeur Excel, ancien JSON), rotation
+        data/demo/     données de démonstration
+        data/market/   analyse des cours, client Yahoo Finance
+        testFixtures/  aides de test partagées (fausse source de cours, réponses enregistrées)
+:app    appli Android (dépend de :core)
+        data/          base Room (db), dépôts (repo), réglages DataStore (settings),
+                       sauvegarde sur le téléphone, mise à jour des cours (market)
+        di/            modules Hilt (horloge, base, réglages, source de cours)
+        ui/            écrans Compose, ViewModels, thème, navigation, composants
 ```
+
+Le code commun garde ses noms de packages : passer d'un module à l'autre n'a
+changé aucun import.
 
 Règles :
 

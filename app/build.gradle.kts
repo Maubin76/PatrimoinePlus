@@ -55,6 +55,7 @@ android {
 }
 
 dependencies {
+	implementation(project(":core"))
 	implementation(libs.androidx.core.ktx)
 	implementation(libs.androidx.core.splashscreen)
 	implementation(libs.androidx.activity.compose)
@@ -82,6 +83,7 @@ dependencies {
 	ksp(libs.androidx.room.compiler)
 	debugImplementation(libs.androidx.compose.ui.tooling)
 
+	testImplementation(testFixtures(project(":core")))
 	testImplementation(libs.junit)
 	testImplementation(libs.kotlinx.coroutines.test)
 	testImplementation(libs.robolectric)

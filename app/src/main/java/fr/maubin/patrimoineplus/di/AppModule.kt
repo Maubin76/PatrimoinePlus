@@ -41,6 +41,13 @@ object AppModule
 	@Singleton
 	fun provideDataStore(@ApplicationContext inContext: Context): DataStore<Preferences> =
 		PreferenceDataStoreFactory.create { inContext.preferencesDataStoreFile("settings") }
+
+	/*
+		Cours publics de Yahoo Finance (classe du module commun, sans injection).
+	*/
+	@Provides
+	@Singleton
+	fun provideQuoteSource(): QuoteSource = YahooQuoteSource()
 }
 
 /*
@@ -57,10 +64,4 @@ abstract class BindingsModule
 	@Binds
 	abstract fun bindSettings(inImpl: DataStoreSettingsRepository): SettingsRepository
 
-	/*
-		Cours publics de Yahoo Finance.
-		inImpl : implémentation Yahoo Finance
-	*/
-	@Binds
-	abstract fun bindQuoteSource(inImpl: YahooQuoteSource): QuoteSource
 }

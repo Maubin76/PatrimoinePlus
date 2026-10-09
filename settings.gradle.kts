@@ -23,4 +23,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "PatrimoinePlus"
+include(":core")
 include(":app")

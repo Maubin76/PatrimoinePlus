@@ -8,8 +8,6 @@ import java.net.URL
 import java.net.URLEncoder
 import java.time.LocalDate
 import java.time.ZoneOffset
-import javax.inject.Inject
-import javax.inject.Singleton
 
 private const val kHost      = "https://query1.finance.yahoo.com"				// serveur des cours
 private const val kAgent     = "Mozilla/5.0"									// agent accepté par le serveur
@@ -19,8 +17,7 @@ private const val kTimeoutMs = 15_000											// délai maximal d'une requête
 	Cours publics de Yahoo Finance (API non officielle, sans clé). Seuls des
 	ISIN et des symboles sont envoyés : aucune quantité, aucun montant.
 */
-@Singleton
-class YahooQuoteSource @Inject constructor() : QuoteSource
+class YahooQuoteSource : QuoteSource
 {
 	/*
 		Symboles trouvés pour un ISIN.

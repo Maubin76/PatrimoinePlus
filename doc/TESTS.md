@@ -1,14 +1,18 @@
 # Tests
 
-Tous les tests tournent sur la JVM (`app/src/test`), sans émulateur :
+Tous les tests tournent sur la JVM, sans émulateur (114 tests au total) :
 
 ```sh
-./gradlew :app:testDebugUnitTest        # 114 tests
+./gradlew :core:test                    # module commun : 73 tests, Kotlin pur (core/src/test)
+./gradlew :app:testDebugUnitTest        # appli Android : 41 tests, Robolectric (app/src/test)
 ./gradlew :app:recordRoborazziDebug     # régénère les captures d'écran
 ```
 
-Les tests de la couche `domain` sont du Kotlin pur. Ceux de la couche `data`
-et les captures utilisent Robolectric (Android simulé sur la JVM).
+Les tests du module `:core` (domaine, format de sauvegarde, classeur, cours) sont
+du Kotlin pur. Ceux de l'appli (base Room, migration, mise à jour des cours,
+captures) utilisent Robolectric (Android simulé sur la JVM). Les aides de test
+communes (fausse source de cours, réponses Yahoo enregistrées) sont dans
+`core/src/testFixtures` et servent aux deux modules.
 
 ## Ce qui est couvert
 
