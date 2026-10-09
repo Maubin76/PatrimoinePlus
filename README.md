@@ -94,7 +94,10 @@ inspirée de deux maquettes de référence fournies le 2026-10-07.
     et revenus), courbe du solde, relevés, opérations groupées par mois.
   - Bourse : vue globale ; valeur et plus-values, courbe de la **valeur**
     (espèces et positions au dernier cours connu) au-dessus des positions,
-    puis opérations groupées par mois.
+    puis opérations groupées par mois. Les positions s'ouvrent sur une barre
+    de répartition des titres (espèces exclues) en quatre gris au plus, les
+    plus petits titres partageant le dernier ; chaque ligne porte sa pastille,
+    sa valeur et sa part.
   - Partout : sélection multiple par appui long et suppression confirmée.
 - Saisie (`ui/entry`) : feuille du bas ouverte par le bouton « + » (onglets
   Accueil et Comptes, vue d'un compte) ; dépense ou revenu, montant sans

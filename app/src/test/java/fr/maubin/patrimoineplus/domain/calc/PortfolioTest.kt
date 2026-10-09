@@ -138,4 +138,25 @@ class PortfolioTest
 		assertTrue(vValue.positions.isEmpty())
 		assertEquals(2, vValue.realized.size)
 	}
+
+	/*
+		Répartition des titres : de la plus grosse à la plus petite position,
+		parts entières qui font toujours 100 au total, position nulle exclue.
+	*/
+	@Test
+	fun allocationSumsToHundred()
+	{
+		val vPositions = listOf(
+			Position("a", qty(1.0), 0L, null, 0L, 1L, 0L),
+			Position("b", qty(1.0), 0L, null, 0L, 1L, 0L),
+			Position("c", qty(1.0), 0L, null, 0L, 1L, 0L),
+			Position("d", 0L, 0L, null, 0L, 0L, 0L),
+			Position("e", qty(1.0), 0L, null, 0L, 3L, 0L)
+		)																		// 3, 1, 1, 1 et une position soldée
+		val vLines = allocation(vPositions)										// répartition
+		assertEquals(listOf("e", "a", "b", "c"), vLines.map { it.position.assetId })
+		assertEquals(100, vLines.sumOf { it.percent })
+		assertEquals(listOf(50, 17, 17, 16), vLines.map { it.percent })
+		assertTrue(allocation(emptyList()).isEmpty())
+	}
 }

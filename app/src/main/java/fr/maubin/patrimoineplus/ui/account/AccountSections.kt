@@ -29,12 +29,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import fr.maubin.patrimoineplus.domain.calc.AllocationLine
 import fr.maubin.patrimoineplus.domain.calc.Position
-import fr.maubin.patrimoineplus.domain.calc.averagePrice
-import fr.maubin.patrimoineplus.domain.calc.roundDiv
+import fr.maubin.patrimoineplus.domain.calc.allocation
 import fr.maubin.patrimoineplus.domain.format.editableScaled
 import fr.maubin.patrimoineplus.domain.format.formatPrice
 import fr.maubin.patrimoineplus.domain.format.formatScaled
@@ -43,6 +45,11 @@ import fr.maubin.patrimoineplus.domain.format.parseScaled
 import fr.maubin.patrimoineplus.domain.model.Asset
 import fr.maubin.patrimoineplus.ui.components.AmountInput
 import fr.maubin.patrimoineplus.ui.components.AmountText
+import fr.maubin.patrimoineplus.ui.components.BarSegment
+import fr.maubin.patrimoineplus.ui.components.ProportionBar
+import fr.maubin.patrimoineplus.ui.components.SeriesDot
+import fr.maubin.patrimoineplus.ui.theme.kAllocationDark
+import fr.maubin.patrimoineplus.ui.theme.kAllocationLight
 import fr.maubin.patrimoineplus.ui.components.BorderedCard
 import fr.maubin.patrimoineplus.ui.components.DateInput
 import fr.maubin.patrimoineplus.ui.components.EmptyState
@@ -57,6 +64,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
 
+private const val kAllocationSlots = 4									// teintes de la répartition (la dernière : « Autres »)
 private val kShortDate = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)	// date courte
 
 /*
@@ -113,8 +121,10 @@ private fun StatRow(
 }
 
 /*
-	Positions d'un compte Bourse : actif, quantité, valeur ; PRU, cours et
-	plus-value latente dessous ; puis les actions (cours, positions initiales).
+	Positions d'un compte Bourse : barre de répartition des titres, puis une
+	ligne par titre (pastille de sa teinte, nom, part, valeur), de la plus
+	grosse à la plus petite ; puis les actions (cours, positions initiales).
+	Au-delà de quatre titres, les plus petits partagent la teinte « Autres ».
 	inPortfolio : portefeuille valorisé
 	inOpenings  : positions initiales
 	inOnPrices  : ouvre la mise à jour des cours
@@ -131,19 +141,33 @@ fun PositionsSection(
 )
 {
 	val vPositions = inPortfolio.valuation.positions							// positions
+	val vLines     = allocation(vPositions)										// répartition des titres
+	val vRamp      = allocationRamp()											// teintes de la répartition
 	SectionHeader(inTitle = "Positions", inLinkLabel = if (vPositions.isEmpty()) null else "Mettre à jour les cours", inOnLink = inOnPrices)
 	Spacer(Modifier.height(8.dp))
+	if (vLines.size > 1)
+	{
+		ProportionBar(
+			inSegments    = vLines.groupBy { slotOf(it, vLines) }.toSortedMap().map { (inSlot, inGroup) -> BarSegment(inGroup.sumOf { it.position.valueCents }, vRamp[inSlot]) },
+			inDescription = "Répartition des titres : " + vLines.joinToString(", ") { "${inPortfolio.names[it.position.assetId] ?: "Actif supprimé"} ${it.percent}\u202F%" }
+		)
+		Spacer(Modifier.height(16.dp))
+	}
 	BorderedCard {
 		if (vPositions.isEmpty())
 		{
 			EmptyState(inTitle = "Aucune position", inBody = "Saisissez un ordre d’achat avec « + », ou ajoutez vos positions initiales ci-dessous.")
 		}
-		vPositions.forEachIndexed { inIndex, inPosition ->
+		vLines.forEachIndexed { inIndex, inLine ->
 			if (inIndex > 0)
 			{
 				HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = MaterialTheme.colorScheme.outlineVariant)
 			}
-			PositionRow(inPosition, inPortfolio.names[inPosition.assetId] ?: "Actif supprimé")
+			PositionRow(
+				inName    = inPortfolio.names[inLine.position.assetId] ?: "Actif supprimé",
+				inLine    = inLine,
+				inColor   = if (vLines.size > 1) vRamp[slotOf(inLine, vLines)] else null
+			)
 		}
 	}
 	if (inOpenings.isNotEmpty())
@@ -178,44 +202,54 @@ fun PositionsSection(
 }
 
 /*
-	Ligne d'une position.
-	inPosition : position valorisée
-	inName     : nom de l'actif
+	Ligne d'une position : pastille de sa teinte dans la répartition, nom ;
+	à droite, valeur et part des titres dessous.
+	inName   : nom de l'actif
+	inLine   : position et sa part
+	inColor  : teinte dans la répartition ; null pour un titre unique
 */
 @Composable
 private fun PositionRow(
-	inPosition : Position,
-	inName     : String
+	inName   : String,
+	inLine   : AllocationLine,
+	inColor  : Color?
 )
 {
-	val vColors = MaterialTheme.colorScheme									// palette courante
-	val vHidden = LocalAmountsHidden.current									// mode discret actif
-	val vAvg    = averagePrice(inPosition.costCents, inPosition.quantity)	// PRU
-	Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-		Row(verticalAlignment = Alignment.CenterVertically) {
-			Text(inName, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+	Row(
+		modifier          = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 20.dp, vertical = 12.dp),
+		verticalAlignment = Alignment.CenterVertically
+	) {
+		if (inColor != null)
+		{
+			SeriesDot(inColor)
 			Spacer(Modifier.width(12.dp))
-			AmountText(inCents = inPosition.valueCents, inStyle = MaterialTheme.typography.titleMedium)
 		}
-		Row(verticalAlignment = Alignment.CenterVertically) {
-			Text(
-				text     = buildString {
-					append("${formatScaled(inPosition.quantity)} parts")
-					if (!vHidden)
-					{
-						append(" · PRU ${formatPrice(roundDiv(vAvg, 100) * 100)}")
-						append(if (inPosition.isUnpriced) " · sans cours" else " · ${formatPrice(inPosition.unitPrice)} au ${inPosition.priceDate!!.format(kShortDate)}")
-					}
-				},
-				style    = MaterialTheme.typography.bodyMedium,
-				color    = vColors.onSurfaceVariant,
-				modifier = Modifier.weight(1f)
-			)
-			Spacer(Modifier.width(12.dp))
-			AmountText(inCents = inPosition.unrealizedCents, inStyle = MaterialTheme.typography.bodyMedium, inColor = vColors.onSurfaceVariant, inShowPlusSign = true)
+		Text(inName, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+		Spacer(Modifier.width(16.dp))
+		Column(horizontalAlignment = Alignment.End) {
+			AmountText(inCents = inLine.position.valueCents, inStyle = MaterialTheme.typography.titleMedium)
+			Text("${inLine.percent}\u202F%", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		}
 	}
 }
+
+/*
+	Rang de teinte d'une position : son rang de valeur, les plus petites au-delà
+	de la quatrième partageant la dernière teinte (« Autres »).
+	inLine  : position et sa part
+	inLines : répartition complète, triée
+*/
+private fun slotOf(
+	inLine  : AllocationLine,
+	inLines : List<AllocationLine>
+): Int = inLines.indexOf(inLine).coerceAtMost(kAllocationSlots - 1)
+
+/*
+	Rampe de gris de la répartition, selon le mode clair ou sombre.
+*/
+@Composable
+private fun allocationRamp(): List<Color> =
+	if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) kAllocationDark else kAllocationLight
 
 /*
 	Relevés de la banque d'un compte Courant ou Épargne, avec l'écart au solde

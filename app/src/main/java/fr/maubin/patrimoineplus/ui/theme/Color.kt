@@ -116,3 +116,8 @@ val MonoDarkColors: ColorScheme = darkColorScheme(
 	errorContainer          = Color(0xFF4A1515),
 	onErrorContainer        = Color(0xFFFDECEC)
 )
+
+// Rampe de répartition des titres, de la plus grosse position à « Autres » ; validée
+// (écart ΔE ≥ 15 entre voisins, y compris daltonisme), chaque teinte étant doublée d'une étiquette.
+val kAllocationLight = listOf(Color(0xFF0A0A0A), Color(0xFF5C5C5C), Color(0xFF9E9E9E), Color(0xFFCFCFCF))	// mode clair
+val kAllocationDark  = listOf(Color(0xFFF5F5F5), Color(0xFFABABAB), Color(0xFF6E6E6E), Color(0xFF3D3D3D))	// mode sombre

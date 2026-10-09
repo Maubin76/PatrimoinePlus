@@ -169,3 +169,36 @@ private fun isOnAccount(
 	inAccountId : String
 ): Boolean =
 	inTx.trades.isNotEmpty() && inTx.postings.any { it.accountId == inAccountId }
+
+/*
+	Part d'une position dans la répartition des titres.
+	position : position valorisée
+	percent  : part de sa valeur dans celle de tous les titres, en pour cent entiers
+*/
+data class AllocationLine(
+	val position : Position,
+	val percent  : Int
+)
+
+/*
+	Répartition des titres d'un compte Bourse (espèces exclues) : positions de
+	la plus grosse à la plus petite valeur, parts entières dont la somme fait
+	exactement 100 (méthode du plus fort reste). Sans valeur, liste vide.
+	inPositions : positions valorisées
+*/
+fun allocation(inPositions: List<Position>): List<AllocationLine>
+{
+	val vSorted = inPositions.filter { it.valueCents > 0 }.sortedByDescending { it.valueCents }	// positions comptées
+	val vTotal  = vSorted.sumOf { it.valueCents }								// valeur des titres
+	if (vTotal <= 0L)
+	{
+		return emptyList()
+	}
+	val vFloors = vSorted.map { (it.valueCents * 100 / vTotal).toInt() }		// parts arrondies par défaut
+	val vRests  = vSorted.map { it.valueCents * 100 % vTotal }					// restes de la division
+	val vMissing = 100 - vFloors.sum()											// points à distribuer
+	val vBonus  = vRests.indices.sortedByDescending { vRests[it] }.take(vMissing).toSet()	// positions arrondies par excès
+	return vSorted.mapIndexed { inIndex, inPosition ->
+		AllocationLine(inPosition, vFloors[inIndex] + if (inIndex in vBonus) 1 else 0)
+	}
+}
