@@ -3,6 +3,7 @@ package fr.maubin.patrimoineplus.ui.entry
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import fr.maubin.patrimoineplus.data.market.QuoteRefresher
 import fr.maubin.patrimoineplus.data.repo.AccountRepository
 import fr.maubin.patrimoineplus.data.repo.CategoryRepository
 import fr.maubin.patrimoineplus.data.repo.MarketRepository
@@ -82,6 +83,7 @@ data class EntryData(
 	categoryId  : catégorie (dépense, revenu)
 	assetId     : actif de l'ordre, ou du dividende ; kNewAsset pour en créer un
 	newAsset    : nom de l'actif à créer
+	newIsin     : ISIN de l'actif à créer (facultatif, pour les cours automatiques)
 	side        : achat ou vente
 	quantity    : quantité (texte)
 	price       : cours (texte)
@@ -101,6 +103,7 @@ data class EntryForm(
 	val categoryId  : String?      = null,
 	val assetId     : String?      = null,
 	val newAsset    : String       = "",
+	val newIsin     : String       = "",
 	val side        : TradeSide    = TradeSide.BUY,
 	val quantity    : String       = "",
 	val price       : String       = "",
@@ -169,6 +172,7 @@ fun proposedLabel(
 	inMarket       : dépôt des actifs et des cours
 	inTransactions : dépôt des opérations
 	inSettings     : réglages (dernier compte utilisé)
+	inQuotes       : mise à jour des cours (nouvel actif avec ISIN)
 	inClock        : horloge
 */
 @HiltViewModel
@@ -178,6 +182,7 @@ class EntryViewModel @Inject constructor(
 	private val inMarket       : MarketRepository,
 	private val inTransactions : TransactionRepository,
 	private val inSettings     : SettingsRepository,
+	private val inQuotes       : QuoteRefresher,
 	private val inClock        : Clock
 ) : ViewModel()
 {
@@ -278,6 +283,10 @@ class EntryViewModel @Inject constructor(
 				{
 					inSettings.setLastAccountId(vTx.postings.first().accountId)
 					inOnDone(EntryErrors())
+					if (inForm.mode == EntryMode.TRADE && inForm.assetId == kNewAsset && inForm.newIsin.isNotBlank())
+					{
+						inQuotes.refreshNow()												// cours du nouvel actif, sans attendre
+					}
 				}
 				is SaveResult.Rejected -> inOnDone(EntryErrors(general = vResult.errors.joinToString(" ") { it.message }))
 			}
@@ -364,7 +373,7 @@ class EntryViewModel @Inject constructor(
 			EntryMode.TRANSFER                  -> buildTransfer(vId, postingId(0), postingId(1), inForm.date, inForm.accountId!!, inForm.toAccountId!!, parseEuros(inForm.amount)!!, vLabel, inForm.notes)
 			EntryMode.TRADE                     ->
 			{
-				val vAsset = if (inForm.assetId == kNewAsset) (inMarket.createAsset(inForm.newAsset) as SaveResult.Saved).id else inForm.assetId!!	// actif
+				val vAsset = if (inForm.assetId == kNewAsset) (inMarket.createAsset(inForm.newAsset, inForm.newIsin) as SaveResult.Saved).id else inForm.assetId!!	// actif
 				buildTrade(
 					inId        = vId,
 					inPostingId = postingId(0),

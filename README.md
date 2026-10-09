@@ -2,7 +2,8 @@
 
 Application Android personnelle de suivi du patrimoine et des dépenses :
 comptes courants, livrets d'épargne, compte-titres (PEA). Données uniquement
-en base locale sur le téléphone, sans synchronisation ni service distant.
+en base locale sur le téléphone, sans synchronisation. Seule exception : les
+cours des titres sont demandés à Yahoo Finance (voir « Cours automatiques »).
 
 La spécification complète (besoins, modèle de données, plan des étapes) est
 dans [`doc/SPEC.md`](doc/SPEC.md) ; la couverture des tests dans
@@ -178,6 +179,31 @@ direct entre téléphones reste possible.
   qu'aux fichiers créés depuis la réinstallation (l'import, lui, passe par le
   sélecteur de fichiers et reste possible).
 
+## Cours automatiques
+
+Les comptes Bourse se valorisent seuls : il suffit de saisir les ordres.
+
+- **Source** : Yahoo Finance (API publique non officielle, sans clé,
+  `data/market/YahooQuoteSource.kt`). Seuls des ISIN et des symboles sont
+  envoyés, jamais de quantité ni de montant ; le fournisseur voit toutefois
+  quels titres sont suivis et l'adresse IP. Permission `INTERNET`.
+- **Identifiant** : l'ISIN de chaque actif (saisi à la création d'un actif
+  dans un ordre, ou dans la fiche de l'actif en touchant sa position).
+  L'appli cherche la cotation **en euros** : correspondance directe adoptée
+  automatiquement (LU1681043599 → CW8.PA) ; sinon, dans la fiche, « Chercher
+  la cotation » essaie le même symbole sur les places de la zone euro
+  (IE00B4L5Y983 → IWDA.AS) et montre le titre trouvé pour confirmation. Le
+  symbole peut aussi être saisi à la main (colonne `ticker`, schéma v2).
+- **Quand** : à l'ouverture d'un compte Bourse et par une tâche de fond
+  quotidienne (avec réseau), au plus toutes les 4 heures ; « Actualiser » ou
+  tirer la vue vers le bas pour forcer.
+- **Historique** : à la première mise à jour, les clôtures de fin de mois
+  depuis le premier ordre sont enregistrées (courbe de la valeur et
+  patrimoine justes sur tout l'historique) ; ensuite, seuls les mois manquants
+  et le dernier cours.
+- **Sans réseau ou titre introuvable** : le dernier cours connu reste utilisé ;
+  « Saisir des cours » permet toujours la saisie manuelle.
+
 ## Verrou
 
 Désactivé par défaut ; interrupteur dans Réglages › Sécurité, qui demande une
@@ -191,12 +217,13 @@ d'écran restent permis (pas de `FLAG_SECURE`).
 
 ## Reste à faire
 
-- Gestion des actifs (renommage, ISIN, archivage) : ils ne se créent que
-  depuis la saisie d'un ordre.
+- Archivage d'un actif (la fiche permet le renommage, l'ISIN et le symbole).
+- ISIN des positions initiales : à compléter dans la fiche de l'actif.
+- Cours d'un titre coté seulement hors zone euro : pas de conversion de devise
+  (saisie manuelle des cours).
 - Légende de la répartition coupée avec une police système à 130 %.
 - Fond qui peut clignoter au démarrage en mode clair forcé quand le téléphone
   est en sombre.
-- Migrations Room : à écrire au premier changement de schéma.
 - Version release : construite mais jamais exécutée par les tests.
 
 ## Conventions de code

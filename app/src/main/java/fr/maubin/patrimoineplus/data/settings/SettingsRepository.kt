@@ -69,6 +69,15 @@ interface SettingsRepository
 		inAt : instant (ms)
 	*/
 	suspend fun setLastExportAt(inAt: Long)
+
+	// Instant de la dernière mise à jour automatique des cours (ms) ; null avant la première.
+	val lastQuotesAt: Flow<Long?>
+
+	/*
+		Mémorise l'instant de la dernière mise à jour des cours.
+		inAt : instant (ms)
+	*/
+	suspend fun setLastQuotesAt(inAt: Long)
 }
 
 /*
@@ -86,6 +95,7 @@ class DataStoreSettingsRepository @Inject constructor(
 	private val kLastAccountKey   = stringPreferencesKey("last_account")	// clé du dernier compte utilisé
 	private val kLockKey          = booleanPreferencesKey("lock_enabled")	// clé du verrou biométrique
 	private val kLastExportKey    = longPreferencesKey("last_export")		// clé du dernier export
+	private val kLastQuotesKey    = longPreferencesKey("last_quotes")		// clé de la dernière mise à jour des cours
 
 	override val amountsHidden: Flow<Boolean> =
 		inDataStore.data.map { inPreferences -> inPreferences[kAmountsHiddenKey] ?: false }
@@ -159,5 +169,17 @@ class DataStoreSettingsRepository @Inject constructor(
 	override suspend fun setLastExportAt(inAt: Long)
 	{
 		inDataStore.edit { inPreferences -> inPreferences[kLastExportKey] = inAt }
+	}
+
+	override val lastQuotesAt: Flow<Long?> =
+		inDataStore.data.map { inPreferences -> inPreferences[kLastQuotesKey] }
+
+	/*
+		Enregistre l'instant de la dernière mise à jour des cours.
+		inAt : instant (ms)
+	*/
+	override suspend fun setLastQuotesAt(inAt: Long)
+	{
+		inDataStore.edit { inPreferences -> inPreferences[kLastQuotesKey] = inAt }
 	}
 }

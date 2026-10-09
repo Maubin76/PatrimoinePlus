@@ -3,7 +3,7 @@
 Tous les tests tournent sur la JVM (`app/src/test`), sans émulateur :
 
 ```sh
-./gradlew :app:testDebugUnitTest        # 104 tests
+./gradlew :app:testDebugUnitTest        # 111 tests
 ./gradlew :app:recordRoborazziDebug     # régénère les captures d'écran
 ```
 
@@ -26,6 +26,9 @@ et les captures utilisent Robolectric (Android simulé sur la JVM).
 | `TransactionValidatorTest` (6) | `domain/rules/TransactionValidator` | chaque nature d'opération valide ; chaque violation : libellé, nombre de jambes, compte inconnu, montant nul, catégorie manquante ou inattendue, virement déséquilibré ou sur un seul compte, compte non Bourse, montant d'ordre incohérent, valeurs d'ordre, actif inconnu, **vente à découvert**, position initiale en vente |
 | `SafetyTest` (1) | `domain/rules/Safety` | **verrou** : jamais s'il est désactivé, toujours au démarrage, après une minute ou plus en arrière-plan et pas avant (bornes à la milliseconde) |
 | `BackupWorkbookTest` (4) | `data/backup/BackupWorkbook`, `data/backup/xlsx` | **aller-retour exact** du classeur (démonstration complète : montants, quantités, cours, dates, horodatages, identifiants) ; onglets dans l'ordre (Courant, Épargne, Bourse, puis données de référence) ; **virement Courant → Épargne présent sur deux onglets, relu une seule fois** ; lecture d'un classeur au style tableur (chaînes partagées, cellules sans référence, dates et montants en texte à la française) ; refus d'un fichier qui n'est pas un classeur, d'une signature étrangère, d'un onglet manquant |
+| `QuotesTest` (3) | `data/market/Quotes` | sur de **vraies réponses Yahoo Finance enregistrées** (`test/resources/yahoo`, 2026-10-09) : lecture d'une recherche et d'un historique (devise, nom, place, dernier cours, séances, jours sans clôture), symbole inconnu ; **choix de la cotation en euros** : CW8 directe, IWDA (seulement en dollars dans la recherche) refusée sans essai et trouvée à Amsterdam avec essai, marquée « à confirmer » ; cours à enregistrer : dernière séance de chaque mois passé puis dernier cours, en dix-millièmes |
+| `QuoteUpdaterTest` (3) | `data/market/QuoteUpdater` (Room en mémoire) | symbole trouvé et enregistré à partir de l'ISIN, fins de mois et dernier cours enregistrés, pas de doublon à la mise à jour suivante ; titres sans correspondance directe ou sans ISIN signalés ; **service injoignable** : erreur rendue, rien d'enregistré ; premier jour à demander (trous de l'historique) |
+| `MigrationTest` (1) | `data/db` (migration 1 → 2) | une vraie base de la version 1, créée à partir du schéma exporté, est ouverte par la version 2 : actifs conservés, symbole vide puis modifiable |
 | `BackupNamingTest` (1) | `data/backup/BackupNaming` | nom daté des sauvegardes ; **rotation** : les 3 plus récentes gardées, fichiers étrangers au modèle jamais touchés |
 | `BackupFormatTest` (4) | `data/backup/BackupFormat` | ancien format JSON (toujours importable) : aller-retour sans perte ; fichier d'une autre appli ou d'une version plus récente refusé ; JSON illisible, valeur d'énumération ou date inconnue refusés ; identifiants en double, références cassées (compte, catégorie, actif), opération qui viole les règles de saisie refusés |
 | `AccountRulesTest` (2) | `domain/rules/AccountRules` | nom et part détenue d'un compte ; réaffectation de catégorie (même nature, autre catégorie) |
@@ -45,13 +48,11 @@ Chaque règle a été cassée volontairement, la suite relancée, puis le code r
 | Une vente fait sortir tout le prix de revient (PRU faux) | `PortfolioTest.saleKeepsAverageAndRealizesGain`, `PortfolioTest.valuationUsesLastKnownPrice` |
 | Re-verrouillage à plus d'une minute au lieu d'une minute ou plus (2026-10-08) | `SafetyTest.lockAfterOneMinuteInBackground` |
 | Import : jambe vers un compte inconnu acceptée (2026-10-08) | `BackupFormatTest.refusesBrokenReferencesAndRules` |
+| Migration 1 → 2 retirée de la base (2026-10-09) | `MigrationTest.version1To2KeepsAssets` |
 | Classeur : jambe lue sur un second onglet qui écrase les précédentes (virement reconstitué à moitié) (2026-10-09) | `BackupWorkbookTest.sheetsPerAccountTypeAndTransfersMerged`, `BackupWorkbookTest.roundTripIsExact`, `DataLayerTest.backupThenImportRestoresEverything` |
 
 ## Ce qui n'est pas couvert
 
-- **Migrations Room** : il n'y a encore qu'une version du schéma. Le premier
-  changement de schéma devra ajouter une migration et un test qui l'applique
-  sur le schéma 1 exporté (`room-testing` est déjà en place).
 - **Interface** : pas de test automatisé du comportement (clics, glissement,
   glisser-déposer, feuilles, boîtes de confirmation, assistant, navigation,
   changement de mois, sélection multiple, saisie et suppression d'opérations,
@@ -73,4 +74,8 @@ Chaque règle a été cassée volontairement, la suite relancée, puis le code r
   de la base) et la règle de rotation le sont. Le classeur a été ouvert et
   réenregistré par openpyxl (bibliothèque de tableur Python) puis relu sans
   erreur ; il n'a pas été ouvert dans Excel ni LibreOffice.
+- **Cours en direct** : aucun test n'interroge le vrai service (les réponses
+  sont figées) ; un changement de format de Yahoo Finance ne serait vu qu'à
+  l'usage. La tâche de fond et le geste « tirer pour rafraîchir » ne sont pas
+  testés automatiquement.
 - **Version release (R8)** : construite, jamais exécutée par les tests.

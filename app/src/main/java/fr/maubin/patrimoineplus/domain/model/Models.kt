@@ -150,12 +150,14 @@ data class Transaction(
 	name     : nom
 	isin     : code ISIN, facultatif
 	archived : masqué des saisies
+	ticker   : symbole de cotation en euros (Yahoo Finance, ex. CW8.PA) ; null si les cours sont saisis à la main
 */
 data class Asset(
 	val id       : String,
 	val name     : String,
 	val isin     : String? = null,
-	val archived : Boolean = false
+	val archived : Boolean = false,
+	val ticker   : String? = null
 )
 
 /*

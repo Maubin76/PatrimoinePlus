@@ -17,7 +17,7 @@ import kotlinx.serialization.json.Json
 import java.time.LocalDate
 
 const val kBackupFormat  = "patrimoineplus"										// signature du fichier
-const val kBackupVersion = 1													// version du format
+const val kBackupVersion = 2													// version du format (2 : symbole de cotation des actifs)
 
 private val kJson = Json { prettyPrint = true; ignoreUnknownKeys = false }		// lecteur et écrivain JSON
 
@@ -62,7 +62,8 @@ data class AssetDto(
 	val isin      : String? = null,
 	val archived  : Boolean,
 	val createdAt : Long,
-	val updatedAt : Long
+	val updatedAt : Long,
+	val ticker    : String? = null
 )
 
 /*
@@ -276,7 +277,7 @@ private fun toDomain(inFile: BackupFile): DomainContent =
 	DomainContent(
 		accounts     = inFile.accounts.map { Account(it.id, it.name, AccountType.valueOf(it.type), it.institution, it.sharePercent, it.sortOrder, it.archived) },
 		categories   = inFile.categories.map { Category(it.id, it.name, it.icon, CategoryKind.valueOf(it.kind), it.sortOrder, it.archived) },
-		assets       = inFile.assets.map { Asset(it.id, it.name, it.isin, it.archived) },
+		assets       = inFile.assets.map { Asset(it.id, it.name, it.isin, it.archived, it.ticker) },
 		transactions = inFile.transactions.map { inTx ->
 			Transaction(
 				id         = inTx.id,

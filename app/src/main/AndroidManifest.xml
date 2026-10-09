@@ -3,6 +3,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:tools="http://schemas.android.com/tools">
 
+	<!-- Cours publics des ETF (Yahoo Finance) : seuls des ISIN et des symboles sont envoyés. -->
+	<uses-permission android:name="android.permission.INTERNET" />
+
 	<application
 		android:name=".PatrimoineApplication"
 		android:allowBackup="false"

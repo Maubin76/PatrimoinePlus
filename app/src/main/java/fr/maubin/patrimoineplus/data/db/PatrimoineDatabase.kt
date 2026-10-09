@@ -1,5 +1,6 @@
 package fr.maubin.patrimoineplus.data.db
 
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
@@ -31,6 +32,7 @@ class Converters
 	Base locale de l'application, seule source de données. Le schéma de chaque
 	version est exporté dans app/schemas ; toute évolution passe par une
 	migration, pour ne jamais perdre de données.
+	Version 2 : symbole de cotation des actifs (colonne ajoutée, migration automatique).
 */
 @Database(
 	entities     = [
@@ -43,8 +45,9 @@ class Converters
 		AccountStatementEntity::class,
 		AssetPriceEntity::class
 	],
-	version      = 1,
-	exportSchema = true
+	version       = 2,
+	exportSchema  = true,
+	autoMigrations = [AutoMigration(from = 1, to = 2)]
 )
 @TypeConverters(Converters::class)
 abstract class PatrimoineDatabase : RoomDatabase()

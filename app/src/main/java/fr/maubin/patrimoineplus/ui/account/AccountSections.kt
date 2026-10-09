@@ -42,6 +42,8 @@ import fr.maubin.patrimoineplus.domain.format.formatPrice
 import fr.maubin.patrimoineplus.domain.format.formatScaled
 import fr.maubin.patrimoineplus.domain.format.parseEuros
 import fr.maubin.patrimoineplus.domain.format.parseScaled
+import fr.maubin.patrimoineplus.data.market.Listing
+import fr.maubin.patrimoineplus.data.market.toPriceUnits
 import fr.maubin.patrimoineplus.domain.model.Asset
 import fr.maubin.patrimoineplus.ui.components.AmountInput
 import fr.maubin.patrimoineplus.ui.components.AmountText
@@ -127,9 +129,12 @@ private fun StatRow(
 	Au-delà de quatre titres, les plus petits partagent la teinte « Autres ».
 	inPortfolio : portefeuille valorisé
 	inOpenings  : positions initiales
-	inOnPrices  : ouvre la mise à jour des cours
+	inOnPrices  : ouvre la saisie manuelle des cours
 	inOnAddOpen : ouvre l'ajout d'une position initiale
 	inOnRemove  : retire une position initiale
+	inOnRefresh : met à jour les cours automatiquement
+	inOnAsset   : ouvre la fiche d'un actif
+	inQuotesAt  : instant de la dernière mise à jour automatique (ms) ; null avant la première
 */
 @Composable
 fun PositionsSection(
@@ -137,13 +142,16 @@ fun PositionsSection(
 	inOpenings  : List<OpeningPositionItem>,
 	inOnPrices  : () -> Unit,
 	inOnAddOpen : () -> Unit,
-	inOnRemove  : (OpeningPositionItem) -> Unit
+	inOnRemove  : (OpeningPositionItem) -> Unit,
+	inOnRefresh : () -> Unit       = {},
+	inOnAsset   : (String) -> Unit = {},
+	inQuotesAt  : Long?            = null
 )
 {
 	val vPositions = inPortfolio.valuation.positions							// positions
 	val vLines     = allocation(vPositions)										// répartition des titres
 	val vRamp      = allocationRamp()											// teintes de la répartition
-	SectionHeader(inTitle = "Positions", inLinkLabel = if (vPositions.isEmpty()) null else "Mettre à jour les cours", inOnLink = inOnPrices)
+	SectionHeader(inTitle = "Positions", inLinkLabel = if (vPositions.isEmpty()) null else "Actualiser", inOnLink = inOnRefresh)
 	Spacer(Modifier.height(8.dp))
 	if (vLines.size > 1)
 	{
@@ -166,9 +174,23 @@ fun PositionsSection(
 			PositionRow(
 				inName    = inPortfolio.names[inLine.position.assetId] ?: "Actif supprimé",
 				inLine    = inLine,
-				inColor   = if (vLines.size > 1) vRamp[slotOf(inLine, vLines)] else null
+				inColor   = if (vLines.size > 1) vRamp[slotOf(inLine, vLines)] else null,
+				inOnClick = { inOnAsset(inLine.position.assetId) }
 			)
 		}
+	}
+	if (vPositions.isNotEmpty())
+	{
+		val vManual = vPositions.mapNotNull { inPortfolio.assets[it.assetId] }.filter { it.ticker == null }.map { it.name }	// titres sans cours automatique
+		Text(
+			text     = buildString {
+				append(inQuotesAt?.let { "Cours Yahoo Finance mis à jour le ${formatQuotesTime(it)}." } ?: "Cours automatiques pas encore récupérés.")
+				if (vManual.isNotEmpty()) append(" Sans cours automatique : ${vManual.joinToString(", ")} (touchez le titre pour indiquer son ISIN).")
+			},
+			style    = MaterialTheme.typography.bodyMedium,
+			color    = MaterialTheme.colorScheme.onSurfaceVariant,
+			modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 12.dp)
+		)
 	}
 	if (inOpenings.isNotEmpty())
 	{
@@ -198,25 +220,33 @@ fun PositionsSection(
 			}
 		}
 	}
-	TextButton(onClick = inOnAddOpen, modifier = Modifier.padding(top = 4.dp)) { Text("Ajouter une position initiale") }
+	Row(Modifier.padding(top = 4.dp)) {
+		TextButton(onClick = inOnAddOpen) { Text("Ajouter une position initiale") }
+		if (vPositions.isNotEmpty())
+		{
+			TextButton(onClick = inOnPrices) { Text("Saisir des cours") }
+		}
+	}
 }
 
 /*
 	Ligne d'une position : pastille de sa teinte dans la répartition, nom ;
 	à droite, valeur et part des titres dessous.
-	inName   : nom de l'actif
-	inLine   : position et sa part
-	inColor  : teinte dans la répartition ; null pour un titre unique
+	inName    : nom de l'actif
+	inLine    : position et sa part
+	inColor   : teinte dans la répartition ; null pour un titre unique
+	inOnClick : ouvre la fiche de l'actif
 */
 @Composable
 private fun PositionRow(
-	inName   : String,
-	inLine   : AllocationLine,
-	inColor  : Color?
+	inName    : String,
+	inLine    : AllocationLine,
+	inColor   : Color?,
+	inOnClick : () -> Unit
 )
 {
 	Row(
-		modifier          = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 20.dp, vertical = 12.dp),
+		modifier          = Modifier.fillMaxWidth().clickable(onClickLabel = "Fiche de l’actif", onClick = inOnClick).heightIn(min = 56.dp).padding(horizontal = 20.dp, vertical = 12.dp),
 		verticalAlignment = Alignment.CenterVertically
 	) {
 		if (inColor != null)
@@ -463,5 +493,77 @@ fun OpeningPositionSheet(
 			contentPadding = PaddingValues(vertical = 14.dp),
 			modifier       = Modifier.fillMaxWidth()
 		) { Text("Ajouter la position") }
+	}
+}
+
+/*
+	Instant d'une mise à jour, formaté (« 9 oct. à 17:35 »).
+	inAt : instant (ms)
+*/
+private fun formatQuotesTime(inAt: Long): String =
+	java.time.Instant.ofEpochMilli(inAt).atZone(java.time.ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("d MMM 'à' HH:mm", Locale.FRANCE))
+
+/*
+	Fiche d'un actif : nom, ISIN et symbole de cotation. « Chercher la
+	cotation » interroge la source de cours à partir de l'ISIN et montre le
+	titre trouvé (nom, place, cours) avant de l'adopter ; une cotation trouvée
+	sur une autre place que celle de la recherche est signalée.
+	inAsset     : actif
+	inOnLookup  : cherche une cotation (ISIN, réponse : cotation ou null, message d'erreur)
+	inOnSave    : enregistre (nom, ISIN, symbole)
+	inOnDismiss : fermeture
+*/
+@Composable
+fun AssetSheet(
+	inAsset     : Asset,
+	inOnLookup  : (String, (Listing?, String?) -> Unit) -> Unit,
+	inOnSave    : (String, String, String) -> Unit,
+	inOnDismiss : () -> Unit
+)
+{
+	var vName    by remember { mutableStateOf(inAsset.name) }					// nom saisi
+	var vIsin    by remember { mutableStateOf(inAsset.isin.orEmpty()) }		// ISIN saisi
+	var vTicker  by remember { mutableStateOf(inAsset.ticker.orEmpty()) }		// symbole saisi
+	var vFound   by remember { mutableStateOf<Listing?>(null) }				// cotation trouvée
+	var vInfo    by remember { mutableStateOf<String?>(null) }				// résultat de la recherche
+	var vBusy    by remember { mutableStateOf(false) }						// recherche en cours
+	val vIsinOk  = Regex("[A-Z]{2}[A-Z0-9]{9}[0-9]").matches(vIsin.trim().uppercase())	// ISIN bien formé
+	FormSheet(inTitle = "Actif", inOnDismiss = inOnDismiss) {
+		TextInput(vName, { vName = it }, "Nom", if (vName.isBlank()) "Le nom est obligatoire." else null)
+		TextInput(vIsin, { vIsin = it; vFound = null; vInfo = null }, "ISIN", if (vIsin.isNotBlank() && !vIsinOk) "12 caractères, ex. LU1681043599." else null, "Sur vos relevés ; sert à trouver le cours.")
+		OutlinedButton(
+			onClick  = {
+				vBusy = true
+				vInfo = null
+				inOnLookup(vIsin) { inListing, inError ->
+					vBusy  = false
+					vFound = inListing
+					vInfo  = inError ?: if (inListing == null) "Aucune cotation en euros trouvée pour cet ISIN : saisissez le symbole à la main, ou les cours." else null
+				}
+			},
+			enabled  = vIsinOk && !vBusy,
+			modifier = Modifier.fillMaxWidth()
+		) { Text(if (vBusy) "Recherche…" else "Chercher la cotation") }
+		vFound?.let { inListing ->
+			BorderedCard {
+				Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+					Text("${inListing.symbol} · ${inListing.exchange.orEmpty()} · ${formatPrice(toPriceUnits(inListing.price))}", style = MaterialTheme.typography.titleMedium)
+					Text(inListing.name.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+					if (inListing.guessed)
+					{
+						Text("Trouvée sur une autre place que celle de la recherche : vérifiez qu’il s’agit bien de votre titre.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+					}
+					TextButton(onClick = { vTicker = inListing.symbol; vFound = null }) { Text("Utiliser ${inListing.symbol}") }
+				}
+			}
+		}
+		vInfo?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+		TextInput(vTicker, { vTicker = it }, "Symbole de cotation", null, "Cotation en euros, ex. CW8.PA. Vide : cours saisis à la main.")
+		Button(
+			onClick        = { inOnSave(vName, vIsin, vTicker) },
+			enabled        = vName.isNotBlank() && (vIsin.isBlank() || vIsinOk),
+			contentPadding = PaddingValues(vertical = 14.dp),
+			modifier       = Modifier.fillMaxWidth()
+		) { Text("Enregistrer") }
 	}
 }

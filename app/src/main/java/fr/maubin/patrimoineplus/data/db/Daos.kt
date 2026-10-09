@@ -262,6 +262,13 @@ interface AssetDao
 	suspend fun update(inAsset: AssetEntity)
 
 	/*
+		Un actif ; null s'il n'existe pas.
+		inId : identifiant
+	*/
+	@Query("SELECT * FROM asset WHERE id = :inId")
+	suspend fun get(inId: String): AssetEntity?
+
+	/*
 		Enregistre un cours ; remplace celui du même jour pour le même actif.
 		inPrice : cours
 	*/

@@ -85,6 +85,52 @@ class MarketRepository @Inject constructor(
 	}
 
 	/*
+		Modifie le nom, l'ISIN et le symbole de cotation d'un actif.
+		inId     : actif
+		inName   : nom
+		inIsin   : code ISIN, facultatif
+		inTicker : symbole de cotation, facultatif
+	*/
+	suspend fun updateAsset(
+		inId     : String,
+		inName   : String,
+		inIsin   : String?,
+		inTicker : String?
+	): SaveResult<SetupError>
+	{
+		if (inName.isBlank())
+		{
+			return SaveResult.Rejected(listOf(SetupError.BlankName))
+		}
+		val vEntity = fAssets.get(inId) ?: return SaveResult.Rejected(listOf(SetupError.NotFound))	// actif enregistré
+		fAssets.update(
+			vEntity.copy(
+				name      = inName.trim(),
+				isin      = inIsin?.trim()?.uppercase()?.ifEmpty { null },
+				ticker    = inTicker?.trim()?.uppercase()?.ifEmpty { null },
+				updatedAt = inClock.millis()
+			)
+		)
+		return SaveResult.Saved(inId)
+	}
+
+	/*
+		Enregistre une série de cours d'un actif (un par jour, remplaçant celui
+		du même jour), en une seule transaction.
+		inAssetId : actif
+		inPrices  : cours par jour, en dix-millièmes d'euro
+	*/
+	suspend fun putPriceSeries(
+		inAssetId : String,
+		inPrices  : List<Pair<LocalDate, Long>>
+	)
+	{
+		inDb.withTransaction {
+			inPrices.forEach { (inDate, inPrice) -> putPrice(inAssetId, inDate, inPrice) }
+		}
+	}
+
+	/*
 		Enregistre un relevé de solde.
 		inAccountId    : compte
 		inDate         : date du relevé

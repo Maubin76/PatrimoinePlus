@@ -40,10 +40,12 @@ data class OpeningPositionItem(
 	Portefeuille d'un compte Bourse, valorisé aujourd'hui.
 	valuation : espèces, positions, plus-values réalisées
 	names     : nom des actifs par identifiant
+	assets    : actifs par identifiant (ISIN, symbole de cotation)
 */
 data class PortfolioView(
 	val valuation : PortfolioValuation,
-	val names     : Map<String, String>
+	val names     : Map<String, String>,
+	val assets    : Map<String, Asset> = emptyMap()
 )
 {
 	// Prix de revient total des positions.
@@ -102,7 +104,7 @@ internal fun buildAccountExtras(
 	}
 	val vOpening = inTransactions.firstOrNull { inTx -> inTx.kind == TransactionKind.OPENING && inTx.postings.any { it.accountId == inAccountId } }	// solde initial
 	return AccountExtras(
-		portfolio        = PortfolioView(valuePortfolio(vLedger, inAccountId, inToday, inPrices), vNames),
+		portfolio        = PortfolioView(valuePortfolio(vLedger, inAccountId, inToday, inPrices), vNames, inAssets.associateBy { it.id }),
 		openingPositions = vOpening?.trades.orEmpty().map { OpeningPositionItem(it, vNames[it.assetId] ?: "Actif supprimé") },
 		valueSeries      = accountValueSeries(vAccount, vLedger, inPrices, inToday)
 	)

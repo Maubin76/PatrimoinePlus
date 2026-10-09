@@ -52,7 +52,7 @@ fun Category.toEntity(
 /*
 	Actif de la base vers le domaine.
 */
-fun AssetEntity.toDomain(): Asset = Asset(id, name, isin, archived)
+fun AssetEntity.toDomain(): Asset = Asset(id, name, isin, archived, ticker)
 
 /*
 	Actif du domaine vers la base.
@@ -63,7 +63,7 @@ fun Asset.toEntity(
 	inCreatedAt : Long,
 	inUpdatedAt : Long
 ): AssetEntity =
-	AssetEntity(id, name, isin, archived, inCreatedAt, inUpdatedAt)
+	AssetEntity(id, name, isin, archived, inCreatedAt, inUpdatedAt, ticker)
 
 /*
 	Cours de la base vers le domaine.

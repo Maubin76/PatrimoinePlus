@@ -5,6 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
+import fr.maubin.patrimoineplus.data.market.Listing
+import fr.maubin.patrimoineplus.data.market.QuoteRefresher
+import fr.maubin.patrimoineplus.data.market.QuoteSource
+import fr.maubin.patrimoineplus.data.market.findEuroListing
 import fr.maubin.patrimoineplus.data.repo.AccountRepository
 import fr.maubin.patrimoineplus.data.repo.CategoryRepository
 import fr.maubin.patrimoineplus.data.repo.MarketRepository
@@ -126,6 +130,8 @@ data class AccountDetailState(
 	inCategories   : dépôt des catégories
 	inTransactions : dépôt des opérations
 	inMarket       : dépôt des actifs, cours et relevés
+	inQuotes       : mise à jour automatique des cours
+	inSource       : source de cours (recherche d'une cotation)
 	inClock        : horloge
 */
 @HiltViewModel
@@ -135,6 +141,8 @@ class AccountDetailViewModel @Inject constructor(
 	inCategories           : CategoryRepository,
 	inTransactions         : TransactionRepository,
 	private val inMarket   : MarketRepository,
+	private val inQuotes   : QuoteRefresher,
+	private val inSource   : QuoteSource,
 	private val inClock    : Clock
 ) : ViewModel()
 {
@@ -162,6 +170,92 @@ class AccountDetailViewModel @Inject constructor(
 		}
 			.flowOn(Dispatchers.Default)
 			.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AccountExtras())
+
+	// Vrai pendant une mise à jour des cours.
+	val refreshing = MutableStateFlow(false)
+
+	// Instant de la dernière mise à jour automatique des cours (ms) ; null avant la première.
+	val quotesUpdatedAt: StateFlow<Long?> = inQuotes.lastUpdate.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+	/*
+		Met à jour les cours : à la demande (geste « tirer », bouton), ou à
+		l'ouverture du compte si les cours datent de plus de quatre heures.
+		Une mise à jour automatique ne montre de message qu'en cas de titre
+		sans cotation.
+		inForce     : vrai pour une demande explicite
+		inOnMessage : message à afficher
+	*/
+	fun refreshQuotes(
+		inForce     : Boolean,
+		inOnMessage : (String) -> Unit
+	)
+	{
+		if (refreshing.value)
+		{
+			return
+		}
+		refreshing.value = true
+		viewModelScope.launch {
+			val vOutcome = if (inForce) inQuotes.refreshNow() else inQuotes.refreshIfStale()	// résultat
+			refreshing.value = false
+			when
+			{
+				vOutcome == null                                 -> Unit
+				vOutcome.error != null                           -> if (inForce) inOnMessage("Cours non mis à jour : ${vOutcome.error}. Le dernier cours connu reste utilisé.")
+				vOutcome.unresolved.isNotEmpty()                 -> inOnMessage("Sans cours automatique : ${vOutcome.unresolved.joinToString(", ")}. Touchez le titre pour indiquer son ISIN.")
+				inForce                                          -> inOnMessage("Cours mis à jour.")
+			}
+		}
+	}
+
+	/*
+		Cherche la cotation en euros d'un ISIN, en essayant d'autres places si
+		besoin (le résultat est montré pour confirmation).
+		inIsin     : code ISIN
+		inOnResult : cotation trouvée (null si aucune) ou message d'erreur
+	*/
+	fun lookupListing(
+		inIsin     : String,
+		inOnResult : (Listing?, String?) -> Unit
+	)
+	{
+		viewModelScope.launch {
+			try
+			{
+				inOnResult(findEuroListing(inSource, inIsin, inGuess = true, inToday = today()), null)
+			}
+			catch (inError: Exception)
+			{
+				inOnResult(null, "Recherche impossible : ${inError.message ?: "service injoignable"}.")
+			}
+		}
+	}
+
+	/*
+		Enregistre la fiche d'un actif, puis met à jour les cours (l'historique
+		est récupéré pour un nouveau symbole).
+		inId        : actif
+		inName      : nom
+		inIsin      : ISIN
+		inTicker    : symbole de cotation
+		inOnMessage : message à afficher
+	*/
+	fun saveAsset(
+		inId        : String,
+		inName      : String,
+		inIsin      : String,
+		inTicker    : String,
+		inOnMessage : (String) -> Unit
+	)
+	{
+		viewModelScope.launch {
+			inMarket.updateAsset(inId, inName, inIsin, inTicker)
+			if (inTicker.isNotBlank())
+			{
+				refreshQuotes(inForce = true, inOnMessage = inOnMessage)
+			}
+		}
+	}
 
 	/*
 		Date du jour, selon l'horloge de l'application.

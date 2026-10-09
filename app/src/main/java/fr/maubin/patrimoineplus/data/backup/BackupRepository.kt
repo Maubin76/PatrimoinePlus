@@ -42,7 +42,7 @@ class BackupRepository @Inject constructor(
 				exportedAt   = Instant.now(inClock).toString(),
 				accounts     = fDao.accounts().map { AccountDto(it.id, it.name, it.type, it.institution, it.sharePercent, it.sortOrder, it.archived, it.createdAt, it.updatedAt) },
 				categories   = fDao.categories().map { CategoryDto(it.id, it.name, it.icon, it.kind, it.sortOrder, it.archived, it.createdAt, it.updatedAt) },
-				assets       = fDao.assets().map { AssetDto(it.id, it.name, it.isin, it.archived, it.createdAt, it.updatedAt) },
+				assets       = fDao.assets().map { AssetDto(it.id, it.name, it.isin, it.archived, it.createdAt, it.updatedAt, it.ticker) },
 				transactions = inDb.transactionDao().getAll().map { inTx ->
 					val vHead = inTx.transaction										// en-tête
 					TransactionDto(
@@ -66,7 +66,7 @@ class BackupRepository @Inject constructor(
 			fDao.deleteAll()
 			fDao.insertAccounts(inFile.accounts.map { AccountEntity(it.id, it.name, it.type, it.institution, it.sharePercent, it.sortOrder, it.archived, it.createdAt, it.updatedAt) })
 			inDb.categoryDao().insertAll(inFile.categories.map { CategoryEntity(it.id, it.name, it.icon, it.kind, it.sortOrder, it.archived, it.createdAt, it.updatedAt) })
-			inDb.assetDao().insertAll(inFile.assets.map { AssetEntity(it.id, it.name, it.isin, it.archived, it.createdAt, it.updatedAt) })
+			inDb.assetDao().insertAll(inFile.assets.map { AssetEntity(it.id, it.name, it.isin, it.archived, it.createdAt, it.updatedAt, it.ticker) })
 			fDao.insertTransactions(inFile.transactions.map { TransactionEntity(it.id, LocalDate.parse(it.date), it.kind, it.label, it.categoryId, it.assetId, it.notes, it.createdAt, it.updatedAt) })
 			inDb.transactionDao().insertPostings(inFile.transactions.flatMap { inTx -> inTx.postings.map { PostingEntity(it.id, inTx.id, it.accountId, it.amountCents) } })
 			inDb.transactionDao().insertTrades(inFile.transactions.flatMap { inTx -> inTx.trades.map { TradeEntity(it.id, inTx.id, it.assetId, it.side, it.quantity, it.unitPrice, it.feesCents) } })

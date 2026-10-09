@@ -31,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -109,6 +110,8 @@ private val kDayFormat = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANC
 	onPrices      : mise à jour des cours
 	onAddOpening  : ajout d'une position initiale
 	onDelOpening  : retrait d'une position initiale
+	onRefresh     : mise à jour des cours à la demande
+	onAsset       : ouvre la fiche d'un actif
 */
 data class AccountDetailActions(
 	val onBack         : () -> Unit                    = {},
@@ -125,7 +128,9 @@ data class AccountDetailActions(
 	val onDelStatement : (StatementItem) -> Unit       = {},
 	val onPrices       : () -> Unit                    = {},
 	val onAddOpening   : () -> Unit                    = {},
-	val onDelOpening   : (OpeningPositionItem) -> Unit = {}
+	val onDelOpening   : (OpeningPositionItem) -> Unit = {},
+	val onRefresh      : () -> Unit                    = {},
+	val onAsset        : (String) -> Unit              = {}
 )
 
 /*
@@ -160,6 +165,9 @@ fun AccountDetailScreen(
 	var vStatement by remember { mutableStateOf(false) }						// saisie d'un relevé
 	var vPrices    by remember { mutableStateOf(false) }						// mise à jour des cours
 	var vOpening   by remember { mutableStateOf(false) }						// ajout d'une position initiale
+	var vAsset     by remember { mutableStateOf<String?>(null) }				// fiche d'actif ouverte
+	val vRefresh   by inViewModel.refreshing.collectAsStateWithLifecycle()	// mise à jour des cours en cours
+	val vQuotesAt  by inViewModel.quotesUpdatedAt.collectAsStateWithLifecycle()	// dernière mise à jour des cours
 	val vSnackbar  = remember { SnackbarHostState() }						// messages éphémères
 	val vScope     = rememberCoroutineScope()									// portée des messages
 	val vHaptics   = LocalHapticFeedback.current								// retour haptique
@@ -172,12 +180,18 @@ fun AccountDetailScreen(
 		}
 	}
 	BackHandler(enabled = vSelection.isNotEmpty()) { vSelection = emptySet() }
+	val vNotify = { inMessage: String -> vScope.launch { vSnackbar.showSnackbar(inMessage) }; Unit }	// message éphémère
+	LaunchedEffect(vExtras.portfolio != null) {
+		if (vExtras.portfolio != null) inViewModel.refreshQuotes(inForce = false, inOnMessage = vNotify)
+	}
 
 	AccountDetailContent(
 		inState     = vState,
 		inExtras    = vExtras,
 		inSelection = vSelection,
 		inSnackbar  = vSnackbar,
+		inRefreshing = vRefresh,
+		inQuotesAt  = vQuotesAt,
 		inActions   = AccountDetailActions(
 			onBack         = inOnBack,
 			onToggleHidden = inOnToggleHidden,
@@ -216,7 +230,9 @@ fun AccountDetailScreen(
 			onDelStatement = { inViewModel.deleteStatement(it.statement.id) },
 			onPrices       = { vPrices = true },
 			onAddOpening   = { vOpening = true },
-			onDelOpening   = { inViewModel.removeOpeningPosition(it.trade.id) }
+			onDelOpening   = { inViewModel.removeOpeningPosition(it.trade.id) },
+			onRefresh      = { inViewModel.refreshQuotes(inForce = true, inOnMessage = vNotify) },
+			onAsset        = { vAsset = it }
 		)
 	)
 
@@ -253,6 +269,18 @@ fun AccountDetailScreen(
 				vOpening = false
 			},
 			inOnDismiss = { vOpening = false }
+		)
+	}
+
+	vAsset?.let { inId -> vExtras.portfolio?.assets?.get(inId) }?.let { inAsset ->
+		AssetSheet(
+			inAsset     = inAsset,
+			inOnLookup  = inViewModel::lookupListing,
+			inOnSave    = { inName, inIsin, inTicker ->
+				inViewModel.saveAsset(inAsset.id, inName, inIsin, inTicker, vNotify)
+				vAsset = null
+			},
+			inOnDismiss = { vAsset = null }
 		)
 	}
 
@@ -315,15 +343,19 @@ private fun Set<String>.toggle(inId: String): Set<String> = if (inId in this) th
 	inSelection : opérations sélectionnées
 	inSnackbar  : hôte des messages éphémères
 	inActions   : actions
+	inRefreshing : vrai pendant une mise à jour des cours
+	inQuotesAt  : instant de la dernière mise à jour des cours (ms) ; null avant la première
 */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountDetailContent(
-	inState     : AccountDetailState,
-	inExtras    : AccountExtras,
-	inSelection : Set<String>,
-	inSnackbar  : SnackbarHostState,
-	inActions   : AccountDetailActions
+	inState      : AccountDetailState,
+	inExtras     : AccountExtras,
+	inSelection  : Set<String>,
+	inSnackbar   : SnackbarHostState,
+	inActions    : AccountDetailActions,
+	inRefreshing : Boolean = false,
+	inQuotesAt   : Long?   = null
 )
 {
 	val vColors   = MaterialTheme.colorScheme									// palette courante
@@ -371,61 +403,97 @@ fun AccountDetailContent(
 			}
 		}
 	) { inPadding ->
-		LazyColumn(
-			contentPadding = PaddingValues(
-				start  = kScreenMargin,
-				end    = kScreenMargin,
-				top    = inPadding.calculateTopPadding(),
-				bottom = inPadding.calculateBottomPadding() + 96.dp
-			)
+		RefreshableBox(
+			inEnabled    = inExtras.portfolio != null,
+			inRefreshing = inRefreshing,
+			inOnRefresh  = inActions.onRefresh,
+			inModifier   = Modifier.padding(top = inPadding.calculateTopPadding())
 		) {
-			if (inState.isGlobal)
-			{
-				globalContent(inState, inExtras, inSelection, inActions)
-				return@LazyColumn
-			}
-			item { MonthSwitcher(inState.month, inState.firstMonth, inState.lastMonth, inActions.onMonth) }
-			item { Spacer(Modifier.height(8.dp)) }
-			inState.summary?.let { inSummary -> item { SummaryCard(inSummary, inState.account?.type) } }
-			item { Spacer(Modifier.height(28.dp)) }
-			if (inState.account?.type == AccountType.CHECKING || inState.expenses.isNotEmpty())
-			{
-				item { SectionHeader(inTitle = "Dépenses par catégorie") }
+			LazyColumn(
+				contentPadding = PaddingValues(
+					start  = kScreenMargin,
+					end    = kScreenMargin,
+					top    = 0.dp,
+					bottom = inPadding.calculateBottomPadding() + 96.dp
+				)
+			) {
+				if (inState.isGlobal)
+				{
+					globalContent(inState, inExtras, inSelection, inActions, inQuotesAt)
+					return@LazyColumn
+				}
+				item { MonthSwitcher(inState.month, inState.firstMonth, inState.lastMonth, inActions.onMonth) }
 				item { Spacer(Modifier.height(8.dp)) }
-				item { ExpensesCard(inState.expenses) }
-			}
-			item { Spacer(Modifier.height(28.dp)) }
-			item { SectionHeader(inTitle = "Évolution du solde") }
-			item { Spacer(Modifier.height(4.dp)) }
-			item { BalanceChart(inState.series, inState.month) }
-			if (inState.account != null && inState.account.type != AccountType.BROKERAGE)
-			{
+				inState.summary?.let { inSummary -> item { SummaryCard(inSummary, inState.account?.type) } }
 				item { Spacer(Modifier.height(28.dp)) }
-				item { StatementsSection(inExtras.statements, inActions.onAddStatement, inActions.onAdjust, inActions.onDelStatement) }
-			}
-			item { Spacer(Modifier.height(28.dp)) }
-			item { SectionHeader(inTitle = "Opérations") }
-			if (inState.upcoming.isEmpty() && inState.days.isEmpty())
-			{
-				item {
-					Text(
-						text     = "Aucune opération ce mois-ci.",
-						style    = MaterialTheme.typography.bodyMedium,
-						color    = vColors.onSurfaceVariant,
-						modifier = Modifier.padding(vertical = 8.dp)
-					)
+				if (inState.account?.type == AccountType.CHECKING || inState.expenses.isNotEmpty())
+				{
+					item { SectionHeader(inTitle = "Dépenses par catégorie") }
+					item { Spacer(Modifier.height(8.dp)) }
+					item { ExpensesCard(inState.expenses) }
+				}
+				item { Spacer(Modifier.height(28.dp)) }
+				item { SectionHeader(inTitle = "Évolution du solde") }
+				item { Spacer(Modifier.height(4.dp)) }
+				item { BalanceChart(inState.series, inState.month) }
+				if (inState.account != null && inState.account.type != AccountType.BROKERAGE)
+				{
+					item { Spacer(Modifier.height(28.dp)) }
+					item { StatementsSection(inExtras.statements, inActions.onAddStatement, inActions.onAdjust, inActions.onDelStatement) }
+				}
+				item { Spacer(Modifier.height(28.dp)) }
+				item { SectionHeader(inTitle = "Opérations") }
+				if (inState.upcoming.isEmpty() && inState.days.isEmpty())
+				{
+					item {
+						Text(
+							text     = "Aucune opération ce mois-ci.",
+							style    = MaterialTheme.typography.bodyMedium,
+							color    = vColors.onSurfaceVariant,
+							modifier = Modifier.padding(vertical = 8.dp)
+						)
+					}
+				}
+				if (inState.upcoming.isNotEmpty())
+				{
+					item { DayHeader("À venir") }
+					item { OperationsCard(inState.upcoming, inSelection, inActions) }
+				}
+				inState.days.forEach { inDay ->
+					item(key = inDay.date.toString()) { DayHeader(inDay.date.format(kDayFormat).replaceFirstChar { it.uppercase() }) }
+					item(key = "ops-${inDay.date}") { OperationsCard(inDay.items, inSelection, inActions) }
 				}
 			}
-			if (inState.upcoming.isNotEmpty())
-			{
-				item { DayHeader("À venir") }
-				item { OperationsCard(inState.upcoming, inSelection, inActions) }
-			}
-			inState.days.forEach { inDay ->
-				item(key = inDay.date.toString()) { DayHeader(inDay.date.format(kDayFormat).replaceFirstChar { it.uppercase() }) }
-				item(key = "ops-${inDay.date}") { OperationsCard(inDay.items, inSelection, inActions) }
-			}
 		}
+	}
+}
+
+/*
+	Zone qu'on peut tirer vers le bas pour rafraîchir, si inEnabled ; sinon le
+	contenu seul.
+	inEnabled    : geste actif
+	inRefreshing : rafraîchissement en cours
+	inOnRefresh  : lance le rafraîchissement
+	inModifier   : modificateur appliqué
+	inContent    : contenu
+*/
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RefreshableBox(
+	inEnabled    : Boolean,
+	inRefreshing : Boolean,
+	inOnRefresh  : () -> Unit,
+	inModifier   : Modifier,
+	inContent    : @Composable () -> Unit
+)
+{
+	if (inEnabled)
+	{
+		PullToRefreshBox(isRefreshing = inRefreshing, onRefresh = inOnRefresh, modifier = inModifier) { inContent() }
+	}
+	else
+	{
+		Box(inModifier) { inContent() }
 	}
 }
 
@@ -437,12 +505,14 @@ fun AccountDetailContent(
 	inExtras    : relevés ou portefeuille
 	inSelection : opérations sélectionnées
 	inActions   : actions
+	inQuotesAt  : instant de la dernière mise à jour des cours (ms)
 */
 private fun LazyListScope.globalContent(
 	inState     : AccountDetailState,
 	inExtras    : AccountExtras,
 	inSelection : Set<String>,
-	inActions   : AccountDetailActions
+	inActions   : AccountDetailActions,
+	inQuotesAt  : Long?
 )
 {
 	val vPortfolio = inExtras.portfolio											// portefeuille (Bourse)
@@ -451,7 +521,7 @@ private fun LazyListScope.globalContent(
 		item { PortfolioHeader(vPortfolio) }
 		chartSection("Évolution de la valeur", inExtras.valueSeries)
 		item { Spacer(Modifier.height(28.dp)) }
-		item { PositionsSection(vPortfolio, inExtras.openingPositions, inActions.onPrices, inActions.onAddOpening, inActions.onDelOpening) }
+		item { PositionsSection(vPortfolio, inExtras.openingPositions, inActions.onPrices, inActions.onAddOpening, inActions.onDelOpening, inActions.onRefresh, inActions.onAsset, inQuotesAt) }
 	}
 	else
 	{

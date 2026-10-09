@@ -52,7 +52,8 @@ data class AssetEntity(
 	val isin             : String?,											// code ISIN
 	val archived         : Boolean,											// archivé
 	val createdAt        : Long,											// création, ms epoch
-	val updatedAt        : Long												// modification, ms epoch
+	val updatedAt        : Long,											// modification, ms epoch
+	val ticker           : String? = null									// symbole de cotation (version 2 du schéma)
 )
 
 /*

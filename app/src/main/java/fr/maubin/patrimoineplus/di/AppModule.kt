@@ -6,6 +6,8 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import dagger.Binds
+import fr.maubin.patrimoineplus.data.market.QuoteSource
+import fr.maubin.patrimoineplus.data.market.YahooQuoteSource
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -54,4 +56,11 @@ abstract class BindingsModule
 	*/
 	@Binds
 	abstract fun bindSettings(inImpl: DataStoreSettingsRepository): SettingsRepository
+
+	/*
+		Cours publics de Yahoo Finance.
+		inImpl : implémentation Yahoo Finance
+	*/
+	@Binds
+	abstract fun bindQuoteSource(inImpl: YahooQuoteSource): QuoteSource
 }

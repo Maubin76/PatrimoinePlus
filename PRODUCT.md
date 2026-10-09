@@ -15,7 +15,7 @@ Un seul utilisateur, Mathieu, propriétaire et développeur de l'application. De
 Suivre ses dépenses et son patrimoine (comptes courants, livrets, compte-titres PEA) sur son téléphone, avec des soldes justes par construction. Le succès : le patrimoine total affiché est exact sans effort de vérification, et noter une dépense ne prend que quelques secondes.
 
 ## Positioning
-Outil personnel, local et sans compte : aucune agrégation bancaire, aucun service distant. Tout est recalculé à partir des opérations saisies (comptabilité à jambes ; un virement entre ses propres comptes est saisi une seule fois). Le compte-titres est suivi en valeur, à partir de cours relevés à la main.
+Outil personnel, local et sans compte : aucune agrégation bancaire ; seul service distant : les cours publics des titres (Yahoo Finance). Tout est recalculé à partir des opérations saisies (comptabilité à jambes ; un virement entre ses propres comptes est saisi une seule fois). Le compte-titres est suivi en valeur, à partir de cours récupérés automatiquement (ou saisis à la main en secours).
 
 ## Operating Context
 - Téléphone Android 16, utilisé aussi en public : il faut pouvoir **masquer les montants** (mode discret, mémorisé entre les sessions).

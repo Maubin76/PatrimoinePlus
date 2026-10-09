@@ -42,6 +42,7 @@ private const val kArchived    = "Archivé"										// archivé (Oui / Non)
 private const val kKind        = "Nature"										// nature d'une catégorie
 private const val kIcon        = "Icône"										// icône d'une catégorie
 private const val kIsin        = "ISIN"											// code ISIN
+private const val kTicker      = "Ticker"										// symbole de cotation
 private const val kBalance     = "Solde"										// solde d'un relevé
 private const val kKey         = "Clé"											// clé de la page Fichier
 private const val kValue       = "Valeur"										// valeur de la page Fichier
@@ -172,10 +173,10 @@ internal fun backupSheets(inFile: BackupFile): List<Sheet>
 		),
 		Sheet(
 			kSheetAssets,
-			listOf(Column(kName, 32.0), Column(kIsin, 16.0), Column(kArchived, 10.0)) + tech(kAssetId, kCreated, kUpdated),
+			listOf(Column(kName, 32.0), Column(kIsin, 16.0), Column(kTicker, 12.0), Column(kArchived, 10.0)) + tech(kAssetId, kCreated, kUpdated),
 			inFile.assets.sortedBy { it.name }.map { inAsset ->
 				listOf(
-					text(inAsset.name), text(inAsset.isin.orEmpty()), text(yesNo(inAsset.archived)),
+					text(inAsset.name), text(inAsset.isin.orEmpty()), text(inAsset.ticker.orEmpty()), text(yesNo(inAsset.archived)),
 					techText(inAsset.id), techNumber(inAsset.createdAt), techNumber(inAsset.updatedAt)
 				)
 			}
@@ -371,6 +372,7 @@ internal fun backupFromSheets(inSheets: List<ReadSheet>): BackupFile
 				id        = inRow.req(kAssetId),
 				name      = inRow.req(kName),
 				isin      = inRow.opt(kIsin),
+				ticker    = inRow.opt(kTicker),
 				archived  = yes(inRow[kArchived]),
 				createdAt = inRow.opt(kCreated)?.let { decimal(it).toLong() } ?: 0L,
 				updatedAt = inRow.opt(kUpdated)?.let { decimal(it).toLong() } ?: 0L

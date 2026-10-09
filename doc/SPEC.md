@@ -4,9 +4,12 @@ Version 1 — 2026-10-06 — validée à l'étape 0 (cadrage).
 
 Application Android personnelle, mono-utilisateur, de suivi du patrimoine et des
 dépenses : comptes courants, livrets d'épargne, compte-titres (PEA).
-Données **uniquement en base locale** (Room) ; aucune synchronisation, aucun
-service distant, aucune importation de données existantes : l'application
-démarre vide.
+Données **uniquement en base locale** (Room) ; aucune synchronisation, aucune
+importation de données existantes : l'application démarre vide.
+
+> Évolution du 2026-10-09 : seule exception au « aucun service distant », les
+> cours des titres des comptes Bourse sont demandés à Yahoo Finance (ISIN et
+> symboles uniquement, jamais de montant), à l'ouverture et chaque jour.
 
 ---
 

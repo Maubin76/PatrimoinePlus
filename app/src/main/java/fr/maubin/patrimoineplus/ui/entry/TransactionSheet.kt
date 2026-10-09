@@ -292,6 +292,7 @@ private fun TradeFields(
 	if (inForm.assetId == kNewAsset)
 	{
 		TextInput(inForm.newAsset, { inOnChange(inForm.copy(newAsset = it)) }, "Nom du nouvel actif", inErrors.asset)
+		TextInput(inForm.newIsin, { inOnChange(inForm.copy(newIsin = it)) }, "ISIN (facultatif)", null, "Sur vos relevés, ex. LU1681043599 : les cours seront récupérés automatiquement.")
 	}
 	if (inForm.side == TradeSide.SELL && inForm.accountId != null && inForm.assetId != null && inForm.assetId != kNewAsset)
 	{
