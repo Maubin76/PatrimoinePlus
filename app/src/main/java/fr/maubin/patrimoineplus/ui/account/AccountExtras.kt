@@ -2,6 +2,8 @@ package fr.maubin.patrimoineplus.ui.account
 
 import fr.maubin.patrimoineplus.domain.calc.Ledger
 import fr.maubin.patrimoineplus.domain.calc.PortfolioValuation
+import fr.maubin.patrimoineplus.domain.calc.SeriesPoint
+import fr.maubin.patrimoineplus.domain.calc.accountValueSeries
 import fr.maubin.patrimoineplus.domain.calc.statementGap
 import fr.maubin.patrimoineplus.domain.calc.valuePortfolio
 import fr.maubin.patrimoineplus.domain.model.Account
@@ -57,11 +59,13 @@ data class PortfolioView(
 	statements       : relevés, du plus récent au plus ancien
 	portfolio        : portefeuille ; null hors compte Bourse
 	openingPositions : positions initiales du compte Bourse
+	valueSeries      : valeur du compte Bourse en fin de mois, depuis son ouverture
 */
 data class AccountExtras(
 	val statements       : List<StatementItem>       = emptyList(),
 	val portfolio        : PortfolioView?            = null,
-	val openingPositions : List<OpeningPositionItem> = emptyList()
+	val openingPositions : List<OpeningPositionItem> = emptyList(),
+	val valueSeries      : List<SeriesPoint>         = emptyList()
 )
 
 /*
@@ -99,6 +103,7 @@ internal fun buildAccountExtras(
 	val vOpening = inTransactions.firstOrNull { inTx -> inTx.kind == TransactionKind.OPENING && inTx.postings.any { it.accountId == inAccountId } }	// solde initial
 	return AccountExtras(
 		portfolio        = PortfolioView(valuePortfolio(vLedger, inAccountId, inToday, inPrices), vNames),
-		openingPositions = vOpening?.trades.orEmpty().map { OpeningPositionItem(it, vNames[it.assetId] ?: "Actif supprimé") }
+		openingPositions = vOpening?.trades.orEmpty().map { OpeningPositionItem(it, vNames[it.assetId] ?: "Actif supprimé") },
+		valueSeries      = accountValueSeries(vAccount, vLedger, inPrices, inToday)
 	)
 }

@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -53,7 +54,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import fr.maubin.patrimoineplus.domain.calc.AccountTotals
 import fr.maubin.patrimoineplus.domain.calc.CategoryLine
+import fr.maubin.patrimoineplus.domain.calc.SeriesPoint
 import fr.maubin.patrimoineplus.domain.calc.MonthSummary
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
@@ -85,6 +88,8 @@ import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+private val kMonthTitle = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.FRANCE)	// en-tête d'un mois
+private val kShortDay   = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)	// date en tête du sous-titre
 private val kDayFormat = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANCE)	// en-tête d'un jour
 
 /*
@@ -124,9 +129,10 @@ data class AccountDetailActions(
 )
 
 /*
-	Vue d'un compte, mois par mois : synthèse, dépenses par catégorie,
-	évolution du solde, opérations ; saisie, modification, suppression
-	unitaire et multiple ; fiche du compte.
+	Vue d'un compte : mois par mois pour un compte Courant (synthèse, dépenses
+	par catégorie, évolution du solde, opérations), globale pour un compte
+	Épargne ou Bourse ; saisie, modification, suppression unitaire et
+	multiple ; fiche du compte.
 	inOnBack         : retour à la liste
 	inOnToggleHidden : bascule le mode discret
 	inViewModel      : ViewModel de la vue
@@ -280,7 +286,7 @@ fun AccountDetailScreen(
 
 	if (vConfirm)
 	{
-		val vPicked = (vState.upcoming + vState.days.flatMap { it.items }).filter { it.transaction.id in vSelection }	// opérations choisies
+		val vPicked = vState.allItems.filter { it.transaction.id in vSelection }	// opérations choisies
 		val vLinked = vPicked.count { it.transaction.kind == TransactionKind.TRANSFER }	// virements
 		ConfirmDialog(
 			inTitle     = "Supprimer ${vPicked.size} opération(s) ?",
@@ -373,13 +379,10 @@ fun AccountDetailContent(
 				bottom = inPadding.calculateBottomPadding() + 96.dp
 			)
 		) {
-			inExtras.portfolio?.let { inPortfolio ->
-				item { PortfolioHeader(inPortfolio) }
-				item { Spacer(Modifier.height(28.dp)) }
-				item { PositionsSection(inPortfolio, inExtras.openingPositions, inActions.onPrices, inActions.onAddOpening, inActions.onDelOpening) }
-				item { Spacer(Modifier.height(20.dp)) }
-				item { HorizontalDivider(color = vColors.outlineVariant) }
-				item { Spacer(Modifier.height(8.dp)) }
+			if (inState.isGlobal)
+			{
+				globalContent(inState, inExtras, inSelection, inActions)
+				return@LazyColumn
 			}
 			item { MonthSwitcher(inState.month, inState.firstMonth, inState.lastMonth, inActions.onMonth) }
 			item { Spacer(Modifier.height(8.dp)) }
@@ -422,6 +425,108 @@ fun AccountDetailContent(
 				item(key = inDay.date.toString()) { DayHeader(inDay.date.format(kDayFormat).replaceFirstChar { it.uppercase() }) }
 				item(key = "ops-${inDay.date}") { OperationsCard(inDay.items, inSelection, inActions) }
 			}
+		}
+	}
+}
+
+/*
+	Vue globale d'un compte Épargne ou Bourse, depuis son ouverture.
+	Épargne : solde et totaux, évolution du solde, relevés, opérations.
+	Bourse : valeur et plus-values, évolution de la valeur, positions, opérations.
+	inState     : état de la vue
+	inExtras    : relevés ou portefeuille
+	inSelection : opérations sélectionnées
+	inActions   : actions
+*/
+private fun LazyListScope.globalContent(
+	inState     : AccountDetailState,
+	inExtras    : AccountExtras,
+	inSelection : Set<String>,
+	inActions   : AccountDetailActions
+)
+{
+	val vPortfolio = inExtras.portfolio											// portefeuille (Bourse)
+	if (vPortfolio != null)
+	{
+		item { PortfolioHeader(vPortfolio) }
+		chartSection("Évolution de la valeur", inExtras.valueSeries)
+		item { Spacer(Modifier.height(28.dp)) }
+		item { PositionsSection(vPortfolio, inExtras.openingPositions, inActions.onPrices, inActions.onAddOpening, inActions.onDelOpening) }
+	}
+	else
+	{
+		inState.totals?.let { inTotals -> item { SavingsHeader(inTotals) } }
+		chartSection("Évolution du solde", inState.series)
+		item { Spacer(Modifier.height(28.dp)) }
+		item { StatementsSection(inExtras.statements, inActions.onAddStatement, inActions.onAdjust, inActions.onDelStatement) }
+	}
+	item { Spacer(Modifier.height(28.dp)) }
+	item { SectionHeader(inTitle = "Opérations") }
+	if (inState.upcoming.isEmpty() && inState.months.isEmpty())
+	{
+		item {
+			Text(
+				text     = "Aucune opération.",
+				style    = MaterialTheme.typography.bodyMedium,
+				color    = MaterialTheme.colorScheme.onSurfaceVariant,
+				modifier = Modifier.padding(vertical = 8.dp)
+			)
+		}
+	}
+	if (inState.upcoming.isNotEmpty())
+	{
+		item { DayHeader("À venir") }
+		item { OperationsCard(inState.upcoming, inSelection, inActions) }
+	}
+	inState.months.forEach { inGroup ->
+		item(key = "m-${inGroup.month}") { DayHeader(inGroup.month.format(kMonthTitle).replaceFirstChar { it.uppercase() }) }
+		item(key = "mops-${inGroup.month}") { OperationsCard(inGroup.items, inSelection, inActions, inWithDate = true) }
+	}
+}
+
+/*
+	Section de courbe : titre et courbe, mois le plus récent mis en avant ;
+	rien tant que la série a moins de deux points.
+	inTitle  : titre de la section
+	inSeries : valeurs de fin de mois
+*/
+private fun LazyListScope.chartSection(
+	inTitle  : String,
+	inSeries : List<SeriesPoint>
+)
+{
+	if (inSeries.size < 2)
+	{
+		return
+	}
+	item { Spacer(Modifier.height(28.dp)) }
+	item { SectionHeader(inTitle = inTitle) }
+	item { Spacer(Modifier.height(4.dp)) }
+	item { BalanceChart(inSeries, inSeries.last().month) }
+}
+
+/*
+	En-tête d'un compte Épargne : solde du jour en grand, puis ce qui l'a
+	constitué depuis l'ouverture (lignes nulles masquées).
+	inTotals : mouvements depuis l'ouverture
+*/
+@Composable
+private fun SavingsHeader(inTotals: AccountTotals)
+{
+	val vColors = MaterialTheme.colorScheme									// palette courante
+	Column(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+		AmountText(inCents = inTotals.balanceCents, inStyle = MaterialTheme.typography.displaySmall)
+		Spacer(Modifier.height(8.dp))
+		Text("Solde au jour", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+	}
+	Spacer(Modifier.height(12.dp))
+	BorderedCard {
+		Column(Modifier.padding(vertical = 8.dp)) {
+			SummaryRow("Solde initial", inTotals.opening, inMuted = true)
+			SummaryRow("Versements nets", inTotals.transfers, inSigned = true)
+			SummaryRow("Intérêts et revenus", inTotals.income, inSigned = true)
+			if (inTotals.expenses != 0L) SummaryRow("Frais et retraits", inTotals.expenses, inSigned = true)
+			if (inTotals.trades != 0L) SummaryRow("Ordres de bourse", inTotals.trades, inSigned = true)
 		}
 	}
 }
@@ -554,12 +659,14 @@ private fun DayHeader(inText: String)
 	inItems     : opérations
 	inSelection : opérations sélectionnées
 	inActions   : actions
+	inWithDate  : affiche la date de chaque opération (vue globale)
 */
 @Composable
 private fun OperationsCard(
 	inItems     : List<OperationItem>,
 	inSelection : Set<String>,
-	inActions   : AccountDetailActions
+	inActions   : AccountDetailActions,
+	inWithDate  : Boolean = false
 )
 {
 	BorderedCard {
@@ -568,7 +675,7 @@ private fun OperationsCard(
 			{
 				HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = MaterialTheme.colorScheme.outlineVariant)
 			}
-			OperationRow(inItem, inItem.transaction.id in inSelection, inSelection.isNotEmpty(), inActions)
+			OperationRow(inItem, inItem.transaction.id in inSelection, inSelection.isNotEmpty(), inActions, inWithDate)
 		}
 	}
 }
@@ -580,6 +687,7 @@ private fun OperationsCard(
 	inSelected  : opération sélectionnée
 	inSelecting : mode sélection actif
 	inActions   : actions
+	inWithDate  : affiche la date même hors « À venir »
 */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -587,7 +695,8 @@ private fun OperationRow(
 	inItem      : OperationItem,
 	inSelected  : Boolean,
 	inSelecting : Boolean,
-	inActions   : AccountDetailActions
+	inActions   : AccountDetailActions,
+	inWithDate  : Boolean
 )
 {
 	val vColors = MaterialTheme.colorScheme									// palette courante
@@ -624,7 +733,7 @@ private fun OperationRow(
 		Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
 			Text(inItem.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
 			Text(
-				text     = if (inItem.upcoming) "${inItem.subtitle} · ${inItem.transaction.date.format(DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE))}" else inItem.subtitle,
+				text     = if (inItem.upcoming || inWithDate) "${inItem.transaction.date.format(kShortDay)} · ${inItem.subtitle}" else inItem.subtitle,
 				style    = MaterialTheme.typography.bodyMedium,
 				color    = vColors.onSurfaceVariant,
 				maxLines = 1,

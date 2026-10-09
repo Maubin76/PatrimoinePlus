@@ -85,10 +85,17 @@ inspirée de deux maquettes de référence fournies le 2026-10-07.
   confirmation ; réaffectation des opérations pour une catégorie). Icônes de
   catégories au trait fin (`ui/icons/CategoryIcons.kt`).
 - Vue d'un compte (`ui/account`) : page dédiée ouverte depuis l'onglet
-  Comptes ; mois par flèches (sélecteur en touchant le mois), synthèse
-  (ouverture, entrées, dépenses, épargne, clôture), dépenses par catégorie,
-  courbe du solde sur 12 mois, opérations par jour avec « À venir » en tête ;
-  sélection multiple par appui long et suppression confirmée.
+  Comptes, adaptée au type du compte.
+  - Courant : mois par flèches (sélecteur en touchant le mois), synthèse
+    (ouverture, entrées, dépenses, épargne, clôture), dépenses par catégorie,
+    courbe du solde sur 12 mois, opérations par jour avec « À venir » en tête.
+  - Épargne : vue globale depuis l'ouverture, sans navigation par mois ; solde
+    du jour et ce qui l'a constitué (solde initial, versements nets, intérêts
+    et revenus), courbe du solde, relevés, opérations groupées par mois.
+  - Bourse : vue globale ; valeur et plus-values, courbe de la **valeur**
+    (espèces et positions au dernier cours connu) au-dessus des positions,
+    puis opérations groupées par mois.
+  - Partout : sélection multiple par appui long et suppression confirmée.
 - Saisie (`ui/entry`) : feuille du bas ouverte par le bouton « + » (onglets
   Accueil et Comptes, vue d'un compte) ; dépense ou revenu, montant sans
   signe, compte (dernier utilisé par défaut), libellé obligatoire avec
