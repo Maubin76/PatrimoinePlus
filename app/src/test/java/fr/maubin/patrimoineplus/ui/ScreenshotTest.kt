@@ -50,6 +50,7 @@ import fr.maubin.patrimoineplus.ui.home.kPreviewState
 import fr.maubin.patrimoineplus.ui.navigation.TopLevelDestination
 import fr.maubin.patrimoineplus.ui.lock.LockContent
 import fr.maubin.patrimoineplus.ui.settings.SafetyActions
+import fr.maubin.patrimoineplus.ui.settings.SyncActions
 import fr.maubin.patrimoineplus.ui.settings.SettingsScreen
 import fr.maubin.patrimoineplus.ui.shell.AppFrame
 import fr.maubin.patrimoineplus.ui.theme.PatrimoineTheme
@@ -225,9 +226,10 @@ class ScreenshotTest
 		Réglages, en sombre.
 	*/
 	@Test
-	@Config(qualifiers = "w360dp-h1300dp-xxhdpi")
+	@Config(qualifiers = "w360dp-h1700dp-xxhdpi")
 	fun settingsDark() = captureRoboImage("$kOutDir/settings-dark.png", content = shell(true, true, TopLevelDestination.Settings) {
-		SettingsScreen(ThemeMode.DARK, {}, true, {}, SafetyActions(true, "8 octobre 2026", "Documents/PatrimoinePlus", {}, {}, {}))
+		SettingsScreen(ThemeMode.DARK, {}, true, {}, SafetyActions(true, "8 octobre 2026", "Documents/PatrimoinePlus", {}, {}, {}), null,
+			SyncActions("Documents/PatrimoinePlus", "À jour. Dernière synchronisation le 9 oct. à 17:35.", {}, {}, {}))
 	})
 
 	/*

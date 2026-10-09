@@ -211,6 +211,30 @@ direct entre téléphones reste possible.
   qu'aux fichiers créés depuis la réinstallation (l'import, lui, passe par le
   sélecteur de fichiers et reste possible).
 
+## Synchronisation avec le PC
+
+Les données peuvent être partagées avec l'appli PC (en cours de développement,
+branche `desktop`) par un **fichier d'échange** déposé dans un dossier que
+synchronise un outil comme Syncthing (gratuit, sans cloud).
+
+- **Dossier** : choisi une fois dans Réglages › Synchronisation (sélecteur du
+  système, ouvert sur `Documents/PatrimoinePlus`) ; Android mémorise
+  l'autorisation, ce qui permet de lire les fichiers déposés par Syncthing.
+- **Fichier** : `patrimoineplus-donnees.xlsx`, même classeur que les
+  sauvegardes. Réécrit 3 s après chaque modification, relu au démarrage et à
+  chaque retour dans l'appli.
+- **Décision** (`:core`, `data/sync/SyncLogic.kt`) : par **empreintes de
+  contenu** (SHA-256 de la forme canonique), sans aucune date — les horloges
+  des appareils peuvent différer. Dernière synchronisation, téléphone et
+  fichier : seul le téléphone a changé → le fichier est réécrit ; seul le
+  fichier → les données du téléphone sont remplacées (après une sauvegarde de
+  sécurité) ; les deux, différemment → **conflit** : une fenêtre demande
+  quelle version garder, rien n'est modifié avant. Un téléphone vide (nouvelle
+  installation) reprend le fichier sans conflit.
+- **Fichier illisible** (copie interrompue) : refusé, rien n'est modifié.
+- La rotation des sauvegardes ne compte que les fichiers datés : le fichier
+  d'échange et les copies de conflit de Syncthing ne sont jamais supprimés.
+
 ## Cours automatiques
 
 Les comptes Bourse se valorisent seuls : il suffit de saisir les ordres.

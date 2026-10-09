@@ -13,7 +13,9 @@ class BackupNamingTest
 {
 	/*
 		Rotation : les trois plus récentes sont gardées, les autres supprimées ;
-		les fichiers étrangers au modèle ne sont jamais touchés.
+		les fichiers étrangers au modèle ne sont jamais touchés ni comptés, en
+		particulier le fichier d'échange de la synchronisation et ses copies de
+		conflit (Syncthing).
 	*/
 	@Test
 	fun keepsThreeMostRecent()
@@ -24,7 +26,9 @@ class BackupNamingTest
 			"notes.txt",
 			backupFileName(LocalDate.of(2026, 9, 30)),
 			backupFileName(LocalDate.of(2026, 10, 8)),
-			"patrimoineplus-ancien.json"
+			"patrimoineplus-ancien.json",
+			"patrimoineplus-donnees.xlsx",
+			"patrimoineplus-donnees.sync-conflict-20261009-101500-ABCDEF.xlsx"
 		)																		// contenu du dossier
 		assertEquals("patrimoineplus-2026-10-09.xlsx", backupFileName(LocalDate.of(2026, 10, 9)))
 		assertEquals(listOf("patrimoineplus-2026-09-30.xlsx"), backupsToDelete(vNames))

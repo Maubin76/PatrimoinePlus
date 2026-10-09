@@ -51,6 +51,8 @@ import fr.maubin.patrimoineplus.ui.settings.DemoActions
 import fr.maubin.patrimoineplus.ui.settings.DemoViewModel
 import fr.maubin.patrimoineplus.ui.settings.SettingsScreen
 import fr.maubin.patrimoineplus.ui.settings.rememberSafetyActions
+import fr.maubin.patrimoineplus.ui.settings.rememberSyncActions
+import fr.maubin.patrimoineplus.ui.settings.SyncConflictDialog
 import fr.maubin.patrimoineplus.ui.shell.AppFrame
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
@@ -92,6 +94,7 @@ fun PatrimoineApp(inAppViewModel: AppViewModel = hiltViewModel())
 				)
 			}
 		}
+		SyncConflictDialog()
 	}
 }
 
@@ -188,6 +191,7 @@ private fun MainTabs(
 					inHidden      = vHidden,
 					inOnHidden    = inAppViewModel::setAmountsHidden,
 					inSafety      = rememberSafetyActions(vSnackbar),
+					inSync        = rememberSyncActions(vSnackbar),
 					inDemo        = demoActions(vSnackbar)
 				)
 			}
