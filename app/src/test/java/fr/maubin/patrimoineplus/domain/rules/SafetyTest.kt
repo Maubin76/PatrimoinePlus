@@ -23,4 +23,18 @@ class SafetyTest
 		assertTrue(shouldLock(true, 1_000, 1_000 + kLockGraceMillis))
 		assertTrue(shouldLock(true, 1_000, 1_000 + 5 * kLockGraceMillis))
 	}
+
+	/*
+		Écran de connexion : toujours au lancement, verrou ou non ; ensuite
+		seulement si le verrou est activé et l'authentification due.
+	*/
+	@Test
+	fun gateAtLaunchThenOnlyWithLock()
+	{
+		assertTrue(gateShown(inColdStart = true, inEnabled = false, inNeedsAuth = false))
+		assertTrue(gateShown(inColdStart = true, inEnabled = true, inNeedsAuth = true))
+		assertFalse(gateShown(inColdStart = false, inEnabled = false, inNeedsAuth = true))
+		assertFalse(gateShown(inColdStart = false, inEnabled = true, inNeedsAuth = false))
+		assertTrue(gateShown(inColdStart = false, inEnabled = true, inNeedsAuth = true))
+	}
 }

@@ -47,6 +47,7 @@ import fr.maubin.patrimoineplus.ui.home.HomeGroup
 import fr.maubin.patrimoineplus.ui.home.HomeUiState
 import fr.maubin.patrimoineplus.ui.home.kPreviewState
 import fr.maubin.patrimoineplus.ui.navigation.TopLevelDestination
+import fr.maubin.patrimoineplus.ui.lock.LockContent
 import fr.maubin.patrimoineplus.ui.settings.SafetyActions
 import fr.maubin.patrimoineplus.ui.settings.SettingsScreen
 import fr.maubin.patrimoineplus.ui.shell.AppFrame
@@ -96,6 +97,24 @@ class ScreenshotTest
 		val vUsage = kDemo.transactions.mapNotNull { it.categoryId }.groupingBy { it }.eachCount()	// utilisations
 		val vItems = kDemo.categories.map { CategoryItem(it, vUsage[it.id] ?: 0) }						// catégories
 		return CategoriesUiState(true, vItems.filter { it.category.kind == CategoryKind.EXPENSE }, vItems.filter { it.category.kind == CategoryKind.INCOME })
+	}
+
+	/*
+		Animation du lancement, image par image : pastille seule (relais de
+		l'écran de démarrage système), chevrons en route, logo qui remonte,
+		écran posé avec verrou ; puis écran sans verrou, en sombre.
+	*/
+	@Test
+	fun launchSequence()
+	{
+		listOf(0f to "1-debut", 0.3f to "2-chevrons", 0.66f to "3-remontee", 1f to "4-pose").forEach { (inProgress, inName) ->
+			captureRoboImage("$kOutDir/lancement-$inName.png") {
+				PatrimoineTheme(inDarkTheme = false) { LockContent(inProgress, inAuth = true, inMessage = null, inOnUnlock = {}) }
+			}
+		}
+		captureRoboImage("$kOutDir/lancement-sans-verrou-sombre.png") {
+			PatrimoineTheme(inDarkTheme = true) { LockContent(1f, inAuth = false, inMessage = null, inOnUnlock = {}) }
+		}
 	}
 
 	/*

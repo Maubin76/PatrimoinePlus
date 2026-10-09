@@ -204,16 +204,27 @@ Les comptes Bourse se valorisent seuls : il suffit de saisir les ordres.
 - **Sans réseau ou titre introuvable** : le dernier cours connu reste utilisé ;
   « Saisir des cours » permet toujours la saisie manuelle.
 
-## Verrou
+## Lancement et verrou
 
-Désactivé par défaut ; interrupteur dans Réglages › Sécurité, qui demande une
-première authentification pour s'activer. Une fois activé, l'appli demande
-l'empreinte ou le code du téléphone (`BIOMETRIC_STRONG` ou `DEVICE_CREDENTIAL`)
-au démarrage et au retour après une minute ou plus en arrière-plan
-(`domain/rules/Safety.kt`, `ui/lock/`). L'écran de verrouillage se pose
-par-dessus l'appli, qui garde son état ; le contenu dessous est retiré de
-l'accessibilité. Choix assumé : l'aperçu des applis récentes et les captures
-d'écran restent permis (pas de `FLAG_SECURE`).
+- **Lancement** : l'écran de démarrage système montre la pastille du logo
+  (`res/drawable/splash_logo.xml`, bibliothèque `core-splashscreen`) ;
+  l'animation Compose prend le relais au même endroit et à la même taille
+  (l'écran système reste affiché jusqu'à ce que le logo soit mesuré, 1,5 s au
+  plus) : les deux chevrons glissent dans la pastille et s'emboîtent, le logo
+  remonte, puis le nom et le bouton apparaissent (≈ 1,25 s,
+  `ui/lock/LockScreen.kt`). Animation sautée si les animations du téléphone
+  sont désactivées.
+- **Écran de connexion** : toujours franchi au lancement. Avec le verrou, le
+  bouton « Déverrouiller » demande l'empreinte ou le code du téléphone
+  (`BIOMETRIC_STRONG` ou `DEVICE_CREDENTIAL`) — plus de demande automatique ;
+  sans verrou, « Entrer » ouvre l'appli. Il s'efface en fondu.
+- **Verrou** : désactivé par défaut ; interrupteur dans Réglages › Sécurité,
+  qui demande une première authentification pour s'activer. Une fois activé,
+  l'écran de connexion revient (sans animation) après une minute ou plus en
+  arrière-plan (`domain/rules/Safety.kt` : `shouldLock`, `gateShown`).
+- L'écran se pose par-dessus l'appli, qui garde son état ; le contenu dessous
+  est retiré de l'accessibilité. Choix assumé : l'aperçu des applis récentes et
+  les captures d'écran restent permis (pas de `FLAG_SECURE`).
 
 ## Reste à faire
 

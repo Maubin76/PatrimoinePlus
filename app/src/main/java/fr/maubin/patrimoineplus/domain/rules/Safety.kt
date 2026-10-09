@@ -16,3 +16,18 @@ fun shouldLock(
 	inNow          : Long
 ): Boolean =
 	inEnabled && (inBackgroundAt == null || inNow - inBackgroundAt >= kLockGraceMillis)
+
+/*
+	Faut-il afficher l'écran de connexion ? Toujours au lancement de l'appli
+	(avec ou sans verrou) ; ensuite seulement si le verrou est activé et
+	qu'une authentification est due (retour après une minute ou plus).
+	inColdStart : l'appli vient d'être lancée et l'écran n'a pas encore été franchi
+	inEnabled   : verrou activé dans les réglages
+	inNeedsAuth : authentification due
+*/
+fun gateShown(
+	inColdStart : Boolean,
+	inEnabled   : Boolean,
+	inNeedsAuth : Boolean
+): Boolean =
+	inColdStart || (inEnabled && inNeedsAuth)
