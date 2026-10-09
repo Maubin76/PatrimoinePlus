@@ -5,7 +5,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /*
-	Tests des règles de sécurité : verrouillage et rappel d'export.
+	Tests des règles de sécurité : verrouillage.
 */
 class SafetyTest
 {
@@ -22,18 +22,5 @@ class SafetyTest
 		assertFalse(shouldLock(true, 1_000, 1_000 + kLockGraceMillis - 1))
 		assertTrue(shouldLock(true, 1_000, 1_000 + kLockGraceMillis))
 		assertTrue(shouldLock(true, 1_000, 1_000 + 5 * kLockGraceMillis))
-	}
-
-	/*
-		Rappel d'export : seulement s'il y a des données ; dès qu'aucun export
-		n'a eu lieu ou que le dernier date de trente jours ou plus.
-	*/
-	@Test
-	fun exportReminderAfterThirtyDays()
-	{
-		assertFalse(exportReminderDue(false, null, 0))
-		assertTrue(exportReminderDue(true, null, 0))
-		assertFalse(exportReminderDue(true, 0, kExportReminderMillis - 1))
-		assertTrue(exportReminderDue(true, 0, kExportReminderMillis))
 	}
 }

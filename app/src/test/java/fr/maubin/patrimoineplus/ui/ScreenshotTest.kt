@@ -183,14 +183,6 @@ class ScreenshotTest
 	})
 
 	/*
-		Accueil avec le rappel d'export (dernier export trop ancien).
-	*/
-	@Test
-	fun homeExportReminder() = captureRoboImage("$kOutDir/home-rappel-export.png", content = shell(false, false, TopLevelDestination.Home) {
-		HomeContent(kPreviewState.copy(exportDue = true), {}, {})
-	})
-
-	/*
 		Accueil sans compte : l'état réel tant que la base est vide.
 	*/
 	@Test
@@ -210,8 +202,9 @@ class ScreenshotTest
 		Réglages, en sombre.
 	*/
 	@Test
+	@Config(qualifiers = "w360dp-h1300dp-xxhdpi")
 	fun settingsDark() = captureRoboImage("$kOutDir/settings-dark.png", content = shell(true, true, TopLevelDestination.Settings) {
-		SettingsScreen(ThemeMode.DARK, {}, true, {}, SafetyActions(true, "8 octobre 2026", {}, {}, {}))
+		SettingsScreen(ThemeMode.DARK, {}, true, {}, SafetyActions(true, "8 octobre 2026", "Documents/PatrimoinePlus", {}, {}, {}))
 	})
 
 	/*

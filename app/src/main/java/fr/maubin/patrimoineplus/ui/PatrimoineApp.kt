@@ -178,8 +178,7 @@ private fun MainTabs(
 			{
 				TopLevelDestination.Home       -> HomeScreen(
 					inOnToggleHidden   = vToggle,
-					inOnManageAccounts = { vOpen(TopLevelDestination.Accounts) },
-					inOnBackup         = { vOpen(TopLevelDestination.Settings) }
+					inOnManageAccounts = { vOpen(TopLevelDestination.Accounts) }
 				)
 				TopLevelDestination.Accounts   -> AccountsScreen(vToggle, inOnOpenAccount)
 				TopLevelDestination.Categories -> CategoriesScreen()

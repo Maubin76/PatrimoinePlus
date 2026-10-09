@@ -22,7 +22,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -58,19 +57,17 @@ private const val kClearedDisplay = "– – –,– – €"						// afficheur 
 	(la liste des comptes est dans l'onglet Comptes).
 	inOnToggleHidden   : bascule le mode discret
 	inOnManageAccounts : ouvre la gestion des comptes
-	inOnBackup         : ouvre les réglages (export)
 	inViewModel        : ViewModel fourni par Hilt
 */
 @Composable
 fun HomeScreen(
 	inOnToggleHidden   : () -> Unit,
 	inOnManageAccounts : () -> Unit,
-	inOnBackup         : () -> Unit,
 	inViewModel        : HomeViewModel = hiltViewModel()
 )
 {
 	val vState by inViewModel.uiState.collectAsStateWithLifecycle()		// état à afficher
-	HomeContent(vState, inOnToggleHidden, inOnManageAccounts, inOnBackup)
+	HomeContent(vState, inOnToggleHidden, inOnManageAccounts)
 }
 
 /*
@@ -78,14 +75,12 @@ fun HomeScreen(
 	inState            : état à afficher
 	inOnToggleHidden   : bascule le mode discret
 	inOnManageAccounts : ouvre la gestion des comptes
-	inOnBackup         : ouvre les réglages (export)
 */
 @Composable
 fun HomeContent(
 	inState            : HomeUiState,
 	inOnToggleHidden   : () -> Unit,
-	inOnManageAccounts : () -> Unit,
-	inOnBackup         : () -> Unit = {}
+	inOnManageAccounts : () -> Unit
 )
 {
 	ScreenScaffold(
@@ -102,11 +97,6 @@ fun HomeContent(
 		) {
 			item { TotalBlock(inState) }
 			item { Spacer(Modifier.height(36.dp)) }
-			if (inState.exportDue)
-			{
-				item { ExportReminder(inOnBackup) }
-				item { Spacer(Modifier.height(32.dp)) }
-			}
 			if (inState.isEmpty)
 			{
 				item {
@@ -347,24 +337,4 @@ private fun HomeHiddenPreview()
 private fun HomeEmptyPreview()
 {
 	PatrimoineTheme(inDarkTheme = false) { HomeContent(HomeUiState("7 octobre 2026", emptyList()), {}, {}) }
-}
-
-/*
-	Rappel d'export : les données ne vivent que sur ce téléphone ; la carte
-	ouvre les réglages, où se trouve l'export.
-	inOnBackup : ouvre les réglages
-*/
-@Composable
-private fun ExportReminder(inOnBackup: () -> Unit)
-{
-	BorderedCard(inModifier = Modifier.clickable(role = Role.Button, onClick = inOnBackup)) {
-		Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-			Text("Pensez à exporter vos données", style = MaterialTheme.typography.titleMedium)
-			Text(
-				text  = "Elles ne sont que sur ce téléphone, sans export depuis au moins trente jours. Touchez pour ouvrir les Réglages.",
-				style = MaterialTheme.typography.bodyMedium,
-				color = MaterialTheme.colorScheme.onSurfaceVariant
-			)
-		}
-	}
 }

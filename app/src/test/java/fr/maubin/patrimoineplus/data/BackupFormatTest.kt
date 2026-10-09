@@ -27,29 +27,6 @@ import java.time.LocalDate
 class BackupFormatTest
 {
 	/*
-		Fichier d'export construit à partir des données de démonstration.
-	*/
-	private fun demoFile(): BackupFile
-	{
-		val vDemo = buildDemoData(LocalDate.parse("2026-10-08"))				// démonstration
-		return BackupFile(
-			format       = kBackupFormat,
-			version      = kBackupVersion,
-			exportedAt   = "2026-10-08T10:00:00Z",
-			accounts     = vDemo.accounts.map { AccountDto(it.id, it.name, it.type.name, it.institution, it.sharePercent, it.sortOrder, it.archived, 1, 2) },
-			categories   = vDemo.categories.map { CategoryDto(it.id, it.name, it.icon, it.kind.name, it.sortOrder, it.archived, 1, 2) },
-			assets       = vDemo.assets.map { AssetDto(it.id, it.name, it.isin, it.archived, 1, 2) },
-			transactions = vDemo.transactions.map { inTx ->
-				TransactionDto(inTx.id, inTx.date.toString(), inTx.kind.name, inTx.label, inTx.categoryId, inTx.assetId, inTx.notes, 1, 2,
-					inTx.postings.map { PostingDto(it.id, it.accountId, it.amountCents) },
-					inTx.trades.map { TradeDto(it.id, it.assetId, it.side.name, it.quantity, it.unitPrice, it.feesCents) })
-			},
-			statements   = vDemo.statements.map { StatementDto(it.id, it.accountId, it.date.toString(), it.balanceCents) },
-			prices       = vDemo.prices.map { PriceDto(it.id, it.assetId, it.date.toString(), it.unitPrice) }
-		)
-	}
-
-	/*
 		Vérifie qu'un fichier est refusé avec un message contenant un mot donné.
 		inText : contenu du fichier
 		inWord : mot attendu dans le message
@@ -70,7 +47,7 @@ class BackupFormatTest
 	@Test
 	fun roundTrip()
 	{
-		val vFile = demoFile()														// fichier d'origine
+		val vFile = demoBackupFile()														// fichier d'origine
 		val vRead = decodeBackup(encodeBackup(vFile))								// fichier relu
 		assertEquals(BackupRead.Valid(vFile), vRead)
 		assertTrue(vFile.summary.startsWith("5 compte(s)"))
@@ -83,8 +60,8 @@ class BackupFormatTest
 	fun refusesForeignOrNewerFiles()
 	{
 		assertRefused("{ pas du json", "illisible")
-		assertRefused(encodeBackup(demoFile().copy(format = "autre")), "n’est pas un export")
-		assertRefused(encodeBackup(demoFile().copy(version = kBackupVersion + 1)), "plus récente")
+		assertRefused(encodeBackup(demoBackupFile().copy(format = "autre")), "n’est pas un export")
+		assertRefused(encodeBackup(demoBackupFile().copy(version = kBackupVersion + 1)), "plus récente")
 	}
 
 	/*
@@ -93,7 +70,7 @@ class BackupFormatTest
 	@Test
 	fun refusesBadValues()
 	{
-		val vFile = demoFile()														// fichier valide
+		val vFile = demoBackupFile()														// fichier valide
 		assertRefused(encodeBackup(vFile.copy(accounts = vFile.accounts.mapIndexed { i, a -> if (i == 0) a.copy(type = "LIVRET") else a })), "Valeur inconnue")
 		assertRefused(encodeBackup(vFile.copy(statements = vFile.statements.map { it.copy(date = "30/09/2026") })), "Date illisible")
 		assertRefused(encodeBackup(vFile.copy(categories = vFile.categories + vFile.categories.first())), "double")
@@ -106,7 +83,7 @@ class BackupFormatTest
 	@Test
 	fun refusesBrokenReferencesAndRules()
 	{
-		val vFile = demoFile()														// fichier valide
+		val vFile = demoBackupFile()														// fichier valide
 		assertRefused(encodeBackup(vFile.copy(accounts = vFile.accounts.drop(1))), "Compte inconnu")
 		assertRefused(encodeBackup(vFile.copy(assets = emptyList(), prices = emptyList())), "Actif inconnu")
 		val vBroken = vFile.transactions.map { inTx ->

@@ -3,7 +3,7 @@
 Tous les tests tournent sur la JVM (`app/src/test`), sans émulateur :
 
 ```sh
-./gradlew :app:testDebugUnitTest        # 101 tests
+./gradlew :app:testDebugUnitTest        # 104 tests
 ./gradlew :app:recordRoborazziDebug     # régénère les captures d'écran
 ```
 
@@ -24,12 +24,14 @@ et les captures utilisent Robolectric (Android simulé sur la JVM).
 | `PortfolioTest` (9) | `domain/calc/Portfolio` | PRU moyen pondéré frais inclus ; PRU inchangé par une vente ; plus-value réalisée ; espèces = solde ; dernier cours connu à la date (cours postérieur ignoré) ; position sans cours valorisée au prix de revient ; positions initiales ; quantité détenue ; position soldée ; **répartition des titres** (triée par valeur, parts entières dont la somme fait toujours 100, position soldée exclue) |
 | `WealthTest` (6) | `domain/calc/Wealth` | patrimoine avec part détenue (joint à 50 %), compte Bourse valorisé, compte archivé inclus ; virement neutre ; répartition par type ; série mensuelle (mois en cours arrêté à la date, opérations à venir exclues) ; **variation du mois** (depuis la fin du mois précédent, depuis zéro au premier mois) ; écart de relevé |
 | `TransactionValidatorTest` (6) | `domain/rules/TransactionValidator` | chaque nature d'opération valide ; chaque violation : libellé, nombre de jambes, compte inconnu, montant nul, catégorie manquante ou inattendue, virement déséquilibré ou sur un seul compte, compte non Bourse, montant d'ordre incohérent, valeurs d'ordre, actif inconnu, **vente à découvert**, position initiale en vente |
-| `SafetyTest` (2) | `domain/rules/Safety` | **verrou** : jamais s'il est désactivé, toujours au démarrage, après une minute ou plus en arrière-plan et pas avant (bornes à la milliseconde) ; **rappel d'export** : seulement s'il y a des données, sans export ou après trente jours |
-| `BackupFormatTest` (4) | `data/backup/BackupFormat` | aller-retour JSON sans perte ; fichier d'une autre appli ou d'une version plus récente refusé ; JSON illisible, valeur d'énumération ou date inconnue refusés ; identifiants en double, références cassées (compte, catégorie, actif), opération qui viole les règles de saisie refusés |
+| `SafetyTest` (1) | `domain/rules/Safety` | **verrou** : jamais s'il est désactivé, toujours au démarrage, après une minute ou plus en arrière-plan et pas avant (bornes à la milliseconde) |
+| `BackupWorkbookTest` (4) | `data/backup/BackupWorkbook`, `data/backup/xlsx` | **aller-retour exact** du classeur (démonstration complète : montants, quantités, cours, dates, horodatages, identifiants) ; onglets dans l'ordre (Courant, Épargne, Bourse, puis données de référence) ; **virement Courant → Épargne présent sur deux onglets, relu une seule fois** ; lecture d'un classeur au style tableur (chaînes partagées, cellules sans référence, dates et montants en texte à la française) ; refus d'un fichier qui n'est pas un classeur, d'une signature étrangère, d'un onglet manquant |
+| `BackupNamingTest` (1) | `data/backup/BackupNaming` | nom daté des sauvegardes ; **rotation** : les 3 plus récentes gardées, fichiers étrangers au modèle jamais touchés |
+| `BackupFormatTest` (4) | `data/backup/BackupFormat` | ancien format JSON (toujours importable) : aller-retour sans perte ; fichier d'une autre appli ou d'une version plus récente refusé ; JSON illisible, valeur d'énumération ou date inconnue refusés ; identifiants en double, références cassées (compte, catégorie, actif), opération qui viole les règles de saisie refusés |
 | `AccountRulesTest` (2) | `domain/rules/AccountRules` | nom et part détenue d'un compte ; réaffectation de catégorie (même nature, autre catégorie) |
-| `DataLayerTest` (16) | `data/db`, `data/repo`, `data/demo` (Room en mémoire) | création de comptes et règles ; ordre, modification ; **aller-retour complet** dépense / virement / ordre ; opération invalide refusée et absente de la base ; modification qui remplace les jambes ; suppression refusée pour un compte utilisé, **contrainte SQL** qui interdit d'orpheliner des jambes ; archivage ; **suppression définitive** (virement supprimé en entier, relevés en cascade) ; réaffectation de catégorie ; un cours par actif et par jour ; chargement et effacement de la démo ; schéma exporté ; **solde initial** (création avec le compte, modification, suppression à zéro, non compté comme opération, parti avec une suppression simple) ; type verrouillé dès la première opération ; ordre des catégories ; **positions initiales** (ajout, valorisation, retrait, solde initial supprimé quand il est vide) ; cours groupés (un par actif et par jour) ; suppression d'un relevé ; **export puis import** : un compte ajouté après l'export disparaît, les opérations sont identiques, et un nouvel export redonne le même contenu |
+| `DataLayerTest` (16) | `data/db`, `data/repo`, `data/demo` (Room en mémoire) | création de comptes et règles ; ordre, modification ; **aller-retour complet** dépense / virement / ordre ; opération invalide refusée et absente de la base ; modification qui remplace les jambes ; suppression refusée pour un compte utilisé, **contrainte SQL** qui interdit d'orpheliner des jambes ; archivage ; **suppression définitive** (virement supprimé en entier, relevés en cascade) ; réaffectation de catégorie ; un cours par actif et par jour ; chargement et effacement de la démo ; schéma exporté ; **solde initial** (création avec le compte, modification, suppression à zéro, non compté comme opération, parti avec une suppression simple) ; type verrouillé dès la première opération ; ordre des catégories ; **positions initiales** (ajout, valorisation, retrait, solde initial supprimé quand il est vide) ; cours groupés (un par actif et par jour) ; suppression d'un relevé ; **sauvegarde puis import par le classeur** : un compte ajouté après la sauvegarde disparaît, les opérations sont identiques, et un nouvel instantané redonne le même contenu |
 | `DemoDataTest` (2) | `data/demo/DemoData` | toutes les opérations de démo passent les règles de saisie, pour plusieurs dates du jour ; aucun compte à découvert ; une opération à venir ; écart de relevé de 38,20 € |
-| `ScreenshotTest` (20) | écrans Compose | **aucune assertion** : produit des captures (accueil clair, sombre, discret, vide, police à 130 %, calculé depuis la démo ; comptes et catégories depuis la démo ; feuille de création de compte ; assistant du premier lancement ; **vue d'un compte** (mois en cours depuis la démo, mode sélection en sombre) ; **feuille de saisie** avec suggestions, en mode virement et en mode ordre ; **vue globale d'un compte Bourse** (valeur, courbe de la valeur, répartition et positions, opérations par mois) et **d'un livret** (solde et totaux, courbe, relevé avec écart, opérations par mois) ; réglages (verrou, sauvegarde) ; accueil avec le rappel d'export ; pilule à mi-glissement) pour relecture humaine. |
+| `ScreenshotTest` (19) | écrans Compose | **aucune assertion** : produit des captures (accueil clair, sombre, discret, vide, police à 130 %, calculé depuis la démo ; comptes et catégories depuis la démo ; feuille de création de compte ; assistant du premier lancement ; **vue d'un compte** (mois en cours depuis la démo, mode sélection en sombre) ; **feuille de saisie** avec suggestions, en mode virement et en mode ordre ; **vue globale d'un compte Bourse** (valeur, courbe de la valeur, répartition et positions, opérations par mois) et **d'un livret** (solde et totaux, courbe, relevé avec écart, opérations par mois) ; réglages (verrou, sauvegarde)  ; pilule à mi-glissement) pour relecture humaine. |
 
 ## Vérifications par mutation (2026-10-07)
 
@@ -43,6 +45,7 @@ Chaque règle a été cassée volontairement, la suite relancée, puis le code r
 | Une vente fait sortir tout le prix de revient (PRU faux) | `PortfolioTest.saleKeepsAverageAndRealizesGain`, `PortfolioTest.valuationUsesLastKnownPrice` |
 | Re-verrouillage à plus d'une minute au lieu d'une minute ou plus (2026-10-08) | `SafetyTest.lockAfterOneMinuteInBackground` |
 | Import : jambe vers un compte inconnu acceptée (2026-10-08) | `BackupFormatTest.refusesBrokenReferencesAndRules` |
+| Classeur : jambe lue sur un second onglet qui écrase les précédentes (virement reconstitué à moitié) (2026-10-09) | `BackupWorkbookTest.sheetsPerAccountTypeAndTransfersMerged`, `BackupWorkbookTest.roundTripIsExact`, `DataLayerTest.backupThenImportRestoresEverything` |
 
 ## Ce qui n'est pas couvert
 
@@ -59,11 +62,15 @@ Chaque règle a été cassée volontairement, la suite relancée, puis le code r
   (les règles qu'ils appliquent le sont dans le domaine et les dépôts). Pour l'accueil,
   en tant que telle ; sa mise en forme (`toHomeUiState`) l'est indirectement par
   la capture `home-demo.png`, sans assertion.
-- **DataStore** (mode discret, apparence, verrou, date du dernier export) : non testé.
+- **DataStore** (mode discret, apparence, verrou, date de la dernière sauvegarde) : non testé.
 - **Verrou** : `AppLock` (cycle de vie du processus) et la demande
   d'authentification du système ne sont pas testés automatiquement ; seule la
   règle `shouldLock` l'est. Vérification manuelle sur le téléphone.
-- **Export / import par fichiers** : le choix du fichier (Storage Access
-  Framework) et l'écriture par `ContentResolver` ne sont pas testés ; le
-  contenu (format, vérification, remplacement de la base) l'est.
+- **Sauvegarde sur le téléphone** : l'écriture par MediaStore dans
+  `Documents/PatrimoinePlus`, la rotation réelle des fichiers, la tâche
+  WorkManager quotidienne et le choix du fichier à importer ne sont pas
+  testés automatiquement ; le contenu (classeur, vérification, remplacement
+  de la base) et la règle de rotation le sont. Le classeur a été ouvert et
+  réenregistré par openpyxl (bibliothèque de tableur Python) puis relu sans
+  erreur ; il n'a pas été ouvert dans Excel ni LibreOffice.
 - **Version release (R8)** : construite, jamais exécutée par les tests.

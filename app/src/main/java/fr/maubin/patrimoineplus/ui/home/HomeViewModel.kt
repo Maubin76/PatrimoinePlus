@@ -13,8 +13,6 @@ import fr.maubin.patrimoineplus.domain.calc.monthChange
 import fr.maubin.patrimoineplus.domain.calc.wealthAt
 import fr.maubin.patrimoineplus.domain.calc.wealthSeries
 import fr.maubin.patrimoineplus.domain.model.AccountType
-import fr.maubin.patrimoineplus.domain.rules.exportReminderDue
-import fr.maubin.patrimoineplus.data.settings.SettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -64,14 +62,12 @@ data class HomeGroup(
 	groups      : groupes de comptes non vides, dans l'ordre des types
 	series      : patrimoine en fin de mois, douze derniers mois au plus
 	monthChange : variation depuis la fin du mois précédent
-	exportDue   : vrai s'il faut rappeler d'exporter les données
 */
 data class HomeUiState(
 	val asOf        : String,
 	val groups      : List<HomeGroup>,
 	val series      : List<SeriesPoint> = emptyList(),
-	val monthChange : Long              = 0L,
-	val exportDue   : Boolean           = false
+	val monthChange : Long              = 0L
 )
 {
 	// Patrimoine total, en centimes : somme des valeurs comptées.
@@ -87,7 +83,6 @@ data class HomeUiState(
 	inAccounts     : dépôt des comptes
 	inTransactions : dépôt des opérations
 	inMarket       : dépôt des cours
-	inSettings     : réglages (date du dernier export)
 	inClock        : horloge de l'application
 */
 @HiltViewModel
@@ -95,18 +90,16 @@ class HomeViewModel @Inject constructor(
 	inAccounts     : AccountRepository,
 	inTransactions : TransactionRepository,
 	inMarket       : MarketRepository,
-	inSettings     : SettingsRepository,
 	private val inClock : Clock
 ) : ViewModel()
 {
 	// État exposé à l'écran, recalculé à chaque changement de la base.
 	val uiState: StateFlow<HomeUiState> =
-		combine(inAccounts.observeAccounts(), inTransactions.observeTransactions(), inMarket.observePrices(), inSettings.lastExportAt) { inAccountList, inTxs, inPrices, inLastExport ->
+		combine(inAccounts.observeAccounts(), inTransactions.observeTransactions(), inMarket.observePrices()) { inAccountList, inTxs, inPrices ->
 			val vToday  = LocalDate.now(inClock)									// date de calcul
 			val vLedger = Ledger(inTxs)												// grand livre
 			val vSeries = wealthSeries(inAccountList, vLedger, inPrices, vToday)	// patrimoine mois par mois
 			toHomeUiState(wealthAt(inAccountList, vLedger, vToday, inPrices), vSeries)
-				.copy(exportDue = exportReminderDue(inAccountList.isNotEmpty(), inLastExport, inClock.millis()))
 		}
 			.flowOn(Dispatchers.Default)
 			.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState(today(), emptyList()))

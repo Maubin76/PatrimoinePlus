@@ -76,6 +76,7 @@ dependencies {
 	implementation(libs.androidx.biometric)
 	implementation(libs.androidx.fragment.ktx)
 	implementation(libs.androidx.lifecycle.process)
+	implementation(libs.androidx.work.runtime)
 	implementation(libs.androidx.room.ktx)
 	ksp(libs.androidx.room.compiler)
 	debugImplementation(libs.androidx.compose.ui.tooling)

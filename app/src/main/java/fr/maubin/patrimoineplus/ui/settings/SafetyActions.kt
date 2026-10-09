@@ -18,16 +18,17 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import fr.maubin.patrimoineplus.data.backup.BackupFile
 import fr.maubin.patrimoineplus.data.backup.BackupRead
+import fr.maubin.patrimoineplus.data.backup.kBackupMime
 import fr.maubin.patrimoineplus.ui.lock.authenticate
 import fr.maubin.patrimoineplus.ui.lock.canAuthenticate
 import kotlinx.coroutines.launch
 
-private val kImportTypes = arrayOf("application/json", "application/octet-stream", "text/plain")	// types acceptés à l'import
+private val kImportTypes = arrayOf(kBackupMime, "application/json", "application/octet-stream", "text/plain")	// types acceptés à l'import
 
 /*
 	Branche le verrou et la sauvegarde des réglages : authentification avant
-	d'activer le verrou, choix des fichiers par le système, vérification puis
-	confirmation de l'import. Les résultats s'affichent en message éphémère.
+	d'activer le verrou, sauvegarde à la demande, choix du fichier à importer
+	par le système, vérification puis confirmation de l'import. Les résultats s'affichent en message éphémère.
 	inSnackbar  : hôte des messages éphémères
 	inViewModel : ViewModel du verrou et de la sauvegarde
 */
@@ -40,13 +41,10 @@ fun rememberSafetyActions(
 	val vActivity = LocalActivity.current as? FragmentActivity				// activité, pour l'authentification
 	val vScope    = rememberCoroutineScope()									// portée des messages
 	val vLock     by inViewModel.lockEnabled.collectAsStateWithLifecycle()	// verrou activé
-	val vLast     by inViewModel.lastExportAt.collectAsStateWithLifecycle()	// dernier export
+	val vLast     by inViewModel.lastExportAt.collectAsStateWithLifecycle()	// dernière sauvegarde
 	var vRead     by remember { mutableStateOf<BackupRead?>(null) }		// fichier lu, en attente de décision
 	val vNotify   = { inMessage: String -> vScope.launch { inSnackbar.showSnackbar(inMessage) }; Unit }	// affiche un message
 
-	val vExporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { inUri ->
-		if (inUri != null) inViewModel.export(inUri, vNotify)
-	}																			// choix du fichier d'export
 	val vImporter = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { inUri ->
 		if (inUri != null) inViewModel.read(inUri) { vRead = it }
 	}																			// choix du fichier à importer
@@ -62,7 +60,8 @@ fun rememberSafetyActions(
 
 	return SafetyActions(
 		lockEnabled  = vLock,
-		lastExport   = vLast?.let { formatExportDate(it) },
+		lastBackup   = vLast?.let { formatExportDate(it) },
+		folder       = inViewModel.backupFolder,
 		onLockChange = { inEnable ->
 			when
 			{
@@ -76,7 +75,7 @@ fun rememberSafetyActions(
 				)
 			}
 		},
-		onExport     = { vExporter.launch(inViewModel.exportFileName()) },
+		onBackupNow  = { inViewModel.backupNow(vNotify) },
 		onImport     = { vImporter.launch(kImportTypes) }
 	)
 }
@@ -101,7 +100,7 @@ private fun ImportDialog(
 		is BackupRead.Valid   -> AlertDialog(
 			onDismissRequest = inOnDismiss,
 			title            = { Text("Remplacer toutes les données ?") },
-			text             = { Text("Le fichier contient : ${inRead.file.summary}.\n\nToutes les données actuelles seront remplacées. C’est irréversible : exportez-les d’abord si besoin.") },
+			text             = { Text("Le fichier contient : ${inRead.file.summary}.\n\nToutes les données actuelles seront remplacées. C’est irréversible : faites d’abord « Sauvegarder maintenant » si besoin.") },
 			confirmButton    = { TextButton(onClick = { inOnConfirm(inRead.file) }) { Text("Remplacer") } },
 			dismissButton    = { TextButton(onClick = inOnDismiss) { Text("Annuler") } }
 		)

@@ -150,18 +150,33 @@ La sauvegarde cloud Android est désactivée (`allowBackup=false`, et toutes les
 données sont exclues de `cloud-backup` pour Android 12 et plus). Le transfert
 direct entre téléphones reste possible.
 
-- **Export** (Réglages › Données) : un fichier JSON complet et versionné
-  (`patrimoineplus-AAAA-MM-JJ.json`), **non chiffré**, enregistré où l'on veut
-  via le sélecteur de fichiers du système. Il contient comptes, catégories,
-  actifs, opérations (jambes et ordres), relevés et cours ; aucun total.
-- **Import** : le fichier est entièrement vérifié avant toute écriture
-  (signature, version, valeurs, identifiants, références, règles de saisie
-  rejouées dans l'ordre chronologique). Un résumé est affiché, puis, après
-  confirmation, toutes les données sont remplacées en une seule transaction
-  (tout ou rien).
-- **Rappel** : une carte sur l'Accueil invite à exporter quand il y a des
-  données et que le dernier export date de 30 jours ou plus (ou n'a jamais eu
-  lieu).
+- **Sauvegarde automatique** : chaque jour, un classeur Excel
+  `patrimoineplus-AAAA-MM-JJ.xlsx` est écrit dans `Documents/PatrimoinePlus`
+  (stockage partagé du téléphone, par MediaStore, sans autorisation) ; les
+  **3 plus récents** sont conservés. Tâche de fond WorkManager quotidienne,
+  avec rattrapage au démarrage si celle du jour manque ; une base sans compte
+  n'est jamais sauvegardée (elle évincerait de bonnes sauvegardes). Bouton
+  « Sauvegarder maintenant » dans Réglages › Données (remplace celle du jour).
+  Fichiers **non chiffrés**, lisibles par toute appli ayant accès aux fichiers.
+- **Classeur** (`data/backup/BackupWorkbook.kt`, écrit et lu sans
+  bibliothèque par `data/backup/xlsx/`) : un onglet par type de compte
+  (Courant, Épargne, Bourse : une ligne par mouvement sur un compte, ordres
+  de bourse détaillés), puis Comptes, Catégories, Actifs, Cours, Relevés et
+  Fichier (signature, version). En-têtes figés et filtrables, dates et
+  montants en vrais nombres, négatifs en rouge. Les identifiants sont dans des
+  colonnes techniques repliées : ils rendent la restauration exacte. Un
+  virement entre deux types de comptes figure sur les deux onglets et n'est
+  relu qu'une fois.
+- **Import** (Réglages › Données) : un classeur (même réenregistré par un
+  tableur) ou un ancien export JSON, reconnu à son contenu. Le fichier est
+  entièrement vérifié avant toute écriture (signature, version, valeurs,
+  identifiants, références, règles de saisie rejouées dans l'ordre
+  chronologique) ; un résumé est affiché, puis, après confirmation, toutes
+  les données sont remplacées en une seule transaction (tout ou rien).
+- **Limite Android** : après une désinstallation, l'appli ne peut plus
+  supprimer les fichiers qu'elle avait créés ; la rotation ne s'applique
+  qu'aux fichiers créés depuis la réinstallation (l'import, lui, passe par le
+  sélecteur de fichiers et reste possible).
 
 ## Verrou
 

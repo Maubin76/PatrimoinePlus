@@ -6,7 +6,10 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import fr.maubin.patrimoineplus.data.backup.BackupRead
 import fr.maubin.patrimoineplus.data.backup.BackupRepository
+import fr.maubin.patrimoineplus.data.backup.BackupFile
 import fr.maubin.patrimoineplus.data.backup.decodeBackup
+import fr.maubin.patrimoineplus.data.backup.readBackupXlsx
+import fr.maubin.patrimoineplus.data.backup.writeBackupXlsx
 import fr.maubin.patrimoineplus.data.db.PatrimoineDatabase
 import fr.maubin.patrimoineplus.data.demo.DemoRepository
 import fr.maubin.patrimoineplus.data.repo.AccountRepository
@@ -397,17 +400,33 @@ class DataLayerTest
 		à rien.
 	*/
 	@Test
-	fun exportThenImportRestoresEverything() = runTest {
+	fun backupThenImportRestoresEverything() = runTest {
 		val vBackup = BackupRepository(fDb, kClock)								// sauvegarde
 		DemoRepository(fDb, kClock).loadDemo()
-		val vJson    = vBackup.exportJson()										// export
-		val vBefore  = fTransactions.observeTransactions().first().sortedBy { it.id }	// opérations exportées
-		account("Ajouté après l'export", AccountType.CHECKING)
+		val vBytes   = java.io.ByteArrayOutputStream().also { writeBackupXlsx(vBackup.snapshot(), it) }.toByteArray()	// classeur
+		val vBefore  = fTransactions.observeTransactions().first().sortedBy { it.id }	// opérations sauvegardées
+		val vShape   = vBackup.snapshot().copy(exportedAt = "")				// contenu sauvegardé
+		account("Ajouté après la sauvegarde", AccountType.CHECKING)
 		assertTrue(decodeBackup("{}") is BackupRead.Invalid)
 		assertEquals(6, fAccounts.observeAccounts().first().size)
-		vBackup.replaceAll((decodeBackup(vJson) as BackupRead.Valid).file)
+		vBackup.replaceAll((readBackupXlsx(java.io.ByteArrayInputStream(vBytes)) as BackupRead.Valid).file)
 		assertEquals(5, fAccounts.observeAccounts().first().size)
 		assertEquals(vBefore, fTransactions.observeTransactions().first().sortedBy { it.id })
-		assertEquals(vJson.substringAfter("\"accounts\""), vBackup.exportJson().substringAfter("\"accounts\""))
+		assertEquals(sorted(vShape), sorted(vBackup.snapshot().copy(exportedAt = "")))
 	}
+
+	/*
+		Contenu de sauvegarde trié par identifiant (l'ordre de lecture du
+		classeur n'est pas celui de la base).
+		inFile : contenu
+	*/
+	private fun sorted(inFile: BackupFile): BackupFile =
+		inFile.copy(
+			accounts     = inFile.accounts.sortedBy { it.id },
+			categories   = inFile.categories.sortedBy { it.id },
+			assets       = inFile.assets.sortedBy { it.id },
+			transactions = inFile.transactions.sortedBy { it.id }.map { inTx -> inTx.copy(postings = inTx.postings.sortedBy { it.id }, trades = inTx.trades.sortedBy { it.id }) },
+			statements   = inFile.statements.sortedBy { it.id },
+			prices       = inFile.prices.sortedBy { it.id }
+		)
 }

@@ -175,10 +175,7 @@ sealed interface BackupRead
 fun encodeBackup(inFile: BackupFile): String = kJson.encodeToString(BackupFile.serializer(), inFile)
 
 /*
-	Lit et vérifie un fichier d'export : JSON, signature, version, valeurs
-	connues, identifiants uniques, références existantes, et règles de saisie
-	de chaque opération (dans l'ordre chronologique). Au premier problème, le
-	fichier est refusé en entier.
+	Lit et vérifie un ancien export JSON (voir validateBackup).
 	inText : contenu du fichier
 */
 fun decodeBackup(inText: String): BackupRead
@@ -191,6 +188,19 @@ fun decodeBackup(inText: String): BackupRead
 	{
 		return BackupRead.Invalid("Fichier illisible : ce n’est pas un export PatrimoinePlus valide.")
 	}
+	return validateBackup(vFile)
+}
+
+/*
+	Vérifie un contenu de sauvegarde, quelle que soit sa forme d'origine
+	(classeur ou JSON) : signature, version, valeurs connues, identifiants
+	uniques, références existantes, et règles de saisie de chaque opération
+	(dans l'ordre chronologique). Au premier problème, tout est refusé.
+	inFile : contenu lu
+*/
+fun validateBackup(inFile: BackupFile): BackupRead
+{
+	val vFile = inFile															// contenu vérifié
 	if (vFile.format != kBackupFormat)
 	{
 		return BackupRead.Invalid("Ce fichier n’est pas un export PatrimoinePlus.")

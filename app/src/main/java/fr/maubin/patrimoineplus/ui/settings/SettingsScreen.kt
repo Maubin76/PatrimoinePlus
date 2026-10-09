@@ -42,16 +42,18 @@ import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
 /*
 	Verrou et sauvegarde, vus par l'écran des réglages.
 	lockEnabled  : vrai si le verrou est activé
-	lastExport   : date du dernier export, formatée ; null s'il n'y en a jamais eu
+	lastBackup   : date de la dernière sauvegarde, formatée ; null s'il n'y en a jamais eu
+	folder       : dossier des sauvegardes, tel qu'affiché
 	onLockChange : demande d'activer ou de désactiver le verrou
-	onExport     : lance l'export (choix du fichier)
+	onBackupNow  : sauvegarde tout de suite
 	onImport     : lance l'import (choix du fichier)
 */
 data class SafetyActions(
 	val lockEnabled  : Boolean,
-	val lastExport   : String?,
+	val lastBackup   : String?,
+	val folder       : String,
 	val onLockChange : (Boolean) -> Unit,
-	val onExport     : () -> Unit,
+	val onBackupNow  : () -> Unit,
 	val onImport     : () -> Unit
 )
 
@@ -111,15 +113,15 @@ fun SettingsScreen(
 			Spacer(Modifier.height(8.dp))
 			BorderedCard {
 				ActionRow(
-					inTitle   = "Exporter",
-					inDetail  = "Fichier JSON complet, non chiffré, à ranger où vous voulez. " +
-						(inSafety.lastExport?.let { "Dernier export le $it." } ?: "Aucun export pour l’instant."),
-					inOnClick = inSafety.onExport
+					inTitle   = "Sauvegarder maintenant",
+					inDetail  = "Sauvegarde automatique chaque jour dans ${inSafety.folder} : classeur Excel non chiffré, une page par type de compte ; les 3 dernières sont conservées. " +
+						(inSafety.lastBackup?.let { "Dernière le $it." } ?: "Aucune pour l’instant."),
+					inOnClick = inSafety.onBackupNow
 				)
 				HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = MaterialTheme.colorScheme.outlineVariant)
 				ActionRow(
 					inTitle   = "Importer",
-					inDetail  = "Remplace toutes les données par celles d’un export, après vérification du fichier et confirmation.",
+					inDetail  = "Remplace toutes les données par celles d’une sauvegarde (classeur, ou ancien export JSON), après vérification et confirmation.",
 					inOnClick = inSafety.onImport
 				)
 			}

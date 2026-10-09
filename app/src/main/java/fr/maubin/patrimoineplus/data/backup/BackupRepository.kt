@@ -32,29 +32,27 @@ class BackupRepository @Inject constructor(
 	private val fDao = inDb.backupDao()											// accès en bloc
 
 	/*
-		Produit le JSON complet de la base.
+		Instantané complet de la base, lu dans une seule transaction.
 	*/
-	suspend fun exportJson(): String =
+	suspend fun snapshot(): BackupFile =
 		inDb.withTransaction {
-			encodeBackup(
-				BackupFile(
-					format       = kBackupFormat,
-					version      = kBackupVersion,
-					exportedAt   = Instant.now(inClock).toString(),
-					accounts     = fDao.accounts().map { AccountDto(it.id, it.name, it.type, it.institution, it.sharePercent, it.sortOrder, it.archived, it.createdAt, it.updatedAt) },
-					categories   = fDao.categories().map { CategoryDto(it.id, it.name, it.icon, it.kind, it.sortOrder, it.archived, it.createdAt, it.updatedAt) },
-					assets       = fDao.assets().map { AssetDto(it.id, it.name, it.isin, it.archived, it.createdAt, it.updatedAt) },
-					transactions = inDb.transactionDao().getAll().map { inTx ->
-						val vHead = inTx.transaction										// en-tête
-						TransactionDto(
-							vHead.id, vHead.date.toString(), vHead.kind, vHead.label, vHead.categoryId, vHead.assetId, vHead.notes, vHead.createdAt, vHead.updatedAt,
-							inTx.postings.map { PostingDto(it.id, it.accountId, it.amountCents) },
-							inTx.trades.map { TradeDto(it.id, it.assetId, it.side, it.quantity, it.unitPrice, it.feesCents) }
-						)
-					},
-					statements   = fDao.statements().map { StatementDto(it.id, it.accountId, it.date.toString(), it.balanceCents) },
-					prices       = fDao.prices().map { PriceDto(it.id, it.assetId, it.date.toString(), it.unitPrice) }
-				)
+			BackupFile(
+				format       = kBackupFormat,
+				version      = kBackupVersion,
+				exportedAt   = Instant.now(inClock).toString(),
+				accounts     = fDao.accounts().map { AccountDto(it.id, it.name, it.type, it.institution, it.sharePercent, it.sortOrder, it.archived, it.createdAt, it.updatedAt) },
+				categories   = fDao.categories().map { CategoryDto(it.id, it.name, it.icon, it.kind, it.sortOrder, it.archived, it.createdAt, it.updatedAt) },
+				assets       = fDao.assets().map { AssetDto(it.id, it.name, it.isin, it.archived, it.createdAt, it.updatedAt) },
+				transactions = inDb.transactionDao().getAll().map { inTx ->
+					val vHead = inTx.transaction										// en-tête
+					TransactionDto(
+						vHead.id, vHead.date.toString(), vHead.kind, vHead.label, vHead.categoryId, vHead.assetId, vHead.notes, vHead.createdAt, vHead.updatedAt,
+						inTx.postings.map { PostingDto(it.id, it.accountId, it.amountCents) },
+						inTx.trades.map { TradeDto(it.id, it.assetId, it.side, it.quantity, it.unitPrice, it.feesCents) }
+					)
+				},
+				statements   = fDao.statements().map { StatementDto(it.id, it.accountId, it.date.toString(), it.balanceCents) },
+				prices       = fDao.prices().map { PriceDto(it.id, it.assetId, it.date.toString(), it.unitPrice) }
 			)
 		}
 
