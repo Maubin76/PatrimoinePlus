@@ -1,5 +1,7 @@
 # PatrimoinePlus
 
+[![CI](https://github.com/Maubin76/PatrimoinePlus/actions/workflows/ci.yml/badge.svg)](https://github.com/Maubin76/PatrimoinePlus/actions/workflows/ci.yml)
+
 Application Android personnelle de suivi du patrimoine et des dépenses :
 comptes courants, livrets d'épargne, compte-titres (PEA). Données uniquement
 en base locale sur le téléphone, sans synchronisation. Seule exception : les
@@ -17,6 +19,16 @@ dans [`doc/SPEC.md`](doc/SPEC.md) ; la couverture des tests dans
 ./gradlew :app:assembleRelease      # APK optimisé (R8), signé avec la clé de debug :
                                     # app/build/outputs/apk/release/app-release.apk
 ```
+
+## Intégration continue
+
+GitHub Actions (`.github/workflows/ci.yml`) : à chaque push, sur toutes les
+branches, et sur chaque pull request, la CI installe le JDK 21, lance tous les
+tests JVM (`:app:testDebugUnitTest`) puis construit l'APK debug. En cas
+d'échec, les rapports de tests sont joints à l'exécution (artefact
+« rapports-tests », 14 jours). Un nouveau push sur la même branche annule
+l'exécution en cours. Les tests ne dépendent ni du fuseau horaire ni de la
+langue du système (vérifié en UTC et en anglais, comme sur la machine de CI).
 
 ## Socle technique
 
