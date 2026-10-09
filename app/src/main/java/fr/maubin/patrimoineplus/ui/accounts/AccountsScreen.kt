@@ -41,6 +41,11 @@ import fr.maubin.patrimoineplus.ui.components.ConfirmDialog
 import fr.maubin.patrimoineplus.ui.components.EmptyState
 import fr.maubin.patrimoineplus.ui.components.ReorderableColumn
 import fr.maubin.patrimoineplus.ui.components.SectionHeader
+import fr.maubin.patrimoineplus.ui.components.kAllocationSlots
+import fr.maubin.patrimoineplus.ui.components.allocationColor
+import fr.maubin.patrimoineplus.ui.components.SeriesDot
+import fr.maubin.patrimoineplus.ui.components.ProportionBar
+import fr.maubin.patrimoineplus.ui.components.BarSegment
 import fr.maubin.patrimoineplus.ui.home.accountDetail
 import fr.maubin.patrimoineplus.ui.shell.PrivacyAction
 import fr.maubin.patrimoineplus.ui.shell.ScreenScaffold
@@ -181,6 +186,19 @@ fun AccountsContent(
 				}
 				return@Column
 			}
+			val vWeighted = (inState.active + inState.archived).filter { it.weight != null }	// comptes qui comptent dans le patrimoine
+			if (vWeighted.size > 1)
+			{
+				SectionHeader(inTitle = "Répartition")
+				Spacer(Modifier.height(8.dp))
+				ProportionBar(
+					inSegments    = vWeighted.groupBy { it.weight!!.rank.coerceAtMost(kAllocationSlots - 1) }.toSortedMap()
+						.map { (inRank, inGroup) -> BarSegment(inGroup.sumOf { it.weight!!.counted }, allocationColor(inRank)) },
+					inDescription = "Part de chaque compte dans le patrimoine : " +
+						vWeighted.sortedBy { it.weight!!.rank }.joinToString(", ") { "${it.account.name} ${it.weight!!.percent}\u202F%" }
+				)
+				Spacer(Modifier.height(24.dp))
+			}
 			if (inState.active.isNotEmpty())
 			{
 				BorderedCard {
@@ -215,8 +233,9 @@ fun AccountsContent(
 }
 
 /*
-	Ligne d'un compte : nom, détail (type, établissement, part), valeur.
-	Toucher ouvre la vue du compte.
+	Ligne d'un compte : pastille de sa teinte dans la répartition, nom, détail
+	(type, établissement, part détenue) ; à droite, valeur et part du
+	patrimoine dessous. Toucher ouvre la vue du compte.
 	inItem   : compte affiché
 	inOnOpen : ouvre la vue du compte
 */
@@ -234,16 +253,25 @@ private fun AccountRow(
 			.padding(horizontal = 20.dp, vertical = 12.dp),
 		verticalAlignment = Alignment.CenterVertically
 	) {
+		inItem.weight?.let { inWeight ->
+			SeriesDot(allocationColor(inWeight.rank))
+			Spacer(Modifier.width(12.dp))
+		}
 		Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
 			Text(inItem.account.name, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
 			Text(accountDetail(inItem.account), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		}
 		Spacer(Modifier.width(16.dp))
-		AmountText(
-			inCents = inItem.valueCents,
-			inStyle = MaterialTheme.typography.titleMedium,
-			inColor = if (inItem.valueCents < 0) MaterialTheme.colorScheme.error else Color.Unspecified
-		)
+		Column(horizontalAlignment = Alignment.End) {
+			AmountText(
+				inCents = inItem.valueCents,
+				inStyle = MaterialTheme.typography.titleMedium,
+				inColor = if (inItem.valueCents < 0) MaterialTheme.colorScheme.error else Color.Unspecified
+			)
+			inItem.weight?.let { inWeight ->
+				Text("${inWeight.percent}\u202F%", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+			}
+		}
 	}
 }
 

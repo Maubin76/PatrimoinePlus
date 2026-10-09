@@ -92,6 +92,12 @@ inspirée de deux maquettes de référence fournies le 2026-10-07.
   `ScreenScaffold`.
 - Apparence : Système (suit le téléphone), Clair ou Sombre, au choix dans
   Réglages ; mémorisée en DataStore, les barres système suivent.
+- Comptes : barre « Répartition » en tête de la liste (part de chaque compte
+  dans le patrimoine, part détenue appliquée, comptes archivés encore valorisés
+  compris, comptes à découvert exclus) ; chaque compte porte la pastille de sa
+  teinte et sa part sous son montant. Même rampe de gris que les positions
+  (`allocationColor`), les plus petits comptes au-delà du quatrième partageant
+  la dernière teinte.
 - Comptes et catégories : listes réordonnables par glisser-déposer (actions
   « Monter » / « Descendre » pour TalkBack), création et modification en feuille
   du bas, archivage, suppression (simple, ou définitive avec double

@@ -10,6 +10,7 @@ import fr.maubin.patrimoineplus.data.repo.SaveResult
 import fr.maubin.patrimoineplus.data.repo.TransactionRepository
 import fr.maubin.patrimoineplus.domain.calc.Ledger
 import fr.maubin.patrimoineplus.domain.calc.accountValue
+import fr.maubin.patrimoineplus.domain.calc.wholePercents
 import fr.maubin.patrimoineplus.domain.format.editableEuros
 import fr.maubin.patrimoineplus.domain.format.parseEuros
 import fr.maubin.patrimoineplus.domain.model.Account
@@ -34,11 +35,25 @@ import javax.inject.Inject
 	account    : compte
 	valueCents : valeur entière aujourd'hui
 	operations : nombre d'opérations, hors solde initial
+	weight     : part du compte dans le patrimoine (part détenue appliquée) ; null s'il n'y compte pas (valeur nulle ou négative)
 */
 data class AccountItem(
 	val account    : Account,
 	val valueCents : Long,
-	val operations : Int
+	val operations : Int,
+	val weight     : AccountWeight? = null
+)
+
+/*
+	Part d'un compte dans le patrimoine.
+	percent : part entière en pour cent (les parts de tous les comptes font 100)
+	rank    : rang de valeur comptée (0 : le plus gros), qui fixe sa teinte
+	counted : valeur comptée dans le patrimoine, en centimes (largeur dans la barre)
+*/
+data class AccountWeight(
+	val percent : Int,
+	val rank    : Int,
+	val counted : Long
 )
 
 /*
@@ -110,11 +125,14 @@ class AccountsViewModel @Inject constructor(
 		combine(inAccounts.observeAccounts(), inTransactions.observeTransactions(), inMarket.observePrices()) { inList, inTxs, inPrices ->
 			val vLedger = Ledger(inTxs)											// grand livre
 			val vToday  = LocalDate.now(inClock)								// date de valorisation
+			val vValues = inList.associateWith { accountValue(it, vLedger, vToday, inPrices) }	// valeur de chaque compte
+			val vWeights = accountWeights(vValues.values.associate { it.account.id to it.countedCents })	// part de chaque compte
 			val vItems  = inList.map { inAccount ->
 				AccountItem(
 					account    = inAccount,
-					valueCents = accountValue(inAccount, vLedger, vToday, inPrices).valueCents,
-					operations = inTxs.count { inTx -> inTx.kind != TransactionKind.OPENING && inTx.postings.any { it.accountId == inAccount.id } }
+					valueCents = vValues.getValue(inAccount).valueCents,
+					operations = inTxs.count { inTx -> inTx.kind != TransactionKind.OPENING && inTx.postings.any { it.accountId == inAccount.id } },
+					weight     = vWeights[inAccount.id]
 				)
 			}																	// comptes valorisés
 			AccountsUiState(true, vItems.filterNot { it.account.archived }, vItems.filter { it.account.archived })
@@ -243,4 +261,17 @@ class AccountsViewModel @Inject constructor(
 				general = inResult.errors.firstOrNull { it == SetupError.TypeLocked || it == SetupError.NotFound }?.message
 			)
 		}
+}
+
+/*
+	Part de chaque compte dans le patrimoine : seules les valeurs comptées
+	positives entrent dans le total ; rangées de la plus grosse à la plus
+	petite, parts entières qui font 100.
+	inCounted : valeur comptée (part détenue appliquée) par compte
+*/
+internal fun accountWeights(inCounted: Map<String, Long>): Map<String, AccountWeight>
+{
+	val vPositive = inCounted.entries.filter { it.value > 0 }.sortedByDescending { it.value }	// comptes qui comptent
+	val vPercents = wholePercents(vPositive.map { it.value })						// parts entières
+	return vPositive.mapIndexed { inIndex, inEntry -> inEntry.key to AccountWeight(vPercents[inIndex], inIndex, inEntry.value) }.toMap()
 }

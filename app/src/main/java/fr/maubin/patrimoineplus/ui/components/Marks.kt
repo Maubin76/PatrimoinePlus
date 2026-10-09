@@ -25,6 +25,9 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import fr.maubin.patrimoineplus.ui.theme.kAllocationLight
+import fr.maubin.patrimoineplus.ui.theme.kAllocationDark
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -192,3 +195,15 @@ fun ProportionBar(
 		}
 	}
 }
+
+const val kAllocationSlots = 4													// teintes de répartition (la dernière : « Autres »)
+
+/*
+	Teinte de répartition d'un rang de valeur (0 : le plus gros) : rampe de
+	gris validée, selon le mode clair ou sombre ; les rangs au-delà du
+	quatrième partagent la dernière teinte.
+	inRank : rang de valeur
+*/
+@Composable
+fun allocationColor(inRank: Int): Color =
+	(if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) kAllocationDark else kAllocationLight)[inRank.coerceIn(0, kAllocationSlots - 1)]

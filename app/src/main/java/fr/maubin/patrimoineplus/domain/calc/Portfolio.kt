@@ -188,17 +188,28 @@ data class AllocationLine(
 */
 fun allocation(inPositions: List<Position>): List<AllocationLine>
 {
-	val vSorted = inPositions.filter { it.valueCents > 0 }.sortedByDescending { it.valueCents }	// positions comptées
-	val vTotal  = vSorted.sumOf { it.valueCents }								// valeur des titres
+	val vSorted   = inPositions.filter { it.valueCents > 0 }.sortedByDescending { it.valueCents }	// positions comptées
+	val vPercents = wholePercents(vSorted.map { it.valueCents })					// parts entières
+	return vSorted.mapIndexed { inIndex, inPosition -> AllocationLine(inPosition, vPercents[inIndex]) }
+}
+
+/*
+	Parts entières en pour cent de valeurs positives, dont la somme fait
+	exactement 100 (méthode du plus fort reste : les arrondis par défaut sont
+	complétés, un point chacun, par les plus grands restes). Sans total
+	positif, toutes les parts valent 0.
+	inValues : valeurs positives, dans un ordre quelconque
+*/
+fun wholePercents(inValues: List<Long>): List<Int>
+{
+	val vTotal = inValues.sum()													// total
 	if (vTotal <= 0L)
 	{
-		return emptyList()
+		return inValues.map { 0 }
 	}
-	val vFloors = vSorted.map { (it.valueCents * 100 / vTotal).toInt() }		// parts arrondies par défaut
-	val vRests  = vSorted.map { it.valueCents * 100 % vTotal }					// restes de la division
+	val vFloors  = inValues.map { (it * 100 / vTotal).toInt() }				// parts arrondies par défaut
+	val vRests   = inValues.map { it * 100 % vTotal }							// restes de la division
 	val vMissing = 100 - vFloors.sum()											// points à distribuer
-	val vBonus  = vRests.indices.sortedByDescending { vRests[it] }.take(vMissing).toSet()	// positions arrondies par excès
-	return vSorted.mapIndexed { inIndex, inPosition ->
-		AllocationLine(inPosition, vFloors[inIndex] + if (inIndex in vBonus) 1 else 0)
-	}
+	val vBonus   = vRests.indices.sortedByDescending { vRests[it] }.take(vMissing).toSet()	// parts arrondies par excès
+	return vFloors.mapIndexed { inIndex, inFloor -> inFloor + if (inIndex in vBonus) 1 else 0 }
 }

@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import fr.maubin.patrimoineplus.ui.accounts.AccountItem
+import fr.maubin.patrimoineplus.ui.accounts.accountWeights
 import fr.maubin.patrimoineplus.ui.account.AccountDetailActions
 import fr.maubin.patrimoineplus.ui.account.AccountDetailContent
 import fr.maubin.patrimoineplus.ui.account.buildAccountDetail
@@ -81,9 +82,11 @@ class ScreenshotTest
 	private fun demoAccounts(): AccountsUiState
 	{
 		val vLedger = Ledger(kDemo.transactions)								// grand livre
-		val vItems  = kDemo.accounts.map { inAccount ->
-			AccountItem(inAccount, accountValue(inAccount, vLedger, kToday, kDemo.prices).valueCents,
-				kDemo.transactions.count { inTx -> inTx.postings.any { it.accountId == inAccount.id } } - 1)
+		val vValues = kDemo.accounts.map { accountValue(it, vLedger, kToday, kDemo.prices) }	// valeurs du jour
+		val vWeights = accountWeights(vValues.associate { it.account.id to it.countedCents })	// parts du patrimoine
+		val vItems  = vValues.map { inValue ->
+			AccountItem(inValue.account, inValue.valueCents,
+				kDemo.transactions.count { inTx -> inTx.postings.any { it.accountId == inValue.account.id } } - 1, vWeights[inValue.account.id])
 		}																		// comptes valorisés
 		val vOld    = AccountItem(kDemo.accounts[2].copy(id = "ancien", name = "Ancien livret", archived = true), 0, 3)	// compte archivé
 		return AccountsUiState(true, vItems, listOf(vOld))
@@ -213,6 +216,7 @@ class ScreenshotTest
 		Onglet des comptes, vide.
 	*/
 	@Test
+	@Config(qualifiers = "w360dp-h1000dp-xxhdpi")
 	fun accounts() = captureRoboImage("$kOutDir/accounts.png", content = shell(false, false, TopLevelDestination.Accounts) {
 		AccountsContent(demoAccounts(), {}, {}, {}, {})
 	})

@@ -30,7 +30,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -50,8 +49,8 @@ import fr.maubin.patrimoineplus.ui.components.AmountText
 import fr.maubin.patrimoineplus.ui.components.BarSegment
 import fr.maubin.patrimoineplus.ui.components.ProportionBar
 import fr.maubin.patrimoineplus.ui.components.SeriesDot
-import fr.maubin.patrimoineplus.ui.theme.kAllocationDark
-import fr.maubin.patrimoineplus.ui.theme.kAllocationLight
+import fr.maubin.patrimoineplus.ui.components.allocationColor
+import fr.maubin.patrimoineplus.ui.components.kAllocationSlots
 import fr.maubin.patrimoineplus.ui.components.BorderedCard
 import fr.maubin.patrimoineplus.ui.components.DateInput
 import fr.maubin.patrimoineplus.ui.components.EmptyState
@@ -66,7 +65,6 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
 
-private const val kAllocationSlots = 4									// teintes de la répartition (la dernière : « Autres »)
 private val kShortDate = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)	// date courte
 
 /*
@@ -150,13 +148,12 @@ fun PositionsSection(
 {
 	val vPositions = inPortfolio.valuation.positions							// positions
 	val vLines     = allocation(vPositions)										// répartition des titres
-	val vRamp      = allocationRamp()											// teintes de la répartition
 	SectionHeader(inTitle = "Positions", inLinkLabel = if (vPositions.isEmpty()) null else "Actualiser", inOnLink = inOnRefresh)
 	Spacer(Modifier.height(8.dp))
 	if (vLines.size > 1)
 	{
 		ProportionBar(
-			inSegments    = vLines.groupBy { slotOf(it, vLines) }.toSortedMap().map { (inSlot, inGroup) -> BarSegment(inGroup.sumOf { it.position.valueCents }, vRamp[inSlot]) },
+			inSegments    = vLines.groupBy { slotOf(it, vLines) }.toSortedMap().map { (inSlot, inGroup) -> BarSegment(inGroup.sumOf { it.position.valueCents }, allocationColor(inSlot)) },
 			inDescription = "Répartition des titres : " + vLines.joinToString(", ") { "${inPortfolio.names[it.position.assetId] ?: "Actif supprimé"} ${it.percent}\u202F%" }
 		)
 		Spacer(Modifier.height(16.dp))
@@ -174,7 +171,7 @@ fun PositionsSection(
 			PositionRow(
 				inName    = inPortfolio.names[inLine.position.assetId] ?: "Actif supprimé",
 				inLine    = inLine,
-				inColor   = if (vLines.size > 1) vRamp[slotOf(inLine, vLines)] else null,
+				inColor   = if (vLines.size > 1) allocationColor(slotOf(inLine, vLines)) else null,
 				inOnClick = { inOnAsset(inLine.position.assetId) }
 			)
 		}
@@ -264,8 +261,7 @@ private fun PositionRow(
 }
 
 /*
-	Rang de teinte d'une position : son rang de valeur, les plus petites au-delà
-	de la quatrième partageant la dernière teinte (« Autres »).
+	Rang de valeur d'une position dans la répartition.
 	inLine  : position et sa part
 	inLines : répartition complète, triée
 */
@@ -273,13 +269,6 @@ private fun slotOf(
 	inLine  : AllocationLine,
 	inLines : List<AllocationLine>
 ): Int = inLines.indexOf(inLine).coerceAtMost(kAllocationSlots - 1)
-
-/*
-	Rampe de gris de la répartition, selon le mode clair ou sombre.
-*/
-@Composable
-private fun allocationRamp(): List<Color> =
-	if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) kAllocationDark else kAllocationLight
 
 /*
 	Relevés de la banque d'un compte Courant ou Épargne, avec l'écart au solde
