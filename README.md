@@ -311,7 +311,7 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   afficher son réel du mois et l'écart ; **diagramme de cashflow (Sankey)**
   du prévu ou du réel d'un mois (entrées → budget du mois → dépenses,
   investissements, reste ; déficit visible). Enregistré sur le PC
-  (`%APPDATA%\PatrimoinePlusudget.json`), pas dans le fichier
+  (`%APPDATA%\PatrimoinePlus\budget.json`), pas dans le fichier
   synchronisé.
 - **Synchronisation côté PC** : le fichier d'échange est lu, puis surveillé
   (2 s) ; une modification du PC est écrite 1,5 s plus tard (fichier
