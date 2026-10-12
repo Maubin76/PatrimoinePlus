@@ -103,7 +103,7 @@ fun BudgetScreen(
 			}
 			else
 			{
-				SankeyDiagram(vDiagram, if (vActual) "Réel du mois" else "Budget du mois")
+				SankeyDiagram(vDiagram, "Budget")
 				if (vDiagram.deficit) Hint("Les sorties dépassent les entrées : le déficit apparaît comme une entrée, à gauche.")
 				if (vActual) Hint("Réel des lignes suivies seulement ; les lignes non suivies n’y figurent pas.")
 			}
@@ -147,8 +147,8 @@ private fun Figures(inView: BudgetView)
 }
 
 /*
-	Tuile d'une rubrique : ses lignes (nom, suivi, montant prévu, réel, écart)
-	et l'ajout d'une ligne.
+	Tuile d'une rubrique : ses lignes (nom, thème des sorties, suivi, montant
+	prévu, réel, écart) et l'ajout d'une ligne.
 	inSection : rubrique
 	inView    : budget comparé
 	inSpace   : données (catégories, comptes)
@@ -186,7 +186,8 @@ private fun SectionTile(
 		else
 		{
 			Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-				listOf("Nom" to 2f, "Suivi" to 1.6f, "Prévu" to 1f, "Réel du mois" to 1f, "Écart" to 1f).forEach { (inHead, inWeight) ->
+				val vHeads = listOfNotNull("Nom" to 2f, ("Thème" to 1.4f).takeIf { inSection != BudgetSection.INCOME }, "Suivi" to 1.6f, "Prévu" to 1f, "Réel du mois" to 1f, "Écart" to 1f)	// en-têtes (les entrées n'ont pas de thème)
+			vHeads.forEach { (inHead, inWeight) ->
 					Text(inHead, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(inWeight).padding(end = 12.dp))
 				}
 				Spacer(Modifier.width(40.dp))
@@ -204,7 +205,8 @@ private fun SectionTile(
 }
 
 /*
-	Ligne de budget modifiable.
+	Ligne de budget modifiable ; une sortie (dépense, investissement) porte
+	un thème qui la regroupe avec d'autres dans le schéma.
 	inView     : ligne et son réel
 	inSpace    : données (catégories, comptes)
 	inOnChange : nouvelle ligne ; null pour la retirer
@@ -227,6 +229,10 @@ private fun LineRow(
 	val vTracked = vLine.categoryId ?: vLine.accountId										// suivi actuel
 	Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
 		CellField(vLine.name, { inOnChange(vLine.copy(name = it)) }, Modifier.weight(2f).padding(end = 12.dp), inPlaceholder = "Nom")
+		if (vLine.section != BudgetSection.INCOME)
+		{
+			CellField(vLine.group, { inOnChange(vLine.copy(group = it)) }, Modifier.weight(1.4f).padding(end = 12.dp), inPlaceholder = if (vLine.section == BudgetSection.INVESTMENT) "Investissements" else "Thème (facultatif)")
+		}
 		MenuCell(
 			inText     = vTracks.firstOrNull { it.first == vTracked }?.second ?: "Non suivie",
 			inOptions  = listOf(kUntracked to "Non suivie") + vTracks,

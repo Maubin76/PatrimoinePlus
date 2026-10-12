@@ -28,6 +28,9 @@ enum class BudgetSection(val label: String)
 	amount     : montant mensuel prévu, en centimes (positif)
 	categoryId : catégorie suivie (entrées, dépenses) pour comparer au réel ; null sinon
 	accountId  : compte suivi (investissements : versements reçus) ; null sinon
+	group      : thème qui regroupe des lignes dans le schéma (« Logement »,
+	             « Vie quotidienne ») ; vide : la ligne forme son propre thème
+	             (investissements : « Investissements »)
 */
 @Serializable
 data class BudgetLine(
@@ -36,7 +39,8 @@ data class BudgetLine(
 	val name       : String,
 	val amount     : Long,
 	val categoryId : String? = null,
-	val accountId  : String? = null
+	val accountId  : String? = null,
+	val group      : String  = ""
 )
 
 /*
@@ -156,25 +160,47 @@ data class CashFlow(
 )
 
 /*
-	Diagramme de cashflow : sources (entrées, et déficit s'il faut l'équilibrer)
-	vers le total du mois, puis vers les sorties (dépenses, investissements,
-	et reste s'il est positif). La somme des sources égale celle des sorties.
+	Thème des sorties : un nœud du schéma, puis le détail de ses lignes.
+	name   : nom du thème
+	kind   : rubrique (investissements ou dépenses) ; null pour le reste
+	items  : lignes du thème, de la plus forte à la plus faible ; vide si le
+	         thème n'a qu'une ligne du même nom (pas de détail à montrer)
+	amount : total du thème
+*/
+data class CashGroup(
+	val name   : String,
+	val kind   : BudgetSection?,
+	val items  : List<CashFlow>,
+	val amount : Long
+)
+
+/*
+	Diagramme de cashflow sur quatre colonnes : entrées (et déficit s'il
+	faut équilibrer) → total du mois → thèmes des sorties (investissements
+	d'abord, puis dépenses de la plus forte à la plus faible, puis reste) →
+	détail de chaque thème.
 	sources : flux entrants
-	outputs : flux sortants
+	groups  : thèmes des sorties, dans l'ordre du schéma
 	total   : montant qui traverse le budget
 	deficit : vrai si les sorties dépassent les entrées
 */
 data class CashFlowDiagram(
 	val sources : List<CashFlow>,
-	val outputs : List<CashFlow>,
+	val groups  : List<CashGroup>,
 	val total   : Long,
 	val deficit : Boolean
 )
+{
+	// Sorties à plat (détail des thèmes, ou thème seul), dans l'ordre du schéma.
+	val outputs: List<CashFlow> get() = groups.flatMap { inGroup -> inGroup.items.ifEmpty { listOf(CashFlow(inGroup.name, inGroup.amount, inGroup.kind)) } }
+}
 
 /*
-	Construit le diagramme de cashflow à partir de montants par ligne : prévu
-	(inActual faux) ou réel du mois (lignes suivies seulement). Lignes nulles
-	ignorées ; sorties triées par rubrique puis par montant décroissant.
+	Construit le diagramme de cashflow : prévu (inActual faux) ou réel du
+	mois (lignes suivies seulement). Lignes nulles ignorées. Les
+	investissements forment le premier thème (« Investissements » si leurs
+	lignes n'en précisent pas) ; les dépenses sont regroupées par thème, une
+	ligne sans thème formant le sien ; le reste ferme la marche.
 	inView   : budget comparé
 	inActual : vrai pour le réel du mois
 */
@@ -183,15 +209,26 @@ fun cashFlow(
 	inActual : Boolean
 ): CashFlowDiagram
 {
-	val vAmount  = { inLine: BudgetLineView -> if (inActual) (inLine.actual ?: 0L) else inLine.line.amount }	// montant retenu
-	val vFlows   = { inSection: BudgetSection -> inView.section(inSection).map { CashFlow(it.line.name.ifBlank { inSection.label }, vAmount(it), inSection) }.filter { it.amount > 0 }.sortedByDescending { it.amount } }	// flux d'une rubrique
-	val vIn      = vFlows(BudgetSection.INCOME)											// entrées
-	val vOut     = vFlows(BudgetSection.EXPENSE) + vFlows(BudgetSection.INVESTMENT)		// sorties
+	val vAmount = { inLine: BudgetLineView -> if (inActual) (inLine.actual ?: 0L) else inLine.line.amount }	// montant retenu
+	val vLines  = { inSection: BudgetSection -> inView.section(inSection).filter { vAmount(it) > 0 } }	// lignes non nulles d'une rubrique
+	val vFlow   = { inLine: BudgetLineView -> CashFlow(inLine.line.name.ifBlank { inLine.line.section.label }, vAmount(inLine), inLine.line.section) }	// flux d'une ligne
+	val vGroups = { inSection: BudgetSection, inDefault: String? ->
+		vLines(inSection)
+			.groupBy { inLine -> inLine.line.group.trim().ifEmpty { inDefault ?: "\u0000${inLine.line.id}" } }
+			.map { (inKey, inMembers) ->
+				val vItems = inMembers.map(vFlow).sortedByDescending { it.amount }			// lignes du thème
+				val vName  = if (inKey.startsWith("\u0000")) vItems.single().name else inKey	// nom du thème
+				CashGroup(vName, inSection, if (vItems.size == 1 && vItems.single().name == vName) emptyList() else vItems, vItems.sumOf { it.amount })
+			}
+			.sortedByDescending { it.amount }
+	}																					// thèmes d'une rubrique
+	val vIn      = vLines(BudgetSection.INCOME).map(vFlow).sortedByDescending { it.amount }	// entrées
+	val vOut     = vGroups(BudgetSection.INVESTMENT, BudgetSection.INVESTMENT.label) + vGroups(BudgetSection.EXPENSE, null)	// sorties par thème
 	val vInSum   = vIn.sumOf { it.amount }												// total des entrées
 	val vOutSum  = vOut.sumOf { it.amount }												// total des sorties
 	return CashFlowDiagram(
 		sources = if (vOutSum > vInSum) vIn + CashFlow("Déficit", vOutSum - vInSum, null) else vIn,
-		outputs = if (vInSum > vOutSum) vOut + CashFlow("Reste", vInSum - vOutSum, null) else vOut,
+		groups  = if (vInSum > vOutSum) vOut + CashGroup("Reste", null, emptyList(), vInSum - vOutSum) else vOut,
 		total   = maxOf(vInSum, vOutSum),
 		deficit = vOutSum > vInSum
 	)

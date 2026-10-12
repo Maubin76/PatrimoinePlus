@@ -30,7 +30,7 @@ import java.time.ZoneId
 
 /*
 	Budget prévisionnel dans l'interface du PC (sans écran) : diagramme de
-	cashflow prévu et réel, ajout d'une ligne, budget enregistré et relu au
+	cashflow prévu et réel regroupé par thème, ajout d'une ligne avec son thème, budget enregistré et relu au
 	lancement suivant ; captures pour relecture.
 */
 class BudgetUiTest
@@ -76,15 +76,18 @@ class BudgetUiTest
 		val vCat  = { inName: String -> vData.categories.single { it.name == inName }.id }	// catégorie par nom
 		vApp.setBudget(Budget(listOf(
 			BudgetLine("1", BudgetSection.INCOME, "Salaire", 320_000, categoryId = vCat("Salaire")),
-			BudgetLine("2", BudgetSection.EXPENSE, "Logement", 95_000, categoryId = vCat("Logement")),
-			BudgetLine("3", BudgetSection.EXPENSE, "Alimentation", 45_000, categoryId = vCat("Alimentation")),
+			BudgetLine("2", BudgetSection.EXPENSE, "Loyer", 95_000, categoryId = vCat("Logement"), group = "Logement"),
+			BudgetLine("3", BudgetSection.EXPENSE, "Courses", 45_000, categoryId = vCat("Alimentation"), group = "Vie quotidienne"),
 			BudgetLine("4", BudgetSection.EXPENSE, "Transport", 12_000, categoryId = vCat("Transport")),
-			BudgetLine("5", BudgetSection.EXPENSE, "Loisirs", 15_000, categoryId = vCat("Loisirs")),
+			BudgetLine("5", BudgetSection.EXPENSE, "Loisirs", 15_000, categoryId = vCat("Loisirs"), group = "Vie quotidienne"),
 			BudgetLine("6", BudgetSection.INVESTMENT, "Livret A", 50_000, accountId = vData.accounts.first { it.name == "Livret A" }.id),
 			BudgetLine("7", BudgetSection.INVESTMENT, "PEA", 40_000, accountId = vData.accounts.first { it.name == "PEA" }.id)
 		)))
 		vApp.show(Screen.BUDGET)
 		capture(vApp, "17-budget")
+		vApp.setAppearance(ThemeMode.DARK)
+		capture(vApp, "17-budget-sombre")
+		vApp.setAppearance(ThemeMode.LIGHT)
 		fCompose.setContent { App(vApp) { null } }
 		fCompose.onNodeWithText("Budget prévisionnel").assertExists()
 		fCompose.onNodeWithText("Cashflow prévu").assertExists()
@@ -94,10 +97,11 @@ class BudgetUiTest
 		assertEquals(BudgetSection.EXPENSE, vNew.section)
 		val vFields = fCompose.onAllNodes(hasSetTextAction())							// champs des lignes
 		val vCount  = vFields.fetchSemanticsNodes().size								// nombre de champs
-		vFields[vCount - 6].performTextInput("Abonnements")							// nom de la nouvelle ligne (dernière des dépenses, avant les 2 lignes d'investissement)
-		vFields[vCount - 5].performTextInput("30")
+		vFields[vCount - 9].performTextInput("Abonnements")							// nom de la nouvelle ligne (dernière des dépenses, avant les 2 lignes d'investissement de 3 champs)
+		vFields[vCount - 8].performTextInput("Vie quotidienne")						// thème
+		vFields[vCount - 7].performTextInput("30")
 		fCompose.waitForIdle()
-		assertTrue(vApp.budget.value.lines.any { it.name == "Abonnements" && it.amount == 3_000L })
+		assertTrue(vApp.budget.value.lines.any { it.name == "Abonnements" && it.group == "Vie quotidienne" && it.amount == 3_000L })
 		fCompose.onAllNodesWithText("Réel du mois")[0].performScrollTo().performClick()			// puce du schéma (avant les en-têtes de colonnes)
 		fCompose.waitForIdle()
 		fCompose.onNodeWithText("Cashflow réel de octobre 2026").assertExists()

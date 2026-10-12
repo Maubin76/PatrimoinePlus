@@ -102,4 +102,33 @@ class BudgetTest
 		assertEquals(kBudget, decodeBudget(encodeBudget(kBudget)))
 		assertEquals(Budget(), decodeBudget("pas du JSON"))
 	}
+
+	/*
+		Thèmes : investissements en premier (thème « Investissements » par
+		défaut), puis dépenses regroupées par thème de la plus forte à la plus
+		faible (détail trié), ligne sans thème seule et sans détail, reste en
+		dernier.
+	*/
+	@Test
+	fun groupsByTheme()
+	{
+		val vBudget = Budget(listOf(
+			BudgetLine("1", BudgetSection.INCOME, "Salaire", eur(3_000.0)),
+			BudgetLine("2", BudgetSection.EXPENSE, "Loyer", eur(850.0), group = "Logement"),
+			BudgetLine("3", BudgetSection.EXPENSE, "Électricité", eur(50.0), group = "Logement"),
+			BudgetLine("4", BudgetSection.EXPENSE, "Courses", eur(150.0), group = "Vie quotidienne"),
+			BudgetLine("5", BudgetSection.EXPENSE, "Restaurants", eur(300.0), group = "Vie quotidienne"),
+			BudgetLine("6", BudgetSection.EXPENSE, "Transports", eur(160.0)),
+			BudgetLine("7", BudgetSection.INVESTMENT, "Actions", eur(500.0)),
+			BudgetLine("8", BudgetSection.INVESTMENT, "Crypto", eur(50.0))
+		))																					// budget à thèmes
+		val vDiagram = cashFlow(compareBudget(vBudget, DataSet.kEmpty, YearMonth.of(2026, 10)), inActual = false)	// diagramme
+		assertEquals(listOf("Investissements", "Logement", "Vie quotidienne", "Transports", "Reste"), vDiagram.groups.map { it.name })
+		assertEquals(listOf("Actions", "Crypto"), vDiagram.groups[0].items.map { it.name })
+		assertEquals(listOf("Restaurants", "Courses"), vDiagram.groups[2].items.map { it.name })
+		assertTrue(vDiagram.groups[3].items.isEmpty())
+		assertEquals(eur(940.0), vDiagram.groups.last().amount)
+		assertEquals(vDiagram.total, vDiagram.groups.sumOf { it.amount })
+		assertEquals(vDiagram.groups.sumOf { it.amount }, vDiagram.outputs.sumOf { it.amount })
+	}
 }
