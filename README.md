@@ -317,6 +317,14 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   étiquettes « Nom : montant » ; déficit visible. Enregistré sur le PC
   (`%APPDATA%\PatrimoinePlus\budget.json`), pas dans le fichier
   synchronisé.
+- **Objectifs** (barre latérale) : objectifs chiffrés suivis sur les
+  données (patrimoine total, un compte, un type de placement, épargne
+  mensuelle, taux d'épargne), montant mis à jour à la main, ou étape à
+  cocher ; échéance facultative. Pour chacun : avancement, rythme des
+  douze derniers mois (soldes initiaux exclus), date d'atteinte estimée,
+  effort mensuel pour tenir l'échéance, état (en bonne voie, en retard,
+  échéance dépassée, atteint). Idées proposées quand la page est vide.
+  Enregistré sur le PC (`%APPDATA%\PatrimoinePlus\goals.json`).
 - **Synchronisation côté PC** : le fichier d'échange est lu, puis surveillé
   (2 s) ; une modification du PC est écrite 1,5 s plus tard (fichier
   temporaire ignoré par Syncthing, puis remplacement atomique), une

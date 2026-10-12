@@ -7,6 +7,9 @@ import java.nio.file.Paths
 import fr.maubin.patrimoineplus.ui.budget.Budget
 import fr.maubin.patrimoineplus.ui.budget.decodeBudget
 import fr.maubin.patrimoineplus.ui.budget.encodeBudget
+import fr.maubin.patrimoineplus.ui.goals.Goals
+import fr.maubin.patrimoineplus.ui.goals.decodeGoals
+import fr.maubin.patrimoineplus.ui.goals.encodeGoals
 import java.nio.file.StandardCopyOption
 import java.util.Properties
 
@@ -126,6 +129,31 @@ class DesktopConfig(private val inFile: Path)
 		Fichier du budget, à côté de celui des réglages.
 	*/
 	private fun budgetFile(): Path = inFile.resolveSibling("budget.json")
+
+	/*
+		Lit les objectifs (fichier goals.json à côté des réglages) ; aucun s'il
+		est absent ou illisible.
+	*/
+	fun loadGoals(): Goals =
+		goalsFile().takeIf { Files.isRegularFile(it) }?.let { inPath -> runCatching { decodeGoals(Files.readString(inPath)) }.getOrNull() } ?: Goals()
+
+	/*
+		Enregistre les objectifs (fichier temporaire puis remplacement).
+		inGoals : objectifs
+	*/
+	fun saveGoals(inGoals: Goals)
+	{
+		val vFile = goalsFile()															// fichier des objectifs
+		vFile.parent?.let { Files.createDirectories(it) }
+		val vTemp = vFile.resolveSibling("goals.json.tmp")								// écriture provisoire
+		Files.writeString(vTemp, encodeGoals(inGoals))
+		Files.move(vTemp, vFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+	}
+
+	/*
+		Fichier des objectifs, à côté de celui des réglages.
+	*/
+	private fun goalsFile(): Path = inFile.resolveSibling("goals.json")
 
 	companion object
 	{

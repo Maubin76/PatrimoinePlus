@@ -130,4 +130,7 @@ object LineIcons
 	// Projection : courbe montante et flèche.
 	val Trend: ImageVector = lineIcon("Projection", "M3 17 L9 11 L13 15 L21 7", "M15 7 H21 V13")
 
+	// Objectifs : cible, deux anneaux et un point central.
+	val Target: ImageVector = lineIcon("Objectifs", circle(12f, 12f, 8.5f), circle(12f, 12f, 4.5f), circle(12f, 12f, 0.8f))
+
 }

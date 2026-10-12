@@ -14,6 +14,7 @@ import fr.maubin.patrimoineplus.ui.entry.EntryForm
 import fr.maubin.patrimoineplus.ui.entry.newEntryForm
 import fr.maubin.patrimoineplus.ui.search.SearchQuery
 import fr.maubin.patrimoineplus.ui.budget.Budget
+import fr.maubin.patrimoineplus.ui.goals.Goals
 import fr.maubin.patrimoineplus.ui.entry.BatchRow
 import fr.maubin.patrimoineplus.ui.entry.checkBatchRow
 import fr.maubin.patrimoineplus.ui.projection.ProjectionInput
@@ -53,6 +54,7 @@ enum class Screen(val label: String)
 	REPORT("Bilan annuel"),														// bilan d'une année, PDF
 	PROJECTION("Projection"),													// patrimoine à quelques années
 	BUDGET("Budget"),															// budget prévisionnel et cashflow
+	GOALS("Objectifs"),															// objectifs chiffrés ou à cocher
 	CATEGORIES("Catégories"),													// catégories de dépense et de revenu
 	SETTINGS("Réglages")														// source, apparence
 }
@@ -188,6 +190,7 @@ class DesktopController(
 	private val fBatch      = MutableStateFlow<List<BatchRow>>(emptyList())	// lignes de la saisie en grille
 	private val fProjection = MutableStateFlow<ProjectionInput?>(null)			// hypothèses de la projection ; null : par défaut
 	private val fBudget     = MutableStateFlow(inConfig.loadBudget())			// budget prévisionnel
+	private val fGoals      = MutableStateFlow(inConfig.loadGoals())			// objectifs
 	private var fRowKeys    = 0L												// identifiants des lignes de la grille
 	private var fTokens     = 0L												// numéros d'ouverture des panneaux
 
@@ -226,6 +229,9 @@ class DesktopController(
 
 	// Budget prévisionnel mensuel (enregistré sur le PC).
 	val budget: StateFlow<Budget> = fBudget
+
+	// Objectifs sur le patrimoine (enregistrés sur le PC).
+	val goals: StateFlow<Goals> = fGoals
 
 	// Relevé de la banque en cours de rapprochement ; null sinon.
 	val bank: StateFlow<BankSession?> = fBank
@@ -540,6 +546,16 @@ class DesktopController(
 	{
 		fBudget.value = inBudget
 		runCatching { inConfig.saveBudget(inBudget) }.onFailure { fNotice.value = "Budget non enregistré : ${it.message}" }
+	}
+
+	/*
+		Remplace les objectifs et les enregistre sur le PC.
+		inGoals : objectifs
+	*/
+	fun setGoals(inGoals: Goals)
+	{
+		fGoals.value = inGoals
+		runCatching { inConfig.saveGoals(inGoals) }.onFailure { fNotice.value = "Objectifs non enregistrés : ${it.message}" }
 	}
 
 	/*

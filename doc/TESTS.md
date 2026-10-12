@@ -1,11 +1,11 @@
 # Tests
 
-Tous les tests tournent sur la JVM, sans émulateur (215 tests au total) :
+Tous les tests tournent sur la JVM, sans émulateur (221 tests au total) :
 
 ```sh
-./gradlew :core:test                    # module commun : 126 tests, Kotlin pur (core/src/test)
+./gradlew :core:test                    # module commun : 131 tests, Kotlin pur (core/src/test)
 ./gradlew :app:testDebugUnitTest        # appli Android : 50 tests, Robolectric (app/src/test)
-./gradlew :desktop:test                 # appli PC : 39 tests (desktop/src/test)
+./gradlew :desktop:test                 # appli PC : 40 tests (desktop/src/test)
 ./gradlew :app:recordRoborazziDebug     # régénère les captures d'écran
 ```
 
@@ -56,6 +56,8 @@ communes (fausse source de cours, réponses Yahoo enregistrées) sont dans
 | `BatchAndProjectionTest` (2) | `:core` `ui/entry/BatchEntry`, `ui/projection` | saisie en grille : catégorie proposée (libellé exact sans accents, début de libellé), dépense sans signe, revenu et remboursement avec « + », erreurs de date, de catégorie et de montant ; projection : départ = patrimoine actuel, versements sans rendement, scénarios ordonnés, **intérêts composés justes** sur un cas simple, hypothèses par défaut |
 | `PlanningUiTest` (3) | `:desktop` écrans Saisie rapide, Bilan annuel, Projection (sans écran) | grille : catégorie proposée, Entrée pour une nouvelle ligne, « + » pour un revenu, **date fausse qui bloque tout**, enregistrement en une fois ; bilan : écran et export PDF valide ; projection : horizon changé, valeurs par défaut ; captures 14 à 16 |
 | `BudgetTest` (5) | `:core` `ui/budget` (budget prévisionnel) | totaux et reste prévu ; **réel du mois** par catégorie suivie (remboursement déduit) et par versements reçus sur un compte suivi, lignes non suivies sans réel, autres mois ignorés ; **diagramme de cashflow équilibré** (reste ou déficit ajouté, lignes nulles ignorées) ; fichier : aller-retour, fichier illisible = budget vide ; **regroupement par thème** : investissements en premier (thème « Investissements » par défaut), dépenses par thème de la plus forte à la plus faible avec détail trié, ligne sans thème seule, reste en dernier |
+| `GoalsTest` (5) | `:core` `ui/goals` (objectifs) | patrimoine : **rythme des douze derniers mois sans les soldes initiaux** (compte ouvert en cours de période), date estimée arrondie au mois supérieur, effort mensuel pour l'échéance, en bonne voie ; compte (valeur entière, en retard), compte ouvert depuis moins de 28 jours (rythme inconnu), type de placement atteint ; épargne mensuelle (mois complets depuis la première opération, mois en cours exclu) et taux d'épargne ; montant à la main en échéance dépassée, objectifs à cocher (à faire, fait, en retard) ; **ordre** (en cours par échéance, puis terminés) ; fichier : aller-retour, fichier illisible, échéance illisible |
+| `GoalsUiTest` (1) | `:desktop` écran Objectifs (sans écran) | idées de la page vide, sept objectifs évalués sur la démonstration, case cochée, **objectif créé par le panneau** (nature, cible, échéance), objectifs relus au lancement suivant ; captures `18-objectifs*.png` (vide, clair, sombre, panneau) |
 | `BudgetUiTest` (1) | `:desktop` écran Budget (sans écran) | schéma prévu (regroupé par thème) puis réel du mois, ligne ajoutée et remplie par l'interface (nom, thème, montant), **budget relu au lancement suivant** ; captures `17-budget.png` (clair) et `17-budget-sombre.png` |
 | `DateInputTest` (1) | `:core` `domain/format/DateInput` | dates saisies sur PC : « 5/3/2026 » et « 05/03/2026 » acceptées, 29/02 d'une année non bissextile, 31/04 et formats étrangers refusés |
 | `DesktopUiTest` (2) | `:desktop` interface (Compose, sans écran) | **parcours réel** : écran d'accueil → « Essayer avec la démonstration » → tableau de bord (patrimoine, répartition, comptes, dernières opérations, bandeau) → tuile du Livret A (vue globale) → Réglages → Fermer → écran d'accueil ; captures de 10 écrans en clair et en sombre (tableau de bord, avec les couleurs des hausses et baisses, vues des comptes, panneau de saisie, fiche d'un compte) (`desktop/build/captures-desktop`, relecture humaine) |
