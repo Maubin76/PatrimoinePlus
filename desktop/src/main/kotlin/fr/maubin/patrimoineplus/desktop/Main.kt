@@ -54,12 +54,13 @@ fun main(inArgs: Array<String>)
 			icon              = BitmapPainter(windowIcon()),
 			state             = rememberWindowState(size = DpSize(1440.dp, 900.dp)),
 			onPreviewKeyEvent = { inEvent ->
-				if (inEvent.type == KeyEventType.KeyDown && inEvent.isCtrlPressed && inEvent.key == Key.N && vController.workspace.value.source != Source.None)
+				when
 				{
-					vController.newOperation()
-					true
+					inEvent.type != KeyEventType.KeyDown || !inEvent.isCtrlPressed || vController.workspace.value.source == Source.None -> false
+					inEvent.key == Key.N -> { vController.newOperation(); true }
+					inEvent.key == Key.F -> { vController.focusSearch(); true }
+					else                 -> false
 				}
-				else false
 			}
 		) {
 			window.minimumSize = Dimension(980, 640)

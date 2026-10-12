@@ -125,6 +125,10 @@ identifiant (A-03, C-12…) pour le retour.
 | C-17 | Rendre le fichier d'échange illisible pendant que l'appli est ouverte, puis le remettre. | Bandeau « Fichier d'échange refusé », données précédentes affichées, fichier jamais écrasé ; relu dès qu'il redevient valide. |
 | C-18 | Laisser l'appli ouverte au passage de minuit (ou changer la date de Windows). | La date de calcul suit en moins d'une minute. |
 | C-18b | Vue du compte courant › Relevés › « Rapprocher un relevé… », choisir l'export CSV du site de la banque (un mois). | Période et nombre de lignes justes ; opérations déjà saisies dans « Retrouvées » ; lignes manquantes proposées avec un libellé et une catégorie plausibles ; après « Créer », elles passent dans « Retrouvées » ; « Dans l'appli, pas chez la banque » ne liste que des opérations réellement absentes du relevé. Noter toute ligne mal lue (montant, date, libellé). |
+| C-18c | Analyse : lire les moyennes, les barres et le tableau ; cliquer un montant du tableau. | Chiffres cohérents avec les comptes ; le clic ouvre Opérations filtré sur la catégorie et le mois. |
+| C-18d | Opérations : Ctrl+F (même depuis un autre écran), chercher un marchand, un montant (« 54,90 »), filtrer par compte et période. | Résultats et total justes, accents et majuscules ignorés. |
+| C-18e | Sélectionner plusieurs dépenses (cases, Ctrl+clic, Maj+clic), « Changer la catégorie… » ; puis une sélection mêlant dépenses et revenus. | Catégorie changée d'un coup (et sur le téléphone après synchronisation) ; mélange : bouton désactivé avec explication. |
+| C-18f | Supprimer une sélection contenant un virement, puis un achat dont dépend une vente. | Confirmation ; virement supprimé sur les deux comptes ; achat refusé avec un message. |
 | C-19 | `PatrimoinePlus.exe --verifier chemin\vers\patrimoineplus-donnees.xlsx` dans un terminal. | Code de sortie 0 ; date d'exemple en français (« 12 octobre 2026 »). |
 
 ## D. Limites connues (pas des anomalies)

@@ -1,11 +1,11 @@
 # Tests
 
-Tous les tests tournent sur la JVM, sans émulateur (196 tests au total) :
+Tous les tests tournent sur la JVM, sans émulateur (201 tests au total) :
 
 ```sh
-./gradlew :core:test                    # module commun : 113 tests, Kotlin pur (core/src/test)
+./gradlew :core:test                    # module commun : 116 tests, Kotlin pur (core/src/test)
 ./gradlew :app:testDebugUnitTest        # appli Android : 50 tests, Robolectric (app/src/test)
-./gradlew :desktop:test                 # appli PC : 33 tests (desktop/src/test)
+./gradlew :desktop:test                 # appli PC : 35 tests (desktop/src/test)
 ./gradlew :app:recordRoborazziDebug     # régénère les captures d'écran
 ```
 
@@ -50,6 +50,8 @@ communes (fausse source de cours, réponses Yahoo enregistrées) sont dans
 | `RoundTripRobustnessTest` (3) | `:core` `data/backup`, `data/sync` | textes inhabituels (espaces de bord, retour chariot, caractère de contrôle, U+FFFE, moitié de caractère composé) : classeur lisible et **empreinte inchangée par l'aller-retour** (sinon import inutile ou faux conflit) ; montants tapés à la main (« 1.234,56 », « 1,234.56 ») ; **part détenue hors de 1 à 100 % refusée** |
 | `BankStatementTest` (6) | `:core` `data/bank` (relevé de la banque, rapprochement) | lecture sans réglage d'exports au format de plusieurs banques : colonnes Débit/Crédit avec lignes d'informations avant le tableau en Windows-1252, montant signé avec date de valeur et libellés court et détaillé, export à virgules et dates ISO avec guillemets ; fichiers refusés ; **rapprochement** par montant égal et date à cinq jours, la plus proche d'abord, chaque opération une seule fois, soldes initiaux ignorés ; lignes à créer et opérations en trop ; totaux comparés ; **saisie proposée** (libellé et catégorie d'un achat passé chez le même marchand, libellé nettoyé sinon, pas de catégorie de revenu pour un débit) ; formulaire qui passe les contrôles, remboursement compris |
 | `ReconcileUiTest` (1) | `:desktop` écran de rapprochement (sans écran) | relevé lu depuis un fichier, lignes retrouvées, création refusée tant qu'une catégorie manque, puis lignes créées en une fois et retrouvées ; fichier refusé signalé ; capture `11-rapprochement.png` |
+| `AnalysisAndSearchTest` (3) | `:core` `ui/analysis`, `ui/search`, `data/edit` (appli PC) | tableau d'analyse : douze mois, dépenses nettes (remboursement déduit), virements et opérations à venir exclus, **moyennes depuis la première opération seulement**, écart du dernier mois, taux d'épargne, hausses triées ; recherche : mots sans accents dans libellé, notes, catégorie, comptes, montant exact, filtres de compte, catégorie, période et montant, total, montant illisible signalé ; **changement groupé de catégorie** refusé sans rien changer si la sélection contient un revenu ou un virement |
+| `AnalysisSearchUiTest` (2) | `:desktop` écrans Analyse et Opérations (sans écran) | clic sur une case du tableau → écran Opérations filtré sur la catégorie et le mois ; **Ctrl+F**, recherche « loyer », tout sélectionner, changer la catégorie, supprimer après confirmation ; captures `12-analyse.png`, `13-operations.png` |
 | `DateInputTest` (1) | `:core` `domain/format/DateInput` | dates saisies sur PC : « 5/3/2026 » et « 05/03/2026 » acceptées, 29/02 d'une année non bissextile, 31/04 et formats étrangers refusés |
 | `DesktopUiTest` (2) | `:desktop` interface (Compose, sans écran) | **parcours réel** : écran d'accueil → « Essayer avec la démonstration » → tableau de bord (patrimoine, répartition, comptes, dernières opérations, bandeau) → tuile du Livret A (vue globale) → Réglages → Fermer → écran d'accueil ; captures de 10 écrans en clair et en sombre (tableau de bord, avec les couleurs des hausses et baisses, vues des comptes, panneau de saisie, fiche d'un compte) (`desktop/build/captures-desktop`, relecture humaine) |
 | `SyncLogicTest` (2) | `:core` `data/sync/SyncLogic` | **empreinte** indépendante de l'ordre des listes et de la date d'export, différente dès qu'une donnée change ; **décision** pour chaque situation : pas de fichier (export, sauf données vides), première synchronisation (mémoriser, importer si téléphone vide, sinon conflit), ensuite (rien, export, import, mémoriser, conflit), effacement volontaire propagé |

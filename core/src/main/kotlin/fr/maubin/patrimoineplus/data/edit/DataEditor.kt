@@ -474,6 +474,34 @@ class DataEditor(
 		return EditResult.Done(vFile)
 	}
 
+	/*
+		Change la catégorie de plusieurs opérations à la fois (modification
+		groupée sur PC). Seules des dépenses ou des revenus de la même nature
+		que la nouvelle catégorie peuvent changer : sinon tout est refusé, sans
+		rien modifier (un remboursement reste un remboursement).
+		inFile       : contenu
+		inIds        : opérations
+		inCategoryId : nouvelle catégorie
+	*/
+	fun recategorize(
+		inFile       : BackupFile,
+		inIds        : Collection<String>,
+		inCategoryId : String
+	): EditResult
+	{
+		val vTarget = inFile.categories.firstOrNull { it.id == inCategoryId } ?: return refused(SetupError.NotFound)	// nouvelle catégorie
+		val vKinds  = inFile.categories.associate { it.id to it.kind }				// nature de chaque catégorie
+		val vChosen = inFile.transactions.filter { it.id in inIds }				// opérations choisies
+		val vWrong  = vChosen.count { it.kind != TransactionKind.STANDARD.name || vKinds[it.categoryId] != vTarget.kind }	// opérations incompatibles
+		if (vWrong > 0)
+		{
+			val vNature = if (vTarget.kind == CategoryKind.EXPENSE.name) "dépenses" else "revenus"	// nature attendue
+			return EditResult.Refused(listOf("$vWrong opération(s) choisie(s) ne sont pas des $vNature : « ${vTarget.name} » ne peut pas leur être attribuée."))
+		}
+		val vNow = now()																// horodatage
+		return EditResult.Done(inFile.copy(transactions = inFile.transactions.map { if (it.id in inIds && it.categoryId != inCategoryId) it.copy(categoryId = inCategoryId, updatedAt = vNow) else it }))
+	}
+
 	// ---------- Actifs, cours, relevés ----------
 
 	/*

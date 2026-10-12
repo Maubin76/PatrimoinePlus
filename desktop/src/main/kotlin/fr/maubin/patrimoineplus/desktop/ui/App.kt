@@ -77,6 +77,8 @@ import fr.maubin.patrimoineplus.desktop.ui.panels.StatementPanel
 import fr.maubin.patrimoineplus.desktop.ui.screens.AccountScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.CategoriesScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.DashboardScreen
+import fr.maubin.patrimoineplus.desktop.ui.screens.AnalysisScreen
+import fr.maubin.patrimoineplus.desktop.ui.screens.OperationsScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.ReconcileScreen
 import androidx.compose.runtime.staticCompositionLocalOf
 import fr.maubin.patrimoineplus.desktop.ui.screens.SettingsScreen
@@ -164,12 +166,13 @@ private fun Shell(
 	LaunchedEffect(inSpace.data) { inController.dropStalePanel() }
 	Row(
 		Modifier.fillMaxSize().focusRequester(vFocus).focusable().onPreviewKeyEvent { inEvent ->
-			if (inEvent.type == KeyEventType.KeyDown && inEvent.isCtrlPressed && inEvent.key == Key.N)
+			when
 			{
-				inController.newOperation()
-				true
+				inEvent.type != KeyEventType.KeyDown || !inEvent.isCtrlPressed -> false
+				inEvent.key == Key.N -> { inController.newOperation(); true }
+				inEvent.key == Key.F -> { inController.focusSearch(); true }
+				else                 -> false
 			}
-			else false
 		}
 	) {
 		Rail(vNav.screen, inController::show)
@@ -189,6 +192,8 @@ private fun Shell(
 							inAccountId?.endsWith("#relevé") == true -> vBank?.let { ReconcileScreen(inSpace, inController, it) }
 							inAccountId != null              -> AccountScreen(inSpace, inController, inAccountId, vNav.month)
 							inScreen == Screen.DASHBOARD     -> DashboardScreen(inSpace, inController)
+							inScreen == Screen.OPERATIONS    -> OperationsScreen(inSpace, inController)
+							inScreen == Screen.ANALYSIS      -> AnalysisScreen(inSpace, inController)
 							inScreen == Screen.CATEGORIES    -> CategoriesScreen(inSpace, inController)
 							else                             -> SettingsScreen(inController, inOnPickFolder)
 						}
@@ -336,7 +341,7 @@ private fun Rail(
 				verticalAlignment = Alignment.CenterVertically
 			) {
 				Icon(
-					imageVector        = when (inEntry) { Screen.DASHBOARD -> LineIcons.Home; Screen.CATEGORIES -> LineIcons.Grid; Screen.SETTINGS -> LineIcons.Sliders },
+					imageVector        = when (inEntry) { Screen.DASHBOARD -> LineIcons.Home; Screen.OPERATIONS -> LineIcons.Search; Screen.ANALYSIS -> LineIcons.Bars; Screen.CATEGORIES -> LineIcons.Grid; Screen.SETTINGS -> LineIcons.Sliders },
 					contentDescription = null,
 					tint               = if (vActive) vColors.onPrimary else vColors.onSurface,
 					modifier           = Modifier.size(20.dp)

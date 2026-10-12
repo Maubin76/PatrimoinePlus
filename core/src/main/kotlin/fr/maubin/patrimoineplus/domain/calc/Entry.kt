@@ -216,7 +216,7 @@ fun amountOn(
 	Texte sans accents, en minuscules, espaces réduits : pour comparer des libellés.
 	inText : texte
 */
-private fun fold(inText: String): String =
+fun fold(inText: String): String =
 	Normalizer.normalize(inText.trim().lowercase(), Normalizer.Form.NFD)
 		.replace(Regex("\\p{M}+"), "")
 		.replace(Regex("\\s+"), " ")

@@ -279,6 +279,18 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   corriger puis créer en une fois ; opérations de l'appli absentes du relevé.
   Rien n'est mémorisé (pas de pointage) ; le format exact de chaque banque reste
   à vérifier sur un vrai export.
+- **Analyse** (barre latérale) : dépenses et revenus des douze derniers mois,
+  tous comptes : moyennes (dépenses, revenus, taux d'épargne), plus fortes
+  hausses du dernier mois, barres mois par mois, tableau catégories × mois
+  (moyenne des mois complets, écart du dernier mois). Un clic sur une case
+  ouvre ses opérations.
+- **Opérations** (barre latérale, Ctrl+F) : recherche dans toutes les
+  opérations (mots sans accents ni majuscules dans le libellé, les notes, la
+  catégorie, les comptes ; montant exact ; filtres de compte, de catégorie, de
+  période et de montant), total des résultats ; sélection multiple (cases,
+  Ctrl+clic, Maj+clic, tout sélectionner) pour **changer la catégorie** de
+  plusieurs dépenses ou revenus d'un coup, ou les **supprimer** (confirmé ;
+  refusé si une vente devenait impossible).
 - **Synchronisation côté PC** : le fichier d'échange est lu, puis surveillé
   (2 s) ; une modification du PC est écrite 1,5 s plus tard (fichier
   temporaire ignoré par Syncthing, puis remplacement atomique), une

@@ -12,6 +12,7 @@ import fr.maubin.patrimoineplus.domain.model.CategoryKind
 import fr.maubin.patrimoineplus.ui.entry.EntryData
 import fr.maubin.patrimoineplus.ui.entry.EntryForm
 import fr.maubin.patrimoineplus.ui.entry.newEntryForm
+import fr.maubin.patrimoineplus.ui.search.SearchQuery
 import fr.maubin.patrimoineplus.ui.entry.buildEntry
 import fr.maubin.patrimoineplus.ui.entry.checkEntry
 import fr.maubin.patrimoineplus.ui.entry.withReferences
@@ -40,6 +41,8 @@ private const val kDayCheckMillis = 60_000L										// contrôle du changement 
 enum class Screen(val label: String)
 {
 	DASHBOARD("Tableau de bord"),												// patrimoine, comptes, opérations récentes
+	OPERATIONS("Opérations"),													// recherche et modification groupée
+	ANALYSIS("Analyse"),														// dépenses et revenus mois par mois
 	CATEGORIES("Catégories"),													// catégories de dépense et de revenu
 	SETTINGS("Réglages")														// source, apparence
 }
@@ -170,6 +173,8 @@ class DesktopController(
 	private val fPending    = MutableStateFlow<PendingAction?>(null)			// action retenue (modifications non écrites)
 	private val fNotice     = MutableStateFlow<String?>(null)					// message ponctuel du bandeau
 	private val fBank       = MutableStateFlow<BankSession?>(null)				// relevé en cours de rapprochement
+	private val fQuery      = MutableStateFlow(SearchQuery())					// critères de la recherche
+	private val fFocus      = MutableStateFlow(0)								// demandes de focus du champ de recherche (Ctrl+F)
 	private var fTokens     = 0L												// numéros d'ouverture des panneaux
 
 	// Moteur de modification des données.
@@ -192,6 +197,12 @@ class DesktopController(
 
 	// Message ponctuel à montrer dans le bandeau ; null sans message.
 	val notice: StateFlow<String?> = fNotice
+
+	// Critères de la recherche dans les opérations.
+	val query: StateFlow<SearchQuery> = fQuery
+
+	// Compteur des demandes de focus du champ de recherche (Ctrl+F).
+	val searchFocus: StateFlow<Int> = fFocus
 
 	// Relevé de la banque en cours de rapprochement ; null sinon.
 	val bank: StateFlow<BankSession?> = fBank
@@ -393,6 +404,55 @@ class DesktopController(
 	{
 		fNotice.value = inMessage
 	}
+
+	/*
+		Change les critères de la recherche.
+		inQuery : critères
+	*/
+	fun setQuery(inQuery: SearchQuery)
+	{
+		fQuery.value = inQuery
+	}
+
+	/*
+		Ouvre l'écran des opérations avec des critères (clic sur une case du
+		tableau d'analyse).
+		inQuery : critères
+	*/
+	fun openSearch(inQuery: SearchQuery)
+	{
+		fQuery.value = inQuery
+		show(Screen.OPERATIONS)
+	}
+
+	/*
+		Raccourci Ctrl+F : écran des opérations, curseur dans le champ de
+		recherche.
+	*/
+	fun focusSearch()
+	{
+		show(Screen.OPERATIONS)
+		fFocus.value++
+	}
+
+	/*
+		Change la catégorie de plusieurs opérations (modification groupée).
+		inIds        : opérations
+		inCategoryId : nouvelle catégorie
+		Retour       : null si fait ; sinon le motif du refus
+	*/
+	fun recategorize(
+		inIds        : Collection<String>,
+		inCategoryId : String
+	): String? = (edit { editor.recategorize(it, inIds, inCategoryId) } as? EditResult.Refused)?.messages?.joinToString(" ")
+
+	/*
+		Supprime plusieurs opérations (un virement en entier).
+		inIds  : opérations
+		Retour : null si fait ; sinon le motif du refus
+	*/
+	fun deleteMany(inIds: Collection<String>): String? =
+		(edit { editor.deleteTransactions(it, inIds) } as? EditResult.Refused)?.messages?.joinToString(" ")
 
 	/*
 		Lit un relevé exporté par la banque et ouvre son rapprochement avec un

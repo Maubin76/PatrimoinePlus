@@ -118,4 +118,10 @@ object LineIcons
 	// Descendre : chevron vers le bas.
 	val ChevronDown: ImageVector = lineIcon("Descendre", "M5 9 L12 16 L19 9")
 
+	// Rechercher : loupe.
+	val Search: ImageVector = lineIcon("Rechercher", "M10.5 4 A6.5 6.5 0 1 1 10.49 4 Z", "M15.5 15.5 L20 20")
+
+	// Analyse : colonnes de hauteurs différentes.
+	val Bars: ImageVector = lineIcon("Analyse", "M5 20 V13", "M10 20 V6", "M15 20 V10", "M20 20 V4")
+
 }
