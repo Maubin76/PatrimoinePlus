@@ -17,6 +17,7 @@ dans [`doc/SPEC.md`](doc/SPEC.md) ; la couverture des tests dans
 ./gradlew :app:assembleDebug        # APK : app/build/outputs/apk/debug/app-debug.apk
 ./gradlew :core:test                # tests du module commun (Kotlin pur)
 ./gradlew :desktop:run               # lance l'appli PC (Windows)
+./gradlew :desktop:packageZip        # dossier portable zippé de l'appli PC
 ./gradlew :desktop:test             # tests de l'appli PC
 ./gradlew :app:testDebugUnitTest    # tests de l'appli Android (Robolectric)
 ./gradlew :app:assembleRelease      # APK optimisé (R8), signé avec la clé de debug :
@@ -221,34 +222,50 @@ direct entre téléphones reste possible.
   qu'aux fichiers créés depuis la réinstallation (l'import, lui, passe par le
   sélecteur de fichiers et reste possible).
 
-## Appli PC (en cours, branche `desktop`)
+## Appli PC (branche `desktop`)
 
 Appli Windows en Compose Multiplatform (`:desktop`), même style noir et blanc
-que le téléphone, mise en page en deux colonnes pour grand écran. Lancement :
-`./gradlew :desktop:run` (installateur prévu à l'étape D).
+que le téléphone, mise en page en deux colonnes pour grand écran (une seule
+quand la place manque).
 
+- **Installation** : `./gradlew :desktop:packageZip` produit
+  `desktop/build/distributions/PatrimoinePlus-1.0.0-windows.zip` (≈ 60 Mo) :
+  à dézipper n'importe où, puis lancer `PatrimoinePlus.exe` (Java inclus, sans
+  installation ni droits administrateur). Non signé : Windows peut afficher un
+  avertissement au premier lancement (« Informations complémentaires ›
+  Exécuter quand même »). En développement : `./gradlew :desktop:run`.
 - **Écran d'accueil** : choisir le dossier synchronisé avec le téléphone, ou
-  **essayer avec la démonstration** (données fictives en mémoire, rien n'est lu
-  ni écrit sur le disque). Le choix est mémorisé et rouvert au lancement
-  suivant ; Réglages › Données permet d'en changer ou de fermer.
-- **Écrans** (consultation pour l'instant) : Accueil (total, variation du mois,
-  répartition, évolution), Comptes (répartition, liste), vue d'un compte
-  (Courant mois par mois ; Épargne et Bourse en vue globale, positions),
-  Réglages (source, apparence, mode discret).
-- **Dossier synchronisé** : le fichier `patrimoineplus-donnees.xlsx` est lu,
-  vérifié comme à l'import, puis surveillé (toutes les 2 s) et relu dès qu'il
-  change. Un fichier illisible (copie interrompue) est refusé et les
-  dernières données valides restent affichées ; le bandeau du haut indique
-  l'état.
+  **essayer avec la démonstration** (données fictives en mémoire, modifiables,
+  jamais enregistrées). Le choix est mémorisé et rouvert au lancement suivant.
+- **Consultation** : Accueil, Comptes, vue d'un compte (Courant mois par mois ;
+  Épargne et Bourse en vue globale, positions), Catégories, Réglages (source,
+  apparence, mode discret).
+- **Saisie** (panneau latéral à droite ; Échap ferme, Entrée enregistre ;
+  Ctrl+N ou « Nouvelle opération ») : opérations (dépense, remboursement,
+  revenu, virement, ordre avec nouvel actif), comptes (solde initial,
+  archivage, suppression simple ou définitive confirmée, ordre), catégories
+  (icône, suppression avec réaffectation, ordre), relevés, cours saisis à la
+  main, positions initiales, fiche d'un actif. Mêmes contrôles et mêmes règles
+  que le téléphone (`:core` : `DataEditor`, logique de saisie partagée).
+- **Synchronisation côté PC** : le fichier d'échange est lu, puis surveillé
+  (2 s) ; une modification du PC est écrite 1,5 s plus tard (fichier
+  temporaire puis remplacement atomique), une modification du téléphone est
+  relue ; même décision par empreintes que le téléphone, même fenêtre de
+  conflit. Un fichier illisible n'est jamais écrasé ; les modifications en
+  attente sont écrites à la fermeture. Les **cours automatiques** restent
+  récupérés par le téléphone seul (le PC n'a aucun accès réseau).
+- **Vérification sans fenêtre** : `PatrimoinePlus.exe --verifier <fichier>`
+  lit et vérifie un fichier d'échange (code de sortie 0 s'il est valide).
 - Réglages de l'appli PC : `%APPDATA%\PatrimoinePlus\desktop.properties`.
 - **Dette connue** : le thème et les composants graphiques (montants, courbe,
   barres, icônes) sont copiés de l'appli Android ; un module d'interface
-  partagé Android/PC pourra les factoriser.
+  partagé Android/PC pourra les factoriser. Un installateur `.msi` est
+  possible gratuitement (le plugin Compose télécharge WiX lui-même).
 
 ## Synchronisation avec le PC
 
-Les données peuvent être partagées avec l'appli PC (en cours de développement,
-branche `desktop`) par un **fichier d'échange** déposé dans un dossier que
+Les données sont partagées avec l'appli PC (branche `desktop`) par un
+**fichier d'échange** déposé dans un dossier que
 synchronise un outil comme Syncthing (gratuit, sans cloud).
 
 - **Dossier** : choisi une fois dans Réglages › Synchronisation (sélecteur du

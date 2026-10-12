@@ -43,6 +43,24 @@ compose.desktop {
 			packageVersion = "1.0.0"
 			description    = "Suivi du patrimoine et des dépenses"
 			vendor         = "Mathieu Aubin"
+			// Modules de la JVM embarquée : suggestRuntimeModules, plus java.xml (lecture des classeurs).
+			modules("java.instrument", "jdk.unsupported", "java.xml")
+
+			windows {
+				iconFile.set(project.file("icons/patrimoineplus.ico"))
+				menuGroup = "PatrimoinePlus"
+			}
 		}
 	}
+}
+
+// Dossier portable zippé : PatrimoinePlus.exe et sa JVM, à dézipper n'importe où, sans
+// installation ni droits administrateur (pas de WiX nécessaire, contrairement au .msi).
+tasks.register<Zip>("packageZip") {
+	group       = "distribution"
+	description = "Construit le dossier portable de l'appli PC et le zippe."
+	dependsOn("createDistributable")
+	from(layout.buildDirectory.dir("compose/binaries/main/app"))
+	archiveFileName.set("PatrimoinePlus-1.0.0-windows.zip")
+	destinationDirectory.set(layout.buildDirectory.dir("distributions"))
 }

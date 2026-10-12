@@ -1,11 +1,11 @@
 # Tests
 
-Tous les tests tournent sur la JVM, sans émulateur (137 tests au total) :
+Tous les tests tournent sur la JVM, sans émulateur (162 tests au total) :
 
 ```sh
-./gradlew :core:test                    # module commun : 78 tests, Kotlin pur (core/src/test)
+./gradlew :core:test                    # module commun : 88 tests, Kotlin pur (core/src/test)
 ./gradlew :app:testDebugUnitTest        # appli Android : 48 tests, Robolectric (app/src/test)
-./gradlew :desktop:test                 # appli PC : 11 tests (desktop/src/test)
+./gradlew :desktop:test                 # appli PC : 26 tests (desktop/src/test)
 ./gradlew :app:recordRoborazziDebug     # régénère les captures d'écran
 ```
 
@@ -37,10 +37,14 @@ communes (fausse source de cours, réponses Yahoo enregistrées) sont dans
 | `AccountWeightsTest` (1) | `ui/accounts` (`accountWeights`), `domain/calc` (`wholePercents`) | part de chaque compte dans le patrimoine : valeurs comptées positives seulement (découvert et compte vide exclus), rang de la plus grosse à la plus petite, parts entières qui font 100, part détenue prise en compte ; parts entières génériques dans l'ordre reçu |
 | `BackupNamingTest` (1) | `data/backup/BackupNaming` | nom daté des sauvegardes ; **rotation** : les 3 plus récentes gardées, fichiers étrangers au modèle jamais touchés ni comptés (**fichier d'échange de la synchronisation et copies de conflit Syncthing**) |
 | `ScreenStatesTest` (2) | `:core` `ui/home`, `ui/accounts` (états partagés) | sur la démonstration : total de l'accueil égal à la somme des valeurs comptées des comptes, courbe sur 12 mois au plus, date en français ; liste des comptes (actifs, archivés, parts qui font 100) |
+| `DataEditorTest` (6) | `:core` `data/edit/DataEditor` (modifications sans base, appli PC) | comptes (création avec solde initial, nom vide refusé, type modifiable puis verrouillé, archivage, ordre) ; suppression simple refusée avec opérations, acceptée sans (solde initial supprimé), définitive (virements entiers et relevés) ; solde initial créé, modifié, retiré ; positions initiales (refus hors Bourse) ; catégories (fin de liste, suppression refusée sans remplacement ou d'une autre nature, réaffectation) ; opérations (création, modification qui garde la date de création, **refus sans rien changer**) ; actifs, cours et relevés (un par jour). **Après chaque modification acceptée, le contenu passe la vérification complète d'un import** |
+| `EntryLogicTest` (4) | `:core` `ui/entry` (saisie partagée Android/PC) | formulaire par défaut (compte imposé, dernier, premier) ; contrôles et messages ; libellés proposés ; **aller-retour opération → formulaire → opération** sur toute la démonstration (a révélé le bug des remboursements) |
+| `WorkspaceSyncTest` (7) | `:desktop` `data/Workspace` (synchronisation du PC) | modification du PC écrite (sans fichier temporaire restant, pas de réécriture inutile) ; modification du téléphone relue sans réécriture ; **conflit** : rien touché avant le choix, garder le fichier ou le PC ; **fichier corrompu jamais écrasé** ; dossier vide : catégories par défaut, le PC crée le fichier ; démonstration jamais écrite |
+| `DesktopEditingTest` (8) | `:desktop` interface de saisie (sans écran) | dépense saisie par le panneau (signe, date) ; erreurs affichées sans rien enregistrer ; modification d'une opération depuis la vue du compte ; compte créé avec solde initial ; suppression définitive confirmée ; catégorie créée ; **Ctrl+N** ; fenêtre de conflit |
 | `DesktopConfigTest` (2) | `:desktop` `data/DesktopConfig` | réglages du PC : aller-retour (dossier avec espace et accent, démonstration, aucune source ; apparence ; mode discret), dossier créé s'il manque ; fichier absent ou abîmé → valeurs par défaut |
 | `WorkspaceTest` (3) | `:desktop` `data/Workspace` | démonstration sans fichier ; dossier sans fichier → en attente, puis fichier arrivé → lu ; fichier modifié → relu, inchangé → pas relu ; **fichier corrompu refusé, dernières données valides conservées** |
 | `DesktopControllerTest` (4) | `:desktop` `DesktopController` | source mémorisée et **rouverte au lancement suivant** (démonstration, dossier, fermeture) ; apparence et mode discret mémorisés ; navigation (écran, compte, mois, retour, retour à l'accueil au changement de source) |
-| `DesktopUiTest` (2) | `:desktop` interface (Compose, sans écran) | **parcours réel** : écran d'accueil → « Essayer avec la démonstration » → accueil (total, répartition, bandeau) → Comptes → Livret A (vue globale) → Réglages → Fermer → écran d'accueil ; captures de 7 écrans en clair et en sombre (`desktop/build/captures-desktop`, relecture humaine) |
+| `DesktopUiTest` (2) | `:desktop` interface (Compose, sans écran) | **parcours réel** : écran d'accueil → « Essayer avec la démonstration » → accueil (total, répartition, bandeau) → Comptes → Livret A (vue globale) → Réglages → Fermer → écran d'accueil ; captures de 10 écrans en clair et en sombre (dont le panneau de saisie et la fiche d'un compte) (`desktop/build/captures-desktop`, relecture humaine) |
 | `SyncLogicTest` (2) | `:core` `data/sync/SyncLogic` | **empreinte** indépendante de l'ordre des listes et de la date d'export, différente dès qu'une donnée change ; **décision** pour chaque situation : pas de fichier (export, sauf données vides), première synchronisation (mémoriser, importer si téléphone vide, sinon conflit), ensuite (rien, export, import, mémoriser, conflit), effacement volontaire propagé |
 | `SyncerTest` (8) | `:app` `data/sync/Syncer` (Room en mémoire, dossier simulé) | première synchronisation : fichier créé, rien de plus au second passage ; modification du téléphone exportée ; **modification du fichier importée** (sauvegarde de sécurité avant, fichier non réécrit) ; **conflit** : rien modifié avant le choix, « garder le fichier » remplace le téléphone, « garder le téléphone » réécrit le fichier ; téléphone vide qui reprend un fichier existant ; **fichier corrompu refusé** ; sans dossier, aucun accès |
 | `BackupFormatTest` (4) | `data/backup/BackupFormat` | ancien format JSON (toujours importable) : aller-retour sans perte ; fichier d'une autre appli ou d'une version plus récente refusé ; JSON illisible, valeur d'énumération ou date inconnue refusés ; identifiants en double, références cassées (compte, catégorie, actif), opération qui viole les règles de saisie refusés |
@@ -64,6 +68,7 @@ Chaque règle a été cassée volontairement, la suite relancée, puis le code r
 | Synchronisation : fichier seul modifié traité comme une modification locale (export au lieu d'import) (2026-10-09) | `SyncLogicTest.decisionForEverySituation`, `SyncerTest.fileChangeIsImported` |
 | Rotation : fichier d'échange compté comme une sauvegarde (ancienne règle de nom) (2026-10-09) | `BackupNamingTest.keepsThreeMostRecent` |
 | Migration 1 → 2 retirée de la base (2026-10-09) | `MigrationTest.version1To2KeepsAssets` |
+| PC : fichier corrompu traité comme absent, donc écrasé par l'écriture (2026-10-12) | `WorkspaceSyncTest.corruptFileIsNeverOverwritten` |
 | PC : fichier d'échange corrompu qui efface les données affichées (2026-10-12) | `WorkspaceTest.reloadsOnChangeAndKeepsDataWhenCorrupt` |
 | Classeur : jambe lue sur un second onglet qui écrase les précédentes (virement reconstitué à moitié) (2026-10-09) | `BackupWorkbookTest.sheetsPerAccountTypeAndTransfersMerged`, `BackupWorkbookTest.roundTripIsExact`, `DataLayerTest.backupThenImportRestoresEverything` |
 
@@ -96,8 +101,10 @@ Chaque règle a été cassée volontairement, la suite relancée, puis le code r
 - **Synchronisation réelle** : l'accès au dossier choisi (Storage Access
   Framework), l'autorisation durable et Syncthing lui-même ne sont pas testés
   automatiquement (dossier simulé) ; vérification sur le téléphone.
-- **Appli PC** : le sélecteur de dossier de Windows et la fenêtre elle-même
-  ne sont pas testés (l'interface l'est sans écran) ; vérification sur le PC.
+- **Appli PC** : le sélecteur de dossier de Windows, la vraie fenêtre et le
+  dossier portable lancé par double-clic ne sont pas testés automatiquement
+  (l'interface l'est sans écran). Le dossier portable a été vérifié avec
+  `PatrimoinePlus.exe --verifier` (fichier valide : code 0 ; tronqué : 1).
 - **Cours en direct** : aucun test n'interroge le vrai service (les réponses
   sont figées) ; un changement de format de Yahoo Finance ne serait vu qu'à
   l'usage. La tâche de fond et le geste « tirer pour rafraîchir » ne sont pas
