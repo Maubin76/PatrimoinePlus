@@ -1,5 +1,6 @@
 package fr.maubin.patrimoineplus.ui.components
 
+import fr.maubin.patrimoineplus.domain.model.AccountType
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -207,3 +208,17 @@ const val kAllocationSlots = 4													// teintes de répartition (la derni�
 @Composable
 fun allocationColor(inRank: Int): Color =
 	(if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) kAllocationDark else kAllocationLight)[inRank.coerceIn(0, kAllocationSlots - 1)]
+
+/*
+	Teinte d'un type de compte (répartitions par type) : courant, épargne,
+	bourse, du plus foncé au plus clair.
+	inType : type de compte
+*/
+@Composable
+fun typeColor(inType: AccountType): Color =
+	when (inType)
+	{
+		AccountType.CHECKING  -> MaterialTheme.colorScheme.onSurface
+		AccountType.SAVINGS   -> MaterialTheme.colorScheme.secondary
+		AccountType.BROKERAGE -> MaterialTheme.colorScheme.tertiary
+	}

@@ -1,5 +1,6 @@
 package fr.maubin.patrimoineplus.ui.home
 
+import fr.maubin.patrimoineplus.ui.components.typeColor
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -270,18 +271,6 @@ private fun repartitionDescription(
 	}
 }
 
-/*
-	Couleur de série d'un type de compte : noir, gris moyen, gris clair.
-	inType : type de compte
-*/
-@Composable
-fun typeColor(inType: AccountType): Color =
-	when (inType)
-	{
-		AccountType.CHECKING  -> MaterialTheme.colorScheme.onSurface
-		AccountType.SAVINGS   -> MaterialTheme.colorScheme.secondary
-		AccountType.BROKERAGE -> MaterialTheme.colorScheme.tertiary
-	}
 
 // Données de démonstration, uniquement pour les aperçus et les captures (synthétiques).
 internal val kPreviewState = HomeUiState(

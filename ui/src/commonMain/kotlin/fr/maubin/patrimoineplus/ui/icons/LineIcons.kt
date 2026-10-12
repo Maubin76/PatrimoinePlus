@@ -1,4 +1,4 @@
-package fr.maubin.patrimoineplus.desktop.ui.icons
+package fr.maubin.patrimoineplus.ui.icons
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -101,12 +101,6 @@ object LineIcons
 	// Mois suivant.
 	val ChevronRight: ImageVector = lineIcon("Suivant", "M9 5 L16 12 L9 19")
 
-	// Monter : chevron vers le haut.
-	val ChevronUp: ImageVector = lineIcon("Monter", "M5 15 L12 8 L19 15")
-
-	// Descendre : chevron vers le bas.
-	val ChevronDown: ImageVector = lineIcon("Descendre", "M5 9 L12 16 L19 9")
-
 	// Modifier : crayon.
 	val Edit: ImageVector = lineIcon("Modifier", "M4 20 L4.8 16.2 L16 5 A2.1 2.1 0 0 1 19 8 L7.8 19.2 Z", "M14 7 L17 10")
 
@@ -118,4 +112,10 @@ object LineIcons
 
 	// Coche (élément sélectionné).
 	val Check: ImageVector = lineIcon("Sélectionné", "M5 12.5 L10 17.5 L19 7")
+	// Monter : chevron vers le haut.
+	val ChevronUp: ImageVector = lineIcon("Monter", "M5 15 L12 8 L19 15")
+
+	// Descendre : chevron vers le bas.
+	val ChevronDown: ImageVector = lineIcon("Descendre", "M5 9 L12 16 L19 9")
+
 }

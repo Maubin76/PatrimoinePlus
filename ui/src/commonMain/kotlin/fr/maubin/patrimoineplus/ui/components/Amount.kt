@@ -1,4 +1,4 @@
-package fr.maubin.patrimoineplus.desktop.ui.components
+package fr.maubin.patrimoineplus.ui.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
@@ -114,10 +114,3 @@ private fun RollingText(
 		}
 	}
 }
-
-/*
-	Animations des chiffres : toujours actives sur PC (pas de réglage système
-	équivalent à celui d'Android).
-*/
-@Composable
-private fun animationsEnabled(): Boolean = true

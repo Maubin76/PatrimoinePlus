@@ -1,5 +1,7 @@
 package fr.maubin.patrimoineplus.desktop.ui.panels
 
+import fr.maubin.patrimoineplus.domain.format.formatFrenchDate
+import fr.maubin.patrimoineplus.domain.format.parseFrenchDate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -42,13 +44,12 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
-import fr.maubin.patrimoineplus.desktop.ui.icons.LineIcons
+import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.ResolverStyle
 
 val kPanelWidth = 440.dp																// largeur du panneau latéral
-private val kFrenchDate = DateTimeFormatter.ofPattern("dd/MM/uuuu").withResolverStyle(ResolverStyle.STRICT)	// date saisie
 
 /*
 	Panneau latéral de saisie, à droite de la page : titre et bouton de
@@ -148,7 +149,7 @@ fun DateField(
 	inLabel    : String
 )
 {
-	var vText by remember(inDate) { mutableStateOf(inDate.format(kFrenchDate)) }	// texte saisi
+	var vText by remember(inDate) { mutableStateOf(formatFrenchDate(inDate)) }	// texte saisi
 	val vParsed = parseFrenchDate(vText)										// date lue
 	FormField(
 		inValue    = vText,
@@ -157,12 +158,6 @@ fun DateField(
 		inError    = if (vParsed == null) "Date illisible (JJ/MM/AAAA)." else null
 	)
 }
-
-/*
-	Date saisie à la française ; null si elle est illisible ou impossible.
-	inText : texte saisi
-*/
-fun parseFrenchDate(inText: String): LocalDate? = runCatching { LocalDate.parse(inText.trim(), kFrenchDate) }.getOrNull()
 
 /*
 	Liste déroulante : un champ cliquable qui montre le choix courant.

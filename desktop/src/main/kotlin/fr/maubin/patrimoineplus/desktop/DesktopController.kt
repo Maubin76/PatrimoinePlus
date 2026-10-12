@@ -1,6 +1,6 @@
 package fr.maubin.patrimoineplus.desktop
 
-import fr.maubin.patrimoineplus.desktop.data.Appearance
+import fr.maubin.patrimoineplus.ui.theme.ThemeMode
 import fr.maubin.patrimoineplus.desktop.data.DesktopConfig
 import fr.maubin.patrimoineplus.desktop.data.DesktopSettings
 import fr.maubin.patrimoineplus.desktop.data.Source
@@ -156,7 +156,7 @@ class DesktopController(
 		Change d'apparence.
 		inAppearance : apparence
 	*/
-	fun setAppearance(inAppearance: Appearance) = update(fSettings.value.copy(appearance = inAppearance))
+	fun setAppearance(inAppearance: ThemeMode) = update(fSettings.value.copy(appearance = inAppearance))
 
 	/*
 		Bascule le mode discret.

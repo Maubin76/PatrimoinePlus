@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.data.sync.kSyncFileName
-import fr.maubin.patrimoineplus.desktop.ui.components.PatrimoineLogo
+import fr.maubin.patrimoineplus.ui.components.PatrimoineLogo
 
 /*
 	Écran d'accueil (aucune source choisie) : ouvrir le dossier synchronisé

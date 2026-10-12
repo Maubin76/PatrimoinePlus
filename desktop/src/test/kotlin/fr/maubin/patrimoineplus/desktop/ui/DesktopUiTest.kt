@@ -1,5 +1,6 @@
 package fr.maubin.patrimoineplus.desktop.ui
 
+import fr.maubin.patrimoineplus.ui.theme.ThemeMode
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -8,7 +9,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
 import fr.maubin.patrimoineplus.desktop.DesktopController
 import fr.maubin.patrimoineplus.desktop.Screen
-import fr.maubin.patrimoineplus.desktop.data.Appearance
 import fr.maubin.patrimoineplus.desktop.data.DesktopConfig
 import fr.maubin.patrimoineplus.desktop.data.Workspace
 import org.jetbrains.skia.EncodedImageFormat
@@ -84,7 +84,7 @@ class DesktopUiTest
 			vScene.close()
 		}
 		capture("1-bienvenue") { App(controller()) { null } }
-		val vApp = controller().apply { openDemo(); setAppearance(Appearance.LIGHT) }	// démonstration, en clair
+		val vApp = controller().apply { openDemo(); setAppearance(ThemeMode.LIGHT) }	// démonstration, en clair
 		capture("2-accueil") { App(vApp) { null } }
 		vApp.show(Screen.ACCOUNTS)
 		capture("3-comptes") { App(vApp) { null } }
@@ -93,11 +93,11 @@ class DesktopUiTest
 		vApp.openAccount(vApp.workspace.value.data.accounts.first { it.name == "PEA" }.id)
 		capture("5-compte-bourse") { App(vApp) { null } }
 		vApp.openAccount(vApp.workspace.value.data.accounts.first { it.name == "Livret A" }.id)
-		vApp.setAppearance(Appearance.DARK)
+		vApp.setAppearance(ThemeMode.DARK)
 		capture("6-livret-sombre") { App(vApp) { null } }
 		vApp.show(Screen.SETTINGS)
 		capture("7-reglages-sombre") { App(vApp) { null } }
-		vApp.setAppearance(Appearance.LIGHT)
+		vApp.setAppearance(ThemeMode.LIGHT)
 		vApp.openAccount(vApp.workspace.value.data.accounts.first { it.name == "Compte courant" }.id)
 		vApp.newOperation()
 		capture("8-saisie-panneau") { App(vApp) { null } }

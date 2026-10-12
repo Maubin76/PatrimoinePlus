@@ -1,5 +1,6 @@
 package fr.maubin.patrimoineplus.ui.lock
 
+import fr.maubin.patrimoineplus.ui.components.PatrimoineLogo
 import android.provider.Settings
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
@@ -47,8 +48,6 @@ import androidx.compose.ui.util.lerp
 private const val kIntroMillis   = 1_250											// durée de l'animation du lancement
 private const val kSplashLogoDp  = 192f												// diamètre du logo sur l'écran de démarrage système
 private const val kFinalLogoDp   = 104f												// diamètre du logo sur l'écran de connexion
-private val kInk                 = Color(0xFF0A0A0A)								// encre du logo (fixe, comme l'icône)
-private val kPaper               = Color.White										// pastille du logo
 private val kEase                = CubicBezierEasing(0.2f, 0f, 0f, 1f)			// courbe « accentuée » de Material
 
 /*
@@ -180,56 +179,6 @@ fun LockContent(
 			}
 		}
 	}
-}
-
-/*
-	Logo dessiné : disque noir, pastille blanche, deux chevrons qui s'emboîtent
-	(mêmes proportions que l'icône de l'appli). Les chevrons arrivent des
-	bords de la pastille, qui les découpe, selon inChevrons.
-	inSize     : diamètre du disque
-	inChevrons : avancement des chevrons, de 0 (hors de la pastille) à 1 (en place)
-*/
-@Composable
-fun PatrimoineLogo(
-	inSize     : Dp,
-	inChevrons : Float = 1f
-)
-{
-	Canvas(Modifier.size(inSize).semantics { contentDescription = "Logo PatrimoinePlus" }) {
-		val vUnit   = size.minDimension / 72f										// une unité de la grille de l'icône (72 visibles sur 108)
-		val vCenter = Offset(size.width / 2f, size.height / 2f)						// centre du logo
-		drawCircle(kInk, radius = 36f * vUnit, center = vCenter)
-		drawCircle(kPaper, radius = 27f * vUnit, center = vCenter)
-		val vPastille = Path().apply { addOval(androidx.compose.ui.geometry.Rect(vCenter, 27f * vUnit)) }	// découpe des chevrons
-		val vShift    = (1f - inChevrons) * 30f * vUnit									// décalage restant
-		clipPath(vPastille) {
-			translate(left = -vShift) { chevron(this, vUnit, listOf(39f to 37.5f, 55.5f to 51f, 39f to 64.5f)) }
-			translate(left = vShift) { chevron(this, vUnit, listOf(69f to 43.5f, 52.5f to 57f, 69f to 70.5f)) }
-		}
-	}
-}
-
-/*
-	Dessine un chevron (triangle) donné dans la grille 108 × 108 de l'icône.
-	inScope  : zone de dessin
-	inUnit   : taille d'une unité de la grille
-	inPoints : trois sommets, en unités de la grille
-*/
-private fun chevron(
-	inScope  : DrawScope,
-	inUnit   : Float,
-	inPoints : List<Pair<Float, Float>>
-)
-{
-	val vOrigin = inScope.size.width / 2f - 54f * inUnit						// position de l'origine de la grille
-	val vTop    = inScope.size.height / 2f - 54f * inUnit						// position du haut de la grille
-	val vPath   = Path().apply {
-		inPoints.forEachIndexed { inIndex, (inX, inY) ->
-			if (inIndex == 0) moveTo(vOrigin + inX * inUnit, vTop + inY * inUnit) else lineTo(vOrigin + inX * inUnit, vTop + inY * inUnit)
-		}
-		close()
-	}																			// triangle
-	inScope.drawPath(vPath, kInk)
 }
 
 /*

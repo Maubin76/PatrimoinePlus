@@ -30,7 +30,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.data.edit.EditResult
 import fr.maubin.patrimoineplus.desktop.DesktopController
-import fr.maubin.patrimoineplus.desktop.ui.icons.CategoryIcons
+import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
 import fr.maubin.patrimoineplus.domain.model.CategoryKind
 
 /*

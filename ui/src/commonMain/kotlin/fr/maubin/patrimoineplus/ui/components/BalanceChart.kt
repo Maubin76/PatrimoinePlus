@@ -1,4 +1,4 @@
-package fr.maubin.patrimoineplus.desktop.ui.components
+package fr.maubin.patrimoineplus.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -50,7 +50,7 @@ private val kMonthYear = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.FRANCE)
 fun BalanceChart(
 	inSeries    : List<SeriesPoint>,
 	inHighlight : YearMonth,
-	inHeight    : Dp = 260.dp
+	inHeight    : Dp = 140.dp
 )
 {
 	if (inSeries.isEmpty())

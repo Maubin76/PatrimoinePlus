@@ -14,7 +14,6 @@ import androidx.compose.animation.fadeOut
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import android.os.SystemClock
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -28,7 +27,7 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
-import fr.maubin.patrimoineplus.data.settings.ThemeMode
+import fr.maubin.patrimoineplus.ui.theme.isDark
 import fr.maubin.patrimoineplus.ui.AppViewModel
 import fr.maubin.patrimoineplus.ui.PatrimoineApp
 import fr.maubin.patrimoineplus.ui.lock.AppLock
@@ -82,13 +81,7 @@ class MainActivity : FragmentActivity()
 			val vIntro   by fAppLock.introPending.collectAsStateWithLifecycle()		// animation du lancement à jouer
 			val vKept    = rememberSaveableStateHolder()							// état du contenu pendant le verrouillage
 			var vFailure by remember { mutableStateOf<String?>(null) }			// dernier échec d'authentification
-			val vSystem  = isSystemInDarkTheme()									// apparence du téléphone
-			val vDark    = when (vMode)											// mode sombre effectif
-			{
-				ThemeMode.SYSTEM -> vSystem
-				ThemeMode.LIGHT  -> false
-				ThemeMode.DARK   -> true
-			}
+			val vDark    = vMode.isDark()											// mode sombre effectif
 			DisposableEffect(vDark) {
 				val vStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { vDark }	// barres transparentes
 				enableEdgeToEdge(statusBarStyle = vStyle, navigationBarStyle = vStyle)

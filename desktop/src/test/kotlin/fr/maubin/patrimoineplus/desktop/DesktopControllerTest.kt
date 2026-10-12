@@ -1,6 +1,6 @@
 package fr.maubin.patrimoineplus.desktop
 
-import fr.maubin.patrimoineplus.desktop.data.Appearance
+import fr.maubin.patrimoineplus.ui.theme.ThemeMode
 import fr.maubin.patrimoineplus.desktop.data.DesktopConfig
 import fr.maubin.patrimoineplus.desktop.data.DesktopSettings
 import fr.maubin.patrimoineplus.desktop.data.LoadStatus
@@ -73,9 +73,9 @@ class DesktopControllerTest
 	fun settingsAreRemembered()
 	{
 		val vFirst = controller()												// premier lancement
-		vFirst.setAppearance(Appearance.DARK)
+		vFirst.setAppearance(ThemeMode.DARK)
 		vFirst.toggleHidden()
-		assertEquals(DesktopSettings(Source.None, Appearance.DARK, hidden = true), controller().settings.value)
+		assertEquals(DesktopSettings(Source.None, ThemeMode.DARK, hidden = true), controller().settings.value)
 	}
 
 	/*

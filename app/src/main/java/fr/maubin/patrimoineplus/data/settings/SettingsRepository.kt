@@ -1,5 +1,6 @@
 package fr.maubin.patrimoineplus.data.settings
 
+import fr.maubin.patrimoineplus.ui.theme.ThemeMode
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey

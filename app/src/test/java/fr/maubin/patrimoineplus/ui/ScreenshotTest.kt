@@ -34,7 +34,7 @@ import fr.maubin.patrimoineplus.ui.categories.CategoriesContent
 import fr.maubin.patrimoineplus.ui.categories.CategoriesUiState
 import fr.maubin.patrimoineplus.ui.categories.CategoryItem
 import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
-import fr.maubin.patrimoineplus.data.settings.ThemeMode
+import fr.maubin.patrimoineplus.ui.theme.ThemeMode
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.ui.home.HomeAccountLine
 import fr.maubin.patrimoineplus.data.demo.buildDemoData

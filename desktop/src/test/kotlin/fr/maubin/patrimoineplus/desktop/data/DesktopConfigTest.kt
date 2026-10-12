@@ -1,5 +1,6 @@
 package fr.maubin.patrimoineplus.desktop.data
 
+import fr.maubin.patrimoineplus.ui.theme.ThemeMode
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -25,9 +26,9 @@ class DesktopConfigTest
 		val vConfig = DesktopConfig(fTemp.root.toPath().resolve("sous-dossier/desktop.properties"))	// réglages
 		val vFolder = fTemp.newFolder("Mon dossier é").toPath()							// dossier avec espace et accent
 		listOf(
-			DesktopSettings(Source.Folder(vFolder), Appearance.DARK, hidden = true),
-			DesktopSettings(Source.Demo, Appearance.LIGHT, hidden = false),
-			DesktopSettings(Source.None, Appearance.SYSTEM, hidden = true)
+			DesktopSettings(Source.Folder(vFolder), ThemeMode.DARK, hidden = true),
+			DesktopSettings(Source.Demo, ThemeMode.LIGHT, hidden = false),
+			DesktopSettings(Source.None, ThemeMode.SYSTEM, hidden = true)
 		).forEach { inSettings ->
 			vConfig.save(inSettings)
 			assertEquals(inSettings, vConfig.load())

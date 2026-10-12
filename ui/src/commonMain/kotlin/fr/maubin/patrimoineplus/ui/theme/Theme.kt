@@ -19,7 +19,7 @@ fun PatrimoineTheme(
 {
 	MaterialTheme(
 		colorScheme = if (inDarkTheme) MonoDarkColors else MonoLightColors,
-		typography  = MonoTypography,
+		typography  = monoTypography(),
 		content     = inContent
 	)
 }

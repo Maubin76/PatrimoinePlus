@@ -1,5 +1,6 @@
 package fr.maubin.patrimoineplus.desktop.data
 
+import fr.maubin.patrimoineplus.ui.theme.ThemeMode
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -24,16 +25,6 @@ sealed interface Source
 }
 
 /*
-	Apparence de l'appli PC.
-*/
-enum class Appearance(val label: String)
-{
-	SYSTEM("Système"),															// suit Windows
-	LIGHT("Clair"),																// noir sur blanc
-	DARK("Sombre")																// blanc sur noir
-}
-
-/*
 	Réglages mémorisés de l'appli PC.
 	source     : source des données au prochain lancement
 	appearance : apparence
@@ -41,7 +32,7 @@ enum class Appearance(val label: String)
 */
 data class DesktopSettings(
 	val source     : Source     = Source.None,
-	val appearance : Appearance = Appearance.SYSTEM,
+	val appearance : ThemeMode = ThemeMode.SYSTEM,
 	val hidden     : Boolean    = false
 )
 
@@ -72,7 +63,7 @@ class DesktopConfig(private val inFile: Path)
 		}																			// source mémorisée
 		return DesktopSettings(
 			source     = vSource,
-			appearance = Appearance.entries.firstOrNull { it.name == vProps.getProperty("appearance") } ?: Appearance.SYSTEM,
+			appearance = ThemeMode.entries.firstOrNull { it.name == vProps.getProperty("appearance") } ?: ThemeMode.SYSTEM,
 			hidden     = vProps.getProperty("hidden") == "true"
 		)
 	}

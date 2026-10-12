@@ -232,7 +232,7 @@ class Workspace(private val inClock: Clock)
 			SyncAction.CONFLICT ->
 			{
 				fConflict = vOnDisk
-				fState.value = fState.value.copy(status = LoadStatus.Conflict(fFile.summary, vOnDisk!!.summary))
+				fState.value = fState.value.copy(status = LoadStatus.Conflict(fFile.contents, vOnDisk!!.contents))
 			}
 		}
 	}

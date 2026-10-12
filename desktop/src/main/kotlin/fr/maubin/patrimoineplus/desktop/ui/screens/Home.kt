@@ -1,5 +1,6 @@
 package fr.maubin.patrimoineplus.desktop.ui.screens
 
+import fr.maubin.patrimoineplus.ui.components.typeColor
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,16 +22,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.desktop.data.WorkspaceState
-import fr.maubin.patrimoineplus.desktop.ui.components.AmountText
-import fr.maubin.patrimoineplus.desktop.ui.components.BalanceChart
-import fr.maubin.patrimoineplus.desktop.ui.components.BarSegment
-import fr.maubin.patrimoineplus.desktop.ui.components.BorderedCard
-import fr.maubin.patrimoineplus.desktop.ui.components.EmptyState
-import fr.maubin.patrimoineplus.desktop.ui.components.InfoPill
-import fr.maubin.patrimoineplus.desktop.ui.components.ProportionBar
-import fr.maubin.patrimoineplus.desktop.ui.components.SectionHeader
+import fr.maubin.patrimoineplus.ui.components.AmountText
+import fr.maubin.patrimoineplus.ui.components.BalanceChart
+import fr.maubin.patrimoineplus.ui.components.BarSegment
+import fr.maubin.patrimoineplus.ui.components.BorderedCard
+import fr.maubin.patrimoineplus.ui.components.EmptyState
+import fr.maubin.patrimoineplus.ui.components.InfoPill
+import fr.maubin.patrimoineplus.ui.components.ProportionBar
+import fr.maubin.patrimoineplus.ui.components.SectionHeader
 import fr.maubin.patrimoineplus.desktop.ui.components.TwoColumns
-import fr.maubin.patrimoineplus.desktop.ui.components.SeriesDot
+import fr.maubin.patrimoineplus.ui.components.SeriesDot
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.ui.home.buildHomeState
 
@@ -112,15 +113,3 @@ fun HomeScreen(
 	}
 }
 
-/*
-	Couleur d'un type de compte : noir, gris moyen, gris clair.
-	inType : type de compte
-*/
-@Composable
-fun typeColor(inType: AccountType) =
-	when (inType)
-	{
-		AccountType.CHECKING  -> MaterialTheme.colorScheme.onSurface
-		AccountType.SAVINGS   -> MaterialTheme.colorScheme.secondary
-		AccountType.BROKERAGE -> MaterialTheme.colorScheme.tertiary
-	}

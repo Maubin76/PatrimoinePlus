@@ -23,6 +23,7 @@ kotlin {
 
 dependencies {
 	implementation(project(":core"))
+	implementation(project(":ui"))
 	implementation(compose.desktop.currentOs)
 	implementation(libs.compose.desktop.material3)
 	implementation(libs.kotlinx.coroutines.swing)

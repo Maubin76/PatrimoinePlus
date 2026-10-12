@@ -27,11 +27,11 @@ import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.desktop.DesktopController
 import fr.maubin.patrimoineplus.desktop.Panel
 import fr.maubin.patrimoineplus.desktop.data.WorkspaceState
-import fr.maubin.patrimoineplus.desktop.ui.components.BorderedCard
-import fr.maubin.patrimoineplus.desktop.ui.components.SectionHeader
+import fr.maubin.patrimoineplus.ui.components.BorderedCard
+import fr.maubin.patrimoineplus.ui.components.SectionHeader
 import fr.maubin.patrimoineplus.desktop.ui.components.TwoColumns
-import fr.maubin.patrimoineplus.desktop.ui.icons.CategoryIcons
-import fr.maubin.patrimoineplus.desktop.ui.icons.LineIcons
+import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
+import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import fr.maubin.patrimoineplus.domain.model.CategoryKind
 
 /*

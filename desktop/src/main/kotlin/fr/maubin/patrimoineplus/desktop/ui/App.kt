@@ -1,8 +1,8 @@
 package fr.maubin.patrimoineplus.desktop.ui
 
+import fr.maubin.patrimoineplus.ui.theme.isDark
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,19 +60,18 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.desktop.DesktopController
 import fr.maubin.patrimoineplus.desktop.Screen
-import fr.maubin.patrimoineplus.desktop.data.Appearance
 import fr.maubin.patrimoineplus.desktop.data.LoadStatus
 import fr.maubin.patrimoineplus.desktop.data.Source
 import fr.maubin.patrimoineplus.desktop.data.WorkspaceState
-import fr.maubin.patrimoineplus.desktop.ui.components.LocalAmountsHidden
-import fr.maubin.patrimoineplus.desktop.ui.components.PatrimoineLogo
-import fr.maubin.patrimoineplus.desktop.ui.icons.LineIcons
+import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
+import fr.maubin.patrimoineplus.ui.components.PatrimoineLogo
+import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import fr.maubin.patrimoineplus.desktop.ui.screens.AccountScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.AccountsScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.HomeScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.SettingsScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.WelcomeScreen
-import fr.maubin.patrimoineplus.desktop.ui.theme.PatrimoineTheme
+import fr.maubin.patrimoineplus.ui.theme.PatrimoineTheme
 import java.nio.file.Path
 import java.time.Instant
 import java.time.ZoneId
@@ -96,12 +95,7 @@ fun App(
 {
 	val vSettings by inController.settings.collectAsState()					// réglages
 	val vSpace    by inController.workspace.collectAsState()				// données
-	val vDark     = when (vSettings.appearance)									// mode sombre effectif
-	{
-		Appearance.SYSTEM -> isSystemInDarkTheme()
-		Appearance.LIGHT  -> false
-		Appearance.DARK   -> true
-	}
+	val vDark     = vSettings.appearance.isDark()									// mode sombre effectif
 	PatrimoineTheme(inDarkTheme = vDark) {
 		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden) {
 			Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {

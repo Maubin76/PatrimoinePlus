@@ -1,5 +1,6 @@
 package fr.maubin.patrimoineplus.desktop.ui.screens
 
+import fr.maubin.patrimoineplus.ui.theme.ThemeMode
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,10 +27,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.data.sync.kSyncFileName
 import fr.maubin.patrimoineplus.desktop.DesktopController
-import fr.maubin.patrimoineplus.desktop.data.Appearance
 import fr.maubin.patrimoineplus.desktop.data.Source
-import fr.maubin.patrimoineplus.desktop.ui.components.BorderedCard
-import fr.maubin.patrimoineplus.desktop.ui.components.SectionHeader
+import fr.maubin.patrimoineplus.ui.components.BorderedCard
+import fr.maubin.patrimoineplus.ui.components.SectionHeader
 import java.nio.file.Path
 
 /*
@@ -76,11 +76,11 @@ fun SettingsScreen(
 		SectionHeader(inTitle = "Apparence")
 		Spacer(Modifier.height(12.dp))
 		SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-			Appearance.entries.forEachIndexed { inIndex, inEntry ->
+			ThemeMode.entries.forEachIndexed { inIndex, inEntry ->
 				SegmentedButton(
 					selected = inEntry == vSettings.appearance,
 					onClick  = { inController.setAppearance(inEntry) },
-					shape    = SegmentedButtonDefaults.itemShape(index = inIndex, count = Appearance.entries.size),
+					shape    = SegmentedButtonDefaults.itemShape(index = inIndex, count = ThemeMode.entries.size),
 					icon     = {},
 					colors   = SegmentedButtonDefaults.colors(
 						activeContainerColor   = vColors.primary,
