@@ -235,6 +235,34 @@ synchronise un outil comme Syncthing (gratuit, sans cloud).
 - La rotation des sauvegardes ne compte que les fichiers datés : le fichier
   d'échange et les copies de conflit de Syncthing ne sont jamais supprimés.
 
+### Mise en place avec Syncthing
+
+Syncthing est gratuit et libre ; il synchronise le dossier directement entre
+le téléphone et le PC (Wi‑Fi local), sans serveur intermédiaire.
+
+1. **Téléphone** : installer **Syncthing-Fork** depuis le Google Play Store
+   (l'ancienne appli « Syncthing » n'y est plus disponible).
+2. **PC (Windows)** : installer Syncthing avec **Syncthing Windows Setup**,
+   l'installateur listé sur la page de téléchargement de syncthing.net
+   (`github.com/Bill-Stewart/SyncthingWindowsSetup`). L'interface de Syncthing
+   s'ouvre ensuite dans le navigateur.
+3. **Associer les appareils** : dans Syncthing-Fork, ajouter le PC en scannant
+   le QR code de son identifiant (interface PC : Actions › Afficher
+   l'identifiant), puis accepter l'appareil côté PC.
+4. **Partager le dossier** : sur le téléphone, partager
+   `Documents/PatrimoinePlus` avec le PC ; côté PC, accepter le partage et
+   choisir son emplacement (par exemple `Documents\PatrimoinePlus`).
+5. **Dans PatrimoinePlus** : Réglages › Synchronisation › « Choisir le dossier »,
+   sélectionner `Documents/PatrimoinePlus` et autoriser.
+6. **Vérifier** : `patrimoineplus-donnees.xlsx` apparaît dans le dossier du PC
+   au bout de quelques secondes et suit chaque modification faite sur le
+   téléphone.
+
+Si la synchronisation tarde, vérifier dans Syncthing-Fork les conditions
+d'exécution (Wi‑Fi seulement, en charge…) et l'autoriser à fonctionner en
+arrière-plan : Android peut le mettre en pause. Dans un tableur, ne jamais
+modifier les colonnes repliées (identifiants) du fichier d'échange.
+
 ## Cours automatiques
 
 Les comptes Bourse se valorisent seuls : il suffit de saisir les ordres.
