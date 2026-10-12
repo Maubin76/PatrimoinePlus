@@ -71,21 +71,31 @@ frontières :
         data/sync/     synchronisation par fichier : empreintes, décision
         data/DataSet   toutes les données en modèles du domaine (base, fichier, démo)
         testFixtures/  aides de test partagées (fausse source de cours, réponses enregistrées)
-        ui/            états des écrans (accueil, comptes, vue d'un compte), sans Compose
-:app    appli Android (dépend de :core)
+        ui/            états des écrans (accueil, comptes, vue d'un compte, tableau
+                       de bord du PC) et logique de saisie, sans Compose
+:ui     interface commune, Compose Multiplatform compilé pour Android et pour la
+        JVM du PC (dépend de :core)
+        theme/         couleurs, typographie, PatrimoineTheme, ThemeMode, couleurs
+                       des hausses et baisses ; police Hanken Grotesk en ressource
+        components/    montants, courbes, barres, marques, sélecteur de mois, logo,
+                       tuiles et courbes miniatures
+        icons/         icônes au trait et icônes de catégories
+:app    appli Android (dépend de :core et :ui)
         data/          base Room (db), dépôts (repo), réglages DataStore (settings),
                        sauvegarde sur le téléphone, mise à jour des cours (market)
         di/            modules Hilt (horloge, base, réglages, source de cours)
-        ui/            écrans Compose, ViewModels, thème, navigation, composants
-:desktop appli PC, Compose Multiplatform (dépend de :core)
+        ui/            écrans Compose, ViewModels, navigation, feuilles de saisie
+:desktop appli PC, Compose Multiplatform (dépend de :core et :ui)
         data/          réglages (%APPDATA%\PatrimoinePlus), espace de travail
-        ui/            thème, composants, écrans
+        ui/            tableau de bord, vue d'un compte, panneaux de saisie
 ```
 
 Le code commun garde ses noms de packages : passer d'un module à l'autre n'a
 changé aucun import. Les états des écrans sont calculés par les mêmes
 fonctions sur le téléphone et sur le PC : les chiffres affichés sont
-identiques.
+identiques. Le thème et les composants graphiques sont écrits une seule fois
+(`:ui`) ; seule la mise en page diffère : écrans et feuilles du bas sur le
+téléphone, tableau de bord à tuiles et panneau latéral sur le PC.
 
 Règles :
 
@@ -100,10 +110,12 @@ Règles :
 Direction visuelle monochrome, noir sur blanc (blanc sur noir en mode sombre),
 inspirée de deux maquettes de référence fournies le 2026-10-07.
 
-- Palette fixe (`ui/theme/Color.kt`) : blanc, encre presque noire, gris
-  secondaire, filets gris très clair ; aucun accent. Rouge discret réservé aux
-  montants négatifs. Les couleurs dynamiques Material You sont écartées.
-- Police unique Hanken Grotesk (OFL, `res/font`, licence dans
+- Palette fixe (`:ui`, `theme/Color.kt`) : blanc, encre presque noire, gris
+  secondaire, filets gris très clair ; aucun accent par défaut. Rouge discret
+  réservé aux montants négatifs. Option « Hausses en vert, baisses en rouge »
+  (Réglages › Apparence, téléphone et PC) : variations et plus-values
+  colorées, signe toujours écrit. Les couleurs dynamiques Material You sont écartées.
+- Police unique Hanken Grotesk (OFL, ressource Compose du module `:ui`, licence dans
   `doc/licenses/`) ; titres et total en demi-gras ; chiffres à chasse fixe.
 - Accueil : total centré en très grand, variation du mois, pastille « Calculé
   au … », courbe d'évolution du patrimoine (12 mois au plus), répartition par
@@ -225,9 +237,9 @@ direct entre téléphones reste possible.
 
 ## Appli PC (branche `desktop`)
 
-Appli Windows en Compose Multiplatform (`:desktop`), même style noir et blanc
-que le téléphone, mise en page en deux colonnes pour grand écran (une seule
-quand la place manque).
+Appli Windows en Compose Multiplatform (`:desktop`), même identité noir et
+blanc que le téléphone, mais pensée pour un grand écran : un **tableau de
+bord** de pilotage plutôt qu'une suite d'écrans.
 
 - **Installation** : `./gradlew :desktop:packageZip` produit
   `desktop/build/distributions/PatrimoinePlus-1.0.0-windows.zip` (≈ 60 Mo) :
@@ -238,30 +250,40 @@ quand la place manque).
 - **Écran d'accueil** : choisir le dossier synchronisé avec le téléphone, ou
   **essayer avec la démonstration** (données fictives en mémoire, modifiables,
   jamais enregistrées). Le choix est mémorisé et rouvert au lancement suivant.
-- **Consultation** : Accueil, Comptes, vue d'un compte (Courant mois par mois ;
-  Épargne et Bourse en vue globale, positions), Catégories, Réglages (source,
-  apparence, mode discret).
-- **Saisie** (panneau latéral à droite ; Échap ferme, Entrée enregistre ;
-  Ctrl+N ou « Nouvelle opération ») : opérations (dépense, remboursement,
-  revenu, virement, ordre avec nouvel actif), comptes (solde initial,
-  archivage, suppression simple ou définitive confirmée, ordre), catégories
-  (icône, suppression avec réaffectation, ordre), relevés, cours saisis à la
-  main, positions initiales, fiche d'un actif. Mêmes contrôles et mêmes règles
-  que le téléphone (`:core` : `DataEditor`, logique de saisie partagée).
+- **Tableau de bord** (Accueil et Comptes réunis) : patrimoine et variation du
+  mois, variation sur douze mois, entrées et dépenses du mois, épargne du mois ;
+  évolution du patrimoine et répartition par type ; **une tuile par compte**
+  (valeur, variation, petite courbe sur douze mois et aperçu selon le type :
+  dépenses du mois et principales catégories, intérêts de l'année et dernier
+  relevé, plus-value latente et principales positions), qui ouvre le compte
+  d'un clic ; « Réorganiser » pour changer l'ordre des tuiles ; dépenses du
+  mois par catégorie ; dernières opérations (un clic pour les modifier) ;
+  comptes archivés repliés.
+- **Vue d'un compte**, en tuiles : chiffres clés, courbe, dépenses par
+  catégorie (Courant, mois par mois) ou répartition des titres et tableau des
+  positions (Bourse), relevés, opérations.
+- **Saisie** (panneau latéral à droite ; Échap ferme, Entrée dans un champ
+  enregistre ; Ctrl+N ou « Nouvelle opération ») : opérations (dépense,
+  remboursement, revenu, virement, ordre avec nouvel actif), comptes (solde
+  initial, archivage, suppression simple ou définitive confirmée), catégories
+  (icône, suppression avec réaffectation), relevés, cours saisis à la main,
+  positions initiales, fiche d'un actif. Mêmes contrôles et mêmes règles que
+  le téléphone (`:core` : `DataEditor`, logique de saisie partagée).
 - **Synchronisation côté PC** : le fichier d'échange est lu, puis surveillé
   (2 s) ; une modification du PC est écrite 1,5 s plus tard (fichier
-  temporaire puis remplacement atomique), une modification du téléphone est
-  relue ; même décision par empreintes que le téléphone, même fenêtre de
-  conflit. Un fichier illisible n'est jamais écrasé ; les modifications en
-  attente sont écrites à la fermeture. Les **cours automatiques** restent
-  récupérés par le téléphone seul (le PC n'a aucun accès réseau).
+  temporaire ignoré par Syncthing, puis remplacement atomique), une
+  modification du téléphone est relue ; même décision par empreintes que le
+  téléphone, même fenêtre de conflit (le fichier est relu avant d'écraser).
+  Un fichier illisible n'est jamais écrasé. Si des modifications ne peuvent
+  pas être écrites (conflit, fichier refusé), la fermeture et le changement de
+  source proposent d'en **enregistrer une copie**. Les **cours automatiques**
+  restent récupérés par le téléphone seul (le PC n'a aucun accès réseau).
 - **Vérification sans fenêtre** : `PatrimoinePlus.exe --verifier <fichier>`
-  lit et vérifie un fichier d'échange (code de sortie 0 s'il est valide).
+  lit et vérifie un fichier d'échange (code de sortie 0 s'il est valide) et
+  montre une date en français (contrôle de la JVM embarquée).
 - Réglages de l'appli PC : `%APPDATA%\PatrimoinePlus\desktop.properties`.
-- **Dette connue** : le thème et les composants graphiques (montants, courbe,
-  barres, icônes) sont copiés de l'appli Android ; un module d'interface
-  partagé Android/PC pourra les factoriser. Un installateur `.msi` est
-  possible gratuitement (le plugin Compose télécharge WiX lui-même).
+- Un installateur `.msi` est possible gratuitement (le plugin Compose
+  télécharge WiX lui-même).
 
 ## Synchronisation avec le PC
 
@@ -372,6 +394,10 @@ Les comptes Bourse se valorisent seuls : il suffit de saisir les ordres.
 - Fond qui peut clignoter au démarrage en mode clair forcé quand le téléphone
   est en sombre.
 - Version release : construite mais jamais exécutée par les tests.
+- PC : barre de titre Windows claire même en mode sombre ; sélecteur de
+  dossier de Java (pas celui de l'Explorateur).
+- Téléphone : quand la liste des opérations tient sur l'écran, le bouton « + »
+  peut recouvrir le montant de la dernière ligne.
 
 ## Conventions de code
 

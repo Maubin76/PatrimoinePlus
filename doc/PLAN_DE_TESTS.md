@@ -1,8 +1,9 @@
 # Plan de tests manuels
 
 Campagne complète à mener sur le téléphone (Android 16) et le PC (Windows),
-après le développement de l'appli PC (branche `desktop`, 2026-10-12). Les tests
-automatiques (162, voir [`TESTS.md`](TESTS.md)) couvrent les calculs, les
+après le développement de l'appli PC (branche `desktop`, 2026-10-12), mis à
+jour après la revue de code et la refonte du PC en tableau de bord. Les tests
+automatiques (189, voir [`TESTS.md`](TESTS.md)) couvrent les calculs, les
 règles, les formats, la synchronisation et les interfaces sans écran ; ce plan
 couvre ce qu'ils ne peuvent pas voir : le vrai téléphone, la vraie fenêtre,
 Syncthing, le ressenti.
@@ -45,14 +46,20 @@ identifiant (A-03, C-12…) pour le retour.
 | # | Étape | Résultat attendu |
 |---|---|---|
 | A-20 | Saisir une dépense, un revenu, un virement, un ordre d'achat (nouvel actif avec ISIN). | Signes corrects ; virement visible sur les deux comptes ; actif créé. |
-| A-21 | **Nouveau** : saisir une dépense avec la case « Remboursement » cochée. | Montant positif, déduit des dépenses de la catégorie du mois. |
+| A-21 | **Nouveau** : saisir une dépense avec la case « Remboursement » cochée. | Montant positif, déduit des dépenses de la catégorie du mois **et des « Dépenses » de la synthèse du mois** (pas compté en « Entrées »). |
 | A-22 | **Correctif** : modifier un remboursement existant (ex. démo « Remboursement sécu »), changer le libellé, enregistrer. | Il reste un remboursement (montant positif), pas une dépense. |
 | A-23 | Suggestions de libellés : commencer à taper un libellé déjà utilisé. | Suggestions ; la catégorie suit. |
+| A-23b | Taper deux fois très vite sur « Enregistrer ». | Une seule opération créée. |
+| A-23c | Sur un PEA, toucher « + ». | La saisie s'ouvre en mode « Ordre ». |
+| A-23d | Ordre sur un nouvel actif refusé (vente sans titre), puis annuler. | Aucun actif fantôme dans la liste des actifs. |
+| A-23e | Achat de 10 et vente de 4 du même titre le même jour ; puis sélection multiple sur l'achat seul et Supprimer. | Plus-value réalisée juste (calculée sur le PRU) ; suppression refusée avec un message (la vente deviendrait impossible). |
+| A-23f | Tourner le téléphone pendant une saisie. | La saisie reste ouverte et remplie. |
 | A-24 | Vue d'un compte Courant : changer de mois, lire synthèse, dépenses par catégorie, courbe, opérations ; appui long et suppression multiple. | Chiffres cohérents ; « À venir » en tête. |
 | A-25 | Vue d'un livret : solde et totaux, courbe, relevés (ajout, écart, « Créer l'opération Intérêts »), opérations par mois. | Pas de navigation par mois ; dates visibles sur chaque ligne. |
 | A-26 | Vue du PEA : valeur, plus-values, courbe de la valeur au-dessus des positions, barre de répartition des titres, lignes sans sous-titre. | Parts qui font 100 % ; nom long sur deux lignes. |
-| A-27 | Accueil : total, variation du mois, courbe, répartition par type. | Total = somme des comptes (part détenue appliquée). |
+| A-27 | Accueil : total, variation du mois, courbe, répartition par type. | Total = somme des comptes (part détenue appliquée) ; **parts par type qui font 100 %** ; pas de « variation du mois » le tout premier mois. |
 | A-28 | Mode discret (œil) puis apparence Système / Clair / Sombre. | Montants masqués partout ; apparence mémorisée. |
+| A-29 | **Nouveau** : Réglages › « Hausses en vert, baisses en rouge ». | Variation du mois et plus-values en vert ou rouge (clair et sombre), signe toujours écrit ; désactivé : tout en noir et blanc. |
 
 ### Cours automatiques
 
@@ -68,6 +75,7 @@ identifiant (A-03, C-12…) pour le retour.
 |---|---|---|
 | A-40 | Activer le verrou (Réglages › Sécurité). | Demande d'empreinte pour l'activer. |
 | A-41 | Relancer l'appli. | Animation puis « Déverrouiller » ; l'empreinte ne se lance qu'au bouton. |
+| A-41b | Verrou activé : ouvrir une saisie, quitter l'appli plus d'une minute, revenir. | Écran de connexion seul : la feuille de saisie n'est plus visible ni utilisable par-dessus ; après déverrouillage, l'écran d'avant est retrouvé. Aperçu masqué dans les applis récentes. |
 | A-42 | Quitter moins d'une minute puis revenir ; plus d'une minute puis revenir. | Pas de verrouillage ; puis écran de connexion sans animation. |
 | A-43 | Ouvrir l'appli un jour donné ; vérifier `Documents/PatrimoinePlus` (appli Fichiers). | `patrimoineplus-AAAA-MM-JJ.xlsx` du jour ; « Sauvegarder maintenant » le remplace. |
 | A-44 | Sur plusieurs jours : nombre de sauvegardes datées. | Jamais plus de 3 ; `patrimoineplus-donnees.xlsx` n'est jamais supprimé. |
@@ -86,31 +94,46 @@ identifiant (A-03, C-12…) pour le retour.
 | B-05 | Couper le Wi-Fi du téléphone ; modifier sur le téléphone ET sur le PC ; rétablir le Wi-Fi ; revenir dans les deux applis. | Fenêtre « Quelle version garder ? » ; le choix est appliqué ; l'autre appareil reprend la version gardée. |
 | B-06 | Téléphone : « Arrêter la synchronisation ». | Les modifications du téléphone ne partent plus ; le fichier reste. |
 | B-07 | Réinstaller l'appli Android (base vide), choisir le même dossier. | Les données du fichier sont reprises sans conflit. |
+| B-07b | Choisir à nouveau le même dossier dans les Réglages. | Pas de conflit. |
+| B-07c | Laisser l'appli ouverte pendant une mise à jour des cours sans changement de cours. | Pas de nouvel export ni de conflit. |
+| B-07d | (debug) « Charger la démo » avec la synchronisation active. | La synchronisation s'arrête d'abord : le fichier du PC n'est pas remplacé. |
 | B-08 | Fermer l'appli PC juste après une saisie (moins de 2 s). | La saisie est quand même dans le fichier (écrite à la fermeture). |
+| B-09 | Provoquer un conflit (B-05), modifier encore sur le téléphone pendant que la fenêtre du PC est ouverte, puis choisir « Ce PC ». | Le PC montre de nouveau le conflit avec le dernier contenu du téléphone au lieu de l'écraser. |
+| B-10 | Pendant un conflit, fermer l'appli PC. | Fenêtre « Modifications non enregistrées » : « Enregistrer une copie… » écrit un classeur lisible ; « Annuler » garde l'appli ouverte. |
+| B-11 | PC : ouvrir la modification d'une opération, la supprimer sur le téléphone, attendre la synchronisation. | Le panneau du PC se ferme avec un message. |
 
-## C. Appli PC
+## C. Appli PC (tableau de bord)
 
 | # | Étape | Résultat attendu |
 |---|---|---|
-| C-01 | Écran d'accueil : « Essayer avec la démonstration ». | Données fictives ; bandeau « Démonstration : … jamais enregistrées ». |
+| C-01 | Écran d'accueil : « Essayer avec la démonstration ». | Tableau de bord ; bandeau « Démonstration : … jamais enregistrées ». |
 | C-02 | Démonstration : saisir une opération, fermer et relancer l'appli. | Démonstration rouverte, saisie disparue (jamais enregistrée) ; aucun fichier créé. |
-| C-03 | Parcourir Accueil, Comptes, chaque type de compte, Catégories, Réglages ; agrandir et réduire la fenêtre. | Deux colonnes sur grand écran, une seule quand c'est étroit ; rien de coupé. |
-| C-04 | « Nouvelle opération » et Ctrl+N (depuis la vue d'un compte). | Panneau à droite, compte affiché présélectionné ; Échap ferme, Entrée enregistre. |
-| C-05 | Saisir dépense, remboursement, revenu, virement, ordre avec nouvel actif. | Mêmes résultats que sur le téléphone. |
-| C-06 | Saisie incomplète puis Enregistrer. | Messages d'erreur sous les champs, rien d'enregistré. |
-| C-07 | Cliquer une opération pour la modifier, puis la supprimer ; cliquer un solde initial. | Modification / suppression appliquées ; le solde initial ouvre la fiche du compte. |
-| C-08 | Comptes : ajouter, modifier, réordonner (flèches), archiver, supprimer (simple et définitive). | Mêmes règles que le téléphone (type verrouillé, confirmation). |
-| C-09 | Catégories : ajouter, choisir une icône, réordonner, supprimer avec réaffectation. | Appliqué et synchronisé vers le téléphone. |
-| C-10 | Livret : ajouter et supprimer un relevé. PEA : saisir des cours, ajouter et retirer une position initiale, cliquer un titre (fiche : ISIN, symbole). | Valeurs et courbes mises à jour. |
-| C-11 | Réglages : apparence (Système / Clair / Sombre), mode discret, puis relancer. | Choix conservés. |
-| C-12 | Rendre le fichier d'échange illisible (le copier tronqué à sa place) pendant que l'appli est ouverte. | Bandeau « Fichier d'échange refusé » ; données précédentes affichées ; le fichier n'est pas écrasé. |
-| C-13 | `PatrimoinePlus.exe --verifier chemin\\vers\\patrimoineplus-donnees.xlsx` dans un terminal. | Code de sortie 0 pour un fichier valide. |
+| C-03 | Tableau de bord : lire le patrimoine, « Sur douze mois », « Ce mois-ci », « Mis de côté », l'évolution et la répartition. | Chiffres cohérents avec le téléphone (même total, mêmes parts qui font 100 %). Dates en français (« 12 octobre 2026 »). |
+| C-04 | Tuiles des comptes : valeur, variation, petite courbe, aperçu (dépenses du mois et catégories ; intérêts et dernier relevé ; plus-value et positions). Survoler puis cliquer une tuile. | Bord souligné au survol ; le clic ouvre le compte. |
+| C-05 | « Réorganiser », déplacer une tuile avec les flèches, « Terminer » ; relancer. | Nouvel ordre gardé, et retrouvé sur le téléphone après synchronisation. |
+| C-06 | Agrandir et réduire la fenêtre, ouvrir le panneau de saisie. | Les tuiles se réorganisent (plus ou moins de colonnes, empilées quand c'est étroit) ; rien de coupé. |
+| C-07 | Vue d'un compte Courant (mois par mois), d'un livret, d'un PEA (tableau des positions, répartition des titres). | Tuiles de chiffres, courbe, opérations ; mêmes valeurs que le téléphone. |
+| C-08 | « Nouvelle opération » et Ctrl+N (fenêtre au premier plan, sans avoir cliqué dedans ; puis après avoir fermé un panneau). | Panneau à droite, compte affiché présélectionné ; formulaire vide à chaque fois ; Échap ferme. |
+| C-09 | Dans un champ, Entrée (et Entrée du pavé numérique) ; avec le focus sur « Supprimer » (Tab), Entrée. | Entrée dans un champ enregistre ; sur « Supprimer », c'est la suppression qui est demandée (avec confirmation). |
+| C-10 | Saisir dépense, remboursement, revenu, virement, ordre avec nouvel actif. Passer d'« Ordre » (actif choisi) à « Revenu ». | Mêmes résultats que sur le téléphone ; le revenu n'est pas rattaché à l'actif. |
+| C-11 | Date « 5/3/2026 » ; puis « 31/02/2026 » et Enregistrer. | La première est acceptée ; la seconde est refusée avec « Date illisible ». |
+| C-12 | Cliquer une opération (dernières opérations ou vue d'un compte), la supprimer. | Confirmation demandée ; un virement est supprimé sur les deux comptes. |
+| C-13 | Comptes : ajouter, modifier, archiver (tuile repliée sous « Comptes archivés »), supprimer (simple et définitive). | Mêmes règles que le téléphone (type verrouillé, confirmation). |
+| C-14 | Catégories : ajouter (dépense puis revenu sans fermer le panneau), choisir une icône, supprimer avec réaffectation. | Chaque panneau repart vide avec la bonne nature. |
+| C-15 | PEA : « Saisir des cours » en ne changeant qu'un seul cours. | Seul ce cours est enregistré. |
+| C-16 | Réglages : apparence, « Hausses en vert, baisses en rouge », mode discret ; relancer. | Choix conservés ; couleurs sur les variations et plus-values seulement. |
+| C-17 | Rendre le fichier d'échange illisible pendant que l'appli est ouverte, puis le remettre. | Bandeau « Fichier d'échange refusé », données précédentes affichées, fichier jamais écrasé ; relu dès qu'il redevient valide. |
+| C-18 | Laisser l'appli ouverte au passage de minuit (ou changer la date de Windows). | La date de calcul suit en moins d'une minute. |
+| C-19 | `PatrimoinePlus.exe --verifier chemin\vers\patrimoineplus-donnees.xlsx` dans un terminal. | Code de sortie 0 ; date d'exemple en français (« 12 octobre 2026 »). |
 
 ## D. Limites connues (pas des anomalies)
 
 - Les cours automatiques ne sont récupérés que par le téléphone.
 - Titres cotés uniquement hors zone euro : pas de conversion de devise.
-- Thème et composants graphiques dupliqués entre Android et PC (sans effet visible).
 - Légende de la répartition coupée avec une police à 130 % (Android) ; fond qui
   peut clignoter au démarrage en mode clair forcé.
 - Appli PC non signée : avertissement Windows au premier lancement.
+- PC : barre de titre Windows claire même en mode sombre ; sélecteur de
+  dossier de Java.
+- Téléphone : quand la liste tient sur l'écran, le bouton « + » peut couvrir le
+  montant de la dernière ligne.
