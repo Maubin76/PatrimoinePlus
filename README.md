@@ -9,7 +9,8 @@ cours des titres sont demandés à Yahoo Finance (voir « Cours automatiques »)
 
 La spécification complète (besoins, modèle de données, plan des étapes) est
 dans [`doc/SPEC.md`](doc/SPEC.md) ; la couverture des tests dans
-[`doc/TESTS.md`](doc/TESTS.md).
+[`doc/TESTS.md`](doc/TESTS.md) ; le plan de tests manuels dans
+[`doc/PLAN_DE_TESTS.md`](doc/PLAN_DE_TESTS.md).
 
 ## Construire
 
