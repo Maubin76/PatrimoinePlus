@@ -76,6 +76,7 @@ class MainActivity : FragmentActivity()
 		enableEdgeToEdge()
 		setContent {
 			val vMode    by fAppViewModel.themeMode.collectAsStateWithLifecycle()	// apparence choisie
+			val vTrend   by fAppViewModel.trendColors.collectAsStateWithLifecycle()	// couleurs des hausses et baisses
 			val vLock    by fAppLock.state.collectAsStateWithLifecycle()			// état du verrou
 			val vAuth    by fAppLock.authRequired.collectAsStateWithLifecycle()		// verrou activé
 			val vIntro   by fAppLock.introPending.collectAsStateWithLifecycle()		// animation du lancement à jouer
@@ -91,7 +92,7 @@ class MainActivity : FragmentActivity()
 				setRecentsScreenshotEnabled(!vAuth)
 				onDispose {}
 			}
-			PatrimoineTheme(inDarkTheme = vDark) {
+			PatrimoineTheme(inDarkTheme = vDark, inTrendColors = vTrend) {
 				Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
 					if (vLock == LockState.UNLOCKED)
 					{

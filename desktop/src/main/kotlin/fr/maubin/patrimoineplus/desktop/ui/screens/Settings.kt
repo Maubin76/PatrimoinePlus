@@ -94,6 +94,16 @@ fun SettingsScreen(
 				)
 			}
 		}
+		Spacer(Modifier.height(12.dp))
+		BorderedCard {
+			Row(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+				Column(Modifier.weight(1f)) {
+					Text("Hausses en vert, baisses en rouge", style = MaterialTheme.typography.titleMedium)
+					Text("Colore les variations et les plus-values. Sinon, tout reste en noir et blanc ; le signe + ou − est toujours affiché.", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+				}
+				Switch(checked = vSettings.trend, onCheckedChange = inController::setTrend)
+			}
+		}
 		Spacer(Modifier.height(32.dp))
 		SectionHeader(inTitle = "Confidentialité")
 		Spacer(Modifier.height(12.dp))

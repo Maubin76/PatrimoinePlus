@@ -96,7 +96,7 @@ fun App(
 	val vSettings by inController.settings.collectAsState()					// réglages
 	val vSpace    by inController.workspace.collectAsState()				// données
 	val vDark     = vSettings.appearance.isDark()									// mode sombre effectif
-	PatrimoineTheme(inDarkTheme = vDark) {
+	PatrimoineTheme(inDarkTheme = vDark, inTrendColors = vSettings.trend) {
 		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden) {
 			Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
 				if (vSpace.source == Source.None)

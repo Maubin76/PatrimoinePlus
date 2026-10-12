@@ -4,6 +4,7 @@ import fr.maubin.patrimoineplus.ui.theme.ThemeMode
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
 import java.util.Properties
 
 /*
@@ -29,11 +30,13 @@ sealed interface Source
 	source     : source des données au prochain lancement
 	appearance : apparence
 	hidden     : mode discret (montants masqués)
+	trend      : hausses en vert, baisses en rouge (noir et blanc par défaut)
 */
 data class DesktopSettings(
-	val source     : Source     = Source.None,
+	val source     : Source    = Source.None,
 	val appearance : ThemeMode = ThemeMode.SYSTEM,
-	val hidden     : Boolean    = false
+	val hidden     : Boolean   = false,
+	val trend      : Boolean   = false
 )
 
 /*
@@ -58,18 +61,20 @@ class DesktopConfig(private val inFile: Path)
 		val vSource = when (vProps.getProperty("source"))
 		{
 			"demo"   -> Source.Demo
-			"folder" -> vProps.getProperty("folder")?.let { Source.Folder(Paths.get(it)) } ?: Source.None
+			"folder" -> vProps.getProperty("folder")?.let { inPath -> runCatching { Source.Folder(Paths.get(inPath)) }.getOrNull() } ?: Source.None
 			else     -> Source.None
 		}																			// source mémorisée
 		return DesktopSettings(
 			source     = vSource,
 			appearance = ThemeMode.entries.firstOrNull { it.name == vProps.getProperty("appearance") } ?: ThemeMode.SYSTEM,
-			hidden     = vProps.getProperty("hidden") == "true"
+			hidden     = vProps.getProperty("hidden") == "true",
+			trend      = vProps.getProperty("trend") == "true"
 		)
 	}
 
 	/*
-		Enregistre les réglages.
+		Enregistre les réglages (fichier temporaire puis remplacement : une
+		coupure pendant l'écriture ne perd pas les réglages précédents).
 		inSettings : réglages
 	*/
 	fun save(inSettings: DesktopSettings)
@@ -87,8 +92,11 @@ class DesktopConfig(private val inFile: Path)
 		}
 		vProps.setProperty("appearance", inSettings.appearance.name)
 		vProps.setProperty("hidden", inSettings.hidden.toString())
+		vProps.setProperty("trend", inSettings.trend.toString())
 		inFile.parent?.let { Files.createDirectories(it) }
-		Files.newBufferedWriter(inFile, Charsets.UTF_8).use { vProps.store(it, "Réglages de PatrimoinePlus (PC)") }
+		val vTemp = inFile.resolveSibling("${inFile.fileName}.tmp")				// écriture provisoire
+		Files.newBufferedWriter(vTemp, Charsets.UTF_8).use { vProps.store(it, "Réglages de PatrimoinePlus (PC)") }
+		Files.move(vTemp, inFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
 	}
 
 	companion object

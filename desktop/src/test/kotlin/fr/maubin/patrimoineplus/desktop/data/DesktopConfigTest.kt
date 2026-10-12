@@ -17,7 +17,8 @@ class DesktopConfigTest
 	val fTemp = TemporaryFolder()													// dossier jetable
 
 	/*
-		Chaque source, l'apparence et le mode discret sont relus tels quels ;
+		Chaque source, l'apparence, le mode discret et les couleurs des hausses
+		et baisses sont relus tels quels ;
 		le dossier des réglages est créé s'il manque.
 	*/
 	@Test
@@ -27,7 +28,7 @@ class DesktopConfigTest
 		val vFolder = fTemp.newFolder("Mon dossier é").toPath()							// dossier avec espace et accent
 		listOf(
 			DesktopSettings(Source.Folder(vFolder), ThemeMode.DARK, hidden = true),
-			DesktopSettings(Source.Demo, ThemeMode.LIGHT, hidden = false),
+			DesktopSettings(Source.Demo, ThemeMode.LIGHT, hidden = false, trend = true),
 			DesktopSettings(Source.None, ThemeMode.SYSTEM, hidden = true)
 		).forEach { inSettings ->
 			vConfig.save(inSettings)
@@ -36,7 +37,8 @@ class DesktopConfigTest
 	}
 
 	/*
-		Fichier absent ou abîmé : réglages par défaut (écran d'accueil).
+		Fichier absent ou abîmé, chemin impossible : réglages par défaut (écran
+		d'accueil), sans plantage ; l'écriture ne laisse pas de fichier provisoire.
 	*/
 	@Test
 	fun defaultsWhenMissingOrDamaged()
@@ -45,5 +47,9 @@ class DesktopConfigTest
 		assertEquals(DesktopSettings(), DesktopConfig(vFile).load())
 		Files.writeString(vFile, "source=folder\nappearance=ROSE\n")
 		assertEquals(DesktopSettings(), DesktopConfig(vFile).load())
+		Files.writeString(vFile, "source=folder\nfolder=C:/dossier\\u0000invalide\n")
+		assertEquals(DesktopSettings(), DesktopConfig(vFile).load())				// chemin impossible : pas de plantage
+		DesktopConfig(vFile).save(DesktopSettings(trend = true))
+		assertEquals(listOf("desktop.properties"), Files.list(fTemp.root.toPath()).use { inList -> inList.map { it.fileName.toString() }.toList() })	// pas de fichier provisoire restant
 	}
 }

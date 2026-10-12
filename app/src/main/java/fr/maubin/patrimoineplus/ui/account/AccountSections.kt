@@ -116,7 +116,7 @@ private fun StatRow(
 			Text(inExtra, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			Spacer(Modifier.width(12.dp))
 		}
-		AmountText(inCents = inCents, inStyle = MaterialTheme.typography.bodyLarge, inShowPlusSign = inSigned)
+		AmountText(inCents = inCents, inStyle = MaterialTheme.typography.bodyLarge, inShowPlusSign = inSigned, inTrend = inSigned)
 	}
 }
 

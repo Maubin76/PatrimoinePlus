@@ -29,6 +29,15 @@ interface SettingsRepository
 	// Apparence choisie : suivre le système, clair ou sombre.
 	val themeMode: Flow<ThemeMode>
 
+	// Vrai pour colorer hausses et baisses en vert et rouge (noir et blanc par défaut).
+	val trendColors: Flow<Boolean>
+
+	/*
+		Active ou désactive les couleurs des hausses et des baisses.
+		inEnabled : vrai pour colorer
+	*/
+	suspend fun setTrendColors(inEnabled: Boolean)
+
 	// Vrai une fois l'assistant du premier lancement terminé ou passé.
 	val onboardingDone: Flow<Boolean>
 
@@ -92,6 +101,7 @@ class DataStoreSettingsRepository @Inject constructor(
 {
 	private val kAmountsHiddenKey = booleanPreferencesKey("amounts_hidden")	// clé du mode discret
 	private val kThemeModeKey     = stringPreferencesKey("theme_mode")		// clé de l'apparence
+	private val kTrendColorsKey   = booleanPreferencesKey("trend_colors")	// clé des couleurs de hausse et de baisse
 	private val kOnboardingKey    = booleanPreferencesKey("onboarding_done")	// clé du premier lancement
 	private val kLastAccountKey   = stringPreferencesKey("last_account")	// clé du dernier compte utilisé
 	private val kLockKey          = booleanPreferencesKey("lock_enabled")	// clé du verrou biométrique
@@ -108,6 +118,18 @@ class DataStoreSettingsRepository @Inject constructor(
 	override suspend fun setAmountsHidden(inHidden: Boolean)
 	{
 		inDataStore.edit { inPreferences -> inPreferences[kAmountsHiddenKey] = inHidden }
+	}
+
+	override val trendColors: Flow<Boolean> =
+		inDataStore.data.map { inPreferences -> inPreferences[kTrendColorsKey] ?: false }
+
+	/*
+		Enregistre le choix des couleurs de hausse et de baisse.
+		inEnabled : vrai pour colorer
+	*/
+	override suspend fun setTrendColors(inEnabled: Boolean)
+	{
+		inDataStore.edit { inPreferences -> inPreferences[kTrendColorsKey] = inEnabled }
 	}
 
 	override val themeMode: Flow<ThemeMode> =

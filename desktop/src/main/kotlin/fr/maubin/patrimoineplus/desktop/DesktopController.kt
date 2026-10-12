@@ -159,6 +159,12 @@ class DesktopController(
 	fun setAppearance(inAppearance: ThemeMode) = update(fSettings.value.copy(appearance = inAppearance))
 
 	/*
+		Active ou désactive les couleurs des hausses et des baisses.
+		inEnabled : vrai pour colorer
+	*/
+	fun setTrend(inEnabled: Boolean) = update(fSettings.value.copy(trend = inEnabled))
+
+	/*
 		Bascule le mode discret.
 	*/
 	fun toggleHidden() = update(fSettings.value.copy(hidden = !fSettings.value.hidden))

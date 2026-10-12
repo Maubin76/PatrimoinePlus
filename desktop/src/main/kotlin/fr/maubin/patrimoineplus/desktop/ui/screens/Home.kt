@@ -68,7 +68,7 @@ fun HomeScreen(
 				Spacer(Modifier.height(8.dp))
 				vState.monthChange?.let { inChange ->
 					Row(verticalAlignment = Alignment.CenterVertically) {
-						AmountText(inCents = inChange, inStyle = MaterialTheme.typography.titleMedium, inShowPlusSign = true)
+						AmountText(inCents = inChange, inStyle = MaterialTheme.typography.titleMedium, inShowPlusSign = true, inTrend = true)
 						Text(" ce mois-ci", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 					}
 				}

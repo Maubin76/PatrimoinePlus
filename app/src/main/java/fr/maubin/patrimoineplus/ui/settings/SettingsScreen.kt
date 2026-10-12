@@ -66,6 +66,8 @@ data class SafetyActions(
 	inSafety      : verrou et sauvegarde
 	inDemo        : actions de démonstration ; null en version release
 	inSync        : synchronisation avec le PC ; null pour masquer la section
+	inTrend       : vrai si hausses et baisses sont colorées
+	inOnTrend     : active ou désactive ces couleurs
 */
 @Composable
 fun SettingsScreen(
@@ -75,7 +77,9 @@ fun SettingsScreen(
 	inOnHidden    : (Boolean) -> Unit,
 	inSafety      : SafetyActions,
 	inDemo        : DemoActions? = null,
-	inSync        : SyncActions? = null
+	inSync        : SyncActions? = null,
+	inTrend       : Boolean = false,
+	inOnTrend     : (Boolean) -> Unit = {}
 )
 {
 	ScreenScaffold(inTitle = "Réglages") { inPadding ->
@@ -88,6 +92,15 @@ fun SettingsScreen(
 			SectionHeader(inTitle = "Apparence")
 			Spacer(Modifier.height(8.dp))
 			ThemeModeSelector(inThemeMode, inOnThemeMode)
+			Spacer(Modifier.height(12.dp))
+			BorderedCard {
+				SwitchRow(
+					inTitle    = "Hausses en vert, baisses en rouge",
+					inDetail   = "Colore les variations et les plus-values. Sinon, tout reste en noir et blanc ; le signe + ou − est toujours affiché.",
+					inChecked  = inTrend,
+					inOnChange = inOnTrend
+				)
+			}
 			Spacer(Modifier.height(32.dp))
 			SectionHeader(inTitle = "Confidentialité")
 			Spacer(Modifier.height(8.dp))

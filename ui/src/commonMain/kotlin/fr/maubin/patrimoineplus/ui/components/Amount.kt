@@ -24,6 +24,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import fr.maubin.patrimoineplus.domain.format.formatEuros
+import fr.maubin.patrimoineplus.ui.theme.trendColor
 import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
 
 // Vrai quand le mode discret masque les montants ; fourni par la coque de l'application.
@@ -40,6 +41,8 @@ private const val kMaskMillis = 180										// durée du fondu masqué / visibl
 	inColor        : couleur du texte ; par défaut celle du contenu
 	inShowPlusSign : préfixe « + » devant les montants positifs
 	inRolling      : fait rouler les chiffres qui changent, comme un afficheur
+	inTrend        : montant d'une hausse ou d'une baisse (variation, plus-value) :
+	                 vert ou rouge si le réglage est activé
 */
 @Composable
 fun AmountText(
@@ -48,11 +51,18 @@ fun AmountText(
 	inStyle        : TextStyle = LocalTextStyle.current,
 	inColor        : Color     = Color.Unspecified,
 	inShowPlusSign : Boolean   = false,
-	inRolling      : Boolean   = false
+	inRolling      : Boolean   = false,
+	inTrend        : Boolean   = false
 )
 {
 	val vHidden = LocalAmountsHidden.current								// mode discret actif
-	val vColor  = if (inColor == Color.Unspecified) LocalContentColor.current else inColor	// couleur effective
+	val vTrend  = if (inTrend && inColor == Color.Unspecified) trendColor(inCents) else Color.Unspecified	// couleur de hausse ou de baisse
+	val vColor  = when																// couleur effective
+	{
+		vTrend != Color.Unspecified  -> vTrend
+		inColor == Color.Unspecified -> LocalContentColor.current
+		else                         -> inColor
+	}
 	val vRoll   = inRolling && animationsEnabled()							// roulement permis par le système
 	Crossfade(
 		targetState   = vHidden,

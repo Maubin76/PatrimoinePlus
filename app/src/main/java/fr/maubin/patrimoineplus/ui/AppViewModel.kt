@@ -12,7 +12,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /*
-	État partagé par toute l'interface : mode discret et apparence.
+	État partagé par toute l'interface : mode discret, apparence et couleurs
+	des hausses et des baisses.
 	inSettings : réglages mémorisés
 */
 @HiltViewModel
@@ -39,6 +40,19 @@ class AppViewModel @Inject constructor(
 	fun setAmountsHidden(inHidden: Boolean)
 	{
 		viewModelScope.launch { inSettings.setAmountsHidden(inHidden) }
+	}
+
+	// Vrai pour colorer hausses et baisses.
+	val trendColors: StateFlow<Boolean> =
+		inSettings.trendColors.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+	/*
+		Active ou désactive les couleurs des hausses et des baisses.
+		inEnabled : vrai pour colorer
+	*/
+	fun setTrendColors(inEnabled: Boolean)
+	{
+		viewModelScope.launch { inSettings.setTrendColors(inEnabled) }
 	}
 
 	// Apparence choisie ; « Système » tant que le réglage n'est pas lu.

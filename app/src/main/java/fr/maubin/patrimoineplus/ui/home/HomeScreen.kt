@@ -171,7 +171,7 @@ private fun TotalBlock(inState: HomeUiState)
 		if (!inState.isEmpty && vChange != null)
 		{
 			Row(verticalAlignment = Alignment.CenterVertically) {
-				AmountText(inCents = vChange, inStyle = MaterialTheme.typography.titleMedium, inShowPlusSign = true)
+				AmountText(inCents = vChange, inStyle = MaterialTheme.typography.titleMedium, inShowPlusSign = true, inTrend = true)
 				Text(" ce mois-ci", style = MaterialTheme.typography.titleMedium, color = vColors.onSurfaceVariant)
 			}
 			Spacer(Modifier.height(16.dp))
