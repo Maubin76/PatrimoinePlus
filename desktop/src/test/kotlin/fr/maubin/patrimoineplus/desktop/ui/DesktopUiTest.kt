@@ -97,5 +97,14 @@ class DesktopUiTest
 		capture("6-livret-sombre") { App(vApp) { null } }
 		vApp.show(Screen.SETTINGS)
 		capture("7-reglages-sombre") { App(vApp) { null } }
+		vApp.setAppearance(Appearance.LIGHT)
+		vApp.openAccount(vApp.workspace.value.data.accounts.first { it.name == "Compte courant" }.id)
+		vApp.newOperation()
+		capture("8-saisie-panneau") { App(vApp) { null } }
+		vApp.closePanel()
+		vApp.show(Screen.CATEGORIES)
+		capture("9-categories") { App(vApp) { null } }
+		vApp.openPanel(fr.maubin.patrimoineplus.desktop.Panel.AccountSheet(vApp.workspace.value.data.accounts.first { it.name == "PEA" }.id))
+		capture("10-fiche-compte") { App(vApp) { null } }
 	}
 }

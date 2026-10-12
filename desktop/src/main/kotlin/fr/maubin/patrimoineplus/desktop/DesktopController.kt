@@ -9,7 +9,16 @@ import fr.maubin.patrimoineplus.desktop.data.WorkspaceState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import fr.maubin.patrimoineplus.data.backup.BackupFile
+import fr.maubin.patrimoineplus.data.edit.DataEditor
+import fr.maubin.patrimoineplus.data.edit.EditResult
+import fr.maubin.patrimoineplus.domain.model.CategoryKind
+import fr.maubin.patrimoineplus.ui.entry.EntryData
+import fr.maubin.patrimoineplus.ui.entry.EntryForm
+import fr.maubin.patrimoineplus.ui.entry.newEntryForm
 import java.nio.file.Path
+import java.time.Clock
+import java.time.LocalDate
 import java.time.YearMonth
 
 /*
@@ -19,6 +28,7 @@ enum class Screen(val label: String)
 {
 	HOME("Accueil"),															// patrimoine
 	ACCOUNTS("Comptes"),														// liste des comptes
+	CATEGORIES("Catégories"),													// catégories de dépense et de revenu
 	SETTINGS("Réglages")														// source, apparence
 }
 
@@ -35,21 +45,82 @@ data class Navigation(
 )
 
 /*
+	Panneau latéral de saisie ouvert.
+*/
+sealed interface Panel
+{
+	/*
+		Saisie ou modification d'une opération.
+		form : formulaire de départ
+	*/
+	data class Operation(val form: EntryForm) : Panel
+
+	/*
+		Création (accountId null) ou modification d'un compte.
+		accountId : compte modifié ; null pour en créer un
+	*/
+	data class AccountSheet(val accountId: String?) : Panel
+
+	/*
+		Création (categoryId null) ou modification d'une catégorie.
+		categoryId : catégorie modifiée ; null pour en créer une
+		kind       : nature d'une nouvelle catégorie
+	*/
+	data class CategorySheet(
+		val categoryId : String?,
+		val kind       : CategoryKind = CategoryKind.EXPENSE
+	) : Panel
+
+	/*
+		Nouveau relevé de la banque.
+		accountId : compte
+	*/
+	data class Statement(val accountId: String) : Panel
+
+	/*
+		Saisie manuelle des cours des positions d'un compte Bourse.
+		accountId : compte Bourse
+	*/
+	data class Prices(val accountId: String) : Panel
+
+	/*
+		Nouvelle position initiale d'un compte Bourse.
+		accountId : compte Bourse
+	*/
+	data class OpeningPosition(val accountId: String) : Panel
+
+	/*
+		Fiche d'un actif (nom, ISIN, symbole).
+		assetId : actif
+	*/
+	data class AssetSheet(val assetId: String) : Panel
+}
+
+/*
 	Contrôleur de l'appli PC : source des données (dossier synchronisé ou
 	démonstration), réglages mémorisés (apparence, mode discret) et navigation.
 	Sans interface : testable seul.
 	inConfig    : fichier des réglages
 	inWorkspace : espace de travail (données)
 	inScope     : portée de la surveillance du fichier d'échange ; null pour ne pas surveiller
+	inClock     : horloge (horodatages des modifications, date du jour)
 */
 class DesktopController(
 	private val inConfig    : DesktopConfig,
 	private val inWorkspace : Workspace,
-	private val inScope     : CoroutineScope?
+	private val inScope     : CoroutineScope?,
+	private val inClock     : Clock = Clock.systemDefaultZone()
 )
 {
 	private val fSettings   = MutableStateFlow(inConfig.load())					// réglages
 	private val fNavigation = MutableStateFlow(Navigation())					// position
+	private val fPanel      = MutableStateFlow<Panel?>(null)					// panneau ouvert
+
+	// Moteur de modification des données.
+	val editor = DataEditor(inClock)
+
+	// Panneau de saisie ouvert ; null sans panneau.
+	val panel: StateFlow<Panel?> = fPanel
 
 	// Réglages courants.
 	val settings: StateFlow<DesktopSettings> = fSettings
@@ -128,14 +199,73 @@ class DesktopController(
 	}
 
 	/*
+		Date du jour.
+	*/
+	fun today(): LocalDate = LocalDate.now(inClock)
+
+	/*
+		Ouvre un panneau de saisie (remplace celui qui était ouvert).
+		inPanel : panneau
+	*/
+	fun openPanel(inPanel: Panel)
+	{
+		fPanel.value = inPanel
+	}
+
+	/*
+		Ferme le panneau de saisie.
+	*/
+	fun closePanel()
+	{
+		fPanel.value = null
+	}
+
+	/*
+		Panneau de saisie d'une nouvelle opération, sur le compte affiché s'il y
+		en a un (raccourci Ctrl+N, bouton « Nouvelle opération »).
+	*/
+	fun newOperation()
+	{
+		val vData = workspace.value.data											// données
+		val vForm = newEntryForm(EntryData(vData.accounts.filterNot { it.archived }, vData.categories, vData.assets, vData.prices, vData.transactions), fNavigation.value.accountId, today())	// formulaire
+		openPanel(Panel.Operation(vForm))
+	}
+
+	/*
+		Applique une modification des données (voir DataEditor) ; refusée, rien
+		ne change.
+		inChange : modification
+	*/
+	fun edit(inChange: (BackupFile) -> EditResult): EditResult = inWorkspace.edit(inChange)
+
+	/*
+		Contenu complet courant des données (lectures du moteur : solde initial,
+		nombre d'opérations, usage d'une catégorie).
+	*/
+	fun currentFile(): BackupFile = inWorkspace.file
+
+	/*
+		Tranche un conflit de synchronisation.
+		inKeepLocal : vrai pour garder les données du PC
+	*/
+	fun resolveConflict(inKeepLocal: Boolean) = inWorkspace.resolve(inKeepLocal)
+
+	/*
+		Écrit tout de suite les modifications en attente (fermeture de l'appli).
+	*/
+	fun flush() = inWorkspace.flush()
+
+	/*
 		Ouvre une source, la mémorise et revient à l'accueil.
 		inSource : source
 	*/
 	private fun openSource(inSource: Source)
 	{
+		inWorkspace.flush()
 		update(fSettings.value.copy(source = inSource))
 		inWorkspace.open(inSource, inScope)
 		fNavigation.value = Navigation()
+		fPanel.value      = null
 	}
 
 	/*

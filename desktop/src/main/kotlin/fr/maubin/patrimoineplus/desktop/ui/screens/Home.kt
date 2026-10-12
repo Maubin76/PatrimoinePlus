@@ -29,6 +29,7 @@ import fr.maubin.patrimoineplus.desktop.ui.components.EmptyState
 import fr.maubin.patrimoineplus.desktop.ui.components.InfoPill
 import fr.maubin.patrimoineplus.desktop.ui.components.ProportionBar
 import fr.maubin.patrimoineplus.desktop.ui.components.SectionHeader
+import fr.maubin.patrimoineplus.desktop.ui.components.TwoColumns
 import fr.maubin.patrimoineplus.desktop.ui.components.SeriesDot
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.ui.home.buildHomeState
@@ -59,8 +60,9 @@ fun HomeScreen(
 			}
 			return@Column
 		}
-		Row(horizontalArrangement = Arrangement.spacedBy(40.dp)) {
-			Column(Modifier.weight(1f)) {
+		TwoColumns(
+			inRatio = 1.2f,
+			inLeft  = {
 				AmountText(inCents = vState.totalCents, inStyle = MaterialTheme.typography.displayMedium)
 				Spacer(Modifier.height(8.dp))
 				Row(verticalAlignment = Alignment.CenterVertically) {
@@ -92,8 +94,8 @@ fun HomeScreen(
 						AmountText(inCents = inGroup.subtotalCents, inStyle = MaterialTheme.typography.bodyLarge)
 					}
 				}
-			}
-			Column(Modifier.weight(1.2f)) {
+			},
+			inRight = {
 				SectionHeader(inTitle = "Évolution")
 				Spacer(Modifier.height(12.dp))
 				if (vState.series.size > 1)
@@ -105,7 +107,7 @@ fun HomeScreen(
 					Text("La courbe apparaîtra après un premier mois d’historique.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 				}
 			}
-		}
+		)
 	}
 }
 

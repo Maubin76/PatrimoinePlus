@@ -1,6 +1,11 @@
 package fr.maubin.patrimoineplus.desktop.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.OutlinedButton
+import fr.maubin.patrimoineplus.desktop.DesktopController
+import fr.maubin.patrimoineplus.desktop.Panel
+import fr.maubin.patrimoineplus.ui.entry.editEntryForm
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +42,7 @@ import fr.maubin.patrimoineplus.desktop.ui.components.BorderedCard
 import fr.maubin.patrimoineplus.desktop.ui.components.MonthSwitcher
 import fr.maubin.patrimoineplus.desktop.ui.components.ProportionBar
 import fr.maubin.patrimoineplus.desktop.ui.components.SectionHeader
+import fr.maubin.patrimoineplus.desktop.ui.components.TwoColumns
 import fr.maubin.patrimoineplus.desktop.ui.components.SeriesDot
 import fr.maubin.patrimoineplus.desktop.ui.components.allocationColor
 import fr.maubin.patrimoineplus.desktop.ui.components.kAllocationSlots
@@ -64,21 +70,25 @@ private val kShortDay = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// 
 	téléphone : mois par mois pour un compte Courant, globale pour un compte
 	Épargne ou Bourse. Mêmes calculs que l'appli Android (buildAccountDetail,
 	buildAccountExtras).
-	inSpace     : données
-	inAccountId : compte
-	inMonth     : mois affiché (compte Courant) ; null : mois courant
-	inOnMonth   : change de mois
-	inOnBack    : retour à la liste
+	inSpace      : données
+	inController : contrôleur (mois, retour, saisies)
+	inAccountId  : compte
+	inMonth      : mois affiché (compte Courant) ; null : mois courant
 */
 @Composable
 fun AccountScreen(
-	inSpace     : WorkspaceState,
-	inAccountId : String,
-	inMonth     : YearMonth?,
-	inOnMonth   : (YearMonth) -> Unit,
-	inOnBack    : () -> Unit
+	inSpace      : WorkspaceState,
+	inController : DesktopController,
+	inAccountId  : String,
+	inMonth      : YearMonth?
 )
 {
+	val vOnMonth  : (YearMonth) -> Unit = inController::showMonth				// change de mois
+	val vOnBack   : () -> Unit          = inController::back					// retour à la liste
+	val vOpen     : (OperationItem) -> Unit = { inItem ->
+		if (inItem.editable) inController.openPanel(Panel.Operation(editEntryForm(inItem.transaction, inSpace.data.categories)))
+		else inController.openPanel(Panel.AccountSheet(inAccountId))
+	}																			// ouvre une opération
 	val vData   = inSpace.data													// données
 	val vState  = remember(vData, inAccountId, inMonth, inSpace.today) {
 		buildAccountDetail(inAccountId, vData.accounts, vData.categories, vData.transactions, inMonth ?: YearMonth.from(inSpace.today), inSpace.today)
@@ -86,22 +96,23 @@ fun AccountScreen(
 	val vExtras = remember(vData, inAccountId, inSpace.today) {
 		buildAccountExtras(inAccountId, vData.accounts, vData.transactions, vData.statements, vData.prices, vData.assets, inSpace.today)
 	}																			// relevés ou portefeuille
-	val vAccount = vState.account ?: run { inOnBack(); return }				// compte (disparu : retour)
+	val vAccount = vState.account ?: run { vOnBack(); return }				// compte (disparu : retour)
 	Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 40.dp, vertical = 28.dp)) {
 		Row(verticalAlignment = Alignment.CenterVertically) {
-			IconButton(onClick = inOnBack) { Icon(LineIcons.Back, contentDescription = "Retour aux comptes") }
+			IconButton(onClick = vOnBack) { Icon(LineIcons.Back, contentDescription = "Retour aux comptes") }
 			Spacer(Modifier.width(8.dp))
-			Column {
+			Column(Modifier.weight(1f)) {
 				Text(vAccount.name, style = MaterialTheme.typography.headlineMedium)
 				Text(fr.maubin.patrimoineplus.ui.home.accountDetail(vAccount), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			}
+			OutlinedButton(onClick = { inController.openPanel(Panel.AccountSheet(vAccount.id)) }) { Text("Modifier le compte") }
 		}
 		Spacer(Modifier.height(28.dp))
 		when (vAccount.type)
 		{
-			AccountType.CHECKING  -> CheckingView(vState, inOnMonth)
-			AccountType.SAVINGS   -> SavingsView(vState, vExtras)
-			AccountType.BROKERAGE -> BrokerageView(vState, vExtras)
+			AccountType.CHECKING  -> CheckingView(vState, vOnMonth, vOpen)
+			AccountType.SAVINGS   -> SavingsView(vState, vExtras, inController, vOpen)
+			AccountType.BROKERAGE -> BrokerageView(vState, vExtras, inController, vOpen)
 		}
 	}
 }
@@ -111,15 +122,18 @@ fun AccountScreen(
 	dépenses par catégorie ; à droite, courbe du solde et opérations par jour.
 	inState   : état du mois
 	inOnMonth : change de mois
+	inOnOpen  : ouvre une opération
 */
 @Composable
 private fun CheckingView(
 	inState   : AccountDetailState,
-	inOnMonth : (YearMonth) -> Unit
+	inOnMonth : (YearMonth) -> Unit,
+	inOnOpen  : (OperationItem) -> Unit
 )
 {
-	Row(horizontalArrangement = Arrangement.spacedBy(40.dp)) {
-		Column(Modifier.weight(1f)) {
+	TwoColumns(
+		inRatio = 1.2f,
+		inLeft  = {
 			MonthSwitcher(inState.month, inState.firstMonth, inState.lastMonth, inOnMonth)
 			Spacer(Modifier.height(12.dp))
 			inState.summary?.let { inSummary ->
@@ -155,8 +169,8 @@ private fun CheckingView(
 					}
 				}
 			}
-		}
-		Column(Modifier.weight(1.2f)) {
+		},
+		inRight = {
 			ChartSection("Évolution du solde", inState.series, inState.month)
 			Spacer(Modifier.height(32.dp))
 			SectionHeader(inTitle = "Opérations")
@@ -164,26 +178,31 @@ private fun CheckingView(
 			{
 				Text("Aucune opération ce mois-ci.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp))
 			}
-			if (inState.upcoming.isNotEmpty()) OperationsGroup("À venir", inState.upcoming, inWithDate = true)
-			inState.days.forEach { inDay -> OperationsGroup(inDay.date.format(kDayTitle).replaceFirstChar { it.uppercase() }, inDay.items, inWithDate = false) }
+			if (inState.upcoming.isNotEmpty()) OperationsGroup("À venir", inState.upcoming, inWithDate = true, inOnOpen = inOnOpen)
+			inState.days.forEach { inDay -> OperationsGroup(inDay.date.format(kDayTitle).replaceFirstChar { it.uppercase() }, inDay.items, inWithDate = false, inOnOpen = inOnOpen) }
 		}
-	}
+	)
 }
 
 /*
 	Compte Épargne : vue globale. À gauche, solde et totaux depuis
 	l'ouverture, puis relevés ; à droite, courbe du solde et opérations par mois.
-	inState  : état global
-	inExtras : relevés
+	inState      : état global
+	inExtras     : relevés
+	inController : contrôleur (relevés)
+	inOnOpen     : ouvre une opération
 */
 @Composable
 private fun SavingsView(
-	inState  : AccountDetailState,
-	inExtras : AccountExtras
+	inState      : AccountDetailState,
+	inExtras     : AccountExtras,
+	inController : DesktopController,
+	inOnOpen     : (OperationItem) -> Unit
 )
 {
-	Row(horizontalArrangement = Arrangement.spacedBy(40.dp)) {
-		Column(Modifier.weight(1f)) {
+	TwoColumns(
+		inRatio = 1.2f,
+		inLeft  = {
 			inState.totals?.let { inTotals ->
 				AmountText(inCents = inTotals.balanceCents, inStyle = MaterialTheme.typography.displaySmall)
 				Text("Solde au jour", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -198,7 +217,7 @@ private fun SavingsView(
 				}
 			}
 			Spacer(Modifier.height(32.dp))
-			SectionHeader(inTitle = "Relevés")
+			SectionHeader(inTitle = "Relevés", inLinkLabel = "Ajouter", inOnLink = { inState.account?.let { inController.openPanel(Panel.Statement(it.id)) } })
 			Spacer(Modifier.height(12.dp))
 			BorderedCard {
 				if (inExtras.statements.isEmpty())
@@ -218,33 +237,41 @@ private fun SavingsView(
 							}
 						}
 						AmountText(inCents = inItem.statement.balanceCents, inStyle = MaterialTheme.typography.bodyLarge)
+						IconButton(onClick = { inController.edit { inController.editor.deleteStatement(it, inItem.statement.id) } }) {
+							Icon(LineIcons.Close, contentDescription = "Supprimer le relevé", modifier = Modifier.size(16.dp))
+						}
 					}
 				}
 			}
-		}
-		Column(Modifier.weight(1.2f)) {
+		},
+		inRight = {
 			ChartSection("Évolution du solde", inState.series, inState.series.lastOrNull()?.month)
 			Spacer(Modifier.height(32.dp))
-			GlobalOperations(inState)
+			GlobalOperations(inState, inOnOpen)
 		}
-	}
+	)
 }
 
 /*
 	Compte Bourse : vue globale. À gauche, valeur, plus-values et positions
 	avec leur répartition ; à droite, courbe de la valeur et opérations par mois.
-	inState  : état global
-	inExtras : portefeuille
+	inState      : état global
+	inExtras     : portefeuille
+	inController : contrôleur (cours, positions, actifs)
+	inOnOpen     : ouvre une opération
 */
 @Composable
 private fun BrokerageView(
-	inState  : AccountDetailState,
-	inExtras : AccountExtras
+	inState      : AccountDetailState,
+	inExtras     : AccountExtras,
+	inController : DesktopController,
+	inOnOpen     : (OperationItem) -> Unit
 )
 {
 	val vPortfolio = inExtras.portfolio ?: return								// portefeuille
-	Row(horizontalArrangement = Arrangement.spacedBy(40.dp)) {
-		Column(Modifier.weight(1f)) {
+	TwoColumns(
+		inRatio = 1.2f,
+		inLeft  = {
 			AmountText(inCents = vPortfolio.valuation.valueCents, inStyle = MaterialTheme.typography.displaySmall)
 			Text("Valeur du compte, espèces comprises", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			Spacer(Modifier.height(16.dp))
@@ -256,23 +283,50 @@ private fun BrokerageView(
 				}
 			}
 			Spacer(Modifier.height(32.dp))
-			Positions(vPortfolio)
-		}
-		Column(Modifier.weight(1.2f)) {
+			Positions(vPortfolio, inController)
+			Spacer(Modifier.height(12.dp))
+			Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+				inState.account?.let { inAccount ->
+					OutlinedButton(onClick = { inController.openPanel(Panel.Prices(inAccount.id)) }, enabled = vPortfolio.valuation.positions.isNotEmpty()) { Text("Saisir des cours") }
+					OutlinedButton(onClick = { inController.openPanel(Panel.OpeningPosition(inAccount.id)) }) { Text("Ajouter une position initiale") }
+				}
+			}
+			if (inExtras.openingPositions.isNotEmpty())
+			{
+				Spacer(Modifier.height(24.dp))
+				Text("Positions initiales", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+				Spacer(Modifier.height(8.dp))
+				BorderedCard {
+					inExtras.openingPositions.forEach { inItem ->
+						Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(start = 24.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+							Text("${inItem.assetName} : ${fr.maubin.patrimoineplus.domain.format.formatScaled(inItem.trade.quantity)} × ${fr.maubin.patrimoineplus.domain.format.formatPrice(inItem.trade.unitPrice)}", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+							IconButton(onClick = { inState.account?.let { inAccount -> inController.edit { inController.editor.removeOpeningPosition(it, inAccount.id, inItem.trade.id) } } }) {
+								Icon(LineIcons.Close, contentDescription = "Retirer la position initiale ${inItem.assetName}", modifier = Modifier.size(16.dp))
+							}
+						}
+					}
+				}
+			}
+		},
+		inRight = {
 			ChartSection("Évolution de la valeur", inExtras.valueSeries, inExtras.valueSeries.lastOrNull()?.month)
 			Spacer(Modifier.height(32.dp))
-			GlobalOperations(inState)
+			GlobalOperations(inState, inOnOpen)
 		}
-	}
+	)
 }
 
 /*
 	Positions d'un compte Bourse : barre de répartition des titres, puis une
 	ligne par titre (pastille, nom, part, valeur), comme sur le téléphone.
-	inPortfolio : portefeuille valorisé
+	inPortfolio  : portefeuille valorisé
+	inController : contrôleur (fiche d'un actif)
 */
 @Composable
-private fun Positions(inPortfolio: PortfolioView)
+private fun Positions(
+	inPortfolio  : PortfolioView,
+	inController : DesktopController
+)
 {
 	val vLines = allocation(inPortfolio.valuation.positions)					// répartition des titres
 	SectionHeader(inTitle = "Positions")
@@ -293,7 +347,7 @@ private fun Positions(inPortfolio: PortfolioView)
 		}
 		vLines.forEachIndexed { inIndex, inLine ->
 			if (inIndex > 0) HorizontalDivider(Modifier.padding(horizontal = 24.dp), color = MaterialTheme.colorScheme.outlineVariant)
-			Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 24.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+			Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { inController.openPanel(Panel.AssetSheet(inLine.position.assetId)) }.padding(horizontal = 24.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
 				if (vLines.size > 1) { SeriesDot(allocationColor(inIndex)); Spacer(Modifier.width(14.dp)) }
 				Text(inPortfolio.names[inLine.position.assetId] ?: "Actif supprimé", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
 				Text("${inLine.percent} %", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -306,18 +360,22 @@ private fun Positions(inPortfolio: PortfolioView)
 
 /*
 	Opérations d'une vue globale : « À venir », puis par mois.
-	inState : état global
+	inState  : état global
+	inOnOpen : ouvre une opération
 */
 @Composable
-private fun GlobalOperations(inState: AccountDetailState)
+private fun GlobalOperations(
+	inState  : AccountDetailState,
+	inOnOpen : (OperationItem) -> Unit
+)
 {
 	SectionHeader(inTitle = "Opérations")
 	if (inState.upcoming.isEmpty() && inState.months.isEmpty())
 	{
 		Text("Aucune opération.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp))
 	}
-	if (inState.upcoming.isNotEmpty()) OperationsGroup("À venir", inState.upcoming, inWithDate = true)
-	inState.months.forEach { inGroup -> OperationsGroup(monthTitle(inGroup.month), inGroup.items, inWithDate = true) }
+	if (inState.upcoming.isNotEmpty()) OperationsGroup("À venir", inState.upcoming, inWithDate = true, inOnOpen = inOnOpen)
+	inState.months.forEach { inGroup -> OperationsGroup(monthTitle(inGroup.month), inGroup.items, inWithDate = true, inOnOpen = inOnOpen) }
 }
 
 /*
@@ -351,19 +409,21 @@ private fun ChartSection(
 	inTitle    : titre du groupe
 	inItems    : opérations
 	inWithDate : affiche la date de chaque opération
+	inOnOpen   : ouvre une opération (clic)
 */
 @Composable
 private fun OperationsGroup(
 	inTitle    : String,
 	inItems    : List<OperationItem>,
-	inWithDate : Boolean
+	inWithDate : Boolean,
+	inOnOpen   : (OperationItem) -> Unit
 )
 {
 	Text(inTitle, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, top = 16.dp, bottom = 8.dp))
 	BorderedCard {
 		inItems.forEachIndexed { inIndex, inItem ->
 			if (inIndex > 0) HorizontalDivider(Modifier.padding(horizontal = 24.dp), color = MaterialTheme.colorScheme.outlineVariant)
-			Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 24.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+			Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { inOnOpen(inItem) }.padding(horizontal = 24.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
 				Box(Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainer), contentAlignment = Alignment.Center) {
 					Icon(CategoryIcons.of(inItem.icon), contentDescription = null, modifier = Modifier.size(18.dp))
 				}

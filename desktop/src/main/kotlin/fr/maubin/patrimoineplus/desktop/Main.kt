@@ -27,7 +27,7 @@ fun main()
 		val vScope      = rememberCoroutineScope()									// portée de la surveillance du fichier
 		val vController = remember { DesktopController(DesktopConfig.default(), Workspace(Clock.systemDefaultZone()), vScope) }	// contrôleur
 		Window(
-			onCloseRequest = ::exitApplication,
+			onCloseRequest = { vController.flush(); exitApplication() },
 			title          = "PatrimoinePlus",
 			state          = rememberWindowState(size = DpSize(1320.dp, 860.dp))
 		) {

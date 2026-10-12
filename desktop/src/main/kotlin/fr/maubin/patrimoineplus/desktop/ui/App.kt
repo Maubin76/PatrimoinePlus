@@ -17,7 +17,29 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.focusable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import fr.maubin.patrimoineplus.desktop.Panel
+import fr.maubin.patrimoineplus.desktop.ui.panels.AccountPanel
+import fr.maubin.patrimoineplus.desktop.ui.panels.AssetPanel
+import fr.maubin.patrimoineplus.desktop.ui.panels.CategoryPanel
+import fr.maubin.patrimoineplus.desktop.ui.panels.OpeningPositionPanel
+import fr.maubin.patrimoineplus.desktop.ui.panels.OperationPanel
+import fr.maubin.patrimoineplus.desktop.ui.panels.PricesPanel
+import fr.maubin.patrimoineplus.desktop.ui.panels.StatementPanel
+import fr.maubin.patrimoineplus.desktop.ui.screens.CategoriesScreen
 import androidx.compose.material3.Icon
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
@@ -113,25 +135,64 @@ private fun Shell(
 	inOnPickFolder : () -> Path?
 )
 {
-	val vNav by inController.navigation.collectAsState()					// position
-	Row(Modifier.fillMaxSize()) {
+	val vNav   by inController.navigation.collectAsState()					// position
+	val vPanel by inController.panel.collectAsState()						// panneau de saisie ouvert
+	val vFocus = remember { FocusRequester() }									// focus clavier de la fenêtre (raccourcis)
+	LaunchedEffect(Unit) { vFocus.requestFocus() }
+	Row(
+		Modifier.fillMaxSize().focusRequester(vFocus).focusable().onPreviewKeyEvent { inEvent ->
+			if (inEvent.type == KeyEventType.KeyDown && inEvent.isCtrlPressed && inEvent.key == Key.N)
+			{
+				inController.newOperation()
+				true
+			}
+			else false
+		}
+	) {
 		Rail(vNav.screen, inController::show)
 		VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-		Column(Modifier.fillMaxSize()) {
-			StatusBar(inSpace, inController::toggleHidden)
+		Column(Modifier.weight(1f).fillMaxHeight()) {
+			StatusBar(inSpace, inController::toggleHidden, inController::newOperation)
 			HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 			Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
 				Box(Modifier.widthIn(max = kContentMaxWidth).fillMaxSize()) {
 					when
 					{
-						vNav.accountId != null       -> AccountScreen(inSpace, vNav.accountId!!, vNav.month, inController::showMonth, inController::back)
-						vNav.screen == Screen.HOME     -> HomeScreen(inSpace) { inController.show(Screen.ACCOUNTS) }
-						vNav.screen == Screen.ACCOUNTS -> AccountsScreen(inSpace, inController::openAccount)
-						else                           -> SettingsScreen(inController, inOnPickFolder)
+						vNav.accountId != null         -> AccountScreen(inSpace, inController, vNav.accountId!!, vNav.month)
+						vNav.screen == Screen.HOME       -> HomeScreen(inSpace) { inController.show(Screen.ACCOUNTS) }
+						vNav.screen == Screen.ACCOUNTS   -> AccountsScreen(inSpace, inController)
+						vNav.screen == Screen.CATEGORIES -> CategoriesScreen(inSpace, inController)
+						else                             -> SettingsScreen(inController, inOnPickFolder)
 					}
 				}
 			}
 		}
+		when (val vOpen = vPanel)
+		{
+			null                         -> Unit
+			is Panel.Operation           -> OperationPanel(inController, vOpen.form)
+			is Panel.AccountSheet        -> AccountPanel(inController, vOpen.accountId)
+			is Panel.CategorySheet       -> CategoryPanel(inController, vOpen.categoryId, vOpen.kind)
+			is Panel.Statement           -> StatementPanel(inController, vOpen.accountId)
+			is Panel.Prices              -> PricesPanel(inController, vOpen.accountId)
+			is Panel.OpeningPosition     -> OpeningPositionPanel(inController, vOpen.accountId)
+			is Panel.AssetSheet          -> AssetPanel(inController, vOpen.assetId)
+		}
+	}
+	(inSpace.status as? LoadStatus.Conflict)?.let { inConflict ->
+		AlertDialog(
+			onDismissRequest = {},
+			title            = { Text("Quelle version garder ?") },
+			text             = {
+				Text(
+					"Les données ont changé à la fois sur ce PC et dans le fichier synchronisé (téléphone).\n\n" +
+					"Ce PC : ${inConflict.localSummary}.\n\nFichier : ${inConflict.fileSummary}.\n\n" +
+					"La version écartée est remplacée. Le téléphone garde ses sauvegardes quotidiennes dans le même dossier."
+				)
+			},
+			confirmButton    = { TextButton(onClick = { inController.resolveConflict(inKeepLocal = true) }) { Text("Ce PC") } },
+			dismissButton    = { TextButton(onClick = { inController.resolveConflict(inKeepLocal = false) }) { Text("Le fichier") } }
+		)
 	}
 }
 
@@ -170,7 +231,7 @@ private fun Rail(
 				verticalAlignment = Alignment.CenterVertically
 			) {
 				Icon(
-					imageVector        = when (inEntry) { Screen.HOME -> LineIcons.Home; Screen.ACCOUNTS -> LineIcons.Wallet; Screen.SETTINGS -> LineIcons.Sliders },
+					imageVector        = when (inEntry) { Screen.HOME -> LineIcons.Home; Screen.ACCOUNTS -> LineIcons.Wallet; Screen.CATEGORIES -> LineIcons.Grid; Screen.SETTINGS -> LineIcons.Sliders },
 					contentDescription = null,
 					tint               = if (vActive) vColors.onPrimary else vColors.onSurface,
 					modifier           = Modifier.size(20.dp)
@@ -187,11 +248,13 @@ private fun Rail(
 	lecture, attente, fichier refusé) et bouton du mode discret.
 	inSpace          : données et état de la lecture
 	inOnToggleHidden : bascule le mode discret
+	inOnNew          : nouvelle opération
 */
 @Composable
 private fun StatusBar(
 	inSpace          : WorkspaceState,
-	inOnToggleHidden : () -> Unit
+	inOnToggleHidden : () -> Unit,
+	inOnNew          : () -> Unit
 )
 {
 	val vColors = MaterialTheme.colorScheme										// palette courante
@@ -217,6 +280,8 @@ private fun StatusBar(
 			modifier = Modifier.weight(1f)
 		)
 		val vHidden = LocalAmountsHidden.current								// mode discret actif
+		Button(onClick = inOnNew) { Text("Nouvelle opération") }
+		Spacer(Modifier.width(8.dp))
 		TextButton(onClick = inOnToggleHidden) {
 			Text(if (vHidden) "Afficher les montants" else "Masquer les montants", style = MaterialTheme.typography.labelLarge)
 		}
