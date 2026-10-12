@@ -204,7 +204,7 @@ private fun MainTabs(
 	vEntry?.let { inForm ->
 		TransactionSheet(
 			inInitial     = inForm,
-			inData        = vData,
+			inData        = vData.let { inEntry.dataFor(inForm) },	// relu à chaque changement des données
 			inSuggestions = inEntry::suggestions,
 			inOnSave      = { inSaved, inOnErrors -> inEntry.save(inSaved) { if (it.isEmpty) vEntry = null else inOnErrors(it) } },
 			inOnDelete    = { vEntry = null },

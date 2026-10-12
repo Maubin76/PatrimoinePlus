@@ -243,7 +243,7 @@ fun AccountDetailScreen(
 	vEntry?.let { inForm ->
 		TransactionSheet(
 			inInitial     = inForm,
-			inData        = vEntryData,
+			inData        = vEntryData.let { inEntry.dataFor(inForm) },	// relu à chaque changement des données
 			inSuggestions = inEntry::suggestions,
 			inOnSave      = { inSaved, inOnErrors -> inEntry.save(inSaved) { if (it.isEmpty) vEntry = null else inOnErrors(it) } },
 			inOnDelete    = {

@@ -148,6 +148,62 @@ fun proposedLabel(
 	}
 
 /*
+	Données de saisie complétées des comptes et catégories archivés que la
+	saisie utilise déjà (modification d'une opération ancienne) : ils restent
+	choisis et la saisie reste valable ; ils ne sont pas proposés ailleurs.
+	inForm          : saisie
+	inAllAccounts   : tous les comptes, archivés compris
+	inAllCategories : toutes les catégories, archivées comprises
+*/
+fun EntryData.withReferences(
+	inForm          : EntryForm,
+	inAllAccounts   : List<Account>,
+	inAllCategories : List<Category>
+): EntryData
+{
+	val vAccountIds = setOfNotNull(inForm.accountId, inForm.toAccountId)			// comptes de la saisie
+	val vExtraAcc   = inAllAccounts.filter { it.id in vAccountIds && accounts.none { inKnown -> inKnown.id == it.id } }	// comptes archivés utilisés
+	val vExtraCat   = inAllCategories.filter { it.id == inForm.categoryId && categories.none { inKnown -> inKnown.id == it.id } }	// catégorie archivée utilisée
+	return if (vExtraAcc.isEmpty() && vExtraCat.isEmpty()) this else copy(accounts = accounts + vExtraAcc, categories = categories + vExtraCat)
+}
+
+/*
+	Change le mode de la saisie en gardant ce qui reste valable : le compte
+	passe sur un compte Bourse pour un ordre, la catégorie disparaît si elle
+	n'est plus de la bonne nature ; l'actif (ordre, dividende), le nouvel
+	actif et le remboursement sont remis à zéro, pour qu'aucune valeur
+	invisible dans le nouveau mode ne soit enregistrée (un revenu ne devient
+	pas un dividende caché).
+	inForm : saisie
+	inMode : nouveau mode
+	inData : données
+*/
+fun switchEntryMode(
+	inForm : EntryForm,
+	inMode : EntryMode,
+	inData : EntryData
+): EntryForm
+{
+	if (inMode == inForm.mode)
+	{
+		return inForm
+	}
+	val vKind    = if (inMode == EntryMode.INCOME) CategoryKind.INCOME else CategoryKind.EXPENSE	// nature des catégories
+	val vKeepCat = inData.categories.firstOrNull { it.id == inForm.categoryId }?.kind == vKind && inMode in listOf(EntryMode.EXPENSE, EntryMode.INCOME)	// catégorie encore valable
+	val vAccount = if (inMode == EntryMode.TRADE && inData.accounts.none { it.id == inForm.accountId && it.type == AccountType.BROKERAGE })
+		inData.accounts.firstOrNull { it.type == AccountType.BROKERAGE }?.id else inForm.accountId	// compte retenu
+	return inForm.copy(
+		mode       = inMode,
+		categoryId = if (vKeepCat) inForm.categoryId else null,
+		accountId  = vAccount,
+		assetId    = null,
+		newAsset   = "",
+		newIsin    = "",
+		refund     = false
+	)
+}
+
+/*
 	Formulaire vide, daté du jour, sur le compte voulu, sinon le dernier
 	utilisé, sinon le premier de la liste ; en ordre de bourse sur un compte
 	Bourse, en dépense sinon.

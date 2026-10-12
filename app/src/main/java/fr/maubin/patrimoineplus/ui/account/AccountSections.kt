@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import fr.maubin.patrimoineplus.domain.format.formatPermille
 import fr.maubin.patrimoineplus.domain.calc.AllocationLine
 import fr.maubin.patrimoineplus.domain.calc.Position
 import fr.maubin.patrimoineplus.domain.calc.allocation
@@ -87,7 +88,7 @@ fun PortfolioHeader(inPortfolio: PortfolioView)
 	BorderedCard {
 		Column(Modifier.padding(vertical = 8.dp)) {
 			StatRow("Espèces", inPortfolio.valuation.cashCents, false)
-			StatRow("Plus-value latente", vLatent, true, if (inPortfolio.costCents > 0) "${if (vRate >= 0) "+" else "-"}${abs(vRate) / 10},${abs(vRate) % 10} %" else null)
+			StatRow("Plus-value latente", vLatent, true, if (inPortfolio.costCents > 0) formatPermille(vRate) else null)
 			StatRow("Plus-values réalisées", inPortfolio.realizedCents, true)
 		}
 	}

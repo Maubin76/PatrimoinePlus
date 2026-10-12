@@ -47,3 +47,11 @@ private fun groupThousands(inDigits: String): String
 	}
 	return vResult.toString()
 }
+
+/*
+	Taux signé à une décimale, en pour cent, à partir d'un pour mille
+	(« +4,2 % », « -0,8 % »).
+	inPermille : taux en pour mille
+*/
+fun formatPermille(inPermille: Long): String =
+	"${if (inPermille >= 0) "+" else "-"}${kotlin.math.abs(inPermille) / 10},${kotlin.math.abs(inPermille) % 10} %"

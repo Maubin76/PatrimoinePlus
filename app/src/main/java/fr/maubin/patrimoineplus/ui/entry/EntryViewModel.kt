@@ -12,7 +12,9 @@ import fr.maubin.patrimoineplus.data.repo.TransactionRepository
 import fr.maubin.patrimoineplus.data.settings.SettingsRepository
 import fr.maubin.patrimoineplus.domain.calc.LabelSuggestion
 import fr.maubin.patrimoineplus.domain.calc.labelSuggestions
+import fr.maubin.patrimoineplus.domain.model.Account
 import fr.maubin.patrimoineplus.domain.model.Asset
+import fr.maubin.patrimoineplus.domain.model.Category
 import fr.maubin.patrimoineplus.domain.model.Transaction
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -49,6 +51,11 @@ class EntryViewModel @Inject constructor(
 {
 	private var fSaving = false														// enregistrement en cours
 
+	// Tous les comptes et toutes les catégories, archivés compris.
+	private val fAll: StateFlow<Pair<List<Account>, List<Category>>> =
+		combine(inAccounts.observeAccounts(), inCategories.observeCategories(), ::Pair)
+			.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList<Account>() to emptyList())
+
 	// Comptes, catégories, actifs, cours, opérations et dernier compte, à jour.
 	val data: StateFlow<EntryData> =
 		combine(
@@ -57,6 +64,14 @@ class EntryViewModel @Inject constructor(
 		) { (inList, inCats, inAssets), (inPrices, inTxs, inLast) ->
 			EntryData(inList.filterNot { it.archived }, inCats.filterNot { it.archived }.sortedBy { it.sortOrder }, inAssets, inPrices, inTxs, inLast)
 		}.stateIn(viewModelScope, SharingStarted.Eagerly, EntryData())
+
+	/*
+		Données de saisie pour une saisie donnée : les comptes et la catégorie
+		archivés qu'elle utilise déjà restent disponibles (modification d'une
+		opération ancienne).
+		inForm : saisie
+	*/
+	fun dataFor(inForm: EntryForm): EntryData = data.value.withReferences(inForm, fAll.value.first, fAll.value.second)
 
 	/*
 		Formulaire vide, daté d'aujourd'hui, sur le compte voulu, sinon le
@@ -92,7 +107,7 @@ class EntryViewModel @Inject constructor(
 		{
 			return
 		}
-		val vChecks = checkEntry(inForm, data.value)												// erreurs de saisie
+		val vChecks = checkEntry(inForm, dataFor(inForm))												// erreurs de saisie
 		if (!vChecks.isEmpty)
 		{
 			inOnDone(vChecks)
@@ -124,7 +139,7 @@ class EntryViewModel @Inject constructor(
 	{
 		val vNewAsset = if (inForm.mode == EntryMode.TRADE && inForm.assetId == kNewAsset)
 			Asset(UUID.randomUUID().toString(), inForm.newAsset.trim(), inForm.newIsin.trim().uppercase().ifEmpty { null }) else null	// actif à créer
-		val vTx = buildEntry(inForm, data.value, vNewAsset?.id)											// opération construite
+		val vTx = buildEntry(inForm, dataFor(inForm), vNewAsset?.id)											// opération construite
 		when (val vResult = inTransactions.save(vTx, vNewAsset))			// résultat
 		{
 			is SaveResult.Saved    ->

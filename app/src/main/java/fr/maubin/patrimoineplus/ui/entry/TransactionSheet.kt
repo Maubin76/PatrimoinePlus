@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import fr.maubin.patrimoineplus.ui.entry.switchEntryMode
 import fr.maubin.patrimoineplus.domain.calc.LabelSuggestion
 import fr.maubin.patrimoineplus.domain.calc.Ledger
 import fr.maubin.patrimoineplus.domain.calc.heldQuantity
@@ -94,7 +95,7 @@ fun TransactionSheet(
 			inOptions  = vModes,
 			inSelected = vForm.mode,
 			inLabel    = { it.label },
-			inOnSelect = { inMode -> vForm = switchMode(vForm, inMode, inData) },
+			inOnSelect = { inMode -> vForm = switchEntryMode(vForm, inMode, inData) },
 			inEnabled  = vForm.id == null
 		)
 		when (vForm.mode)
@@ -135,27 +136,6 @@ fun TransactionSheet(
 			inOnDismiss = { vConfirm = false }
 		)
 	}
-}
-
-/*
-	Change le mode de la saisie en gardant ce qui reste valable : le compte
-	passe sur un compte Bourse pour un ordre, la catégorie disparaît si elle
-	n'est plus de la bonne nature.
-	inForm : saisie
-	inMode : nouveau mode
-	inData : données
-*/
-private fun switchMode(
-	inForm : EntryForm,
-	inMode : EntryMode,
-	inData : EntryData
-): EntryForm
-{
-	val vKind     = if (inMode == EntryMode.INCOME) CategoryKind.INCOME else CategoryKind.EXPENSE	// nature des catégories
-	val vKeepCat  = inData.categories.firstOrNull { it.id == inForm.categoryId }?.kind == vKind && inMode in listOf(EntryMode.EXPENSE, EntryMode.INCOME)	// catégorie encore valable
-	val vAccount  = if (inMode == EntryMode.TRADE && inData.accounts.none { it.id == inForm.accountId && it.type == AccountType.BROKERAGE })
-		inData.accounts.firstOrNull { it.type == AccountType.BROKERAGE }?.id else inForm.accountId	// compte retenu
-	return inForm.copy(mode = inMode, categoryId = if (vKeepCat) inForm.categoryId else null, accountId = vAccount)
 }
 
 /*

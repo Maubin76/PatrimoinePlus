@@ -11,6 +11,8 @@ import fr.maubin.patrimoineplus.ui.entry.checkEntry
 import fr.maubin.patrimoineplus.ui.entry.editEntryForm
 import fr.maubin.patrimoineplus.ui.entry.kNewAsset
 import fr.maubin.patrimoineplus.ui.entry.newEntryForm
+import fr.maubin.patrimoineplus.ui.entry.withReferences
+import fr.maubin.patrimoineplus.ui.entry.switchEntryMode
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -101,5 +103,40 @@ class EntryLogicTest
 		val vBuy  = buildEntry(EntryForm(mode = EntryMode.TRADE, accountId = vPea.id, assetId = kNewAsset, newAsset = "ETF Asie", side = TradeSide.BUY, quantity = "2", price = "50", date = kToday), kData, inNewAssetId = "asie")	// achat
 		assertEquals("Achat ETF Asie", vBuy.label)
 		assertEquals("asie", vBuy.trades.single().assetId)
+	}
+
+	/*
+		Changer de mode remet à zéro ce qui serait invisible dans le nouveau
+		mode (avant, sur PC : un revenu saisi après avoir choisi un actif en
+		mode Ordre devenait un dividende caché).
+	*/
+	@Test
+	fun switchingModeClearsHiddenFields()
+	{
+		val vBourse = kDemo.accounts.first { it.type == AccountType.BROKERAGE }		// compte Bourse
+		val vOrder  = newEntryForm(kData, vBourse.id, kToday).copy(assetId = kDemo.assets.first().id, newIsin = "FR0000000001")	// ordre avec actif
+		val vIncome = switchEntryMode(vOrder, EntryMode.INCOME, kData)					// devenu revenu
+		assertEquals(EntryMode.INCOME, vIncome.mode)
+		assertEquals(null, vIncome.assetId)
+		assertEquals("", vIncome.newIsin)
+		val vRefund = switchEntryMode(newEntryForm(kData, null, kToday).copy(refund = true), EntryMode.TRANSFER, kData)	// remboursement devenu virement
+		assertEquals(false, vRefund.refund)
+	}
+
+	/*
+		Modifier un ordre d'un compte Bourse archivé : le compte reste disponible
+		et la saisie reste valable (avant : « Choisissez un compte Bourse »).
+	*/
+	@Test
+	fun editingKeepsArchivedAccount()
+	{
+		val vArchived = kDemo.accounts.first { it.type == AccountType.BROKERAGE }.copy(archived = true)	// compte Bourse archivé
+		val vActive   = kData.copy(accounts = kData.accounts.filterNot { it.id == vArchived.id })	// données sans lui
+		val vTx       = kDemo.transactions.first { inTx -> inTx.kind == fr.maubin.patrimoineplus.domain.model.TransactionKind.TRADE && inTx.postings.single().accountId == vArchived.id }	// ordre du compte
+		val vForm     = editEntryForm(vTx, kDemo.categories)						// formulaire de modification
+		assertTrue(checkEntry(vForm, vActive).account != null)
+		val vData     = vActive.withReferences(vForm, kDemo.accounts.map { if (it.id == vArchived.id) vArchived else it }, kDemo.categories)	// avec le compte archivé
+		assertEquals(null, checkEntry(vForm, vData).account)
+		assertTrue(vData.accounts.any { it.id == vArchived.id })
 	}
 }
