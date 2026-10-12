@@ -187,3 +187,5 @@ data class AssetPrice(
 	val date      : LocalDate,
 	val unitPrice : Long
 )
+
+const val kOpeningLabel = "Solde initial"										// libellé des soldes initiaux

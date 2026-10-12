@@ -8,6 +8,7 @@ import fr.maubin.patrimoineplus.data.db.toHeaderEntity
 import fr.maubin.patrimoineplus.data.db.toPostingEntities
 import fr.maubin.patrimoineplus.data.db.toTradeEntities
 import fr.maubin.patrimoineplus.domain.model.Account
+import fr.maubin.patrimoineplus.domain.model.kOpeningLabel
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.domain.model.Posting
 import fr.maubin.patrimoineplus.domain.model.Trade
@@ -24,7 +25,6 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
-const val kOpeningLabel = "Solde initial"										// libellé des soldes initiaux
 
 /*
 	Résultat d'un enregistrement : accepté (avec l'identifiant) ou refusé (avec

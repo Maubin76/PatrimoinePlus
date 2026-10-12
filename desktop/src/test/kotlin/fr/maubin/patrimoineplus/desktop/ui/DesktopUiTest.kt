@@ -53,7 +53,7 @@ class DesktopUiTest
 		fCompose.onNodeWithText("Essayer avec la démonstration").performClick()
 		fCompose.onNodeWithText("Patrimoine").assertExists()
 		fCompose.onNodeWithText("Répartition").assertExists()
-		fCompose.onNodeWithText("Démonstration : données fictives, rien n’est synchronisé.").assertExists()
+		fCompose.onNodeWithText("Démonstration : données fictives, modifiables, jamais enregistrées.").assertExists()
 		fCompose.onNodeWithText("Comptes").performClick()
 		fCompose.onNodeWithText("Livret A").performClick()
 		fCompose.onNodeWithText("Solde au jour").assertExists()

@@ -74,7 +74,7 @@ class WorkspaceTest
 		assertEquals(LoadStatus.Waiting, vSpace.state.value.status)
 		writeExchange(vFolder, demoBackupFile(), 1_000)
 		vSpace.reload()
-		assertTrue(vSpace.state.value.status is LoadStatus.Loaded)
+		assertTrue(vSpace.state.value.status is LoadStatus.Synced)
 		assertEquals(demoBackupFile().accounts.size, vSpace.state.value.data.accounts.size)
 		assertEquals(demoBackupFile().transactions.size, vSpace.state.value.data.transactions.size)
 	}

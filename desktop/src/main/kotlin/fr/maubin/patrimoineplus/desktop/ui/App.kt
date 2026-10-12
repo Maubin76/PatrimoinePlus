@@ -197,11 +197,14 @@ private fun StatusBar(
 	val vColors = MaterialTheme.colorScheme										// palette courante
 	val vText   = when (val vStatus = inSpace.status)							// état, en clair
 	{
-		LoadStatus.Demo       -> "Démonstration : données fictives, rien n’est synchronisé."
-		LoadStatus.Waiting    -> "Dossier ${(inSpace.source as? Source.Folder)?.path} : fichier d’échange pas encore présent. Activez la synchronisation sur le téléphone."
-		is LoadStatus.Loaded  -> "Dossier ${(inSpace.source as? Source.Folder)?.path} — lu à ${Instant.ofEpochMilli(vStatus.at).atZone(ZoneId.systemDefault()).format(kTimeFormat)}, mis à jour automatiquement."
-		is LoadStatus.Invalid -> "Fichier d’échange refusé (${vStatus.message}) : dernières données valides affichées."
-		LoadStatus.Idle       -> ""
+		LoadStatus.Demo           -> "Démonstration : données fictives, modifiables, jamais enregistrées."
+		LoadStatus.Waiting        -> "Dossier ${(inSpace.source as? Source.Folder)?.path} : fichier d’échange pas encore présent. Activez la synchronisation sur le téléphone, ou saisissez ici."
+		is LoadStatus.Synced      -> "Synchronisé avec ${(inSpace.source as? Source.Folder)?.path} à ${Instant.ofEpochMilli(vStatus.at).atZone(ZoneId.systemDefault()).format(kTimeFormat)}."
+		LoadStatus.Pending        -> "Modifications en cours d’enregistrement…"
+		is LoadStatus.Invalid     -> "Fichier d’échange refusé (${vStatus.message}) : rien n’est enregistré, dernières données valides affichées."
+		is LoadStatus.Conflict    -> "Conflit : choisissez la version à garder."
+		is LoadStatus.WriteFailed -> "Enregistrement impossible : ${vStatus.message}."
+		LoadStatus.Idle           -> ""
 	}
 	Row(
 		modifier          = Modifier.fillMaxWidth().height(56.dp).padding(start = 24.dp, end = 12.dp),
@@ -210,7 +213,7 @@ private fun StatusBar(
 		Text(
 			text     = vText,
 			style    = MaterialTheme.typography.bodyMedium,
-			color    = if (inSpace.status is LoadStatus.Invalid) vColors.error else vColors.onSurfaceVariant,
+			color    = if (inSpace.status is LoadStatus.Invalid || inSpace.status is LoadStatus.WriteFailed || inSpace.status is LoadStatus.Conflict) vColors.error else vColors.onSurfaceVariant,
 			modifier = Modifier.weight(1f)
 		)
 		val vHidden = LocalAmountsHidden.current								// mode discret actif
