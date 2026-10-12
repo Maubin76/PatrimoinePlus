@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performTextClearance
@@ -84,7 +85,7 @@ class DesktopEditingTest
 	private fun pick(inLabel: String, inChoice: String)
 	{
 		fCompose.onNodeWithText(inLabel).performClick()
-		fCompose.onNodeWithText(inChoice).performClick()
+		fCompose.onAllNodesWithText(inChoice).onLast().performClick()				// le menu s'ouvre au-dessus du reste
 	}
 
 	/*
@@ -155,10 +156,9 @@ class DesktopEditingTest
 	fun createAccountThroughPanel()
 	{
 		val vApp = demoApp()														// contrôleur
-		vApp.show(Screen.ACCOUNTS)
-		fCompose.onNodeWithText("Ajouter un compte").performClick()
+		fCompose.onNodeWithText("Ajouter un compte").performScrollTo().performClick()
 		type("Nom", "Livret jeune")
-		fCompose.onNodeWithText("Épargne").performClick()
+		fCompose.onAllNodesWithText("Épargne").onLast().performClick()		// choix du panneau (la répartition affiche aussi « Épargne »)
 		type("Solde initial (€)", "1 600")
 		fCompose.onNodeWithText("Enregistrer").performClick()
 		fCompose.waitForIdle()

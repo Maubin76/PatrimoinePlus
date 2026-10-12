@@ -39,22 +39,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.ResolverStyle
 
 val kPanelWidth = 440.dp																// largeur du panneau latéral
 
+// Action principale du panneau ouvert (Entrée dans un champ) ; fournie par SidePanel.
+val LocalPanelSubmit = staticCompositionLocalOf<() -> Unit> { {} }
+
 /*
 	Panneau latéral de saisie, à droite de la page : titre et bouton de
-	fermeture, champs défilants, actions en bas. Échap ferme, Entrée lance
-	l'action principale.
+	fermeture, champs défilants, actions en bas. Échap ferme ; Entrée (ou
+	Entrée du pavé numérique) dans un champ lance l'action principale, mais
+	sur un bouton qui a le focus (« Supprimer »…), c'est ce bouton qui agit.
 	inTitle   : titre
 	inOnClose : fermeture
 	inOnEnter : action principale (Entrée)
@@ -78,24 +85,23 @@ fun SidePanel(
 				.fillMaxWidth()
 				.background(MaterialTheme.colorScheme.surface)
 				.onPreviewKeyEvent { inEvent ->
-					when
-					{
-						inEvent.type != KeyEventType.KeyDown -> false
-						inEvent.key == Key.Escape            -> { inOnClose(); true }
-						inEvent.key == Key.Enter             -> { inOnEnter(); true }
-						else                                 -> false
-					}
+					if (inEvent.type == KeyEventType.KeyDown && inEvent.key == Key.Escape) { inOnClose(); true } else false
+				}
+				.onKeyEvent { inEvent ->
+					if (inEvent.type == KeyEventType.KeyDown && (inEvent.key == Key.Enter || inEvent.key == Key.NumPadEnter)) { inOnEnter(); true } else false
 				}
 		) {
 			Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 8.dp, top = 12.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
 				Text(inTitle, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
 				IconButton(onClick = inOnClose) { Icon(LineIcons.Close, contentDescription = "Fermer") }
 			}
-			Column(
-				modifier            = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 12.dp),
-				verticalArrangement = Arrangement.spacedBy(14.dp),
-				content             = inContent
-			)
+			CompositionLocalProvider(LocalPanelSubmit provides inOnEnter) {
+				Column(
+					modifier            = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 12.dp),
+					verticalArrangement = Arrangement.spacedBy(14.dp),
+					content             = inContent
+				)
+			}
 			HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 			Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)) {
 				inActions()
@@ -123,6 +129,7 @@ fun FormField(
 	inNumeric  : Boolean = false
 )
 {
+	val vSubmit = LocalPanelSubmit.current										// action principale du panneau
 	OutlinedTextField(
 		value           = inValue,
 		onValueChange   = inOnChange,
@@ -130,34 +137,39 @@ fun FormField(
 		singleLine      = true,
 		isError         = inError != null,
 		supportingText  = (inError ?: inSupport)?.let { { Text(it) } },
-		keyboardOptions = if (inNumeric) KeyboardOptions(keyboardType = KeyboardType.Decimal) else KeyboardOptions.Default,
+		keyboardOptions = KeyboardOptions(keyboardType = if (inNumeric) KeyboardType.Decimal else KeyboardType.Text, imeAction = ImeAction.Done),
+		keyboardActions = KeyboardActions(onDone = { vSubmit() }),
 		modifier        = Modifier.fillMaxWidth()
 	)
 }
 
 /*
-	Champ de date au format JJ/MM/AAAA ; la date n'est rendue que si elle est
-	valide.
-	inDate     : date actuelle
-	inOnChange : nouvelle date valide
+	Champ de date au format JJ/MM/AAAA (« 5/3/2026 » accepté). À chaque
+	frappe, la date lue est rendue, ou null tant qu'elle est illisible ou
+	impossible : le panneau refuse alors d'enregistrer (avant : l'ancienne
+	date était gardée en silence).
+	inDate     : date de départ
+	inOnChange : date lue ; null si illisible
 	inLabel    : libellé
 */
 @Composable
 fun DateField(
 	inDate     : LocalDate,
-	inOnChange : (LocalDate) -> Unit,
+	inOnChange : (LocalDate?) -> Unit,
 	inLabel    : String
 )
 {
-	var vText by remember(inDate) { mutableStateOf(formatFrenchDate(inDate)) }	// texte saisi
+	var vText by remember { mutableStateOf(formatFrenchDate(inDate)) }			// texte saisi
 	val vParsed = parseFrenchDate(vText)										// date lue
 	FormField(
 		inValue    = vText,
-		inOnChange = { inText -> vText = inText; parseFrenchDate(inText)?.let(inOnChange) },
+		inOnChange = { inText -> vText = inText; inOnChange(parseFrenchDate(inText)) },
 		inLabel    = inLabel,
-		inError    = if (vParsed == null) "Date illisible (JJ/MM/AAAA)." else null
+		inError    = if (vParsed == null) kBadDate else null
 	)
 }
+
+const val kBadDate = "Date illisible : JJ/MM/AAAA."										// date refusée
 
 /*
 	Liste déroulante : un champ cliquable qui montre le choix courant.

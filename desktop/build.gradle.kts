@@ -44,8 +44,9 @@ compose.desktop {
 			packageVersion = "1.0.0"
 			description    = "Suivi du patrimoine et des dépenses"
 			vendor         = "Mathieu Aubin"
-			// Modules de la JVM embarquée : suggestRuntimeModules, plus java.xml (lecture des classeurs).
-			modules("java.instrument", "jdk.unsupported", "java.xml")
+			// Modules de la JVM embarquée : suggestRuntimeModules, plus java.xml (lecture des classeurs)
+			// et jdk.localedata (mois et jours en français ; sans lui : « 12 Oct 2026 »).
+			modules("java.instrument", "jdk.unsupported", "java.xml", "jdk.localedata")
 
 			windows {
 				iconFile.set(project.file("icons/patrimoineplus.ico"))

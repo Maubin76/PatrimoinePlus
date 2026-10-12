@@ -51,6 +51,7 @@ fun AccountPanel(
 	}																			// saisie
 	var vError   by remember(inAccountId) { mutableStateOf<String?>(null) }	// erreur affichée
 	var vDelete  by remember(inAccountId) { mutableStateOf(false) }			// confirmation de suppression
+	var vDateBad by remember(inAccountId) { mutableStateOf(false) }			// date du solde initial illisible
 
 	/*
 		Enregistre : création, ou modification puis solde initial.
@@ -63,6 +64,7 @@ fun AccountPanel(
 		{
 			vShare == null -> "Part détenue illisible (1 à 100)."
 			vCents == null -> "Solde initial illisible (ex. 1 250,00)."
+			vDateBad       -> kBadDate
 			else           -> null
 		}
 		if (vError != null) return
@@ -111,7 +113,7 @@ fun AccountPanel(
 		FormField(vForm.institution, { vForm = vForm.copy(institution = it) }, "Établissement (facultatif)")
 		FormField(vForm.share, { vForm = vForm.copy(share = it) }, "Part détenue (%)", inSupport = "50 pour un compte joint à deux.", inNumeric = true)
 		FormField(vForm.opening, { vForm = vForm.copy(opening = it) }, "Solde initial (€)", inSupport = "Solde à la date ci-dessous ; vide : aucun.", inNumeric = true)
-		DateField(vForm.openingDate, { vForm = vForm.copy(openingDate = it) }, "Date du solde initial")
+		DateField(vForm.openingDate, { inDate -> vDateBad = inDate == null; inDate?.let { vForm = vForm.copy(openingDate = it) } }, "Date du solde initial")
 	}
 
 	if (vDelete && vAccount != null)

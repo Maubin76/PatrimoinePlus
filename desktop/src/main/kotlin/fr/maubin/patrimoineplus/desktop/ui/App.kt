@@ -1,8 +1,8 @@
 package fr.maubin.patrimoineplus.desktop.ui
 
-import fr.maubin.patrimoineplus.ui.theme.isDark
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,20 +18,46 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.foundation.focusable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import fr.maubin.patrimoineplus.desktop.DesktopController
 import fr.maubin.patrimoineplus.desktop.Panel
+import fr.maubin.patrimoineplus.desktop.PendingAction
+import fr.maubin.patrimoineplus.desktop.Screen
+import fr.maubin.patrimoineplus.desktop.data.LoadStatus
+import fr.maubin.patrimoineplus.desktop.data.Source
+import fr.maubin.patrimoineplus.desktop.data.WorkspaceState
 import fr.maubin.patrimoineplus.desktop.ui.panels.AccountPanel
 import fr.maubin.patrimoineplus.desktop.ui.panels.AssetPanel
 import fr.maubin.patrimoineplus.desktop.ui.panels.CategoryPanel
@@ -39,39 +65,16 @@ import fr.maubin.patrimoineplus.desktop.ui.panels.OpeningPositionPanel
 import fr.maubin.patrimoineplus.desktop.ui.panels.OperationPanel
 import fr.maubin.patrimoineplus.desktop.ui.panels.PricesPanel
 import fr.maubin.patrimoineplus.desktop.ui.panels.StatementPanel
+import fr.maubin.patrimoineplus.desktop.ui.screens.AccountScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.CategoriesScreen
-import androidx.compose.material3.Icon
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
-import fr.maubin.patrimoineplus.desktop.DesktopController
-import fr.maubin.patrimoineplus.desktop.Screen
-import fr.maubin.patrimoineplus.desktop.data.LoadStatus
-import fr.maubin.patrimoineplus.desktop.data.Source
-import fr.maubin.patrimoineplus.desktop.data.WorkspaceState
+import fr.maubin.patrimoineplus.desktop.ui.screens.DashboardScreen
+import fr.maubin.patrimoineplus.desktop.ui.screens.SettingsScreen
+import fr.maubin.patrimoineplus.desktop.ui.screens.WelcomeScreen
 import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
 import fr.maubin.patrimoineplus.ui.components.PatrimoineLogo
 import fr.maubin.patrimoineplus.ui.icons.LineIcons
-import fr.maubin.patrimoineplus.desktop.ui.screens.AccountScreen
-import fr.maubin.patrimoineplus.desktop.ui.screens.AccountsScreen
-import fr.maubin.patrimoineplus.desktop.ui.screens.HomeScreen
-import fr.maubin.patrimoineplus.desktop.ui.screens.SettingsScreen
-import fr.maubin.patrimoineplus.desktop.ui.screens.WelcomeScreen
 import fr.maubin.patrimoineplus.ui.theme.PatrimoineTheme
+import fr.maubin.patrimoineplus.ui.theme.isDark
 import java.nio.file.Path
 import java.time.Instant
 import java.time.ZoneId
@@ -79,24 +82,26 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
-val kContentMaxWidth    = 1180.dp													// largeur maximale du contenu
+val kContentMaxWidth    = 1600.dp													// largeur maximale du contenu
 
 /*
 	Racine de l'appli PC : thème selon l'apparence choisie, mode discret, puis
 	écran d'accueil (aucune source) ou appli complète.
-	inController   : contrôleur
-	inOnPickFolder : ouvre le sélecteur de dossier ; rend le dossier choisi ou null
+	inController     : contrôleur
+	inOnPickSaveFile : choix d'un fichier où enregistrer une copie ; null si annulé
+	inOnPickFolder   : ouvre le sélecteur de dossier ; rend le dossier choisi ou null
 */
 @Composable
 fun App(
-	inController   : DesktopController,
-	inOnPickFolder : () -> Path?
+	inController     : DesktopController,
+	inOnPickSaveFile : () -> Path? = { null },
+	inOnPickFolder   : () -> Path?
 )
 {
 	val vSettings by inController.settings.collectAsState()					// réglages
 	val vSpace    by inController.workspace.collectAsState()				// données
-	val vDark     = vSettings.appearance.isDark()									// mode sombre effectif
-	PatrimoineTheme(inDarkTheme = vDark, inTrendColors = vSettings.trend) {
+	val vPending  by inController.pending.collectAsState()					// action retenue
+	PatrimoineTheme(inDarkTheme = vSettings.appearance.isDark(), inTrendColors = vSettings.trend) {
 		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden) {
 			Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
 				if (vSpace.source == Source.None)
@@ -110,6 +115,7 @@ fun App(
 				{
 					Shell(inController, vSpace, inOnPickFolder)
 				}
+				vPending?.let { inAction -> UnsavedDialog(inAction, inController, inOnPickSaveFile) }
 			}
 		}
 	}
@@ -117,7 +123,8 @@ fun App(
 
 /*
 	Appli complète : barre latérale de navigation à gauche, bandeau d'état en
-	haut, écran courant au centre (largeur limitée sur grand écran).
+	haut, écran courant au centre (largeur limitée sur très grand écran),
+	panneau de saisie à droite.
 	inController   : contrôleur
 	inSpace        : données et état de la lecture
 	inOnPickFolder : sélecteur de dossier
@@ -129,10 +136,12 @@ private fun Shell(
 	inOnPickFolder : () -> Path?
 )
 {
-	val vNav   by inController.navigation.collectAsState()					// position
-	val vPanel by inController.panel.collectAsState()						// panneau de saisie ouvert
-	val vFocus = remember { FocusRequester() }									// focus clavier de la fenêtre (raccourcis)
+	val vNav    by inController.navigation.collectAsState()					// position
+	val vPanel  by inController.panel.collectAsState()						// panneau de saisie ouvert
+	val vNotice by inController.notice.collectAsState()						// message ponctuel
+	val vFocus  = remember { FocusRequester() }									// focus clavier de secours (raccourcis)
 	LaunchedEffect(Unit) { vFocus.requestFocus() }
+	LaunchedEffect(inSpace.data) { inController.dropStalePanel() }
 	Row(
 		Modifier.fillMaxSize().focusRequester(vFocus).focusable().onPreviewKeyEvent { inEvent ->
 			if (inEvent.type == KeyEventType.KeyDown && inEvent.isCtrlPressed && inEvent.key == Key.N)
@@ -146,31 +155,33 @@ private fun Shell(
 		Rail(vNav.screen, inController::show)
 		VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 		Column(Modifier.weight(1f).fillMaxHeight()) {
-			StatusBar(inSpace, inController::toggleHidden, inController::newOperation)
+			StatusBar(inSpace, vNotice, inController)
 			HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 			Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
 				Box(Modifier.widthIn(max = kContentMaxWidth).fillMaxSize()) {
 					when
 					{
-						vNav.accountId != null         -> AccountScreen(inSpace, inController, vNav.accountId!!, vNav.month)
-						vNav.screen == Screen.HOME       -> HomeScreen(inSpace) { inController.show(Screen.ACCOUNTS) }
-						vNav.screen == Screen.ACCOUNTS   -> AccountsScreen(inSpace, inController)
+						vNav.accountId != null           -> AccountScreen(inSpace, inController, vNav.accountId!!, vNav.month)
+						vNav.screen == Screen.DASHBOARD  -> DashboardScreen(inSpace, inController)
 						vNav.screen == Screen.CATEGORIES -> CategoriesScreen(inSpace, inController)
 						else                             -> SettingsScreen(inController, inOnPickFolder)
 					}
 				}
 			}
 		}
-		when (val vOpen = vPanel)
-		{
-			null                         -> Unit
-			is Panel.Operation           -> OperationPanel(inController, vOpen.form)
-			is Panel.AccountSheet        -> AccountPanel(inController, vOpen.accountId)
-			is Panel.CategorySheet       -> CategoryPanel(inController, vOpen.categoryId, vOpen.kind)
-			is Panel.Statement           -> StatementPanel(inController, vOpen.accountId)
-			is Panel.Prices              -> PricesPanel(inController, vOpen.accountId)
-			is Panel.OpeningPosition     -> OpeningPositionPanel(inController, vOpen.accountId)
-			is Panel.AssetSheet          -> AssetPanel(inController, vOpen.assetId)
+		vPanel?.let { inOpen ->
+			key(inOpen.token) {
+				when (inOpen)
+				{
+					is Panel.Operation       -> OperationPanel(inController, inOpen.form)
+					is Panel.AccountSheet    -> AccountPanel(inController, inOpen.accountId)
+					is Panel.CategorySheet   -> CategoryPanel(inController, inOpen.categoryId, inOpen.kind)
+					is Panel.Statement       -> StatementPanel(inController, inOpen.accountId)
+					is Panel.Prices          -> PricesPanel(inController, inOpen.accountId)
+					is Panel.OpeningPosition -> OpeningPositionPanel(inController, inOpen.accountId)
+					is Panel.AssetSheet      -> AssetPanel(inController, inOpen.assetId)
+				}
+			}
 		}
 	}
 	(inSpace.status as? LoadStatus.Conflict)?.let { inConflict ->
@@ -191,6 +202,46 @@ private fun Shell(
 }
 
 /*
+	Fenêtre des modifications non écrites : avant de fermer l'appli ou de
+	changer de source, l'utilisateur peut enregistrer une copie de ses
+	données, continuer quand même, ou annuler.
+	inAction         : action retenue
+	inController     : contrôleur
+	inOnPickSaveFile : choix du fichier de la copie
+*/
+@Composable
+private fun UnsavedDialog(
+	inAction         : PendingAction,
+	inController     : DesktopController,
+	inOnPickSaveFile : () -> Path?
+)
+{
+	var vMessage by remember { mutableStateOf<String?>(null) }						// résultat de la copie
+	AlertDialog(
+		onDismissRequest = inController::cancelPending,
+		title            = { Text("Modifications non enregistrées") },
+		text             = {
+			Text(
+				"Des modifications faites sur ce PC n’ont pas pu être écrites dans le fichier synchronisé. ${inAction.reason}\n\n" +
+				"« ${inAction.label} » les ferait perdre. Enregistrez d’abord une copie (classeur Excel) pour les garder." +
+				(vMessage?.let { "\n\n$it" } ?: "")
+			)
+		},
+		confirmButton    = {
+			Row {
+				TextButton(onClick = {
+					inOnPickSaveFile()?.let { inPath ->
+						vMessage = inController.saveCopy(inPath)?.let { "Copie impossible : $it" } ?: "Copie enregistrée : $inPath"
+					}
+				}) { Text("Enregistrer une copie…") }
+				TextButton(onClick = inController::confirmPending) { Text("${inAction.label} quand même") }
+			}
+		},
+		dismissButton    = { TextButton(onClick = inController::cancelPending) { Text("Annuler") } }
+	)
+}
+
+/*
 	Barre latérale : logo, puis un bouton par écran principal (l'écran actif est
 	plein).
 	inScreen   : écran actif
@@ -204,7 +255,7 @@ private fun Rail(
 {
 	val vColors = MaterialTheme.colorScheme										// palette courante
 	Column(
-		modifier            = Modifier.fillMaxHeight().width(208.dp).padding(16.dp),
+		modifier            = Modifier.fillMaxHeight().width(220.dp).padding(16.dp),
 		verticalArrangement = Arrangement.spacedBy(4.dp)
 	) {
 		Row(Modifier.padding(start = 8.dp, top = 8.dp, bottom = 24.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -225,7 +276,7 @@ private fun Rail(
 				verticalAlignment = Alignment.CenterVertically
 			) {
 				Icon(
-					imageVector        = when (inEntry) { Screen.HOME -> LineIcons.Home; Screen.ACCOUNTS -> LineIcons.Wallet; Screen.CATEGORIES -> LineIcons.Grid; Screen.SETTINGS -> LineIcons.Sliders },
+					imageVector        = when (inEntry) { Screen.DASHBOARD -> LineIcons.Home; Screen.CATEGORIES -> LineIcons.Grid; Screen.SETTINGS -> LineIcons.Sliders },
 					contentDescription = null,
 					tint               = if (vActive) vColors.onPrimary else vColors.onSurface,
 					modifier           = Modifier.size(20.dp)
@@ -239,20 +290,21 @@ private fun Rail(
 
 /*
 	Bandeau d'état : source des données (démonstration, dossier et dernière
-	lecture, attente, fichier refusé) et bouton du mode discret.
-	inSpace          : données et état de la lecture
-	inOnToggleHidden : bascule le mode discret
-	inOnNew          : nouvelle opération
+	lecture, attente, fichier refusé), message ponctuel, nouvelle opération
+	et mode discret.
+	inSpace      : données et état de la lecture
+	inNotice     : message ponctuel ; null sans message
+	inController : contrôleur
 */
 @Composable
 private fun StatusBar(
-	inSpace          : WorkspaceState,
-	inOnToggleHidden : () -> Unit,
-	inOnNew          : () -> Unit
+	inSpace      : WorkspaceState,
+	inNotice     : String?,
+	inController : DesktopController
 )
 {
 	val vColors = MaterialTheme.colorScheme										// palette courante
-	val vText   = when (val vStatus = inSpace.status)							// état, en clair
+	val vText   = inNotice ?: when (val vStatus = inSpace.status)				// état, en clair
 	{
 		LoadStatus.Demo           -> "Démonstration : données fictives, modifiables, jamais enregistrées."
 		LoadStatus.Waiting        -> "Dossier ${(inSpace.source as? Source.Folder)?.path} : fichier d’échange pas encore présent. Activez la synchronisation sur le téléphone, ou saisissez ici."
@@ -260,23 +312,31 @@ private fun StatusBar(
 		LoadStatus.Pending        -> "Modifications en cours d’enregistrement…"
 		is LoadStatus.Invalid     -> "Fichier d’échange refusé (${vStatus.message}) : rien n’est enregistré, dernières données valides affichées."
 		is LoadStatus.Conflict    -> "Conflit : choisissez la version à garder."
-		is LoadStatus.WriteFailed -> "Enregistrement impossible : ${vStatus.message}."
+		is LoadStatus.WriteFailed -> "Enregistrement impossible : ${vStatus.message}. Nouvel essai automatique."
 		LoadStatus.Idle           -> ""
 	}
+	val vAlert  = inNotice == null && (inSpace.status is LoadStatus.Invalid || inSpace.status is LoadStatus.WriteFailed || inSpace.status is LoadStatus.Conflict)	// état anormal
 	Row(
-		modifier          = Modifier.fillMaxWidth().height(56.dp).padding(start = 24.dp, end = 12.dp),
+		modifier          = Modifier.fillMaxWidth().height(60.dp).padding(start = 32.dp, end = 16.dp),
 		verticalAlignment = Alignment.CenterVertically
 	) {
 		Text(
 			text     = vText,
 			style    = MaterialTheme.typography.bodyMedium,
-			color    = if (inSpace.status is LoadStatus.Invalid || inSpace.status is LoadStatus.WriteFailed || inSpace.status is LoadStatus.Conflict) vColors.error else vColors.onSurfaceVariant,
+			color    = if (vAlert) vColors.error else vColors.onSurfaceVariant,
+			maxLines = 2,
+			overflow = TextOverflow.Ellipsis,
 			modifier = Modifier.weight(1f)
 		)
+		if (inNotice != null)
+		{
+			TextButton(onClick = inController::clearNotice) { Text("OK") }
+		}
 		val vHidden = LocalAmountsHidden.current								// mode discret actif
-		Button(onClick = inOnNew) { Text("Nouvelle opération") }
 		Spacer(Modifier.width(8.dp))
-		TextButton(onClick = inOnToggleHidden) {
+		Button(onClick = inController::newOperation) { Text("Nouvelle opération") }
+		Spacer(Modifier.width(8.dp))
+		TextButton(onClick = inController::toggleHidden) {
 			Text(if (vHidden) "Afficher les montants" else "Masquer les montants", style = MaterialTheme.typography.labelLarge)
 		}
 	}

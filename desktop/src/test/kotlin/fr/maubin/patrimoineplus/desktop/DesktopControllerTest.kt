@@ -87,12 +87,12 @@ class DesktopControllerTest
 	{
 		val vApp = controller()													// contrôleur
 		vApp.openDemo()
-		vApp.show(Screen.ACCOUNTS)
+		vApp.show(Screen.CATEGORIES)
 		vApp.openAccount("compte")
 		vApp.showMonth(YearMonth.of(2026, 8))
-		assertEquals(Navigation(Screen.ACCOUNTS, "compte", YearMonth.of(2026, 8)), vApp.navigation.value)
+		assertEquals(Navigation(Screen.DASHBOARD, "compte", YearMonth.of(2026, 8)), vApp.navigation.value)
 		vApp.back()
-		assertEquals(Navigation(Screen.ACCOUNTS), vApp.navigation.value)
+		assertEquals(Navigation(Screen.DASHBOARD), vApp.navigation.value)
 		assertNull(vApp.navigation.value.accountId)
 		vApp.openAccount("compte")
 		vApp.openDemo()

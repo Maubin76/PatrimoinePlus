@@ -99,7 +99,7 @@ class WorkspaceSyncTest
 		vSpace.flush()
 		assertTrue(vSpace.state.value.status is LoadStatus.Synced)
 		assertTrue(onDisk().accounts.any { it.name == "Ouvert sur le PC" })
-		assertFalse(Files.exists(folder().resolve(".$kSyncFileName.tmp")))
+		assertFalse(Files.exists(folder().resolve(".syncthing.$kSyncFileName.tmp")))
 		val vBytes = Files.readAllBytes(exchange())									// fichier écrit
 		vSpace.sync()
 		assertArrayEquals(vBytes, Files.readAllBytes(exchange()))

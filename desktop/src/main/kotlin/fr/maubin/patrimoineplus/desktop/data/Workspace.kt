@@ -114,6 +114,7 @@ class Workspace(private val inClock: Clock)
 	private var fStamp    : Pair<Long, Long>? = null								// date et taille du fichier lu
 	private var fDirty    = false													// modifications pas encore écrites
 	private var fConflict : BackupFile? = null										// contenu du fichier en conflit
+	private var fForce    = false													// « Ce PC » choisi : le fichier doit être réécrit
 	private var fScope    : CoroutineScope? = null									// portée de la surveillance
 	private var fWatch    : Job? = null												// surveillance du fichier
 	private var fFlush    : Job? = null												// écriture programmée
@@ -123,6 +124,9 @@ class Workspace(private val inClock: Clock)
 
 	// Contenu complet des données du PC (pour les modifications).
 	val file: BackupFile get() = fFile
+
+	// Vrai si des modifications du PC ne sont pas encore écrites dans le fichier d'échange.
+	val hasUnsavedChanges: Boolean get() = fDirty && fState.value.source is Source.Folder
 
 	/*
 		Ouvre une source.
@@ -142,6 +146,7 @@ class Workspace(private val inClock: Clock)
 		fLastFp   = null
 		fDirty    = false
 		fConflict = null
+		fForce    = false
 		val vToday = LocalDate.now(inClock)										// date de calcul
 		when (inSource)
 		{
@@ -188,9 +193,10 @@ class Workspace(private val inClock: Clock)
 			fFile  = vResult.file
 			fDirty = true
 			val vFolder = fState.value.source is Source.Folder						// données synchronisées
+			val vCalm   = fState.value.status.let { it is LoadStatus.Synced || it is LoadStatus.Pending || it is LoadStatus.Waiting }	// pas d'erreur affichée
 			fState.value = fState.value.copy(
 				data   = fFile.toDataSet(),
-				status = if (vFolder && fState.value.status !is LoadStatus.Conflict) LoadStatus.Pending else fState.value.status
+				status = if (vFolder && vCalm) LoadStatus.Pending else fState.value.status
 			)
 			if (vFolder)
 			{
@@ -211,15 +217,21 @@ class Workspace(private val inClock: Clock)
 	*/
 	fun sync()
 	{
+		refreshDay()
 		val vSource = fState.value.source as? Source.Folder ?: return			// dossier ouvert
 		if (fConflict != null) return
 		val vPath  = vSource.path.resolve(kSyncFileName)							// fichier d'échange
-		val vStamp = stampOf(vPath)													// date et taille
+		val vStamp = stampOf(vPath)													// date et taille, relevées avant la lecture
 		if (vStamp == fStamp && !fDirty)
 		{
 			return
 		}
-		val vOnDisk = if (vStamp == null) null else readFile(vPath) ?: return	// contenu du fichier (null : absent)
+		if (fForce)
+		{
+			export(vPath, syncFingerprint(fFile))
+			return
+		}
+		val vOnDisk = if (vStamp == null) null else readFile(vPath, vStamp) ?: return	// contenu du fichier (null : absent)
 		fStamp = vStamp
 		val vLocalFp = syncFingerprint(fFile)										// empreinte du PC
 		val vFileFp  = vOnDisk?.let { syncFingerprint(it) }						// empreinte du fichier
@@ -239,16 +251,32 @@ class Workspace(private val inClock: Clock)
 
 	/*
 		Tranche un conflit : garder les données du PC (le fichier est réécrit) ou
-		celles du fichier (les données du PC sont remplacées).
+		celles du fichier (les données du PC sont remplacées). Le fichier est
+		relu d'abord : s'il a encore changé pendant que l'utilisateur
+		choisissait, le conflit est présenté à nouveau avec son nouveau contenu
+		(rien n'est écrasé sans avoir été vu).
 		inKeepLocal : vrai pour garder le PC
 	*/
 	fun resolve(inKeepLocal: Boolean)
 	{
 		val vSource = fState.value.source as? Source.Folder ?: return			// dossier ouvert
-		val vFile   = fConflict ?: return											// contenu en conflit
+		val vSeen   = fConflict ?: return											// contenu en conflit, tel que présenté
+		val vPath   = vSource.path.resolve(kSyncFileName)							// fichier d'échange
+		val vStamp  = stampOf(vPath)												// état actuel du fichier
+		val vNow    = if (vStamp == null) null else readFile(vPath, vStamp) ?: return	// contenu actuel (illisible : on attend)
+		if (vNow != null && syncFingerprint(vNow) != syncFingerprint(vSeen))
+		{
+			fConflict = vNow
+			fStamp    = vStamp
+			fState.value = fState.value.copy(status = LoadStatus.Conflict(fFile.contents, vNow.contents))
+			return
+		}
+		val vFile = vNow ?: vSeen													// contenu retenu côté fichier
 		fConflict = null
+		fStamp    = vStamp
 		if (inKeepLocal)
 		{
+			fForce = true
 			export(vSource.path.resolve(kSyncFileName), syncFingerprint(fFile))
 		}
 		else
@@ -258,12 +286,37 @@ class Workspace(private val inClock: Clock)
 	}
 
 	/*
-		Écrit tout de suite les modifications en attente (fermeture de l'appli).
+		Écrit tout de suite les modifications en attente (fermeture de l'appli,
+		changement de source) ; rend vrai si plus rien n'est en attente.
 	*/
-	fun flush()
+	fun flush(): Boolean
 	{
 		fFlush?.cancel()
 		if (fDirty) sync()
+		return !hasUnsavedChanges
+	}
+
+	/*
+		Enregistre une copie des données du PC dans un classeur choisi (quand
+		le fichier d'échange ne peut pas être écrit : conflit, fichier refusé).
+		inPath : fichier à écrire
+		Retour : null si écrit ; sinon la raison de l'échec
+	*/
+	fun saveCopy(inPath: Path): String? =
+		runCatching { Files.newOutputStream(inPath).use { writeBackupXlsx(fFile.copy(exportedAt = Instant.now(inClock).toString()), it) } }
+			.exceptionOrNull()?.let { it.message ?: "erreur inconnue" }
+
+	/*
+		Met à jour la date de calcul si le jour a changé (appli restée ouverte
+		après minuit).
+	*/
+	fun refreshDay()
+	{
+		val vToday = LocalDate.now(inClock)											// date du jour
+		if (vToday != fState.value.today)
+		{
+			fState.value = fState.value.copy(today = vToday)
+		}
 	}
 
 	/*
@@ -282,7 +335,7 @@ class Workspace(private val inClock: Clock)
 		inFingerprint : String
 	)
 	{
-		val vTemp = inPath.resolveSibling(".$kSyncFileName.tmp")					// fichier temporaire
+		val vTemp = inPath.resolveSibling(".syncthing.$kSyncFileName.tmp")		// fichier temporaire (nom ignoré par Syncthing)
 		try
 		{
 			Files.newOutputStream(vTemp).use { writeBackupXlsx(fFile.copy(exportedAt = Instant.now(inClock).toString()), it) }
@@ -295,11 +348,13 @@ class Workspace(private val inClock: Clock)
 				Files.move(vTemp, inPath, StandardCopyOption.REPLACE_EXISTING)
 			}
 			fStamp = stampOf(inPath)
+			fForce = false
 			record(inFingerprint)
 		}
 		catch (inError: Exception)
 		{
 			runCatching { Files.deleteIfExists(vTemp) }
+			fDirty = true															// nouvel essai à la prochaine surveillance
 			fState.value = fState.value.copy(status = LoadStatus.WriteFailed(inError.message ?: "erreur inconnue"))
 		}
 	}
@@ -341,9 +396,15 @@ class Workspace(private val inClock: Clock)
 
 	/*
 		Lit et vérifie le fichier ; null (et état « illisible ») s'il est refusé.
-		inPath : fichier d'échange
+		Refusé, il est mémorisé avec l'état relevé avant la lecture : il sera
+		relu dès qu'il change (copie terminée, nouvelle version).
+		inPath  : fichier d'échange
+		inStamp : date et taille relevées avant la lecture
 	*/
-	private fun readFile(inPath: Path): BackupFile?
+	private fun readFile(
+		inPath  : Path,
+		inStamp : Pair<Long, Long>
+	): BackupFile?
 	{
 		val vRead = runCatching { Files.newInputStream(inPath).use { readBackupXlsx(it) } }
 			.getOrElse { BackupRead.Invalid("Lecture impossible : ${it.message}") }	// fichier vérifié
@@ -352,7 +413,7 @@ class Workspace(private val inClock: Clock)
 			is BackupRead.Valid   -> vRead.file
 			is BackupRead.Invalid ->
 			{
-				fStamp = stampOf(inPath)
+				fStamp = inStamp
 				fState.value = fState.value.copy(status = LoadStatus.Invalid(vRead.message))
 				null
 			}

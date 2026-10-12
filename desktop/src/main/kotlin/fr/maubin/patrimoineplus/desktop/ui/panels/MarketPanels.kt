@@ -1,5 +1,6 @@
 package fr.maubin.patrimoineplus.desktop.ui.panels
 
+import java.time.LocalDate
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,7 +32,7 @@ fun StatementPanel(
 	inAccountId  : String
 )
 {
-	var vDate   by remember(inAccountId) { mutableStateOf(inController.today()) }	// date du relevé
+	var vDate   by remember(inAccountId) { mutableStateOf<LocalDate?>(inController.today()) }	// date du relevé ; null si illisible
 	var vAmount by remember(inAccountId) { mutableStateOf("") }					// solde saisi
 	var vError  by remember(inAccountId) { mutableStateOf<String?>(null) }		// erreur affichée
 
@@ -41,20 +42,23 @@ fun StatementPanel(
 	fun save()
 	{
 		val vCents = parseEuros(vAmount) ?: run { vError = "Montant illisible (ex. 12 038,20)."; return }	// solde lu
-		finish(inController, inController.edit { inController.editor.putStatement(it, inAccountId, vDate, vCents) }) { vError = it }
+		val vDay   = vDate ?: run { vError = kBadDate; return }						// date lue
+		finish(inController, inController.edit { inController.editor.putStatement(it, inAccountId, vDay, vCents) }) { vError = it }
 	}
 
 	SidePanel("Nouveau relevé", inController::closePanel, ::save, { Button(onClick = ::save) { Text("Enregistrer") } }) {
 		FormError(vError)
 		FormField(vAmount, { vAmount = it }, "Solde indiqué par la banque (€)", inNumeric = true)
-		DateField(vDate, { vDate = it }, "Date du relevé")
+		DateField(inController.today(), { vDate = it }, "Date du relevé")
 	}
 }
 
 /*
 	Saisie manuelle des cours des positions d'un compte Bourse, tous à une même
 	date ; chaque champ est prérempli avec le cours utilisé aujourd'hui (les
-	cours automatiques viennent du téléphone).
+	cours automatiques viennent du téléphone). Seuls les cours modifiés sont
+	enregistrés : un cours laissé tel quel ne devient pas un cours saisi à la
+	main.
 	inController : contrôleur
 	inAccountId  : compte Bourse
 */
@@ -69,8 +73,9 @@ fun PricesPanel(
 		valuePortfolio(Ledger(vSpace.data.transactions), inAccountId, vSpace.today, vSpace.data.prices).positions
 	}																			// positions détenues
 	val vNames     = vSpace.data.assets.associate { it.id to it.name }		// noms des actifs
-	var vDate      by remember(inAccountId) { mutableStateOf(inController.today()) }	// date des cours
-	val vInputs    = remember(inAccountId) { mutableStateMapOf<String, String>().apply { vPositions.forEach { put(it.assetId, editableScaled(it.unitPrice)) } } }	// cours saisis
+	var vDate      by remember(inAccountId) { mutableStateOf<LocalDate?>(inController.today()) }	// date des cours ; null si illisible
+	val vStart     = remember(inAccountId) { vPositions.associate { it.assetId to editableScaled(it.unitPrice) } }	// cours proposés
+	val vInputs    = remember(inAccountId) { mutableStateMapOf<String, String>().apply { putAll(vStart) } }	// cours saisis
 	var vError     by remember(inAccountId) { mutableStateOf<String?>(null) }	// erreur affichée
 
 	/*
@@ -78,19 +83,26 @@ fun PricesPanel(
 	*/
 	fun save()
 	{
-		val vPrices = vInputs.mapNotNull { (inAsset, inText) -> parseScaled(inText)?.takeIf { it > 0 }?.let { inAsset to it } }.toMap()	// cours lus
-		if (vPrices.size != vInputs.size)
+		val vChanged = vInputs.filter { (inAsset, inText) -> inText.trim() != vStart[inAsset] }	// cours modifiés
+		val vPrices  = vChanged.mapNotNull { (inAsset, inText) -> parseScaled(inText)?.takeIf { it > 0 }?.let { inAsset to it } }.toMap()	// cours lus
+		val vDay     = vDate ?: run { vError = kBadDate; return }					// date lue
+		if (vPrices.size != vChanged.size)
 		{
 			vError = "Un cours est illisible ou nul (ex. 144,91)."
 			return
 		}
-		finish(inController, inController.edit { inController.editor.putPrices(it, vDate, vPrices) }) { vError = it }
+		if (vPrices.isEmpty())
+		{
+			inController.closePanel()
+			return
+		}
+		finish(inController, inController.edit { inController.editor.putPrices(it, vDay, vPrices) }) { vError = it }
 	}
 
 	SidePanel("Saisir des cours", inController::closePanel, ::save, { Button(onClick = ::save) { Text("Enregistrer") } }) {
 		FormError(vError)
 		Text("Les cours automatiques sont récupérés par le téléphone ; saisissez ici un cours manquant ou corrigé.")
-		DateField(vDate, { vDate = it }, "Date des cours")
+		DateField(inController.today(), { vDate = it }, "Date des cours")
 		vPositions.forEach { inPosition ->
 			FormField(vInputs[inPosition.assetId].orEmpty(), { vInputs[inPosition.assetId] = it }, "${vNames[inPosition.assetId] ?: "Actif"} (€)", inNumeric = true)
 		}

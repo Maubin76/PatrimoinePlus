@@ -1,13 +1,7 @@
 package fr.maubin.patrimoineplus.desktop.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.material3.OutlinedButton
-import fr.maubin.patrimoineplus.desktop.DesktopController
-import fr.maubin.patrimoineplus.desktop.Panel
-import fr.maubin.patrimoineplus.ui.entry.editEntryForm
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,38 +13,33 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import fr.maubin.patrimoineplus.desktop.DesktopController
+import fr.maubin.patrimoineplus.desktop.Panel
 import fr.maubin.patrimoineplus.desktop.data.WorkspaceState
-import fr.maubin.patrimoineplus.ui.components.AmountText
-import fr.maubin.patrimoineplus.ui.components.BalanceChart
-import fr.maubin.patrimoineplus.ui.components.BarSegment
-import fr.maubin.patrimoineplus.ui.components.BorderedCard
-import fr.maubin.patrimoineplus.ui.components.MonthSwitcher
-import fr.maubin.patrimoineplus.ui.components.ProportionBar
-import fr.maubin.patrimoineplus.ui.components.SectionHeader
-import fr.maubin.patrimoineplus.desktop.ui.components.TwoColumns
-import fr.maubin.patrimoineplus.ui.components.SeriesDot
-import fr.maubin.patrimoineplus.ui.components.allocationColor
-import fr.maubin.patrimoineplus.ui.components.kAllocationSlots
-import fr.maubin.patrimoineplus.ui.components.monthTitle
-import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
-import fr.maubin.patrimoineplus.ui.icons.LineIcons
-import fr.maubin.patrimoineplus.domain.calc.allocation
+import fr.maubin.patrimoineplus.desktop.ui.components.Cell
+import fr.maubin.patrimoineplus.desktop.ui.components.Hint
+import fr.maubin.patrimoineplus.desktop.ui.components.OperationLine
+import fr.maubin.patrimoineplus.desktop.ui.components.TileRow
 import fr.maubin.patrimoineplus.domain.calc.SeriesPoint
+import fr.maubin.patrimoineplus.domain.calc.allocation
+import fr.maubin.patrimoineplus.domain.format.formatPermille
+import fr.maubin.patrimoineplus.domain.format.formatPrice
+import fr.maubin.patrimoineplus.domain.format.formatScaled
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.ui.account.AccountDetailState
 import fr.maubin.patrimoineplus.ui.account.AccountExtras
@@ -58,18 +47,33 @@ import fr.maubin.patrimoineplus.ui.account.OperationItem
 import fr.maubin.patrimoineplus.ui.account.PortfolioView
 import fr.maubin.patrimoineplus.ui.account.buildAccountDetail
 import fr.maubin.patrimoineplus.ui.account.buildAccountExtras
+import fr.maubin.patrimoineplus.ui.components.AmountText
+import fr.maubin.patrimoineplus.ui.components.BalanceChart
+import fr.maubin.patrimoineplus.ui.components.BarSegment
+import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
+import fr.maubin.patrimoineplus.ui.components.MonthSwitcher
+import fr.maubin.patrimoineplus.ui.components.ProportionBar
+import fr.maubin.patrimoineplus.ui.components.SeriesDot
+import fr.maubin.patrimoineplus.ui.components.Tile
+import fr.maubin.patrimoineplus.ui.components.TileFigure
+import fr.maubin.patrimoineplus.ui.components.allocationColor
+import fr.maubin.patrimoineplus.ui.components.kAllocationSlots
+import fr.maubin.patrimoineplus.ui.components.monthTitle
+import fr.maubin.patrimoineplus.ui.entry.editEntryForm
+import fr.maubin.patrimoineplus.ui.home.accountDetail
+import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 private val kDayTitle = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANCE)	// en-tête d'un jour
 private val kShortDay = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date d'une opération
+private val kFullDay  = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)	// date d'un relevé
 
 /*
-	Vue d'un compte, en deux colonnes, adaptée à son type comme sur le
-	téléphone : mois par mois pour un compte Courant, globale pour un compte
-	Épargne ou Bourse. Mêmes calculs que l'appli Android (buildAccountDetail,
-	buildAccountExtras).
+	Vue d'un compte en tuiles, adaptée à son type : mois par mois pour un
+	compte Courant, globale pour un compte Épargne ou Bourse. Mêmes calculs
+	que l'appli Android (buildAccountDetail, buildAccountExtras).
 	inSpace      : données
 	inController : contrôleur (mois, retour, saisies)
 	inAccountId  : compte
@@ -83,34 +87,39 @@ fun AccountScreen(
 	inMonth      : YearMonth?
 )
 {
-	val vOnMonth  : (YearMonth) -> Unit = inController::showMonth				// change de mois
-	val vOnBack   : () -> Unit          = inController::back					// retour à la liste
-	val vOpen     : (OperationItem) -> Unit = { inItem ->
-		if (inItem.editable) inController.openPanel(Panel.Operation(editEntryForm(inItem.transaction, inSpace.data.categories)))
-		else inController.openPanel(Panel.AccountSheet(inAccountId))
-	}																			// ouvre une opération
-	val vData   = inSpace.data													// données
+	val vData   = inSpace.data														// données
 	val vState  = remember(vData, inAccountId, inMonth, inSpace.today) {
 		buildAccountDetail(inAccountId, vData.accounts, vData.categories, vData.transactions, inMonth ?: YearMonth.from(inSpace.today), inSpace.today)
-	}																			// état de la vue
+	}																				// état de la vue
 	val vExtras = remember(vData, inAccountId, inSpace.today) {
 		buildAccountExtras(inAccountId, vData.accounts, vData.transactions, vData.statements, vData.prices, vData.assets, inSpace.today)
-	}																			// relevés ou portefeuille
-	val vAccount = vState.account ?: run { vOnBack(); return }				// compte (disparu : retour)
-	Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 40.dp, vertical = 28.dp)) {
+	}																				// relevés ou portefeuille
+	val vAccount = vState.account
+	if (vAccount == null)
+	{
+		LaunchedEffect(inAccountId) { inController.back() }							// compte disparu : retour au tableau de bord
+		return
+	}
+	val vOpen: (OperationItem) -> Unit = { inItem ->
+		if (inItem.editable) inController.openPanel(Panel.Operation(editEntryForm(inItem.transaction, vData.categories)))
+		else inController.openPanel(Panel.AccountSheet(inAccountId))
+	}																				// ouvre une opération
+	Column(
+		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
+		verticalArrangement = Arrangement.spacedBy(20.dp)
+	) {
 		Row(verticalAlignment = Alignment.CenterVertically) {
-			IconButton(onClick = vOnBack) { Icon(LineIcons.Back, contentDescription = "Retour aux comptes") }
+			IconButton(onClick = inController::back) { Icon(LineIcons.Back, contentDescription = "Retour au tableau de bord") }
 			Spacer(Modifier.width(8.dp))
 			Column(Modifier.weight(1f)) {
 				Text(vAccount.name, style = MaterialTheme.typography.headlineMedium)
-				Text(fr.maubin.patrimoineplus.ui.home.accountDetail(vAccount), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+				Text(accountDetail(vAccount), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			}
 			OutlinedButton(onClick = { inController.openPanel(Panel.AccountSheet(vAccount.id)) }) { Text("Modifier le compte") }
 		}
-		Spacer(Modifier.height(28.dp))
 		when (vAccount.type)
 		{
-			AccountType.CHECKING  -> CheckingView(vState, vOnMonth, vOpen)
+			AccountType.CHECKING  -> CheckingView(vState, vExtras, inController, vOpen)
 			AccountType.SAVINGS   -> SavingsView(vState, vExtras, inController, vOpen)
 			AccountType.BROKERAGE -> BrokerageView(vState, vExtras, inController, vOpen)
 		}
@@ -118,78 +127,64 @@ fun AccountScreen(
 }
 
 /*
-	Compte Courant : mois par mois. À gauche, sélecteur de mois, synthèse et
-	dépenses par catégorie ; à droite, courbe du solde et opérations par jour.
-	inState   : état du mois
-	inOnMonth : change de mois
-	inOnOpen  : ouvre une opération
+	Compte Courant, mois par mois : sélecteur de mois et chiffres du mois en
+	tuiles, puis courbe et dépenses par catégorie, puis opérations et relevés.
+	inState      : état du mois
+	inExtras     : relevés
+	inController : contrôleur
+	inOnOpen     : ouvre une opération
 */
 @Composable
 private fun CheckingView(
-	inState   : AccountDetailState,
-	inOnMonth : (YearMonth) -> Unit,
-	inOnOpen  : (OperationItem) -> Unit
+	inState      : AccountDetailState,
+	inExtras     : AccountExtras,
+	inController : DesktopController,
+	inOnOpen     : (OperationItem) -> Unit
 )
 {
-	TwoColumns(
-		inRatio = 1.2f,
-		inLeft  = {
-			MonthSwitcher(inState.month, inState.firstMonth, inState.lastMonth, inOnMonth)
-			Spacer(Modifier.height(12.dp))
-			inState.summary?.let { inSummary ->
-				BorderedCard {
-					Column(Modifier.padding(vertical = 8.dp)) {
-						StatRow("Ouverture", inSummary.opening, inMuted = true)
-						if (inSummary.openings != 0L) StatRow("Solde initial", inSummary.openings, inSigned = true)
-						StatRow("Entrées", inSummary.income, inSigned = true)
-						StatRow("Dépenses", inSummary.expenses, inSigned = true)
-						if (inSummary.savings != 0L) StatRow("Épargne", inSummary.savings, inSigned = true)
-						if (inSummary.transfers != 0L) StatRow("Virements internes", inSummary.transfers, inSigned = true)
-						HorizontalDivider(Modifier.padding(horizontal = 24.dp, vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
-						StatRow("Clôture", inSummary.closing, inStrong = true)
-					}
-				}
+	Row(Modifier.width(420.dp)) {
+		MonthSwitcher(inState.month, inState.firstMonth, inState.lastMonth, inController::showMonth)
+	}
+	inState.summary?.let { inSummary ->
+		val vCells = buildList {
+			add(Cell(1f) { inMod -> Figure("Ouverture", inSummary.opening, inMod, inSigned = false) })
+			if (inSummary.openings != 0L) add(Cell(1f) { inMod -> Figure("Solde initial", inSummary.openings, inMod) })
+			add(Cell(1f) { inMod -> Figure("Entrées", inSummary.income, inMod) })
+			add(Cell(1f) { inMod -> Figure("Dépenses", inSummary.expenses, inMod) })
+			if (inSummary.savings != 0L) add(Cell(1f) { inMod -> Figure("Épargne", inSummary.savings, inMod) })
+			if (inSummary.transfers != 0L) add(Cell(1f) { inMod -> Figure("Virements internes", inSummary.transfers, inMod) })
+			add(Cell(1.2f) { inMod -> Figure("Clôture", inSummary.closing, inMod, inSigned = false, inStrong = true) })
+		}																			// chiffres du mois
+		TileRow(*vCells.toTypedArray(), inMinWidth = 900.dp)
+	}
+	TileRow(
+		Cell(1.6f) { inMod -> ChartTile("Évolution du solde", inState.series, inState.month, inMod) },
+		Cell(1f) { inMod ->
+			Tile(inModifier = inMod, inTitle = "Dépenses par catégorie") {
+				val vLines = inState.expenses.filter { it.netCents > 0 }			// catégories dépensières
+				if (vLines.isEmpty()) Hint("Aucune dépense ce mois-ci.")
+				vLines.forEach { inLine -> CategoryBar(inLine, vLines.first().netCents) }
 			}
-			Spacer(Modifier.height(32.dp))
-			SectionHeader(inTitle = "Dépenses par catégorie")
-			Spacer(Modifier.height(12.dp))
-			BorderedCard {
-				if (inState.expenses.isEmpty())
-				{
-					Text("Aucune dépense ce mois-ci.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(24.dp))
-				}
-				inState.expenses.forEach { inLine ->
-					Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 24.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-						Icon(CategoryIcons.of(inLine.category.icon), contentDescription = null, modifier = Modifier.size(20.dp))
-						Spacer(Modifier.width(14.dp))
-						Text(inLine.category.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-						Text("${inLine.percent} %", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-						Spacer(Modifier.width(20.dp))
-						AmountText(inCents = inLine.netCents, inStyle = MaterialTheme.typography.bodyLarge)
-					}
-				}
+		}
+	)
+	TileRow(
+		Cell(1.6f) { inMod ->
+			Tile(inModifier = inMod, inTitle = "Opérations de ${monthTitle(inState.month).lowercase()}") {
+				if (inState.upcoming.isEmpty() && inState.days.isEmpty()) Hint("Aucune opération ce mois-ci.")
+				if (inState.upcoming.isNotEmpty()) OperationsGroup("À venir", inState.upcoming, true, inOnOpen)
+				inState.days.forEach { inDay -> OperationsGroup(inDay.date.format(kDayTitle).replaceFirstChar { it.uppercase() }, inDay.items, false, inOnOpen) }
 			}
 		},
-		inRight = {
-			ChartSection("Évolution du solde", inState.series, inState.month)
-			Spacer(Modifier.height(32.dp))
-			SectionHeader(inTitle = "Opérations")
-			if (inState.upcoming.isEmpty() && inState.days.isEmpty())
-			{
-				Text("Aucune opération ce mois-ci.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp))
-			}
-			if (inState.upcoming.isNotEmpty()) OperationsGroup("À venir", inState.upcoming, inWithDate = true, inOnOpen = inOnOpen)
-			inState.days.forEach { inDay -> OperationsGroup(inDay.date.format(kDayTitle).replaceFirstChar { it.uppercase() }, inDay.items, inWithDate = false, inOnOpen = inOnOpen) }
-		}
+		Cell(1f) { inMod -> StatementsTile(inState, inExtras, inController, inMod) }
 	)
 }
 
 /*
-	Compte Épargne : vue globale. À gauche, solde et totaux depuis
-	l'ouverture, puis relevés ; à droite, courbe du solde et opérations par mois.
+	Compte Épargne, vue globale : solde et mouvements depuis l'ouverture en
+	tuiles, puis courbe et relevés, puis opérations par mois.
 	inState      : état global
 	inExtras     : relevés
-	inController : contrôleur (relevés)
+	inController : contrôleur
 	inOnOpen     : ouvre une opération
 */
 @Composable
@@ -200,64 +195,28 @@ private fun SavingsView(
 	inOnOpen     : (OperationItem) -> Unit
 )
 {
-	TwoColumns(
-		inRatio = 1.2f,
-		inLeft  = {
-			inState.totals?.let { inTotals ->
-				AmountText(inCents = inTotals.balanceCents, inStyle = MaterialTheme.typography.displaySmall)
-				Text("Solde au jour", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-				Spacer(Modifier.height(16.dp))
-				BorderedCard {
-					Column(Modifier.padding(vertical = 8.dp)) {
-						StatRow("Solde initial", inTotals.opening, inMuted = true)
-						StatRow("Versements nets", inTotals.transfers, inSigned = true)
-						StatRow("Intérêts et revenus", inTotals.income, inSigned = true)
-						if (inTotals.expenses != 0L) StatRow("Frais et retraits", inTotals.expenses, inSigned = true)
-					}
-				}
-			}
-			Spacer(Modifier.height(32.dp))
-			SectionHeader(inTitle = "Relevés", inLinkLabel = "Ajouter", inOnLink = { inState.account?.let { inController.openPanel(Panel.Statement(it.id)) } })
-			Spacer(Modifier.height(12.dp))
-			BorderedCard {
-				if (inExtras.statements.isEmpty())
-				{
-					Text("Aucun relevé.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(24.dp))
-				}
-				inExtras.statements.forEach { inItem ->
-					Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 24.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-						Column(Modifier.weight(1f)) {
-							Text(inItem.statement.date.format(DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)), style = MaterialTheme.typography.bodyLarge)
-							if (inItem.gapCents != 0L)
-							{
-								Row {
-									Text("Écart ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-									AmountText(inCents = inItem.gapCents, inStyle = MaterialTheme.typography.bodyMedium, inColor = MaterialTheme.colorScheme.onSurfaceVariant, inShowPlusSign = true)
-								}
-							}
-						}
-						AmountText(inCents = inItem.statement.balanceCents, inStyle = MaterialTheme.typography.bodyLarge)
-						IconButton(onClick = { inController.edit { inController.editor.deleteStatement(it, inItem.statement.id) } }) {
-							Icon(LineIcons.Close, contentDescription = "Supprimer le relevé", modifier = Modifier.size(16.dp))
-						}
-					}
-				}
-			}
-		},
-		inRight = {
-			ChartSection("Évolution du solde", inState.series, inState.series.lastOrNull()?.month)
-			Spacer(Modifier.height(32.dp))
-			GlobalOperations(inState, inOnOpen)
-		}
+	inState.totals?.let { inTotals ->
+		TileRow(
+			Cell(1.3f) { inMod -> Figure("Solde au jour", inTotals.balanceCents, inMod, inSigned = false, inStrong = true) },
+			Cell(1f) { inMod -> Figure("Solde initial", inTotals.opening, inMod, inSigned = false) },
+			Cell(1f) { inMod -> Figure("Versements nets", inTotals.transfers, inMod) },
+			Cell(1f) { inMod -> Figure("Intérêts et revenus", inTotals.income, inMod, inTrend = true) },
+			inMinWidth = 900.dp
+		)
+	}
+	TileRow(
+		Cell(1.6f) { inMod -> ChartTile("Évolution du solde", inState.series, inState.series.lastOrNull()?.month, inMod) },
+		Cell(1f) { inMod -> StatementsTile(inState, inExtras, inController, inMod) }
 	)
+	OperationsTile(inState, inOnOpen)
 }
 
 /*
-	Compte Bourse : vue globale. À gauche, valeur, plus-values et positions
-	avec leur répartition ; à droite, courbe de la valeur et opérations par mois.
+	Compte Bourse, vue globale : valeur et plus-values en tuiles, puis courbe
+	de la valeur et répartition des titres, puis positions et opérations.
 	inState      : état global
 	inExtras     : portefeuille
-	inController : contrôleur (cours, positions, actifs)
+	inController : contrôleur
 	inOnOpen     : ouvre une opération
 */
 @Composable
@@ -268,139 +227,260 @@ private fun BrokerageView(
 	inOnOpen     : (OperationItem) -> Unit
 )
 {
-	val vPortfolio = inExtras.portfolio ?: return								// portefeuille
-	TwoColumns(
-		inRatio = 1.2f,
-		inLeft  = {
-			AmountText(inCents = vPortfolio.valuation.valueCents, inStyle = MaterialTheme.typography.displaySmall)
-			Text("Valeur du compte, espèces comprises", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-			Spacer(Modifier.height(16.dp))
-			BorderedCard {
-				Column(Modifier.padding(vertical = 8.dp)) {
-					StatRow("Espèces", vPortfolio.valuation.cashCents)
-					StatRow("Plus-value latente", vPortfolio.valuation.unrealizedCents, inSigned = true)
-					StatRow("Plus-values réalisées", vPortfolio.realizedCents, inSigned = true)
-				}
-			}
-			Spacer(Modifier.height(32.dp))
-			Positions(vPortfolio, inController)
-			Spacer(Modifier.height(12.dp))
-			Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-				inState.account?.let { inAccount ->
-					OutlinedButton(onClick = { inController.openPanel(Panel.Prices(inAccount.id)) }, enabled = vPortfolio.valuation.positions.isNotEmpty()) { Text("Saisir des cours") }
-					OutlinedButton(onClick = { inController.openPanel(Panel.OpeningPosition(inAccount.id)) }) { Text("Ajouter une position initiale") }
-				}
-			}
-			if (inExtras.openingPositions.isNotEmpty())
-			{
-				Spacer(Modifier.height(24.dp))
-				Text("Positions initiales", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-				Spacer(Modifier.height(8.dp))
-				BorderedCard {
-					inExtras.openingPositions.forEach { inItem ->
-						Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(start = 24.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-							Text("${inItem.assetName} : ${fr.maubin.patrimoineplus.domain.format.formatScaled(inItem.trade.quantity)} × ${fr.maubin.patrimoineplus.domain.format.formatPrice(inItem.trade.unitPrice)}", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-							IconButton(onClick = { inState.account?.let { inAccount -> inController.edit { inController.editor.removeOpeningPosition(it, inAccount.id, inItem.trade.id) } } }) {
-								Icon(LineIcons.Close, contentDescription = "Retirer la position initiale ${inItem.assetName}", modifier = Modifier.size(16.dp))
-							}
-						}
-					}
-				}
-			}
-		},
-		inRight = {
-			ChartSection("Évolution de la valeur", inExtras.valueSeries, inExtras.valueSeries.lastOrNull()?.month)
-			Spacer(Modifier.height(32.dp))
-			GlobalOperations(inState, inOnOpen)
-		}
+	val vPortfolio = inExtras.portfolio ?: return									// portefeuille
+	val vRate      = if (vPortfolio.costCents > 0) vPortfolio.valuation.unrealizedCents * 1000 / vPortfolio.costCents else null	// rendement, en pour mille
+	TileRow(
+		Cell(1.3f) { inMod -> Figure("Valeur du compte", vPortfolio.valuation.valueCents, inMod, inSigned = false, inStrong = true) },
+		Cell(1f) { inMod -> Figure("Espèces", vPortfolio.valuation.cashCents, inMod, inSigned = false) },
+		Cell(1f) { inMod -> Figure("Plus-value latente", vPortfolio.valuation.unrealizedCents, inMod, inTrend = true, inNote = vRate?.let(::formatPermille)) },
+		Cell(1f) { inMod -> Figure("Plus-values réalisées", vPortfolio.realizedCents, inMod, inTrend = true) },
+		inMinWidth = 900.dp
 	)
+	TileRow(
+		Cell(1.6f) { inMod -> ChartTile("Évolution de la valeur", inExtras.valueSeries, inExtras.valueSeries.lastOrNull()?.month, inMod) },
+		Cell(1f) { inMod -> AllocationTile(vPortfolio, inController, inMod) }
+	)
+	inState.account?.let { inAccount -> PositionsTile(vPortfolio, inExtras, inAccount.id, inController) }
+	OperationsTile(inState, inOnOpen)
 }
 
 /*
-	Positions d'un compte Bourse : barre de répartition des titres, puis une
-	ligne par titre (pastille, nom, part, valeur), comme sur le téléphone.
-	inPortfolio  : portefeuille valorisé
-	inController : contrôleur (fiche d'un actif)
+	Tuile d'un chiffre clé : libellé et montant.
+	inLabel    : libellé
+	inCents    : montant
+	inModifier : place de la tuile
+	inSigned   : signe « + » devant un montant positif
+	inStrong   : chiffre mis en avant (plus grand)
+	inTrend    : hausse ou baisse (couleur si le réglage est activé)
+	inNote     : texte discret sous le montant ; null sans texte
 */
 @Composable
-private fun Positions(
-	inPortfolio  : PortfolioView,
-	inController : DesktopController
+private fun Figure(
+	inLabel    : String,
+	inCents    : Long,
+	inModifier : Modifier,
+	inSigned   : Boolean = true,
+	inStrong   : Boolean = false,
+	inTrend    : Boolean = false,
+	inNote     : String? = null
 )
 {
-	val vLines = allocation(inPortfolio.valuation.positions)					// répartition des titres
-	SectionHeader(inTitle = "Positions")
-	Spacer(Modifier.height(12.dp))
-	if (vLines.size > 1)
-	{
+	Tile(inModifier = inModifier) {
+		TileFigure(inLabel) {
+			AmountText(
+				inCents        = inCents,
+				inStyle        = if (inStrong) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.titleLarge,
+				inShowPlusSign = inSigned,
+				inTrend        = inTrend
+			)
+		}
+		if (inNote != null && !LocalAmountsHidden.current) Hint(inNote)
+	}
+}
+
+/*
+	Tuile d'une courbe ; message si la série est trop courte.
+	inTitle     : titre
+	inSeries    : valeurs de fin de mois
+	inHighlight : mois mis en avant
+	inModifier  : place de la tuile
+*/
+@Composable
+private fun ChartTile(
+	inTitle     : String,
+	inSeries    : List<SeriesPoint>,
+	inHighlight : YearMonth?,
+	inModifier  : Modifier
+)
+{
+	Tile(inModifier = inModifier, inTitle = inTitle) {
+		if (inSeries.size > 1 && inHighlight != null) BalanceChart(inSeries, inHighlight, inHeight = 220.dp)
+		else Hint("La courbe apparaîtra après un premier mois d’historique.")
+	}
+}
+
+/*
+	Tuile des relevés de la banque : ajout, écart au solde calculé,
+	suppression.
+	inState      : état du compte
+	inExtras     : relevés
+	inController : contrôleur
+	inModifier   : place de la tuile
+*/
+@Composable
+private fun StatementsTile(
+	inState      : AccountDetailState,
+	inExtras     : AccountExtras,
+	inController : DesktopController,
+	inModifier   : Modifier
+)
+{
+	Tile(
+		inModifier = inModifier,
+		inTitle    = "Relevés",
+		inAction   = { TextButton(onClick = { inState.account?.let { inController.openPanel(Panel.Statement(it.id)) } }) { Text("Ajouter") } }
+	) {
+		if (inExtras.statements.isEmpty()) Hint("Saisissez le solde indiqué par la banque : l’appli le compare au solde calculé.")
+		inExtras.statements.forEachIndexed { inIndex, inItem ->
+			if (inIndex > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+			Row(Modifier.fillMaxWidth().heightIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically) {
+				Column(Modifier.weight(1f)) {
+					Text(inItem.statement.date.format(kFullDay), style = MaterialTheme.typography.bodyLarge)
+					if (inItem.gapCents != 0L)
+					{
+						Row {
+							Text("Écart ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+							AmountText(inCents = inItem.gapCents, inStyle = MaterialTheme.typography.bodyMedium, inColor = MaterialTheme.colorScheme.onSurfaceVariant, inShowPlusSign = true)
+						}
+					}
+					else
+					{
+						Text("Conforme", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+					}
+				}
+				AmountText(inCents = inItem.statement.balanceCents, inStyle = MaterialTheme.typography.bodyLarge)
+				IconButton(onClick = { inController.edit { inController.editor.deleteStatement(it, inItem.statement.id) } }) {
+					Icon(LineIcons.Close, contentDescription = "Supprimer le relevé du ${inItem.statement.date.format(kFullDay)}", modifier = Modifier.size(16.dp))
+				}
+			}
+		}
+	}
+}
+
+/*
+	Tuile de la répartition des titres d'un compte Bourse : barre, puis part de
+	chaque titre ; un clic ouvre la fiche de l'actif.
+	inPortfolio  : portefeuille
+	inController : contrôleur
+	inModifier   : place de la tuile
+*/
+@Composable
+private fun AllocationTile(
+	inPortfolio  : PortfolioView,
+	inController : DesktopController,
+	inModifier   : Modifier
+)
+{
+	val vLines = allocation(inPortfolio.valuation.positions)						// répartition des titres
+	Tile(inModifier = inModifier, inTitle = "Répartition des titres") {
+		if (vLines.isEmpty())
+		{
+			Hint("Aucune position.")
+			return@Tile
+		}
 		ProportionBar(
 			inSegments    = vLines.withIndex().groupBy { it.index.coerceAtMost(kAllocationSlots - 1) }.toSortedMap()
 				.map { (inRank, inGroup) -> BarSegment(inGroup.sumOf { it.value.position.valueCents }, allocationColor(inRank)) },
 			inDescription = "Répartition des titres"
 		)
-		Spacer(Modifier.height(16.dp))
-	}
-	BorderedCard {
-		if (vLines.isEmpty())
-		{
-			Text("Aucune position.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(24.dp))
-		}
+		Spacer(Modifier.height(12.dp))
 		vLines.forEachIndexed { inIndex, inLine ->
-			if (inIndex > 0) HorizontalDivider(Modifier.padding(horizontal = 24.dp), color = MaterialTheme.colorScheme.outlineVariant)
-			Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { inController.openPanel(Panel.AssetSheet(inLine.position.assetId)) }.padding(horizontal = 24.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-				if (vLines.size > 1) { SeriesDot(allocationColor(inIndex)); Spacer(Modifier.width(14.dp)) }
-				Text(inPortfolio.names[inLine.position.assetId] ?: "Actif supprimé", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-				Text("${inLine.percent} %", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-				Spacer(Modifier.width(20.dp))
-				AmountText(inCents = inLine.position.valueCents, inStyle = MaterialTheme.typography.titleMedium)
+			Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
+				SeriesDot(allocationColor(inIndex))
+				Spacer(Modifier.width(12.dp))
+				TextButton(onClick = { inController.openPanel(Panel.AssetSheet(inLine.position.assetId)) }, modifier = Modifier.weight(1f)) {
+					Text(inPortfolio.names[inLine.position.assetId] ?: "Actif supprimé", maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
+				}
+				Text("${inLine.percent} %", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			}
 		}
 	}
 }
 
 /*
-	Opérations d'une vue globale : « À venir », puis par mois.
+	Tuile des positions d'un compte Bourse : tableau (quantité, PRU, cours,
+	valeur, plus-value), actions (cours, positions initiales), positions
+	initiales.
+	inPortfolio  : portefeuille
+	inExtras     : positions initiales
+	inAccountId  : compte Bourse
+	inController : contrôleur
+*/
+@Composable
+private fun PositionsTile(
+	inPortfolio  : PortfolioView,
+	inExtras     : AccountExtras,
+	inAccountId  : String,
+	inController : DesktopController
+)
+{
+	val vMuted = MaterialTheme.colorScheme.onSurfaceVariant							// texte secondaire
+	Tile(
+		inTitle  = "Positions",
+		inAction = {
+			TextButton(onClick = { inController.openPanel(Panel.Prices(inAccountId)) }, enabled = inPortfolio.valuation.positions.isNotEmpty()) { Text("Saisir des cours") }
+			TextButton(onClick = { inController.openPanel(Panel.OpeningPosition(inAccountId)) }) { Text("Position initiale") }
+		}
+	) {
+		if (inPortfolio.valuation.positions.isEmpty())
+		{
+			Hint("Aucune position : saisissez un ordre d’achat, ou une position initiale.")
+		}
+		else
+		{
+			Row(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+				listOf("Titre" to 2.2f, "Quantité" to 1f, "PRU" to 1f, "Cours" to 1f, "Valeur" to 1.2f, "Plus-value" to 1.2f).forEach { (inHead, inWeight) ->
+					Text(inHead, style = MaterialTheme.typography.labelLarge, color = vMuted, modifier = Modifier.weight(inWeight))
+				}
+			}
+			HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+			inPortfolio.valuation.positions.forEach { inPos ->
+				Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+					Text(
+						text     = inPortfolio.names[inPos.assetId] ?: "Actif supprimé",
+						style    = MaterialTheme.typography.bodyLarge,
+						maxLines = 1,
+						overflow = TextOverflow.Ellipsis,
+						modifier = Modifier.weight(2.2f).clickable(onClickLabel = "Fiche de l’actif") { inController.openPanel(Panel.AssetSheet(inPos.assetId)) }.padding(vertical = 12.dp)
+					)
+					Text(formatScaled(inPos.quantity), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+					Text(if (LocalAmountsHidden.current) "•••" else formatPrice(fr.maubin.patrimoineplus.domain.calc.averagePrice(inPos.costCents, inPos.quantity)), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+					Column(Modifier.weight(1f)) {
+						Text(formatPrice(inPos.unitPrice), style = MaterialTheme.typography.bodyMedium)
+						Text(inPos.priceDate?.let { "au ${it.format(kShortDay)}" } ?: "sans cours", style = MaterialTheme.typography.bodySmall, color = vMuted)
+					}
+					AmountText(inCents = inPos.valueCents, inStyle = MaterialTheme.typography.bodyLarge, inModifier = Modifier.weight(1.2f))
+					AmountText(inCents = inPos.unrealizedCents, inStyle = MaterialTheme.typography.bodyLarge, inShowPlusSign = true, inTrend = true, inModifier = Modifier.weight(1.2f))
+				}
+			}
+		}
+		if (inExtras.openingPositions.isNotEmpty())
+		{
+			Spacer(Modifier.height(16.dp))
+			Text("Positions initiales", style = MaterialTheme.typography.labelLarge, color = vMuted)
+			inExtras.openingPositions.forEach { inItem ->
+				Row(Modifier.fillMaxWidth().heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
+					Text("${inItem.assetName} : ${formatScaled(inItem.trade.quantity)} × ${formatPrice(inItem.trade.unitPrice)}", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+					IconButton(onClick = {
+						when (val vResult = inController.edit { inController.editor.removeOpeningPosition(it, inAccountId, inItem.trade.id) })
+						{
+							is fr.maubin.patrimoineplus.data.edit.EditResult.Refused -> inController.showNotice(vResult.messages.joinToString(" "))
+							else                                                     -> Unit
+						}
+					}) {
+						Icon(LineIcons.Close, contentDescription = "Retirer la position initiale ${inItem.assetName}", modifier = Modifier.size(16.dp))
+					}
+				}
+			}
+		}
+	}
+}
+
+/*
+	Tuile des opérations d'une vue globale : « À venir », puis par mois.
 	inState  : état global
 	inOnOpen : ouvre une opération
 */
 @Composable
-private fun GlobalOperations(
+private fun OperationsTile(
 	inState  : AccountDetailState,
 	inOnOpen : (OperationItem) -> Unit
 )
 {
-	SectionHeader(inTitle = "Opérations")
-	if (inState.upcoming.isEmpty() && inState.months.isEmpty())
-	{
-		Text("Aucune opération.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp))
-	}
-	if (inState.upcoming.isNotEmpty()) OperationsGroup("À venir", inState.upcoming, inWithDate = true, inOnOpen = inOnOpen)
-	inState.months.forEach { inGroup -> OperationsGroup(monthTitle(inGroup.month), inGroup.items, inWithDate = true, inOnOpen = inOnOpen) }
-}
-
-/*
-	Section de courbe : titre et courbe, mois mis en avant ; message si la
-	série est trop courte.
-	inTitle     : titre
-	inSeries    : valeurs de fin de mois
-	inHighlight : mois mis en avant
-*/
-@Composable
-private fun ChartSection(
-	inTitle     : String,
-	inSeries    : List<SeriesPoint>,
-	inHighlight : YearMonth?
-)
-{
-	SectionHeader(inTitle = inTitle)
-	Spacer(Modifier.height(12.dp))
-	if (inSeries.size > 1 && inHighlight != null)
-	{
-		BalanceChart(inSeries, inHighlight)
-	}
-	else
-	{
-		Text("La courbe apparaîtra après un premier mois d’historique.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+	Tile(inTitle = "Opérations") {
+		if (inState.upcoming.isEmpty() && inState.months.isEmpty()) Hint("Aucune opération.")
+		if (inState.upcoming.isNotEmpty()) OperationsGroup("À venir", inState.upcoming, true, inOnOpen)
+		inState.months.forEach { inGroup -> OperationsGroup(monthTitle(inGroup.month), inGroup.items, true, inOnOpen) }
 	}
 }
 
@@ -419,58 +499,15 @@ private fun OperationsGroup(
 	inOnOpen   : (OperationItem) -> Unit
 )
 {
-	Text(inTitle, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, top = 16.dp, bottom = 8.dp))
-	BorderedCard {
-		inItems.forEachIndexed { inIndex, inItem ->
-			if (inIndex > 0) HorizontalDivider(Modifier.padding(horizontal = 24.dp), color = MaterialTheme.colorScheme.outlineVariant)
-			Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable { inOnOpen(inItem) }.padding(horizontal = 24.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-				Box(Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainer), contentAlignment = Alignment.Center) {
-					Icon(CategoryIcons.of(inItem.icon), contentDescription = null, modifier = Modifier.size(18.dp))
-				}
-				Spacer(Modifier.width(14.dp))
-				Column(Modifier.weight(1f)) {
-					Text(inItem.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-					Text(
-						text     = if (inWithDate) "${inItem.transaction.date.format(kShortDay)} · ${inItem.subtitle}" else inItem.subtitle,
-						style    = MaterialTheme.typography.bodyMedium,
-						color    = MaterialTheme.colorScheme.onSurfaceVariant,
-						maxLines = 1,
-						overflow = TextOverflow.Ellipsis
-					)
-				}
-				Spacer(Modifier.width(16.dp))
-				AmountText(inCents = inItem.amount, inStyle = MaterialTheme.typography.bodyLarge, inShowPlusSign = true)
-			}
-		}
-	}
-}
-
-/*
-	Ligne de statistique : libellé et montant.
-	inLabel  : libellé
-	inCents  : montant
-	inSigned : affiche le signe « + »
-	inMuted  : ligne atténuée (ouverture)
-	inStrong : ligne mise en avant (clôture)
-*/
-@Composable
-private fun StatRow(
-	inLabel  : String,
-	inCents  : Long,
-	inSigned : Boolean = false,
-	inMuted  : Boolean = false,
-	inStrong : Boolean = false
-)
-{
-	val vColors = MaterialTheme.colorScheme										// palette courante
-	val vStyle  = if (inStrong) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge	// style de la ligne
-	Row(Modifier.fillMaxWidth().heightIn(min = 40.dp).padding(horizontal = 24.dp), verticalAlignment = Alignment.CenterVertically) {
-		Text(inLabel, style = vStyle, color = if (inMuted) vColors.onSurfaceVariant else vColors.onSurface, modifier = Modifier.weight(1f))
-		AmountText(
-			inCents        = inCents,
-			inStyle        = vStyle,
-			inColor        = when { inStrong && inCents < 0 -> vColors.error; inMuted -> vColors.onSurfaceVariant; else -> Color.Unspecified },
-			inShowPlusSign = inSigned
+	Text(inTitle, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 8.dp, top = 12.dp, bottom = 4.dp))
+	inItems.forEach { inItem ->
+		OperationLine(
+			inIcon    = inItem.icon,
+			inTitle   = inItem.title,
+			inDetail  = if (inWithDate) "${inItem.transaction.date.format(kShortDay)} · ${inItem.subtitle}" else inItem.subtitle,
+			inCents   = inItem.amount,
+			inOnClick = { inOnOpen(inItem) }
 		)
 	}
 }
+

@@ -1,5 +1,14 @@
 package fr.maubin.patrimoineplus.desktop
 
+import java.util.Locale
+import java.time.format.DateTimeFormatter
+import java.time.LocalDate
+import fr.maubin.patrimoineplus.desktop.data.Source
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.Key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.unit.DpSize
@@ -40,13 +49,21 @@ fun main(inArgs: Array<String>)
 		val vScope      = rememberCoroutineScope()									// portée de la surveillance du fichier
 		val vController = remember { DesktopController(DesktopConfig.default(), Workspace(Clock.systemDefaultZone()), vScope) }	// contrôleur
 		Window(
-			onCloseRequest = { vController.flush(); exitApplication() },
-			title          = "PatrimoinePlus",
-			icon           = BitmapPainter(windowIcon()),
-			state          = rememberWindowState(size = DpSize(1320.dp, 860.dp))
+			onCloseRequest    = { vController.requestExit(::exitApplication) },
+			title             = "PatrimoinePlus",
+			icon              = BitmapPainter(windowIcon()),
+			state             = rememberWindowState(size = DpSize(1440.dp, 900.dp)),
+			onPreviewKeyEvent = { inEvent ->
+				if (inEvent.type == KeyEventType.KeyDown && inEvent.isCtrlPressed && inEvent.key == Key.N && vController.workspace.value.source != Source.None)
+				{
+					vController.newOperation()
+					true
+				}
+				else false
+			}
 		) {
 			window.minimumSize = Dimension(980, 640)
-			App(vController, ::pickFolder)
+			App(vController, ::pickSaveFile, ::pickFolder)
 		}
 	}
 }
@@ -74,9 +91,22 @@ private fun verify(inPath: String?): Int
 	}
 	return when (val vRead = Files.newInputStream(Paths.get(inPath)).use { readBackupXlsx(it) })
 	{
-		is BackupRead.Valid   -> { println("Fichier valide : ${vRead.file.summary}"); 0 }
+		is BackupRead.Valid   -> { println("Fichier valide : ${vRead.file.summary} (dates en français : ${LocalDate.of(2026, 10, 12).format(DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE))})"); 0 }
 		is BackupRead.Invalid -> { println("Fichier refusé : ${vRead.message}"); 1 }
 	}
+}
+
+/*
+	Choix du fichier où enregistrer une copie des données (classeur) ; null si
+	l'utilisateur annule.
+*/
+private fun pickSaveFile(): Path?
+{
+	val vChooser = JFileChooser().apply {
+		dialogTitle  = "Enregistrer une copie des données"
+		selectedFile = java.io.File("patrimoineplus-copie-${LocalDate.now()}.xlsx")
+	}																			// sélecteur
+	return if (vChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) vChooser.selectedFile.toPath() else null
 }
 
 /*

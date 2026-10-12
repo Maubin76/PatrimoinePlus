@@ -1,5 +1,9 @@
 package fr.maubin.patrimoineplus.desktop.ui.panels
 
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
+import fr.maubin.patrimoineplus.ui.entry.withReferences
+import fr.maubin.patrimoineplus.ui.entry.switchEntryMode
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -54,9 +58,12 @@ fun OperationPanel(
 {
 	val vSpace  by inController.workspace.collectAsState()					// données
 	val vData   = vSpace.data														// données du domaine
-	val vEntry  = EntryData(vData.accounts.filterNot { it.archived }, vData.categories.filterNot { it.archived }.sortedBy { it.sortOrder }, vData.assets, vData.prices, vData.transactions)	// données de saisie
 	var vForm   by remember(inInitial) { mutableStateOf(inInitial) }				// saisie
 	var vErrors by remember(inInitial) { mutableStateOf(EntryErrors()) }		// erreurs affichées
+	var vBadDay by remember(inInitial) { mutableStateOf(false) }				// date illisible
+	var vDelete by remember(inInitial) { mutableStateOf(false) }				// suppression demandée
+	val vEntry  = EntryData(vData.accounts.filterNot { it.archived }, vData.categories.filterNot { it.archived }.sortedBy { it.sortOrder }, vData.assets, vData.prices, vData.transactions)
+		.withReferences(vForm, vData.accounts, vData.categories)				// données de saisie (comptes archivés de l'opération compris)
 
 	/*
 		Enregistre : contrôles, puis création éventuelle de l'actif et
@@ -65,9 +72,9 @@ fun OperationPanel(
 	fun save()
 	{
 		val vChecks = checkEntry(vForm, vEntry)									// erreurs de saisie
-		if (!vChecks.isEmpty)
+		if (!vChecks.isEmpty || vBadDay)
 		{
-			vErrors = vChecks
+			vErrors = if (vBadDay) vChecks.copy(general = kBadDate) else vChecks
 			return
 		}
 		val vResult = inController.edit { inFile ->
@@ -98,16 +105,13 @@ fun OperationPanel(
 		inActions = {
 			if (vForm.id != null)
 			{
-				OutlinedButton(onClick = {
-					inController.edit { inController.editor.deleteTransactions(it, listOf(vForm.id!!)) }
-					inController.closePanel()
-				}) { Text("Supprimer") }
+				OutlinedButton(onClick = { vDelete = true }) { Text("Supprimer") }
 			}
 			Button(onClick = ::save) { Text("Enregistrer") }
 		}
 	) {
 		FormError(vErrors.general)
-		Choice(EntryMode.entries.map { it to it.label }, vForm.mode, { vForm = vForm.copy(mode = it, categoryId = null) }, inEnabled = vForm.id == null)
+		Choice(EntryMode.entries.map { it to it.label }, vForm.mode, { vForm = switchEntryMode(vForm, it, vEntry) }, inEnabled = vForm.id == null)
 		when (vForm.mode)
 		{
 			EntryMode.EXPENSE, EntryMode.INCOME ->
@@ -164,7 +168,28 @@ fun OperationPanel(
 				FormField(vForm.label, { vForm = vForm.copy(label = it) }, "Libellé (facultatif)", inSupport = "Vide : « ${proposedLabel(vForm, vEntry)} »")
 			}
 		}
-		DateField(vForm.date, { vForm = vForm.copy(date = it) }, "Date")
+		DateField(vForm.date, { inDate -> vBadDay = inDate == null; inDate?.let { vForm = vForm.copy(date = it) } }, "Date")
 		FormField(vForm.notes, { vForm = vForm.copy(notes = it) }, "Notes (facultatif)")
+	}
+
+	if (vDelete && vForm.id != null)
+	{
+		val vTransfer = vForm.mode == EntryMode.TRANSFER							// virement
+		AlertDialog(
+			onDismissRequest = { vDelete = false },
+			title            = { Text("Supprimer l’opération ?") },
+			text             = { Text(if (vTransfer) "Le virement sera supprimé sur les deux comptes." else "Les soldes seront recalculés.") },
+			confirmButton    = {
+				TextButton(onClick = {
+					vDelete = false
+					when (val vResult = inController.edit { inController.editor.deleteTransactions(it, listOf(vForm.id!!)) })
+					{
+						is EditResult.Done    -> inController.closePanel()
+						is EditResult.Refused -> vErrors = EntryErrors(general = vResult.messages.joinToString(" "))
+					}
+				}) { Text("Supprimer") }
+			},
+			dismissButton    = { TextButton(onClick = { vDelete = false }) { Text("Annuler") } }
+		)
 	}
 }
