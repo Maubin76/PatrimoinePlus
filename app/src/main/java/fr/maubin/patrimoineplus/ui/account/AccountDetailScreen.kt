@@ -436,7 +436,7 @@ fun AccountDetailContent(
 				item { SectionHeader(inTitle = "Évolution du solde") }
 				item { Spacer(Modifier.height(4.dp)) }
 				item { BalanceChart(inState.series, inState.month) }
-				if (inState.account != null && inState.account.type != AccountType.BROKERAGE)
+				if (inState.account?.let { it.type != AccountType.BROKERAGE } == true)
 				{
 					item { Spacer(Modifier.height(28.dp)) }
 					item { StatementsSection(inExtras.statements, inActions.onAddStatement, inActions.onAdjust, inActions.onDelStatement) }

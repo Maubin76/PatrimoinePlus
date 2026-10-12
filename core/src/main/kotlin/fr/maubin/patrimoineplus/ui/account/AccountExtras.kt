@@ -80,7 +80,7 @@ data class AccountExtras(
 	inAssets       : tous les actifs
 	inToday        : date de valorisation
 */
-internal fun buildAccountExtras(
+fun buildAccountExtras(
 	inAccountId    : String,
 	inAccounts     : List<Account>,
 	inTransactions : List<Transaction>,
