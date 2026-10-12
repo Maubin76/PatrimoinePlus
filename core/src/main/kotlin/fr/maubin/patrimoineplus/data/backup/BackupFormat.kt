@@ -1,6 +1,7 @@
 package fr.maubin.patrimoineplus.data.backup
 
 import fr.maubin.patrimoineplus.domain.calc.Ledger
+import fr.maubin.patrimoineplus.domain.calc.kChronological
 import fr.maubin.patrimoineplus.domain.model.Account
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.domain.model.Asset
@@ -12,6 +13,7 @@ import fr.maubin.patrimoineplus.domain.model.TradeSide
 import fr.maubin.patrimoineplus.domain.model.Transaction
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
 import fr.maubin.patrimoineplus.domain.rules.TransactionValidator
+import fr.maubin.patrimoineplus.domain.rules.validateAccount
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.time.LocalDate
@@ -196,7 +198,7 @@ fun decodeBackup(inText: String): BackupRead
 	Vérifie un contenu de sauvegarde, quelle que soit sa forme d'origine
 	(classeur ou JSON) : signature, version, valeurs connues, identifiants
 	uniques, références existantes, et règles de saisie de chaque opération
-	(dans l'ordre chronologique). Au premier problème, tout est refusé.
+	(dans l'ordre canonique : date, puis soldes initiaux, achats, autres, ventes). Au premier problème, tout est refusé.
 	inFile : contenu lu
 */
 fun validateBackup(inFile: BackupFile): BackupRead
@@ -229,6 +231,9 @@ fun validateBackup(inFile: BackupFile): BackupRead
 	{
 		return BackupRead.Invalid("Identifiants en double dans le fichier.")
 	}
+	vDomain.accounts.firstOrNull { validateAccount(it.name, it.sharePercent).isNotEmpty() }?.let {
+		return BackupRead.Invalid("Compte « ${it.name} » invalide : nom vide ou part détenue hors de 1 à 100 %.")
+	}
 	val vAccounts   = vDomain.accounts.associateBy { it.id }					// comptes connus
 	val vCategories = vDomain.categories.associateBy { it.id }				// catégories connues
 	val vAssets     = vDomain.assets.associateBy { it.id }						// actifs connus
@@ -243,7 +248,7 @@ fun validateBackup(inFile: BackupFile): BackupRead
 	if (vFile.prices.groupBy { it.assetId to it.date }.any { it.value.size > 1 }) return BackupRead.Invalid("Deux cours pour un même actif et un même jour.")
 	val vValidator = TransactionValidator(vAccounts, vCategories, vAssets)	// règles de saisie
 	val vDone      = mutableListOf<Transaction>()								// opérations déjà vérifiées
-	vDomain.transactions.sortedBy { it.date }.forEach { inTx ->
+	vDomain.transactions.sortedWith(kChronological).forEach { inTx ->
 		val vErrors = vValidator.validate(inTx, Ledger(vDone))					// règles violées
 		if (vErrors.isNotEmpty())
 		{

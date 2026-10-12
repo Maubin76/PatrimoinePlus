@@ -348,7 +348,7 @@ internal fun backupFromSheets(inSheets: List<ReadSheet>): BackupFile
 				name         = inRow.req(kName),
 				type         = typeName(inRow.req(kType)),
 				institution  = inRow.opt(kInstitution),
-				sharePercent = inRow.opt(kShare)?.let { decimal(it).toInt() } ?: 100,
+				sharePercent = inRow.opt(kShare)?.let { decimal(it).intValueExact() } ?: 100,
 				sortOrder    = inRow.opt(kSortOrder)?.let { decimal(it).toInt() } ?: 0,
 				archived     = yes(inRow[kArchived]),
 				createdAt    = inRow.opt(kCreated)?.let { decimal(it).toLong() } ?: 0L,
@@ -428,7 +428,17 @@ private fun Map<String, String>.opt(inHeader: String): String? = this[inHeader]?
 internal fun decimal(inText: String): BigDecimal
 {
 	val vClean = inText.trim().replace("€", "").replace(" ", "").replace("\u00A0", "").replace("\u202F", "")	// sans espaces ni symbole
-	return BigDecimal(if (vClean.contains(',') && !vClean.contains('.')) vClean.replace(',', '.') else vClean.replace(",", ""))
+	val vComma = vClean.lastIndexOf(',')										// dernière virgule
+	val vDot   = vClean.lastIndexOf('.')										// dernier point
+	return BigDecimal(
+		when
+		{
+			vComma < 0  -> vClean												// « 1234.56 » ou « 1234 »
+			vDot < 0    -> vClean.replace(',', '.')							// « 1234,56 »
+			vComma > vDot -> vClean.replace(".", "").replace(',', '.')			// « 1.234,56 » : point des milliers
+			else        -> vClean.replace(",", "")								// « 1,234.56 » : virgule des milliers
+		}
+	)
 }
 
 /*

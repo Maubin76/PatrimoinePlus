@@ -3,6 +3,7 @@ package fr.maubin.patrimoineplus.domain.calc
 import fr.maubin.patrimoineplus.domain.model.Account
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.domain.model.Category
+import fr.maubin.patrimoineplus.domain.model.TradeSide
 import fr.maubin.patrimoineplus.domain.model.CategoryKind
 import fr.maubin.patrimoineplus.domain.model.Transaction
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
@@ -16,8 +17,9 @@ import java.time.YearMonth
 	month     : mois concerné
 	opening   : solde d'ouverture = clôture calculée du mois précédent
 	closing   : solde de clôture (opérations à venir du mois comprises)
-	income    : entrées (opérations STANDARD positives)
-	expenses  : dépenses (opérations STANDARD négatives), montant négatif
+	income    : entrées (opérations STANDARD positives, hors remboursements)
+	expenses  : dépenses nettes (opérations STANDARD négatives, diminuées des
+	            remboursements : montants positifs d'une catégorie de dépense)
 	savings   : virements nets entre un compte Courant et un compte Épargne ou Bourse
 	transfers : autres virements nets
 	trades    : mouvements d'espèces des ordres de bourse
@@ -48,13 +50,32 @@ data class CategoryLine(
 )
 
 /*
+	Rang d'une opération dans sa journée : soldes initiaux, puis achats,
+	puis le reste, puis ventes. Un achat et une vente du même jour se
+	traitent donc toujours dans cet ordre, quel que soit l'ordre de saisie ou
+	du fichier (quantités détenues, PRU, plus-values).
+	inTx : opération
+*/
+internal fun dayRank(inTx: Transaction): Int =
+	when
+	{
+		inTx.kind == TransactionKind.OPENING            -> 0
+		inTx.trades.any { it.side == TradeSide.BUY }  -> 1
+		inTx.trades.any { it.side == TradeSide.SELL } -> 3
+		else                                          -> 2
+	}
+
+// Ordre canonique des opérations : date, rang dans la journée, identifiant.
+val kChronological: Comparator<Transaction> = compareBy<Transaction>({ it.date }, { dayRank(it) }, { it.id })
+
+/*
 	Grand livre : toutes les opérations, indexées par compte. Calcule soldes et
 	synthèses à la demande ; aucun solde n'est stocké.
 	inTransactions : toutes les opérations
 */
 class Ledger(inTransactions: List<Transaction>)
 {
-	private val fTransactions = inTransactions.sortedBy { it.date }		// opérations par date
+	private val fTransactions = inTransactions.sortedWith(kChronological)	// opérations dans l'ordre canonique
 
 	/*
 		Solde d'un compte à une date : somme de ses jambes datées au plus tard
@@ -78,11 +99,14 @@ class Ledger(inTransactions: List<Transaction>)
 		inAccount      : compte
 		inMonth        : mois
 		inAccountsById : tous les comptes, pour qualifier les virements
+		inExpenseIds   : catégories de dépense : un montant positif dans l'une
+		                 d'elles est un remboursement, qui réduit les dépenses
 	*/
 	fun monthSummary(
 		inAccount      : Account,
 		inMonth        : YearMonth,
-		inAccountsById : Map<String, Account>
+		inAccountsById : Map<String, Account>,
+		inExpenseIds   : Set<String> = emptySet()
 	): MonthSummary
 	{
 		var vIncome    = 0L													// entrées
@@ -98,7 +122,7 @@ class Ledger(inTransactions: List<Transaction>)
 					val vAmount = inPosting.amountCents						// montant de la jambe
 					when (inTx.kind)
 					{
-						TransactionKind.STANDARD -> if (vAmount >= 0) vIncome += vAmount else vExpenses += vAmount
+						TransactionKind.STANDARD -> if (vAmount < 0 || inTx.categoryId in inExpenseIds) vExpenses += vAmount else vIncome += vAmount
 						TransactionKind.TRADE    -> vTrades += vAmount
 						TransactionKind.OPENING  -> vOpenings += vAmount
 						TransactionKind.TRANSFER ->
@@ -160,7 +184,7 @@ class Ledger(inTransactions: List<Transaction>)
 	}
 
 	/*
-		Toutes les opérations, triées par date.
+		Toutes les opérations, dans l'ordre canonique (kChronological).
 	*/
 	fun transactions(): List<Transaction> = fTransactions
 }

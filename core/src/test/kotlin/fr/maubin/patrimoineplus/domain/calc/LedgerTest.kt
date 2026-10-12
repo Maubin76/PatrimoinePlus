@@ -124,6 +124,23 @@ class LedgerTest
 	}
 
 	/*
+		Avec les catégories de dépense connues, un remboursement réduit les
+		dépenses du mois au lieu de compter comme une entrée : les dépenses du
+		mois égalent alors la somme des dépenses par catégorie (écart constaté
+		en test utilisateur : « Entrées +54,90 €, Dépenses 0 € »).
+	*/
+	@Test
+	fun refundsReduceExpenses()
+	{
+		val vLedger   = Ledger(kScenario)											// grand livre
+		val vFeb      = vLedger.monthSummary(kChecking, YearMonth.of(2026, 2), kAccounts, setOf(kGroceries.id, kLeisure.id))	// février
+		val vByCat    = vLedger.categorySummary(kChecking.id, d("2026-02-01"), d("2026-02-28"), listOf(kGroceries, kLeisure), CategoryKind.EXPENSE)	// par catégorie
+		assertEquals(0L, vFeb.income)
+		assertEquals(eur(-65.0), vFeb.expenses)
+		assertEquals(-vFeb.expenses, vByCat.sumOf { it.netCents })
+	}
+
+	/*
 		Côté livret, les virements avec le compte courant sont aussi de l'épargne.
 	*/
 	@Test

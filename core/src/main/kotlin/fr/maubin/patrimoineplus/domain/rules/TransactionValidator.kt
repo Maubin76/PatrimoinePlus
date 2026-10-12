@@ -1,7 +1,10 @@
 package fr.maubin.patrimoineplus.domain.rules
 
 import fr.maubin.patrimoineplus.domain.calc.Ledger
-import fr.maubin.patrimoineplus.domain.calc.heldQuantity
+import fr.maubin.patrimoineplus.domain.calc.findOversold
+import fr.maubin.patrimoineplus.domain.calc.grossCents
+import fr.maubin.patrimoineplus.domain.calc.kMaxTradeCents
+import fr.maubin.patrimoineplus.domain.calc.tradedPairs
 import fr.maubin.patrimoineplus.domain.calc.tradeCashCents
 import fr.maubin.patrimoineplus.domain.model.Account
 import fr.maubin.patrimoineplus.domain.model.AccountType
@@ -10,6 +13,10 @@ import fr.maubin.patrimoineplus.domain.model.Category
 import fr.maubin.patrimoineplus.domain.model.TradeSide
 import fr.maubin.patrimoineplus.domain.model.Transaction
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
+private val kShortDate = DateTimeFormatter.ofPattern("dd/MM/yyyy")			// date dans les messages
 
 /*
 	Violation d'une règle de saisie.
@@ -79,6 +86,15 @@ sealed class ValidationError(val message: String)
 	*/
 	data class OversoldPosition(val held: Long) : ValidationError("La vente dépasse la quantité détenue à cette date.")
 
+	/*
+		L'opération rendrait impossible une vente déjà saisie (titres plus
+		détenus à sa date).
+		label : libellé de la vente
+		date  : date de la vente
+	*/
+	data class BreaksLaterSale(val label: String, val date: LocalDate) :
+		ValidationError("La vente « $label » du ${date.format(kShortDate)} dépasserait alors la quantité détenue.")
+
 	// Une position initiale doit être un achat.
 	data object OpeningMustBuy : ValidationError("Une position initiale se saisit comme un achat.")
 }
@@ -101,10 +117,13 @@ class TransactionValidator(
 		inTx          : opération à vérifier
 		inOtherLedger : grand livre des autres opérations (sans celle-ci, en cas
 		                de modification), pour contrôler les ventes
+		inReplaced    : version précédente de l'opération, en cas de modification
+		                (ses positions sont contrôlées aussi)
 	*/
 	fun validate(
 		inTx          : Transaction,
-		inOtherLedger : Ledger
+		inOtherLedger : Ledger,
+		inReplaced    : Transaction? = null
 	): List<ValidationError>
 	{
 		val vErrors = mutableListOf<ValidationError>()							// violations trouvées
@@ -121,6 +140,10 @@ class TransactionValidator(
 			TransactionKind.TRANSFER -> checkTransfer(inTx, vErrors)
 			TransactionKind.TRADE    -> checkTrade(inTx, inOtherLedger, vErrors)
 			TransactionKind.OPENING  -> checkOpening(inTx, vErrors)
+		}
+		if (vErrors.isEmpty() && (inTx.trades.isNotEmpty() || inReplaced?.trades?.isNotEmpty() == true))
+		{
+			positionError(inTx, Ledger(inOtherLedger.transactions() + inTx), tradedPairs(listOfNotNull(inTx, inReplaced)))?.let { vErrors += it }
 		}
 		return vErrors
 	}
@@ -218,14 +241,25 @@ class TransactionValidator(
 		{
 			inErrors += ValidationError.TradeAmountMismatch(vExpected)
 		}
-		if (vTrade.side == TradeSide.SELL)
-		{
-			val vHeld = heldQuantity(inOtherLedger, vPosting.accountId, vTrade.assetId, inTx.date)	// quantité détenue
-			if (vTrade.quantity > vHeld)
-			{
-				inErrors += ValidationError.OversoldPosition(vHeld)
-			}
-		}
+	}
+
+	/*
+		Quantités détenues après l'opération : aucune vente du compte et des
+		actifs touchés ne doit dépasser ce qui est détenu à sa date (y compris
+		les ventes postérieures déjà saisies). Null si tout va bien.
+		inTx     : opération vérifiée
+		inLedger : grand livre avec l'opération
+		inPairs  : couples (compte, actif) à contrôler
+	*/
+	private fun positionError(
+		inTx     : Transaction,
+		inLedger : Ledger,
+		inPairs  : Set<Pair<String, String>>
+	): ValidationError?
+	{
+		val vOversold = findOversold(inLedger, inPairs) ?: return null			// première vente à découvert
+		return if (vOversold.transaction.id == inTx.id) ValidationError.OversoldPosition(vOversold.held)
+			else ValidationError.BreaksLaterSale(vOversold.transaction.label, vOversold.transaction.date)
 	}
 
 	/*
@@ -327,7 +361,7 @@ class TransactionValidator(
 			inErrors += ValidationError.UnknownAsset
 			vValid = false
 		}
-		if (inQuantity <= 0 || inUnitPrice <= 0 || inFeesCents < 0)
+		if (inQuantity <= 0 || inUnitPrice <= 0 || inFeesCents < 0 || inFeesCents >= kMaxTradeCents || grossCents(inQuantity, inUnitPrice) >= kMaxTradeCents)
 		{
 			inErrors += ValidationError.InvalidTradeValues
 			vValid = false

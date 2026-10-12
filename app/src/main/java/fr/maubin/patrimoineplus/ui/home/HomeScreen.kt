@@ -166,10 +166,11 @@ private fun TotalBlock(inState: HomeUiState)
 			}
 		}
 		Spacer(Modifier.height(16.dp))
-		if (!inState.isEmpty)
+		val vChange = inState.monthChange											// variation du mois ; null le premier mois
+		if (!inState.isEmpty && vChange != null)
 		{
 			Row(verticalAlignment = Alignment.CenterVertically) {
-				AmountText(inCents = inState.monthChange, inStyle = MaterialTheme.typography.titleMedium, inShowPlusSign = true)
+				AmountText(inCents = vChange, inStyle = MaterialTheme.typography.titleMedium, inShowPlusSign = true)
 				Text(" ce mois-ci", style = MaterialTheme.typography.titleMedium, color = vColors.onSurfaceVariant)
 			}
 			Spacer(Modifier.height(16.dp))
@@ -218,7 +219,6 @@ private fun RepartitionBlock(
 )
 {
 	val vHidden = LocalAmountsHidden.current								// mode discret actif
-	val vBase   = inState.groups.sumOf { maxOf(it.subtotalCents, 0L) }	// base des pourcentages
 	Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
 		ProportionBar(
 			inSegments    = inState.groups.map { BarSegment(it.subtotalCents, typeColor(it.type)) },
@@ -226,7 +226,7 @@ private fun RepartitionBlock(
 		)
 		Spacer(Modifier.height(12.dp))
 		inState.groups.forEach { inGroup ->
-			val vPercent = if (vBase > 0) inGroup.subtotalCents.coerceAtLeast(0L) * 100 / vBase else 0L	// part arrondie
+			val vPercent = inGroup.percent										// part entière
 			Row(
 				modifier          = Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(onClickLabel = "Voir les comptes", onClick = inOnOpen),
 				verticalAlignment = Alignment.CenterVertically
@@ -264,9 +264,8 @@ private fun repartitionDescription(
 	{
 		return "Répartition par type de compte"
 	}
-	val vTotal = inState.groups.sumOf { maxOf(it.subtotalCents, 0L) }	// base des pourcentages
 	return "Répartition : " + inState.groups.joinToString(", ") { inGroup ->
-		val vPercent = if (vTotal > 0) inGroup.subtotalCents.coerceAtLeast(0L) * 100 / vTotal else 0L	// part arrondie
+		val vPercent = inGroup.percent										// part entière
 		"${inGroup.type.label} $vPercent\u202F%"
 	}
 }

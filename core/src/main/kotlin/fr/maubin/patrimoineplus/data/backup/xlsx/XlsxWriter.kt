@@ -143,25 +143,39 @@ internal fun excelSerial(inDate: LocalDate): Long = ChronoUnit.DAYS.between(kExc
 internal fun fromExcelSerial(inSerial: Long): LocalDate = kExcelEpoch.plusDays(inSerial)
 
 /*
-	Échappe un texte pour le XML (caractères de contrôle interdits retirés).
+	Échappe un texte pour le XML : caractères interdits en XML 1.0 retirés
+	(contrôles, U+FFFE, U+FFFF, moitiés isolées de caractères composés).
 	inText : texte
 */
 private fun escape(inText: String): String
 {
 	val vOut = StringBuilder(inText.length)									// texte échappé
-	inText.forEach { inChar ->
+	var vIndex = 0																// position dans le texte
+	while (vIndex < inText.length)
+	{
+		val vCode = inText.codePointAt(vIndex)									// caractère complet
+		val vSize = Character.charCount(vCode)									// unités UTF-16 occupées
 		when
 		{
-			inChar == '&'                                      -> vOut.append("&amp;")
-			inChar == '<'                                      -> vOut.append("&lt;")
-			inChar == '>'                                      -> vOut.append("&gt;")
-			inChar == '"'                                      -> vOut.append("&quot;")
-			inChar < ' ' && inChar != '\t' && inChar != '\n' && inChar != '\r' -> Unit
-			else                                               -> vOut.append(inChar)
+			vCode == '&'.code                                        -> vOut.append("&amp;")
+			vCode == '<'.code                                        -> vOut.append("&lt;")
+			vCode == '>'.code                                        -> vOut.append("&gt;")
+			vCode == '"'.code                                        -> vOut.append("&quot;")
+			isXmlChar(vCode)                                         -> vOut.appendCodePoint(vCode)
+			else                                                     -> Unit
 		}
+		vIndex += vSize
 	}
 	return vOut.toString()
 }
+
+/*
+	Vrai si un caractère est permis en XML 1.0.
+	inCode : point de code
+*/
+internal fun isXmlChar(inCode: Int): Boolean =
+	inCode == 0x9 || inCode == 0xA || inCode == 0xD ||
+		inCode in 0x20..0xD7FF || inCode in 0xE000..0xFFFD || inCode in 0x10000..0x10FFFF
 
 /*
 	XML d'une feuille : volet figé sous l'en-tête, largeurs, données, filtre.

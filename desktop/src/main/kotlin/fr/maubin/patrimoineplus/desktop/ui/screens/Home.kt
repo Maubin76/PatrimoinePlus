@@ -65,23 +65,24 @@ fun HomeScreen(
 			inLeft  = {
 				AmountText(inCents = vState.totalCents, inStyle = MaterialTheme.typography.displayMedium)
 				Spacer(Modifier.height(8.dp))
-				Row(verticalAlignment = Alignment.CenterVertically) {
-					AmountText(inCents = vState.monthChange, inStyle = MaterialTheme.typography.titleMedium, inShowPlusSign = true)
-					Text(" ce mois-ci", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+				vState.monthChange?.let { inChange ->
+					Row(verticalAlignment = Alignment.CenterVertically) {
+						AmountText(inCents = inChange, inStyle = MaterialTheme.typography.titleMedium, inShowPlusSign = true)
+						Text(" ce mois-ci", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+					}
 				}
 				Spacer(Modifier.height(16.dp))
 				InfoPill("Calculé au ${vState.asOf}")
 				Spacer(Modifier.height(40.dp))
 				SectionHeader(inTitle = "Répartition")
 				Spacer(Modifier.height(12.dp))
-				val vBase = vState.groups.sumOf { maxOf(it.subtotalCents, 0L) }	// base des pourcentages
 				ProportionBar(
 					inSegments    = vState.groups.map { BarSegment(it.subtotalCents, typeColor(it.type)) },
 					inDescription = "Répartition par type de compte"
 				)
 				Spacer(Modifier.height(12.dp))
 				vState.groups.forEach { inGroup ->
-					val vPercent = if (vBase > 0) inGroup.subtotalCents.coerceAtLeast(0L) * 100 / vBase else 0L	// part arrondie
+					val vPercent = inGroup.percent										// part entière
 					Row(
 						modifier          = Modifier.fillMaxWidth().heightIn(min = 44.dp).clickable(onClick = inOnTypes),
 						verticalAlignment = Alignment.CenterVertically

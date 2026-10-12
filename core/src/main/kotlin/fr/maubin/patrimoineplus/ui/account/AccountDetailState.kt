@@ -172,7 +172,7 @@ fun buildAccountDetail(
 		month      = inMonth,
 		firstMonth = vFirst,
 		lastMonth  = vLast,
-		summary    = vAccount?.let { vLedger.monthSummary(it, inMonth, vByAccount) },
+		summary    = vAccount?.let { vLedger.monthSummary(it, inMonth, vByAccount, inCategories.filter { it.kind == CategoryKind.EXPENSE }.map { it.id }.toSet()) },
 		expenses   = vLedger.categorySummary(inAccountId, inMonth.atDay(1), inMonth.atEndOfMonth(), inCategories, CategoryKind.EXPENSE),
 		series     = balanceSeries(vLedger, inAccountId, vSeriesEnd, kSeriesMonths).filter { !it.month.isBefore(vFirst) || it.month == inMonth },
 		upcoming   = vItems.filter { it.upcoming },

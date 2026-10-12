@@ -143,6 +143,55 @@ fun heldQuantity(
 		.sumOf { if (it.side == TradeSide.BUY) it.quantity else -it.quantity }
 
 /*
+	Vente qui dépasse la quantité détenue.
+	transaction : opération de vente
+	held        : quantité détenue juste avant, en dix-millièmes
+*/
+data class OversoldSale(
+	val transaction : Transaction,
+	val held        : Long
+)
+
+/*
+	Première vente à découvert du grand livre, en le parcourant dans l'ordre
+	canonique : sert à refuser une saisie, une modification ou une suppression
+	qui rendrait une vente (même ultérieure) impossible.
+	inLedger : grand livre
+	inPairs  : couples (compte, actif) à contrôler ; null pour tous
+*/
+fun findOversold(
+	inLedger : Ledger,
+	inPairs  : Set<Pair<String, String>>? = null
+): OversoldSale?
+{
+	val vHeld = mutableMapOf<Pair<String, String>, Long>()						// quantité par (compte, actif)
+	inLedger.transactions().forEach { inTx ->
+		val vAccount = inTx.postings.firstOrNull()?.accountId ?: return@forEach	// compte de l'ordre
+		inTx.trades.forEach { inTrade ->
+			val vKey  = vAccount to inTrade.assetId								// position concernée
+			val vNow  = vHeld[vKey] ?: 0L											// quantité avant l'ordre
+			val vNext = if (inTrade.side == TradeSide.BUY) vNow + inTrade.quantity else vNow - inTrade.quantity	// après
+			if (vNext < 0L && (inPairs == null || vKey in inPairs))
+			{
+				return OversoldSale(inTx, vNow)
+			}
+			vHeld[vKey] = vNext
+		}
+	}
+	return null
+}
+
+/*
+	Couples (compte, actif) touchés par des opérations.
+	inTxs : opérations
+*/
+fun tradedPairs(inTxs: Collection<Transaction>): Set<Pair<String, String>> =
+	inTxs.flatMap { inTx ->
+		val vAccount = inTx.postings.firstOrNull()?.accountId					// compte de l'ordre
+		if (vAccount == null) emptyList() else inTx.trades.map { vAccount to it.assetId }
+	}.toSet()
+
+/*
 	PRU, en dix-millièmes d'euro : prix de revient total / quantité.
 	inCostCents : prix de revient total, en centimes
 	inQuantity  : quantité, en dix-millièmes

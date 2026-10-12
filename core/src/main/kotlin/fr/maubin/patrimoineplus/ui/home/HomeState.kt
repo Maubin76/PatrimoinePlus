@@ -4,6 +4,7 @@ import fr.maubin.patrimoineplus.domain.calc.Ledger
 import fr.maubin.patrimoineplus.domain.calc.Wealth
 import fr.maubin.patrimoineplus.domain.calc.SeriesPoint
 import fr.maubin.patrimoineplus.domain.calc.monthChange
+import fr.maubin.patrimoineplus.domain.calc.wholePercents
 import fr.maubin.patrimoineplus.domain.calc.wealthAt
 import fr.maubin.patrimoineplus.domain.calc.wealthSeries
 import fr.maubin.patrimoineplus.domain.model.AccountType
@@ -30,12 +31,15 @@ data class HomeAccountLine(
 
 /*
 	Groupe de comptes d'un même type.
-	type  : type des comptes du groupe
-	lines : comptes du groupe, dans l'ordre d'affichage
+	type    : type des comptes du groupe
+	lines   : comptes du groupe, dans l'ordre d'affichage
+	percent : part du groupe dans le patrimoine, en % entiers (les parts des
+	          groupes font 100 au total)
 */
 data class HomeGroup(
-	val type  : AccountType,
-	val lines : List<HomeAccountLine>
+	val type    : AccountType,
+	val lines   : List<HomeAccountLine>,
+	val percent : Int = 0
 )
 {
 	// Sous-total compté dans le patrimoine, en centimes.
@@ -47,13 +51,13 @@ data class HomeGroup(
 	asOf        : date à laquelle le patrimoine est calculé, formatée
 	groups      : groupes de comptes non vides, dans l'ordre des types
 	series      : patrimoine en fin de mois, douze derniers mois au plus
-	monthChange : variation depuis la fin du mois précédent
+	monthChange : variation depuis la fin du mois précédent ; null le premier mois
 */
 data class HomeUiState(
 	val asOf        : String,
 	val groups      : List<HomeGroup>,
 	val series      : List<SeriesPoint> = emptyList(),
-	val monthChange : Long              = 0L
+	val monthChange : Long?             = null
 )
 {
 	// Patrimoine total, en centimes : somme des valeurs comptées.
@@ -74,20 +78,24 @@ data class HomeUiState(
 fun toHomeUiState(
 	inWealth : Wealth,
 	inSeries : List<SeriesPoint> = emptyList()
-): HomeUiState =
-	HomeUiState(
+): HomeUiState
+{
+	val vGroups   = AccountType.entries.mapNotNull { inType ->
+		val vLines = inWealth.accounts
+			.filter { it.account.type == inType && (!it.account.archived || it.valueCents != 0L) }
+			.map { inValue ->
+				HomeAccountLine(inValue.account.name, accountDetail(inValue.account), inValue.valueCents, inValue.countedCents)
+			}																		// lignes du type
+		if (vLines.isEmpty()) null else HomeGroup(inType, vLines)
+	}																				// groupes non vides
+	val vPercents = wholePercents(vGroups.map { it.subtotalCents.coerceAtLeast(0L) })	// parts entières
+	return HomeUiState(
 		series      = inSeries.takeLast(kHomeSeriesMonths),
 		monthChange = monthChange(inSeries),
 		asOf        = inWealth.date.format(kDateFormat),
-		groups      = AccountType.entries.mapNotNull { inType ->
-			val vLines = inWealth.accounts
-				.filter { it.account.type == inType && (!it.account.archived || it.valueCents != 0L) }
-				.map { inValue ->
-					HomeAccountLine(inValue.account.name, accountDetail(inValue.account), inValue.valueCents, inValue.countedCents)
-				}																	// lignes du type
-			if (vLines.isEmpty()) null else HomeGroup(inType, vLines)
-		}
+		groups      = vGroups.mapIndexed { inIndex, inGroup -> inGroup.copy(percent = vPercents[inIndex]) }
 	)
+}
 
 /*
 	Ligne de détail d'un compte : type, établissement, part détenue, archivage.

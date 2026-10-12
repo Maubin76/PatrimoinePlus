@@ -107,15 +107,15 @@ class WealthTest
 	}
 
 	/*
-		Variation du mois : dernier point moins le précédent ; depuis zéro si la
-		série commence ce mois-ci ; nulle sans série.
+		Variation du mois : dernier point moins le précédent ; aucune le premier
+		mois (les soldes de départ ne sont pas une variation) ni sans série.
 	*/
 	@Test
 	fun monthChangeFromSeries()
 	{
 		val vSeries = wealthSeries(kAccounts, Ledger(kOps), emptyList(), d("2026-03-10"))	// série
 		assertEquals(eur(-100.0), monthChange(vSeries))							// joint −200 compté à 50 %
-		assertEquals(eur(12_550.5), monthChange(vSeries.take(1)))
-		assertEquals(0L, monthChange(emptyList()))
+		assertEquals(null, monthChange(vSeries.take(1)))						// premier mois : soldes de départ, pas une variation
+		assertEquals(null, monthChange(emptyList()))
 	}
 }

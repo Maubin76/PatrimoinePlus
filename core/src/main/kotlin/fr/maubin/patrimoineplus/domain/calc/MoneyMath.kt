@@ -9,6 +9,8 @@ const val kPriceScale    = 10_000L											// cours en dix-millièmes d'euro
 
 private val kCentsPerMicroProduct = BigDecimal(kQuantityScale * kPriceScale / 100)	// produit quantité × cours → centimes
 
+const val kMaxTradeCents = 100_000_000_000_000L								// montant d'ordre maximal (mille milliards d'euros)
+
 /*
 	Division entière arrondie au plus proche, les demis s'éloignant de zéro
 	(arrondi commercial, symétrique pour les négatifs).
@@ -34,7 +36,9 @@ fun shareOf(
 
 /*
 	Montant brut d'une quantité à un cours, arrondi au centime. Calcul en
-	précision exacte (BigDecimal) : le produit brut peut dépasser un Long.
+	précision exacte (BigDecimal) : le produit brut peut dépasser un Long ; il
+	est alors plafonné à kMaxTradeCents (valeur absurde, refusée par la
+	validation) plutôt que de faire échouer l'affichage.
 	inQuantity  : quantité, en dix-millièmes d'unité
 	inUnitPrice : cours, en dix-millièmes d'euro
 */
@@ -45,6 +49,7 @@ fun grossCents(
 	BigDecimal(inQuantity)
 		.multiply(BigDecimal(inUnitPrice))
 		.divide(kCentsPerMicroProduct, 0, RoundingMode.HALF_UP)
+		.min(BigDecimal(kMaxTradeCents))
 		.longValueExact()
 
 /*

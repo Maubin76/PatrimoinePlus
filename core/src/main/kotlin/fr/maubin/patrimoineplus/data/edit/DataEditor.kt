@@ -11,6 +11,9 @@ import fr.maubin.patrimoineplus.data.backup.TradeDto
 import fr.maubin.patrimoineplus.data.backup.TransactionDto
 import fr.maubin.patrimoineplus.data.toDataSet
 import fr.maubin.patrimoineplus.domain.calc.Ledger
+import fr.maubin.patrimoineplus.domain.calc.OversoldSale
+import fr.maubin.patrimoineplus.domain.calc.findOversold
+import fr.maubin.patrimoineplus.domain.calc.tradedPairs
 import fr.maubin.patrimoineplus.domain.model.Account
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.domain.model.Category
@@ -21,11 +24,14 @@ import fr.maubin.patrimoineplus.domain.model.TransactionKind
 import fr.maubin.patrimoineplus.domain.model.kOpeningLabel
 import fr.maubin.patrimoineplus.domain.rules.SetupError
 import fr.maubin.patrimoineplus.domain.rules.TransactionValidator
+import fr.maubin.patrimoineplus.domain.rules.ValidationError
 import fr.maubin.patrimoineplus.domain.rules.validateAccount
 import fr.maubin.patrimoineplus.domain.rules.validateReassignment
 import java.time.Clock
 import java.time.LocalDate
 import java.util.UUID
+
+private const val kPositiveValues = "Quantité et cours doivent être positifs."		// refus d'une valeur nulle ou négative
 
 /*
 	Résultat d'une modification.
@@ -197,7 +203,9 @@ class DataEditor(
 				if (it.id == vOld.id) vOld.copy(date = inOpening.date.toString(), postings = listOf(vOld.postings.single().copy(amountCents = inOpening.cents)), updatedAt = vNow) else it
 			}
 		}																			// opérations modifiées
-		return EditResult.Done(inFile.copy(transactions = vTxs), inId)
+		val vFile = inFile.copy(transactions = vTxs)								// nouveau contenu
+		vOld?.let { positionRefusal(vFile, inId, it.trades) }?.let { return it }
+		return EditResult.Done(vFile, inId)
 	}
 
 	/*
@@ -222,6 +230,7 @@ class DataEditor(
 		val vAccount = inFile.accounts.firstOrNull { it.id == inId } ?: return refused(SetupError.NotFound)	// compte
 		if (vAccount.type != AccountType.BROKERAGE.name) return refused(SetupError.KindMismatch)
 		if (inFile.assets.none { it.id == inAssetId }) return refused(SetupError.NotFound)
+		if (inQuantity <= 0L || inUnitPrice <= 0L) return EditResult.Refused(listOf(kPositiveValues))
 		val vNow   = now()															// horodatage
 		val vOld   = openingOf(inFile.transactions, inId)							// solde initial actuel
 		val vTrade = TradeDto(inNewId(), inAssetId, TradeSide.BUY.name, inQuantity, inUnitPrice, 0)	// position
@@ -247,18 +256,24 @@ class DataEditor(
 		val vNew = vOld.copy(trades = vOld.trades.filterNot { it.id == inTradeId }, updatedAt = now())	// sans la position
 		val vTxs = if (vNew.trades.isEmpty() && vNew.postings.single().amountCents == 0L) inFile.transactions - vOld
 			else inFile.transactions.map { if (it.id == vOld.id) vNew else it }	// opérations modifiées
-		return EditResult.Done(inFile.copy(transactions = vTxs), inId)
+		val vFile = inFile.copy(transactions = vTxs)								// nouveau contenu
+		positionRefusal(vFile, inId, vOld.trades.filter { it.id == inTradeId })?.let { return it }
+		return EditResult.Done(vFile, inId)
 	}
 
 	/*
-		Nombre d'opérations d'un compte, hors son solde initial.
+		Nombre d'opérations d'un compte, hors son solde initial s'il ne porte
+		que des espèces (des positions initiales comptent : elles verrouillent
+		le type Bourse).
 		inFile : contenu
 		inId   : compte
 	*/
 	fun operationCount(
 		inFile : BackupFile,
 		inId   : String
-	): Int = inFile.transactions.count { inTx -> inTx.kind != TransactionKind.OPENING.name && inTx.postings.any { it.accountId == inId } }
+	): Int = inFile.transactions.count { inTx ->
+		(inTx.kind != TransactionKind.OPENING.name || inTx.trades.isNotEmpty()) && inTx.postings.any { it.accountId == inId }
+	}
 
 	/*
 		Supprime un compte. Simple : seulement s'il n'a pas d'autre opération que
@@ -299,10 +314,11 @@ class DataEditor(
 		inIds  : List<String>
 	): EditResult
 	{
-		val vNow = now()															// horodatage
+		val vRanks = ranks(inIds, inFile.accounts.sortedBy { it.sortOrder }.map { it.id })	// nouveaux rangs
+		val vNow   = now()															// horodatage
 		return EditResult.Done(inFile.copy(accounts = inFile.accounts.map { inAccount ->
-			val vIndex = inIds.indexOf(inAccount.id)								// nouveau rang
-			if (vIndex >= 0 && vIndex != inAccount.sortOrder) inAccount.copy(sortOrder = vIndex, updatedAt = vNow) else inAccount
+			val vIndex = vRanks.getValue(inAccount.id)								// nouveau rang
+			if (vIndex != inAccount.sortOrder) inAccount.copy(sortOrder = vIndex, updatedAt = vNow) else inAccount
 		}))
 	}
 
@@ -391,10 +407,12 @@ class DataEditor(
 		inIds  : List<String>
 	): EditResult
 	{
-		val vNow = now()															// horodatage
+		val vKind  = inFile.categories.firstOrNull { it.id in inIds }?.kind		// nature réordonnée
+		val vRanks = ranks(inIds, inFile.categories.filter { it.kind == vKind }.sortedBy { it.sortOrder }.map { it.id })	// nouveaux rangs
+		val vNow   = now()															// horodatage
 		return EditResult.Done(inFile.copy(categories = inFile.categories.map { inCategory ->
-			val vIndex = inIds.indexOf(inCategory.id)								// nouveau rang
-			if (vIndex >= 0 && vIndex != inCategory.sortOrder) inCategory.copy(sortOrder = vIndex, updatedAt = vNow) else inCategory
+			val vIndex = vRanks[inCategory.id] ?: return@map inCategory				// nouveau rang (autre nature : inchangé)
+			if (vIndex != inCategory.sortOrder) inCategory.copy(sortOrder = vIndex, updatedAt = vNow) else inCategory
 		}))
 	}
 
@@ -413,8 +431,9 @@ class DataEditor(
 	{
 		val vData   = inFile.toDataSet()											// modèles du domaine
 		val vOthers = vData.transactions.filter { it.id != inTx.id }				// autres opérations
+		val vOld    = vData.transactions.firstOrNull { it.id == inTx.id }			// version remplacée
 		val vErrors = TransactionValidator(vData.accounts.associateBy { it.id }, vData.categories.associateBy { it.id }, vData.assets.associateBy { it.id })
-			.validate(inTx, Ledger(vOthers))										// règles violées
+			.validate(inTx, Ledger(vOthers), vOld)									// règles violées
 		if (vErrors.isNotEmpty())
 		{
 			return EditResult.Refused(vErrors.map { it.message })
@@ -445,7 +464,15 @@ class DataEditor(
 	fun deleteTransactions(
 		inFile : BackupFile,
 		inIds  : Collection<String>
-	): EditResult = EditResult.Done(inFile.copy(transactions = inFile.transactions.filterNot { it.id in inIds }))
+	): EditResult
+	{
+		val vFile    = inFile.copy(transactions = inFile.transactions.filterNot { it.id in inIds })	// nouveau contenu
+		val vRemoved = inFile.toDataSet().transactions.filter { it.id in inIds }	// opérations supprimées
+		findOversold(Ledger(vFile.toDataSet().transactions), tradedPairs(vRemoved))?.let { inSale ->
+			return EditResult.Refused(listOf(laterSaleMessage(inSale)))
+		}
+		return EditResult.Done(vFile)
+	}
 
 	// ---------- Actifs, cours, relevés ----------
 
@@ -504,6 +531,8 @@ class DataEditor(
 		inPrices : Map<String, Long>
 	): EditResult
 	{
+		if (inPrices.keys.any { inId -> inFile.assets.none { it.id == inId } }) return refused(SetupError.NotFound)
+		if (inPrices.values.any { it <= 0L }) return EditResult.Refused(listOf(kPositiveValues))
 		val vDay  = inDate.toString()												// jour, en texte
 		val vKept = inFile.prices.filterNot { it.date == vDay && it.assetId in inPrices.keys }	// cours conservés
 		return EditResult.Done(inFile.copy(prices = vKept + inPrices.map { (inAsset, inPrice) -> PriceDto(inNewId(), inAsset, vDay, inPrice) }))
@@ -541,6 +570,44 @@ class DataEditor(
 	): EditResult = EditResult.Done(inFile.copy(statements = inFile.statements.filterNot { it.id == inId }))
 
 	// ---------- Outils ----------
+
+	/*
+		Refus si le contenu modifié rend une vente du compte impossible (titres
+		plus détenus à sa date) ; null sinon.
+		inFile    : contenu modifié
+		inAccount : compte Bourse
+		inTrades  : ordres retirés ou déplacés
+	*/
+	private fun positionRefusal(
+		inFile    : BackupFile,
+		inAccount : String,
+		inTrades  : List<TradeDto>
+	): EditResult?
+	{
+		if (inTrades.isEmpty()) return null
+		val vPairs = inTrades.map { inAccount to it.assetId }.toSet()				// positions concernées
+		val vSale  = findOversold(Ledger(inFile.toDataSet().transactions), vPairs) ?: return null	// vente devenue impossible
+		return EditResult.Refused(listOf(laterSaleMessage(vSale)))
+	}
+
+	/*
+		Message d'une vente rendue impossible.
+		inSale : vente à découvert
+	*/
+	private fun laterSaleMessage(inSale: OversoldSale): String =
+		ValidationError.BreaksLaterSale(inSale.transaction.label, inSale.transaction.date).message
+
+	/*
+		Rangs d'une liste réordonnée : les éléments donnés d'abord, dans
+		l'ordre voulu, puis les autres (archivés…) dans leur ordre actuel.
+		inIds     : identifiants, dans l'ordre voulu
+		inCurrent : tous les identifiants, dans l'ordre actuel
+	*/
+	private fun ranks(
+		inIds     : List<String>,
+		inCurrent : List<String>
+	): Map<String, Int> =
+		(inIds.filter { it in inCurrent } + inCurrent.filterNot { it in inIds }).withIndex().associate { it.value to it.index }
 
 	/*
 		Instant présent (ms).

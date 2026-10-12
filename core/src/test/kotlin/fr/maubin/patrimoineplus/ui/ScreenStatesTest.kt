@@ -48,4 +48,19 @@ class ScreenStatesTest
 		assertEquals(100, (vState.active + vState.archived).mapNotNull { it.weight?.percent }.sum())
 		assertTrue(vState.active.all { it.operations >= 0 })
 	}
+
+	/*
+		Accueil : parts par type entières qui font 100 % (avant : arrondies
+		par défaut, 98 % au total) ; pas de « variation du mois » le premier
+		mois (avant : tout le patrimoine de départ).
+	*/
+	@Test
+	fun homePercentsAndFirstMonth()
+	{
+		val vHome = buildHomeState(kDemo.accounts, kDemo.transactions, kDemo.prices, kToday)	// accueil
+		assertEquals(100, vHome.groups.sumOf { it.percent })
+		val vFirst = kDemo.transactions.filter { it.date.month == kToday.month && it.date.year == kToday.year }	// opérations du mois seul
+		val vNew   = buildHomeState(kDemo.accounts, vFirst, kDemo.prices, kToday)	// patrimoine commencé ce mois
+		assertEquals(null, vNew.monthChange)
+	}
 }

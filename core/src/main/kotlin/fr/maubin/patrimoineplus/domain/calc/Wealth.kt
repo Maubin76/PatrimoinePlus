@@ -121,16 +121,12 @@ fun wealthSeries(
 
 /*
 	Variation depuis la fin du mois précédent : dernier point de la série moins
-	l'avant-dernier (moins zéro si la série commence ce mois-ci).
+	l'avant-dernier ; null si la série commence ce mois-ci (les soldes de
+	départ ne sont pas une variation).
 	inSeries : série mensuelle, le dernier point étant le mois en cours
 */
-fun monthChange(inSeries: List<SeriesPoint>): Long =
-	when (inSeries.size)
-	{
-		0    -> 0L
-		1    -> inSeries.last().valueCents
-		else -> inSeries.last().valueCents - inSeries[inSeries.size - 2].valueCents
-	}
+fun monthChange(inSeries: List<SeriesPoint>): Long? =
+	if (inSeries.size < 2) null else inSeries.last().valueCents - inSeries[inSeries.size - 2].valueCents
 
 /*
 	Écart entre un relevé de la banque et le solde calculé à sa date :

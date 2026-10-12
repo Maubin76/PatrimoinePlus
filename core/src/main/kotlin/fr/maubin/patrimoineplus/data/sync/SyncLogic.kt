@@ -2,6 +2,7 @@ package fr.maubin.patrimoineplus.data.sync
 
 import fr.maubin.patrimoineplus.data.backup.BackupFile
 import fr.maubin.patrimoineplus.data.backup.encodeBackup
+import fr.maubin.patrimoineplus.data.backup.xlsx.isXmlChar
 import java.security.MessageDigest
 
 const val kSyncFileName = "patrimoineplus-donnees.xlsx"						// fichier d'échange entre appareils
@@ -29,10 +30,12 @@ fun syncFingerprint(inFile: BackupFile): String
 {
 	val vCanonical = inFile.copy(
 		exportedAt   = "",
-		accounts     = inFile.accounts.sortedBy { it.id },
-		categories   = inFile.categories.sortedBy { it.id },
-		assets       = inFile.assets.sortedBy { it.id },
-		transactions = inFile.transactions.sortedBy { it.id }.map { inTx -> inTx.copy(postings = inTx.postings.sortedBy { it.id }, trades = inTx.trades.sortedBy { it.id }) },
+		accounts     = inFile.accounts.sortedBy { it.id }.map { it.copy(name = it.name.canonical(), institution = it.institution.canonicalOrNull()) },
+		categories   = inFile.categories.sortedBy { it.id }.map { it.copy(name = it.name.canonical()) },
+		assets       = inFile.assets.sortedBy { it.id }.map { it.copy(name = it.name.canonical(), isin = it.isin.canonicalOrNull(), ticker = it.ticker.canonicalOrNull()) },
+		transactions = inFile.transactions.sortedBy { it.id }.map { inTx ->
+			inTx.copy(label = inTx.label.canonical(), notes = inTx.notes.canonicalOrNull(), postings = inTx.postings.sortedBy { it.id }, trades = inTx.trades.sortedBy { it.id })
+		},
 		statements   = inFile.statements.sortedBy { it.id },
 		prices       = inFile.prices.sortedBy { it.id }
 	)																			// forme canonique
@@ -70,3 +73,18 @@ fun decideSync(
 		inFile == inLast  -> SyncAction.EXPORT
 		else            -> SyncAction.CONFLICT
 	}
+
+/*
+	Texte tel qu'il ressort d'un aller-retour par le classeur : caractères
+	interdits en XML retirés, fins de ligne unifiées, espaces de bord
+	retirés. L'empreinte ne change donc pas quand seul l'aller-retour a
+	retouché un texte.
+*/
+private fun String.canonical(): String =
+	codePoints().filter { isXmlChar(it) }.toArray().let { String(it, 0, it.size) }
+		.replace("\r\n", "\n").replace('\r', '\n').trim()
+
+/*
+	Texte facultatif canonique ; null s'il est vide.
+*/
+private fun String?.canonicalOrNull(): String? = this?.canonical()?.ifEmpty { null }
