@@ -11,6 +11,7 @@ import fr.maubin.patrimoineplus.ui.entry.checkEntry
 import fr.maubin.patrimoineplus.ui.entry.editEntryForm
 import fr.maubin.patrimoineplus.ui.entry.kNewAsset
 import fr.maubin.patrimoineplus.ui.entry.newEntryForm
+import fr.maubin.patrimoineplus.domain.model.AccountType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -39,6 +40,9 @@ class EntryLogicTest
 		assertEquals(kDemo.accounts[1].id, newEntryForm(kData, "inconnu", kToday).accountId)
 		assertEquals(kDemo.accounts[0].id, newEntryForm(kData.copy(lastAccountId = null), null, kToday).accountId)
 		assertEquals(kToday, newEntryForm(kData, null, kToday).date)
+		val vBourse = kDemo.accounts.first { it.type == AccountType.BROKERAGE }			// compte Bourse
+		assertEquals(EntryMode.TRADE, newEntryForm(kData, vBourse.id, kToday).mode)	// ordre proposé d'office
+		assertEquals(EntryMode.EXPENSE, newEntryForm(kData, kDemo.accounts.first { it.type == AccountType.CHECKING }.id, kToday).mode)
 	}
 
 	/*

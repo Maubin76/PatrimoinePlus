@@ -22,6 +22,7 @@ import fr.maubin.patrimoineplus.domain.calc.Ledger
 import fr.maubin.patrimoineplus.domain.calc.valuePortfolio
 import fr.maubin.patrimoineplus.domain.model.Account
 import fr.maubin.patrimoineplus.domain.model.AccountType
+import fr.maubin.patrimoineplus.domain.model.Asset
 import fr.maubin.patrimoineplus.domain.model.CategoryKind
 import fr.maubin.patrimoineplus.domain.model.Posting
 import fr.maubin.patrimoineplus.domain.model.Trade
@@ -184,6 +185,48 @@ class DataLayerTest
 		val vSaved = fTransactions.save(vBad)									// résultat
 		assertEquals(SaveResult.Rejected(listOf(ValidationError.UnbalancedTransfer)), vSaved)
 		assertTrue(fTransactions.observeTransactions().first().isEmpty())
+	}
+
+	/*
+		Revue du 2026-10-12 : un nouvel actif saisi avec un ordre refusé n'est
+		pas créé ; supprimer l'achat dont dépend une vente est refusé (rien
+		n'est supprimé) ; un cours inchangé n'est pas réécrit (identifiant
+		conservé) ; des positions initiales verrouillent le type Bourse.
+	*/
+	@Test
+	fun reviewFixesOnDataLayer() = runTest {
+		val vPea   = account("PEA", AccountType.BROKERAGE)						// compte Bourse
+		val vNew   = Asset("nouvel", "Nouvel ETF", null)							// actif saisi avec l'ordre
+		val vSell  = Transaction("v0", LocalDate.parse("2026-10-03"), TransactionKind.TRADE, "Vente",
+			postings = listOf(Posting("pv0", vPea.id, 10_000)),
+			trades   = listOf(Trade("tv0", vNew.id, TradeSide.SELL, 10_000, 1_000_000, 0)))	// vente sans titre détenu
+		assertTrue(fTransactions.save(vSell, vNew) is SaveResult.Rejected)
+		assertTrue(fMarket.observeAssets().first().isEmpty())
+
+		val vBuy  = Transaction("a1", LocalDate.parse("2026-10-02"), TransactionKind.TRADE, "Achat",
+			postings = listOf(Posting("pa1", vPea.id, -10_000)),
+			trades   = listOf(Trade("ta1", vNew.id, TradeSide.BUY, 10_000, 1_000_000, 0)))	// achat d'une part
+		assertTrue(fTransactions.save(vBuy, vNew) is SaveResult.Saved)
+		assertTrue(fTransactions.save(vSell) is SaveResult.Saved)
+		val vRefusal = fTransactions.delete(listOf(vBuy.id))						// suppression refusée
+		assertTrue(vRefusal!!.contains("Vente"))
+		assertEquals(2, fTransactions.observeTransactions().first().size)
+		assertEquals(null, fTransactions.delete(listOf(vBuy.id, vSell.id)))
+
+		fMarket.putPrice(vNew.id, LocalDate.parse("2026-10-05"), 1_000_000)
+		val vFirst = fMarket.observePrices().first().single()						// cours enregistré
+		fMarket.putPrice(vNew.id, LocalDate.parse("2026-10-05"), 1_000_000)
+		fMarket.putPrice(vNew.id, LocalDate.parse("2026-10-05"), 1_100_000)
+		val vAfter = fMarket.observePrices().first().single()						// cours modifié
+		assertEquals(vFirst.id, vAfter.id)
+		assertEquals(1_100_000L, vAfter.unitPrice)
+
+		val vPea2 = account("PEA 2", AccountType.BROKERAGE)						// second compte Bourse
+		fTransactions.save(Transaction("o2", LocalDate.parse("2026-10-01"), TransactionKind.OPENING, "Solde initial",
+			postings = listOf(Posting("po2", vPea2.id, 0)),
+			trades   = listOf(Trade("to2", vNew.id, TradeSide.BUY, 10_000, 1_000_000, 0))))	// position initiale seule
+		assertEquals(1, fAccounts.operationCount(vPea2.id))
+		assertEquals(SaveResult.Rejected(listOf(SetupError.TypeLocked)), fAccounts.update(vPea2.copy(type = AccountType.CHECKING)))
 	}
 
 	/*

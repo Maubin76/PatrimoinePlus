@@ -112,6 +112,7 @@ class SyncerTest
 	private lateinit var fStore   : MemorySyncStore								// mémoire de synchronisation
 	private lateinit var fSyncer  : Syncer										// service testé
 	private var fImports = 0														// imports signalés (avant et après)
+	private var fBackupOk = true													// issue de la sauvegarde de sécurité
 
 	/*
 		Base chargée avec la démonstration, dossier vide, synchronisation active.
@@ -142,7 +143,7 @@ class SyncerTest
 	private fun syncer(inChanges: Flow<Any>): Syncer =
 		Syncer(fBackup, fStore, { fFolder }, object : SyncHooks
 		{
-			override suspend fun beforeImport() { fImports++ }
+			override suspend fun beforeImport(): Boolean { fImports++; return fBackupOk }
 			override suspend fun afterImport() { fImports++ }
 		}, inChanges, kClock)
 
@@ -205,6 +206,23 @@ class SyncerTest
 		assertEquals(2, fImports)
 		assertEquals(1, fFolder.writes)
 		assertEquals(syncFingerprint(fBackup.snapshot()), fStore.fingerprint())
+	}
+
+	/*
+		Sauvegarde de sécurité impossible avant un import : les données du
+		téléphone ne sont pas remplacées (avant : remplacées sans copie).
+	*/
+	@Test
+	fun failedSafetyBackupBlocksImport() = runTest {
+		fSyncer.sync()
+		val vBefore = syncFingerprint(fBackup.snapshot())						// téléphone avant
+		writeFile(withExtraAccount(fileContent()))
+		fBackupOk = false
+		assertTrue(fSyncer.sync() is SyncStatus.Failed)
+		assertEquals(vBefore, syncFingerprint(fBackup.snapshot()))
+		fBackupOk = true
+		assertTrue(fSyncer.sync() is SyncStatus.Idle)
+		assertTrue(fBackup.snapshot().accounts.any { it.name == "Ouvert sur le PC" })
 	}
 
 	/*

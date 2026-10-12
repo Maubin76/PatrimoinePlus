@@ -147,10 +147,14 @@ data class BackupFile(
 	val prices       : List<PriceDto>
 )
 {
-	// Résumé lisible du contenu, pour la confirmation d'import.
-	val summary: String
+	// Contenu en nombres d'éléments (fenêtre de conflit : la date d'export n'y a pas de sens).
+	val contents: String
 		get() = "${accounts.size} compte(s), ${categories.size} catégorie(s), ${transactions.size} opération(s), " +
-			"${assets.size} actif(s), ${prices.size} cours, ${statements.size} relevé(s) ; exporté le ${exportedAt.take(10)}"
+			"${assets.size} actif(s), ${prices.size} cours, ${statements.size} relevé(s)"
+
+	// Résumé lisible du contenu et de sa date d'export, pour la confirmation d'import.
+	val summary: String
+		get() = contents + (runCatching { " ; exporté le " + java.time.LocalDate.parse(exportedAt.take(10)).format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) }.getOrDefault(""))
 }
 
 /*

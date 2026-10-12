@@ -185,10 +185,11 @@ private fun StandardFields(
 	if (inForm.mode == EntryMode.EXPENSE)
 	{
 		Row(
-			modifier          = Modifier.fillMaxWidth().toggleable(value = inForm.refund, role = Role.Checkbox) { inOnChange(inForm.copy(refund = it)) },
+			modifier          = Modifier.fillMaxWidth().heightIn(min = 48.dp).toggleable(value = inForm.refund, role = Role.Checkbox) { inOnChange(inForm.copy(refund = it)) }.padding(vertical = 4.dp),
 			verticalAlignment = Alignment.CenterVertically
 		) {
 			Checkbox(checked = inForm.refund, onCheckedChange = null)
+			Spacer(Modifier.width(12.dp))
 			Text("Remboursement (montant reçu, déduit des dépenses de la catégorie)", style = MaterialTheme.typography.bodyMedium)
 		}
 	}

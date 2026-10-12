@@ -200,7 +200,8 @@ fun AccountDetailScreen(
 			onOpen         = { inOp ->
 				when
 				{
-					vSelection.isNotEmpty() -> vSelection = vSelection.toggle(inOp.transaction.id)
+					vSelection.isNotEmpty() && inOp.editable -> vSelection = vSelection.toggle(inOp.transaction.id)
+					vSelection.isNotEmpty() -> Unit
 					inOp.editable           -> vEntry = inEntry.editForm(inOp.transaction)
 					else                    -> vScope.launch {
 						vSnackbar.showSnackbar(
@@ -210,8 +211,11 @@ fun AccountDetailScreen(
 				}
 			},
 			onLongPress    = { inOp ->
-				vHaptics.performHapticFeedback(HapticFeedbackType.LongPress)
-				vSelection = vSelection.toggle(inOp.transaction.id)
+				if (inOp.editable)
+				{
+					vHaptics.performHapticFeedback(HapticFeedbackType.LongPress)
+					vSelection = vSelection.toggle(inOp.transaction.id)
+				}
 			},
 			onClearSelect  = { vSelection = emptySet() },
 			onDeleteSel    = { vConfirm = true },
@@ -243,7 +247,7 @@ fun AccountDetailScreen(
 			inSuggestions = inEntry::suggestions,
 			inOnSave      = { inSaved, inOnErrors -> inEntry.save(inSaved) { if (it.isEmpty) vEntry = null else inOnErrors(it) } },
 			inOnDelete    = {
-				inForm.id?.let { inEntry.delete(listOf(it)) }
+				inForm.id?.let { inEntry.delete(listOf(it), vNotify) }
 				vEntry = null
 			},
 			inOnDismiss   = { vEntry = null }
@@ -321,7 +325,7 @@ fun AccountDetailScreen(
 			inText      = if (vLinked > 0) "Dont $vLinked virement(s) : ils seront supprimés sur les deux comptes, ce qui modifiera aussi l’autre compte." else "Les soldes seront recalculés.",
 			inAction    = "Supprimer",
 			inOnConfirm = {
-				inEntry.delete(vSelection.toList())
+				inEntry.delete(vSelection.toList(), vNotify)
 				vSelection = emptySet()
 				vConfirm   = false
 			},
@@ -432,10 +436,13 @@ fun AccountDetailContent(
 					item { Spacer(Modifier.height(8.dp)) }
 					item { ExpensesCard(inState.expenses) }
 				}
-				item { Spacer(Modifier.height(28.dp)) }
-				item { SectionHeader(inTitle = "Évolution du solde") }
-				item { Spacer(Modifier.height(4.dp)) }
-				item { BalanceChart(inState.series, inState.month) }
+				if (inState.series.size > 1)
+				{
+					item { Spacer(Modifier.height(28.dp)) }
+					item { SectionHeader(inTitle = "Évolution du solde") }
+					item { Spacer(Modifier.height(4.dp)) }
+					item { BalanceChart(inState.series, inState.month) }
+				}
 				if (inState.account?.let { it.type != AccountType.BROKERAGE } == true)
 				{
 					item { Spacer(Modifier.height(28.dp)) }

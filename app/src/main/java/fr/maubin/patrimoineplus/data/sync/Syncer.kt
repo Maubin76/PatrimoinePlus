@@ -74,9 +74,10 @@ sealed interface SyncStatus
 interface SyncHooks
 {
 	/*
-		Avant de remplacer les données locales.
+		Avant de remplacer les données locales ; faux si la sauvegarde de
+		sécurité a échoué (l'import n'a alors pas lieu).
 	*/
-	suspend fun beforeImport()
+	suspend fun beforeImport(): Boolean
 
 	/*
 		Après avoir remplacé les données locales.
@@ -170,7 +171,7 @@ class Syncer(
 					SyncAction.CONFLICT ->
 					{
 						fPending = vFile
-						SyncStatus.Conflict(vLocal.summary, vFile!!.summary)
+						SyncStatus.Conflict(vLocal.contents, vFile!!.contents)
 					}
 				}
 			}
@@ -255,7 +256,10 @@ class Syncer(
 		inFingerprint : String
 	): SyncStatus
 	{
-		inHooks.beforeImport()
+		if (!inHooks.beforeImport())
+		{
+			return SyncStatus.Failed("Sauvegarde de sécurité impossible : les données du téléphone n’ont pas été remplacées.")
+		}
 		inBackup.replaceAll(inFile)
 		inHooks.afterImport()
 		return record(inFingerprint)

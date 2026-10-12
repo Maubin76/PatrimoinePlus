@@ -65,6 +65,8 @@ fun CategoriesScreen(inViewModel: CategoriesViewModel = hiltViewModel())
 	val vState    by inViewModel.uiState.collectAsStateWithLifecycle()		// état à afficher
 	var vSheet    by remember { mutableStateOf<CategorySheetState?>(null) }	// feuille ouverte
 	var vDeleting by remember { mutableStateOf<CategoryItem?>(null) }		// catégorie à supprimer
+	var vRefusal  by remember { mutableStateOf<String?>(null) }				// suppression refusée
+	val vOnDeleted = { inError: String? -> vRefusal = inError }			// suite d'une suppression
 
 	CategoriesContent(
 		inState     = vState,
@@ -98,7 +100,7 @@ fun CategoriesScreen(inViewModel: CategoriesViewModel = hiltViewModel())
 				inText      = "Aucune opération n’utilise cette catégorie.",
 				inAction    = "Supprimer",
 				inOnConfirm = {
-					inViewModel.delete(inItem.category, null) {}
+					inViewModel.delete(inItem.category, null, vOnDeleted)
 					vDeleting = null
 				},
 				inOnDismiss = { vDeleting = null }
@@ -110,12 +112,21 @@ fun CategoriesScreen(inViewModel: CategoriesViewModel = hiltViewModel())
 				inItem      = inItem,
 				inChoices   = vState.replacementsFor(inItem.category.kind, inItem.category.id),
 				inOnConfirm = { inTarget ->
-					inViewModel.delete(inItem.category, inTarget) {}
+					inViewModel.delete(inItem.category, inTarget, vOnDeleted)
 					vDeleting = null
 				},
 				inOnDismiss = { vDeleting = null }
 			)
 		}
+	}
+
+	vRefusal?.let { inMessage ->
+		AlertDialog(
+			onDismissRequest = { vRefusal = null },
+			title            = { Text("Suppression impossible") },
+			text             = { Text(inMessage) },
+			confirmButton    = { TextButton(onClick = { vRefusal = null }) { Text("OK") } }
+		)
 	}
 }
 

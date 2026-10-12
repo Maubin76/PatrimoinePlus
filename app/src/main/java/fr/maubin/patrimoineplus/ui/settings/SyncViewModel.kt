@@ -48,16 +48,30 @@ class SyncViewModel @Inject constructor(
 		inStore.folder.map { it?.let(::folderLabel) }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
 	/*
-		Adopte le dossier choisi : l'autorisation est rendue durable, celle de
-		l'ancien dossier est rendue ; la synchronisation part aussitôt.
+		Adopte le dossier choisi : l'autorisation est rendue durable, puis
+		celle de l'ancien dossier est rendue ; la synchronisation part aussitôt.
+		Le même dossier choisi à nouveau garde la mémoire de la dernière
+		synchronisation (pas de faux conflit). Une autorisation refusée laisse
+		l'ancien dossier en place.
 		inUri : dossier choisi
 	*/
 	fun chooseFolder(inUri: Uri)
 	{
 		viewModelScope.launch {
-			release(inStore.folder.first())
-			inContext.contentResolver.takePersistableUriPermission(inUri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-			inStore.setFolder(inUri.toString())
+			val vOld = inStore.folder.first()										// dossier actuel
+			val vGranted = runCatching {
+				inContext.contentResolver.takePersistableUriPermission(inUri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+			}.isSuccess																// autorisation obtenue
+			if (!vGranted)
+			{
+				return@launch
+			}
+			if (vOld != inUri.toString())
+			{
+				release(vOld)
+				inStore.setFolder(inUri.toString())
+			}
+			inSyncer.sync()
 		}
 	}
 

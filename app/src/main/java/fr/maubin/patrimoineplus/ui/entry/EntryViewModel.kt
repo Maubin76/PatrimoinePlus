@@ -12,6 +12,7 @@ import fr.maubin.patrimoineplus.data.repo.TransactionRepository
 import fr.maubin.patrimoineplus.data.settings.SettingsRepository
 import fr.maubin.patrimoineplus.domain.calc.LabelSuggestion
 import fr.maubin.patrimoineplus.domain.calc.labelSuggestions
+import fr.maubin.patrimoineplus.domain.model.Asset
 import fr.maubin.patrimoineplus.domain.model.Transaction
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Clock
 import java.time.LocalDate
+import java.util.UUID
 import javax.inject.Inject
 
 /*
@@ -45,6 +47,8 @@ class EntryViewModel @Inject constructor(
 	private val inClock        : Clock
 ) : ViewModel()
 {
+	private var fSaving = false														// enregistrement en cours
+
 	// Comptes, catégories, actifs, cours, opérations et dernier compte, à jour.
 	val data: StateFlow<EntryData> =
 		combine(
@@ -75,6 +79,7 @@ class EntryViewModel @Inject constructor(
 
 	/*
 		Enregistre la saisie ; renvoie les erreurs (vides si enregistrée).
+		Un second appui pendant l'enregistrement est ignoré (pas de doublon).
 		inForm   : saisie
 		inOnDone : reçoit les erreurs
 	*/
@@ -83,37 +88,69 @@ class EntryViewModel @Inject constructor(
 		inOnDone : (EntryErrors) -> Unit
 	)
 	{
+		if (fSaving)
+		{
+			return
+		}
 		val vChecks = checkEntry(inForm, data.value)												// erreurs de saisie
 		if (!vChecks.isEmpty)
 		{
 			inOnDone(vChecks)
 			return
 		}
+		fSaving = true
 		viewModelScope.launch {
-			val vNewAsset = if (inForm.mode == EntryMode.TRADE && inForm.assetId == kNewAsset) (inMarket.createAsset(inForm.newAsset, inForm.newIsin) as SaveResult.Saved).id else null	// actif créé
-			val vTx = buildEntry(inForm, data.value, vNewAsset)												// opération construite
-			when (val vResult = inTransactions.save(vTx))						// résultat
+			try
 			{
-				is SaveResult.Saved    ->
-				{
-					inSettings.setLastAccountId(vTx.postings.first().accountId)
-					inOnDone(EntryErrors())
-					if (inForm.mode == EntryMode.TRADE && inForm.assetId == kNewAsset && inForm.newIsin.isNotBlank())
-					{
-						inQuotes.refreshNow()												// cours du nouvel actif, sans attendre
-					}
-				}
-				is SaveResult.Rejected -> inOnDone(EntryErrors(general = vResult.errors.joinToString(" ") { it.message }))
+				saveChecked(inForm, inOnDone)
+			}
+			finally
+			{
+				fSaving = false
 			}
 		}
 	}
 
 	/*
-		Supprime des opérations.
-		inIds : identifiants
+		Enregistre une saisie déjà contrôlée ; un nouvel actif n'est créé que
+		si l'opération est acceptée.
+		inForm   : saisie
+		inOnDone : reçoit les erreurs
 	*/
-	fun delete(inIds: List<String>)
+	private suspend fun saveChecked(
+		inForm   : EntryForm,
+		inOnDone : (EntryErrors) -> Unit
+	)
 	{
-		viewModelScope.launch { inTransactions.delete(inIds) }
+		val vNewAsset = if (inForm.mode == EntryMode.TRADE && inForm.assetId == kNewAsset)
+			Asset(UUID.randomUUID().toString(), inForm.newAsset.trim(), inForm.newIsin.trim().uppercase().ifEmpty { null }) else null	// actif à créer
+		val vTx = buildEntry(inForm, data.value, vNewAsset?.id)											// opération construite
+		when (val vResult = inTransactions.save(vTx, vNewAsset))			// résultat
+		{
+			is SaveResult.Saved    ->
+			{
+				inSettings.setLastAccountId(vTx.postings.first().accountId)
+				inOnDone(EntryErrors())
+				if (inForm.mode == EntryMode.TRADE && inForm.assetId == kNewAsset && inForm.newIsin.isNotBlank())
+				{
+					inQuotes.refreshNow()												// cours du nouvel actif, sans attendre
+				}
+			}
+			is SaveResult.Rejected -> inOnDone(EntryErrors(general = vResult.errors.joinToString(" ") { it.message }))
+		}
+	}
+
+	/*
+		Supprime des opérations ; un refus (vente rendue impossible) est
+		signalé.
+		inIds     : identifiants
+		inOnRefus : reçoit le motif d'un refus
+	*/
+	fun delete(
+		inIds     : List<String>,
+		inOnRefus : (String) -> Unit = {}
+	)
+	{
+		viewModelScope.launch { inTransactions.delete(inIds)?.let(inOnRefus) }
 	}
 }

@@ -75,7 +75,7 @@ class CategoryRepository @Inject constructor(
 			return SaveResult.Rejected(listOf(SetupError.BlankName))
 		}
 		val vOld = fDao.getById(inCategory.id) ?: return SaveResult.Rejected(listOf(SetupError.NotFound))	// version enregistrée
-		fDao.update(inCategory.copy(name = inCategory.name.trim()).toEntity(vOld.createdAt, inClock.millis()))
+		fDao.update(inCategory.copy(name = inCategory.name.trim(), sortOrder = vOld.sortOrder).toEntity(vOld.createdAt, inClock.millis()))	// rang actuel conservé
 		return SaveResult.Saved(inCategory.id)
 	}
 

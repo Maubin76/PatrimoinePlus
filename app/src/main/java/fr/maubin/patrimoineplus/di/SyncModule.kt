@@ -6,6 +6,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import fr.maubin.patrimoineplus.data.backup.AutoBackup
+import fr.maubin.patrimoineplus.data.backup.BackupOutcome
 import fr.maubin.patrimoineplus.data.backup.BackupRepository
 import fr.maubin.patrimoineplus.data.repo.AccountRepository
 import fr.maubin.patrimoineplus.data.repo.CategoryRepository
@@ -36,12 +37,10 @@ class AppSyncHooks @Inject constructor(
 ) : SyncHooks
 {
 	/*
-		Sauvegarde les données actuelles avant leur remplacement.
+		Sauvegarde les données actuelles avant leur remplacement ; faux si la
+		sauvegarde a échoué (une base sans compte n'a rien à sauvegarder).
 	*/
-	override suspend fun beforeImport()
-	{
-		inAutoBackup.backupNow()
-	}
+	override suspend fun beforeImport(): Boolean = inAutoBackup.backupNow() !is BackupOutcome.Failed
 
 	/*
 		Les données importées rendent l'assistant inutile.

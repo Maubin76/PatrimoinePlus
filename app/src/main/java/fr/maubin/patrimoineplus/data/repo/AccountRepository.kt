@@ -132,7 +132,7 @@ class AccountRepository @Inject constructor(
 		{
 			return SaveResult.Rejected(listOf(SetupError.TypeLocked))
 		}
-		val vClean = inAccount.copy(name = inAccount.name.trim(), institution = inAccount.institution?.trim()?.ifEmpty { null })	// champs nettoyés
+		val vClean = inAccount.copy(name = inAccount.name.trim(), institution = inAccount.institution?.trim()?.ifEmpty { null }, sortOrder = vOld.sortOrder)	// champs nettoyés, rang actuel conservé
 		fDao.update(vClean.toEntity(vOld.createdAt, inClock.millis()))
 		return SaveResult.Saved(inAccount.id)
 	}
@@ -249,12 +249,13 @@ class AccountRepository @Inject constructor(
 	}
 
 	/*
-		Nombre d'opérations qui touchent un compte, hors son solde initial (pour
+		Nombre d'opérations qui touchent un compte, hors un solde initial sans
+		position (des positions initiales verrouillent le type Bourse ; pour
 		prévenir avant suppression).
 		inId : compte
 	*/
 	suspend fun operationCount(inId: String): Int =
-		(fDao.transactionIdsOf(inId) - fDao.openingIdsOf(inId).toSet()).size
+		(fDao.transactionIdsOf(inId) - fDao.cashOpeningIdsOf(inId).toSet()).size
 
 	/*
 		Supprime un compte qui n'a pas d'autre opération que son solde initial

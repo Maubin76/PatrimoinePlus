@@ -8,6 +8,7 @@ import androidx.room.Transaction
 import androidx.room.Update
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 
 /*
 	Accès aux comptes.
@@ -64,6 +65,14 @@ interface AccountDao
 	*/
 	@Query("SELECT DISTINCT t.id FROM txn t JOIN posting p ON p.transactionId = t.id WHERE t.kind = 'OPENING' AND p.accountId = :inId")
 	suspend fun openingIdsOf(inId: String): List<String>
+
+	/*
+		Soldes initiaux d'un compte qui ne portent que des espèces (sans
+		position initiale).
+		inId : compte
+	*/
+	@Query("SELECT DISTINCT t.id FROM txn t JOIN posting p ON p.transactionId = t.id WHERE t.kind = 'OPENING' AND p.accountId = :inId AND NOT EXISTS (SELECT 1 FROM trade r WHERE r.transactionId = t.id)")
+	suspend fun cashOpeningIdsOf(inId: String): List<String>
 
 	/*
 		Change l'ordre d'affichage d'un compte.
@@ -274,6 +283,17 @@ interface AssetDao
 	*/
 	@Insert(onConflict = OnConflictStrategy.REPLACE)
 	suspend fun putPrice(inPrice: AssetPriceEntity)
+
+	/*
+		Cours d'un actif à une date ; null s'il n'y en a pas.
+		inAssetId : actif
+		inDate    : date
+	*/
+	@Query("SELECT * FROM asset_price WHERE assetId = :inAssetId AND date = :inDate")
+	suspend fun getPrice(
+		inAssetId : String,
+		inDate    : LocalDate
+	): AssetPriceEntity?
 
 	/*
 		Supprime un cours.

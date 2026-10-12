@@ -314,7 +314,7 @@ private fun DemoSection(inDemo: DemoActions)
 		Column(Modifier.padding(20.dp)) {
 			SettingText(
 				inTitle  = "Données fictives (version debug)",
-				inDetail = "Six mois de comptes et d’opérations inventés, pour essayer l’appli. Remplacent toutes les données."
+				inDetail = "Six mois de comptes et d’opérations inventés, pour essayer l’appli. Remplacent toutes les données et arrêtent la synchronisation."
 			)
 			Spacer(Modifier.height(16.dp))
 			Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

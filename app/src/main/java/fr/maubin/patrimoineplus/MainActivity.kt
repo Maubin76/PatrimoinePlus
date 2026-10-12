@@ -1,6 +1,7 @@
 package fr.maubin.patrimoineplus
 
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -23,7 +24,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
@@ -56,8 +57,12 @@ class MainActivity : FragmentActivity()
 		choisie ; les icônes des barres système suivent cette apparence.
 		L'écran de démarrage système (pastille du logo) reste affiché jusqu'à ce
 		que l'animation du lancement puisse prendre le relais au même endroit
-		(1,5 s au plus). L'écran de connexion se pose par-dessus le contenu (qui
-		garde son état) et s'efface en fondu une fois franchi.
+		(1,5 s au plus). Tant que l'écran de connexion est affiché, le contenu
+		n'est pas composé : aucune feuille ni boîte de dialogue (fenêtres à
+		part) ne peut rester visible ou utilisable par-dessus le verrou. Son
+		état sauvegardable (navigation…) est conservé, et il réapparaît sous
+		l'écran de connexion qui s'efface en fondu. Verrou activé : pas d'aperçu
+		du contenu dans les applis récentes.
 	*/
 	override fun onCreate(inSavedInstanceState: Bundle?)
 	{
@@ -75,6 +80,7 @@ class MainActivity : FragmentActivity()
 			val vLock    by fAppLock.state.collectAsStateWithLifecycle()			// état du verrou
 			val vAuth    by fAppLock.authRequired.collectAsStateWithLifecycle()		// verrou activé
 			val vIntro   by fAppLock.introPending.collectAsStateWithLifecycle()		// animation du lancement à jouer
+			val vKept    = rememberSaveableStateHolder()							// état du contenu pendant le verrouillage
 			var vFailure by remember { mutableStateOf<String?>(null) }			// dernier échec d'authentification
 			val vSystem  = isSystemInDarkTheme()									// apparence du téléphone
 			val vDark    = when (vMode)											// mode sombre effectif
@@ -88,11 +94,15 @@ class MainActivity : FragmentActivity()
 				enableEdgeToEdge(statusBarStyle = vStyle, navigationBarStyle = vStyle)
 				onDispose {}
 			}
+			DisposableEffect(vAuth) {
+				setRecentsScreenshotEnabled(!vAuth)
+				onDispose {}
+			}
 			PatrimoineTheme(inDarkTheme = vDark) {
 				Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
-					if (vLock != LockState.UNKNOWN)
+					if (vLock == LockState.UNLOCKED)
 					{
-						Box(if (vLock == LockState.LOCKED) Modifier.clearAndSetSemantics {} else Modifier) {
+						vKept.SaveableStateProvider("contenu") {
 							PatrimoineApp(fAppViewModel)
 						}
 					}

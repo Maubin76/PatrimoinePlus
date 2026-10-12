@@ -63,13 +63,16 @@ class OnboardingViewModel @Inject constructor(
 		ProposedAccount("PEA", AccountType.BROKERAGE)
 	)
 
+	private var fFinishing = false												// création en cours (ou faite)
+
 	// Noms des catégories proposées, pour l'aperçu.
 	val categoryNames: List<String> = DefaultCatalog.categories().map { it.name }
 
 	/*
 		Crée les comptes cochés (solde initial daté d'aujourd'hui) et, si demandé,
 		les catégories proposées, puis ferme l'assistant. Renvoie les noms des
-		comptes dont le montant est illisible (rien n'est créé dans ce cas).
+		comptes dont le montant est illisible (rien n'est créé dans ce cas). Un
+		second appui pendant la création est ignoré (pas de comptes en double).
 		inProposals      : comptes proposés, tels que modifiés
 		inWithCategories : vrai pour créer les catégories proposées
 		inOnDone         : reçoit les comptes en erreur (vide si tout est créé)
@@ -80,6 +83,10 @@ class OnboardingViewModel @Inject constructor(
 		inOnDone         : (List<String>) -> Unit
 	)
 	{
+		if (fFinishing)
+		{
+			return
+		}
 		val vChosen = inProposals.filter { it.selected }							// comptes retenus
 		val vBad    = vChosen.filter { it.opening.isNotBlank() && parseEuros(it.opening) == null }.map { it.name }	// montants illisibles
 		if (vBad.isNotEmpty())
@@ -87,6 +94,7 @@ class OnboardingViewModel @Inject constructor(
 			inOnDone(vBad)
 			return
 		}
+		fFinishing = true
 		viewModelScope.launch {
 			val vToday = LocalDate.now(inClock)									// date des soldes initiaux
 			vChosen.forEach { inProposal ->

@@ -70,7 +70,10 @@ class MarketRepository @Inject constructor(
 	}
 
 	/*
-		Enregistre le cours d'un actif à une date (remplace celui du même jour).
+		Enregistre le cours d'un actif à une date (remplace celui du même jour,
+		en gardant son identifiant). Un cours inchangé n'est pas réécrit : les
+		mises à jour automatiques ne modifient donc pas les données (ni
+		l'empreinte de synchronisation) quand rien n'a bougé.
 		inAssetId   : actif
 		inDate      : date
 		inUnitPrice : cours, en dix-millièmes d'euro
@@ -81,7 +84,12 @@ class MarketRepository @Inject constructor(
 		inUnitPrice : Long
 	)
 	{
-		fAssets.putPrice(AssetPrice(UUID.randomUUID().toString(), inAssetId, inDate, inUnitPrice).toEntity())
+		val vOld = fAssets.getPrice(inAssetId, inDate)							// cours du même jour
+		if (vOld?.unitPrice == inUnitPrice)
+		{
+			return
+		}
+		fAssets.putPrice(AssetPrice(vOld?.id ?: UUID.randomUUID().toString(), inAssetId, inDate, inUnitPrice).toEntity())
 	}
 
 	/*

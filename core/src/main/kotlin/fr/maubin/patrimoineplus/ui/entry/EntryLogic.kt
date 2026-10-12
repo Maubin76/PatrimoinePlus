@@ -149,7 +149,8 @@ fun proposedLabel(
 
 /*
 	Formulaire vide, daté du jour, sur le compte voulu, sinon le dernier
-	utilisé, sinon le premier de la liste.
+	utilisé, sinon le premier de la liste ; en ordre de bourse sur un compte
+	Bourse, en dépense sinon.
 	inData      : données de saisie
 	inAccountId : compte imposé (vue d'un compte) ; null sinon
 	inToday     : date du jour
@@ -162,7 +163,8 @@ fun newEntryForm(
 {
 	val vIds  = inData.accounts.map { it.id }									// comptes actifs
 	val vPick = listOf(inAccountId, inData.lastAccountId).firstOrNull { it in vIds } ?: vIds.firstOrNull()	// compte retenu
-	return EntryForm(accountId = vPick, date = inToday)
+	val vType = inData.accounts.firstOrNull { it.id == vPick }?.type			// type du compte retenu
+	return EntryForm(accountId = vPick, date = inToday, mode = if (vType == AccountType.BROKERAGE) EntryMode.TRADE else EntryMode.EXPENSE)
 }
 
 /*
