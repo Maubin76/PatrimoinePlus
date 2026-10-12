@@ -13,6 +13,11 @@ import fr.maubin.patrimoineplus.ui.entry.EntryData
 import fr.maubin.patrimoineplus.ui.entry.EntryForm
 import fr.maubin.patrimoineplus.ui.entry.newEntryForm
 import fr.maubin.patrimoineplus.ui.search.SearchQuery
+import fr.maubin.patrimoineplus.ui.entry.BatchRow
+import fr.maubin.patrimoineplus.ui.entry.checkBatchRow
+import fr.maubin.patrimoineplus.ui.projection.ProjectionInput
+import fr.maubin.patrimoineplus.ui.report.annualReportPdf
+import fr.maubin.patrimoineplus.ui.report.buildAnnualReport
 import fr.maubin.patrimoineplus.ui.entry.buildEntry
 import fr.maubin.patrimoineplus.ui.entry.checkEntry
 import fr.maubin.patrimoineplus.ui.entry.withReferences
@@ -42,7 +47,10 @@ enum class Screen(val label: String)
 {
 	DASHBOARD("Tableau de bord"),												// patrimoine, comptes, opérations récentes
 	OPERATIONS("Opérations"),													// recherche et modification groupée
+	BATCH("Saisie rapide"),														// saisie en grille
 	ANALYSIS("Analyse"),														// dépenses et revenus mois par mois
+	REPORT("Bilan annuel"),														// bilan d'une année, PDF
+	PROJECTION("Projection"),													// patrimoine à quelques années
 	CATEGORIES("Catégories"),													// catégories de dépense et de revenu
 	SETTINGS("Réglages")														// source, apparence
 }
@@ -175,6 +183,9 @@ class DesktopController(
 	private val fBank       = MutableStateFlow<BankSession?>(null)				// relevé en cours de rapprochement
 	private val fQuery      = MutableStateFlow(SearchQuery())					// critères de la recherche
 	private val fFocus      = MutableStateFlow(0)								// demandes de focus du champ de recherche (Ctrl+F)
+	private val fBatch      = MutableStateFlow<List<BatchRow>>(emptyList())	// lignes de la saisie en grille
+	private val fProjection = MutableStateFlow<ProjectionInput?>(null)			// hypothèses de la projection ; null : par défaut
+	private var fRowKeys    = 0L												// identifiants des lignes de la grille
 	private var fTokens     = 0L												// numéros d'ouverture des panneaux
 
 	// Moteur de modification des données.
@@ -203,6 +214,12 @@ class DesktopController(
 
 	// Compteur des demandes de focus du champ de recherche (Ctrl+F).
 	val searchFocus: StateFlow<Int> = fFocus
+
+	// Lignes de la saisie en grille (gardées en changeant d'écran).
+	val batch: StateFlow<List<BatchRow>> = fBatch
+
+	// Hypothèses de la projection ; null pour celles par défaut.
+	val projection: StateFlow<ProjectionInput?> = fProjection
 
 	// Relevé de la banque en cours de rapprochement ; null sinon.
 	val bank: StateFlow<BankSession?> = fBank
@@ -453,6 +470,86 @@ class DesktopController(
 	*/
 	fun deleteMany(inIds: Collection<String>): String? =
 		(edit { editor.deleteTransactions(it, inIds) } as? EditResult.Refused)?.messages?.joinToString(" ")
+
+	/*
+		Ligne vide de la grille, à la date et sur le compte d'une ligne donnée
+		(sinon aujourd'hui et le premier compte Courant).
+		inAfter : ligne précédente ; null pour la première
+	*/
+	fun newBatchRow(inAfter: BatchRow?): BatchRow
+	{
+		val vAccounts = workspace.value.data.accounts.filterNot { it.archived }	// comptes actifs
+		val vDefault  = (vAccounts.firstOrNull { it.type == fr.maubin.patrimoineplus.domain.model.AccountType.CHECKING } ?: vAccounts.firstOrNull())?.id	// compte par défaut
+		return BatchRow(++fRowKeys, inAfter?.date ?: fr.maubin.patrimoineplus.domain.format.formatFrenchDate(today()), inAfter?.accountId ?: vDefault)
+	}
+
+	/*
+		Remplace les lignes de la grille.
+		inRows : lignes
+	*/
+	fun setBatch(inRows: List<BatchRow>)
+	{
+		fBatch.value = inRows
+	}
+
+	/*
+		Enregistre en une fois toutes les lignes non vides de la grille. Si une
+		ligne est refusée, rien n'est enregistré et ses erreurs sont rendues.
+		Retour : erreurs par ligne (clé -1 : refus général) ; vide si tout est enregistré
+	*/
+	fun saveBatch(): Map<Long, String>
+	{
+		val vData   = workspace.value.data											// données
+		val vEntry  = EntryData(vData.accounts.filterNot { it.archived }, vData.categories.filterNot { it.archived }, vData.assets, vData.prices, vData.transactions)	// données de saisie
+		val vRows   = fBatch.value.filterNot { it.isBlank }							// lignes remplies
+		val vChecks = vRows.associate { it.key to checkBatchRow(it, vEntry) }			// contrôles
+		val vErrors = vChecks.filterValues { it.error != null }.mapValues { it.value.error!! }	// lignes refusées
+		if (vErrors.isNotEmpty() || vRows.isEmpty())
+		{
+			return vErrors
+		}
+		val vResult = edit { inFile ->
+			vRows.fold<BatchRow, EditResult>(EditResult.Done(inFile)) { inSoFar, inRow ->
+				when (inSoFar)
+				{
+					is EditResult.Done    -> editor.saveTransaction(inSoFar.file, buildEntry(vChecks.getValue(inRow.key).form!!, vEntry))
+					is EditResult.Refused -> inSoFar
+				}
+			}
+		}																			// résultat
+		if (vResult is EditResult.Refused)
+		{
+			return mapOf(-1L to vResult.messages.joinToString(" "))
+		}
+		fBatch.value = listOf(newBatchRow(vRows.last()).copy(accountId = vRows.last().accountId))
+		fNotice.value = "${vRows.size} opération(s) enregistrée(s)."
+		return emptyMap()
+	}
+
+	/*
+		Change les hypothèses de la projection.
+		inInput : hypothèses ; null pour revenir à celles par défaut
+	*/
+	fun setProjection(inInput: ProjectionInput?)
+	{
+		fProjection.value = inInput
+	}
+
+	/*
+		Écrit le bilan d'une année en PDF.
+		inYear : année
+		inPath : fichier
+		Retour : null si écrit ; sinon la raison de l'échec
+	*/
+	fun exportReport(
+		inYear : Int,
+		inPath : Path
+	): String?
+	{
+		val vReport = buildAnnualReport(workspace.value.data, inYear, today())		// bilan
+		return runCatching { Files.write(inPath, annualReportPdf(vReport, today())) }
+			.fold({ fNotice.value = "Bilan $inYear enregistré : $inPath"; null }, { it.message ?: "erreur inconnue" })
+	}
 
 	/*
 		Lit un relevé exporté par la banque et ouvre son rapprochement avec un

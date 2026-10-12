@@ -78,6 +78,9 @@ import fr.maubin.patrimoineplus.desktop.ui.screens.AccountScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.CategoriesScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.DashboardScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.AnalysisScreen
+import fr.maubin.patrimoineplus.desktop.ui.screens.BatchScreen
+import fr.maubin.patrimoineplus.desktop.ui.screens.ProjectionScreen
+import fr.maubin.patrimoineplus.desktop.ui.screens.ReportScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.OperationsScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.ReconcileScreen
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -98,6 +101,9 @@ private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
 val LocalBankPicker = staticCompositionLocalOf<() -> Path?> { { null } }
 
+// Choix d'un fichier à écrire d'après un nom proposé (export PDF) ; fourni par App.
+val LocalSavePicker = staticCompositionLocalOf<(String) -> Path?> { { null } }
+
 val kContentMaxWidth    = 1600.dp													// largeur maximale du contenu
 private const val kPageMillis  = 280													// transition entre écrans
 private const val kPanelMillis = 240													// arrivée du panneau de saisie
@@ -109,6 +115,7 @@ private val kEase       = CubicBezierEasing(0.2f, 0f, 0f, 1f)						// courbe « 
 	inController     : contrôleur
 	inOnPickSaveFile : choix d'un fichier où enregistrer une copie ; null si annulé
 	inOnPickBankFile : choix d'un relevé exporté par la banque ; null si annulé
+	inOnPickSave     : choix d'un fichier à écrire, d'après un nom proposé ; null si annulé
 	inOnPickFolder   : ouvre le sélecteur de dossier ; rend le dossier choisi ou null
 */
 @Composable
@@ -116,6 +123,7 @@ fun App(
 	inController     : DesktopController,
 	inOnPickSaveFile : () -> Path? = { null },
 	inOnPickBankFile : () -> Path? = { null },
+	inOnPickSave     : (String) -> Path? = { null },
 	inOnPickFolder   : () -> Path?
 )
 {
@@ -123,7 +131,7 @@ fun App(
 	val vSpace    by inController.workspace.collectAsState()				// données
 	val vPending  by inController.pending.collectAsState()					// action retenue
 	PatrimoineTheme(inDarkTheme = vSettings.appearance.isDark(), inTrendColors = vSettings.trend) {
-		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile) {
+		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave) {
 			Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
 				if (vSpace.source == Source.None)
 				{
@@ -194,6 +202,9 @@ private fun Shell(
 							inScreen == Screen.DASHBOARD     -> DashboardScreen(inSpace, inController)
 							inScreen == Screen.OPERATIONS    -> OperationsScreen(inSpace, inController)
 							inScreen == Screen.ANALYSIS      -> AnalysisScreen(inSpace, inController)
+							inScreen == Screen.BATCH         -> BatchScreen(inSpace, inController)
+							inScreen == Screen.REPORT        -> ReportScreen(inSpace, inController)
+							inScreen == Screen.PROJECTION    -> ProjectionScreen(inSpace, inController)
 							inScreen == Screen.CATEGORIES    -> CategoriesScreen(inSpace, inController)
 							else                             -> SettingsScreen(inController, inOnPickFolder)
 						}
@@ -341,7 +352,7 @@ private fun Rail(
 				verticalAlignment = Alignment.CenterVertically
 			) {
 				Icon(
-					imageVector        = when (inEntry) { Screen.DASHBOARD -> LineIcons.Home; Screen.OPERATIONS -> LineIcons.Search; Screen.ANALYSIS -> LineIcons.Bars; Screen.CATEGORIES -> LineIcons.Grid; Screen.SETTINGS -> LineIcons.Sliders },
+					imageVector        = when (inEntry) { Screen.DASHBOARD -> LineIcons.Home; Screen.OPERATIONS -> LineIcons.Search; Screen.ANALYSIS -> LineIcons.Bars; Screen.BATCH -> LineIcons.Edit; Screen.REPORT -> LineIcons.Document; Screen.PROJECTION -> LineIcons.Trend; Screen.CATEGORIES -> LineIcons.Grid; Screen.SETTINGS -> LineIcons.Sliders },
 					contentDescription = null,
 					tint               = if (vActive) vColors.onPrimary else vColors.onSurface,
 					modifier           = Modifier.size(20.dp)

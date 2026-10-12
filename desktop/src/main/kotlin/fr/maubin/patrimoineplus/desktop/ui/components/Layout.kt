@@ -148,3 +148,44 @@ fun Hint(inText: String)
 {
 	Text(inText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 4.dp))
 }
+
+/*
+	Champ de texte compact et souligné, pour une case de tableau (grille de
+	saisie, rapprochement).
+	inValue       : texte
+	inOnChange    : modification
+	inModifier    : place du champ
+	inPlaceholder : texte grisé quand le champ est vide
+	inEnd         : texte aligné à droite (montants)
+	inError       : bordure d'erreur
+*/
+@Composable
+fun CellField(
+	inValue       : String,
+	inOnChange    : (String) -> Unit,
+	inModifier    : Modifier = Modifier,
+	inPlaceholder : String   = "",
+	inEnd         : Boolean  = false,
+	inError       : Boolean  = false
+)
+{
+	val vColors = MaterialTheme.colorScheme											// palette courante
+	val vStyle  = MaterialTheme.typography.bodyLarge.copy(color = vColors.onSurface, textAlign = if (inEnd) androidx.compose.ui.text.style.TextAlign.End else androidx.compose.ui.text.style.TextAlign.Start)	// style du texte
+	Column(inModifier) {
+		androidx.compose.foundation.text.BasicTextField(
+			value         = inValue,
+			onValueChange = inOnChange,
+			singleLine    = true,
+			textStyle     = vStyle,
+			cursorBrush   = androidx.compose.ui.graphics.SolidColor(vColors.onSurface),
+			modifier      = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+			decorationBox = { inField ->
+				Box {
+					if (inValue.isEmpty() && inPlaceholder.isNotEmpty()) Text(inPlaceholder, style = vStyle.copy(color = vColors.onSurfaceVariant), maxLines = 1, overflow = TextOverflow.Ellipsis)
+					inField()
+				}
+			}
+		)
+		androidx.compose.material3.HorizontalDivider(color = if (inError) vColors.error else vColors.outlineVariant)
+	}
+}

@@ -124,4 +124,10 @@ object LineIcons
 	// Analyse : colonnes de hauteurs différentes.
 	val Bars: ImageVector = lineIcon("Analyse", "M5 20 V13", "M10 20 V6", "M15 20 V10", "M20 20 V4")
 
+	// Document : page au coin plié et lignes de texte.
+	val Document: ImageVector = lineIcon("Document", "M6 3 H14 L19 8 V21 H6 Z", "M14 3 V8 H19", "M9 13 H16", "M9 17 H16")
+
+	// Projection : courbe montante et flèche.
+	val Trend: ImageVector = lineIcon("Projection", "M3 17 L9 11 L13 15 L21 7", "M15 7 H21 V13")
+
 }

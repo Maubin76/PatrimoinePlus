@@ -291,6 +291,20 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   Ctrl+clic, Maj+clic, tout sélectionner) pour **changer la catégorie** de
   plusieurs dépenses ou revenus d'un coup, ou les **supprimer** (confirmé ;
   refusé si une vente devenait impossible).
+- **Saisie rapide** (barre latérale) : dépenses et revenus en série dans une
+  grille au clavier (Tab, Entrée pour une nouvelle ligne, Ctrl+Entrée pour tout
+  enregistrer) ; catégorie proposée d'après le libellé ; montant sans signe =
+  dépense, « + » = entrée ; tout est contrôlé puis enregistré en une fois.
+- **Bilan annuel** (barre latérale) : patrimoine au début et à la fin de
+  l'année, comptes, revenus et dépenses par catégorie, taux d'épargne,
+  intérêts, dividendes, plus-values réalisées par titre ; **export PDF** A4
+  prêt à imprimer (générateur PDF minimal écrit pour l'appli, polices
+  standard, sans bibliothèque).
+- **Projection** (barre latérale) : patrimoine estimé à 5, 10, 20 ou 30 ans ;
+  épargne mensuelle (par défaut la moyenne des douze derniers mois),
+  rendements de l'épargne et de la bourse, part versée en bourse ; trois
+  scénarios et courbe année par année ; une estimation, sans impôts ni
+  inflation.
 - **Synchronisation côté PC** : le fichier d'échange est lu, puis surveillé
   (2 s) ; une modification du PC est écrite 1,5 s plus tard (fichier
   temporaire ignoré par Syncthing, puis remplacement atomique), une

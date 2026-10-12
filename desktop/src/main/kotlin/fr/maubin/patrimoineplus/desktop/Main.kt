@@ -64,7 +64,7 @@ fun main(inArgs: Array<String>)
 			}
 		) {
 			window.minimumSize = Dimension(980, 640)
-			App(vController, inOnPickSaveFile = ::pickSaveFile, inOnPickBankFile = ::pickBankFile, inOnPickFolder = ::pickFolder)
+			App(vController, inOnPickSaveFile = ::pickSaveFile, inOnPickBankFile = ::pickBankFile, inOnPickSave = ::pickSave, inOnPickFolder = ::pickFolder)
 		}
 	}
 }
@@ -108,6 +108,24 @@ private fun pickSaveFile(): Path?
 		selectedFile = java.io.File("patrimoineplus-copie-${LocalDate.now()}.xlsx")
 	}																			// sélecteur
 	return if (vChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) vChooser.selectedFile.toPath() else null
+}
+
+/*
+	Choix d'un fichier à écrire (export PDF), avec un nom proposé ; null si
+	l'utilisateur annule.
+	inName : nom proposé (son extension sert de filtre)
+*/
+private fun pickSave(inName: String): Path?
+{
+	val vExtension = inName.substringAfterLast('.', "")								// extension du fichier
+	val vChooser   = JFileChooser().apply {
+		dialogTitle  = "Enregistrer sous"
+		selectedFile = java.io.File(inName)
+		if (vExtension.isNotEmpty()) fileFilter = javax.swing.filechooser.FileNameExtensionFilter(vExtension.uppercase(), vExtension)
+	}																			// sélecteur
+	if (vChooser.showSaveDialog(null) != JFileChooser.APPROVE_OPTION) return null
+	val vFile = vChooser.selectedFile.toPath()										// fichier choisi
+	return if (vExtension.isEmpty() || vFile.fileName.toString().endsWith(".$vExtension", ignoreCase = true)) vFile else vFile.resolveSibling("${vFile.fileName}.$vExtension")
 }
 
 /*
