@@ -22,6 +22,8 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -179,7 +181,17 @@ private fun StandardFields(
 	val vByKind = inData.categories.filter { it.kind == vKind }					// catégories proposées
 	val vHints  = if (inForm.id == null) inSuggestions(inForm.label) else emptyList()	// suggestions affichées
 	val vBourse = inData.accounts.firstOrNull { it.id == inForm.accountId }?.type == AccountType.BROKERAGE	// compte Bourse
-	AmountInput(inForm.amount, { inOnChange(inForm.copy(amount = it.replace("-", ""))) }, "Montant", inErrors.amount)
+	AmountInput(inForm.amount, { inOnChange(inForm.copy(amount = it.replace("-", ""))) }, if (inForm.refund) "Montant remboursé" else "Montant", inErrors.amount)
+	if (inForm.mode == EntryMode.EXPENSE)
+	{
+		Row(
+			modifier          = Modifier.fillMaxWidth().toggleable(value = inForm.refund, role = Role.Checkbox) { inOnChange(inForm.copy(refund = it)) },
+			verticalAlignment = Alignment.CenterVertically
+		) {
+			Checkbox(checked = inForm.refund, onCheckedChange = null)
+			Text("Remboursement (montant reçu, déduit des dépenses de la catégorie)", style = MaterialTheme.typography.bodyMedium)
+		}
+	}
 	AccountPicker("Compte", inData.accounts, inForm.accountId, inErrors.account) { inOnChange(inForm.copy(accountId = it)) }
 	TextInput(inForm.label, { inOnChange(inForm.copy(label = it)) }, "Libellé", inErrors.label)
 	if (vHints.isNotEmpty())
@@ -294,10 +306,12 @@ private fun TradeFields(
 		TextInput(inForm.newAsset, { inOnChange(inForm.copy(newAsset = it)) }, "Nom du nouvel actif", inErrors.asset)
 		TextInput(inForm.newIsin, { inOnChange(inForm.copy(newIsin = it)) }, "ISIN (facultatif)", null, "Sur vos relevés, ex. LU1681043599 : les cours seront récupérés automatiquement.")
 	}
-	if (inForm.side == TradeSide.SELL && inForm.accountId != null && inForm.assetId != null && inForm.assetId != kNewAsset)
+	val vSellAccount = inForm.accountId											// compte de la vente
+	val vSellAsset   = inForm.assetId											// actif vendu
+	if (inForm.side == TradeSide.SELL && vSellAccount != null && vSellAsset != null && vSellAsset != kNewAsset)
 	{
 		val vOthers = inData.transactions.filter { it.id != inForm.id }		// autres opérations
-		val vHeld   = heldQuantity(Ledger(vOthers), inForm.accountId, inForm.assetId, inForm.date)	// quantité détenue
+		val vHeld   = heldQuantity(Ledger(vOthers), vSellAccount, vSellAsset, inForm.date)	// quantité détenue
 		Text("Détenu à cette date : ${formatScaled(vHeld)}", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
 	}
 	DecimalField(inForm.quantity, { inOnChange(inForm.copy(quantity = it)) }, "Quantité", null, inErrors.quantity)
