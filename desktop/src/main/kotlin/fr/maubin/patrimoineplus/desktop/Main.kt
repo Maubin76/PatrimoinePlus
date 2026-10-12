@@ -63,7 +63,7 @@ fun main(inArgs: Array<String>)
 			}
 		) {
 			window.minimumSize = Dimension(980, 640)
-			App(vController, ::pickSaveFile, ::pickFolder)
+			App(vController, inOnPickSaveFile = ::pickSaveFile, inOnPickBankFile = ::pickBankFile, inOnPickFolder = ::pickFolder)
 		}
 	}
 }
@@ -107,6 +107,19 @@ private fun pickSaveFile(): Path?
 		selectedFile = java.io.File("patrimoineplus-copie-${LocalDate.now()}.xlsx")
 	}																			// sélecteur
 	return if (vChooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) vChooser.selectedFile.toPath() else null
+}
+
+/*
+	Choix d'un relevé exporté par le site de la banque (CSV) ; null si
+	l'utilisateur annule.
+*/
+private fun pickBankFile(): Path?
+{
+	val vChooser = JFileChooser().apply {
+		dialogTitle = "Relevé exporté par la banque"
+		fileFilter  = javax.swing.filechooser.FileNameExtensionFilter("Relevé de la banque (CSV)", "csv", "txt")
+	}																			// sélecteur
+	return if (vChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) vChooser.selectedFile.toPath() else null
 }
 
 /*

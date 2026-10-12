@@ -269,6 +269,16 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   (icône, suppression avec réaffectation), relevés, cours saisis à la main,
   positions initiales, fiche d'un actif. Mêmes contrôles et mêmes règles que
   le téléphone (`:core` : `DataEditor`, logique de saisie partagée).
+- **Rapprochement avec le relevé de la banque** (vue d'un compte, tuile
+  Relevés › « Rapprocher un relevé… ») : le fichier CSV exporté par le site de
+  la banque est lu sans réglage (encodage, séparateur, lignes d'informations,
+  colonnes Montant ou Débit/Crédit, dates et montants à la française) et
+  comparé aux opérations du compte : même montant, dates à cinq jours au plus.
+  Trois listes : lignes retrouvées ; lignes de la banque absentes de l'appli,
+  avec libellé et catégorie proposés d'après les saisies passées, à cocher et
+  corriger puis créer en une fois ; opérations de l'appli absentes du relevé.
+  Rien n'est mémorisé (pas de pointage) ; le format exact de chaque banque reste
+  à vérifier sur un vrai export.
 - **Synchronisation côté PC** : le fichier d'échange est lu, puis surveillé
   (2 s) ; une modification du PC est écrite 1,5 s plus tard (fichier
   temporaire ignoré par Syncthing, puis remplacement atomique), une

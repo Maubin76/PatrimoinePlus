@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.desktop.DesktopController
 import fr.maubin.patrimoineplus.desktop.Panel
 import fr.maubin.patrimoineplus.desktop.data.WorkspaceState
+import fr.maubin.patrimoineplus.desktop.ui.LocalBankPicker
 import fr.maubin.patrimoineplus.desktop.ui.components.Cell
 import fr.maubin.patrimoineplus.desktop.ui.components.Hint
 import fr.maubin.patrimoineplus.desktop.ui.components.OperationLine
@@ -318,7 +319,11 @@ private fun StatementsTile(
 	Tile(
 		inModifier = inModifier,
 		inTitle    = "Relevés",
-		inAction   = { TextButton(onClick = { inState.account?.let { inController.openPanel(Panel.Statement(it.id)) } }) { Text("Ajouter") } }
+		inAction   = {
+			val vPick = LocalBankPicker.current										// choix du relevé de la banque
+			TextButton(onClick = { inState.account?.let { inAccount -> vPick()?.let { inController.openBankStatement(inAccount.id, it) } } }) { Text("Rapprocher un relevé…") }
+			TextButton(onClick = { inState.account?.let { inController.openPanel(Panel.Statement(it.id)) } }) { Text("Ajouter") }
+		}
 	) {
 		if (inExtras.statements.isEmpty()) Hint("Saisissez le solde indiqué par la banque : l’appli le compare au solde calculé.")
 		inExtras.statements.forEachIndexed { inIndex, inItem ->

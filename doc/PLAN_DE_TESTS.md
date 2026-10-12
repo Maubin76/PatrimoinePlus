@@ -124,6 +124,7 @@ identifiant (A-03, C-12…) pour le retour.
 | C-16 | Réglages : apparence, « Hausses en vert, baisses en rouge », mode discret ; relancer. | Choix conservés ; couleurs sur les variations et plus-values seulement. |
 | C-17 | Rendre le fichier d'échange illisible pendant que l'appli est ouverte, puis le remettre. | Bandeau « Fichier d'échange refusé », données précédentes affichées, fichier jamais écrasé ; relu dès qu'il redevient valide. |
 | C-18 | Laisser l'appli ouverte au passage de minuit (ou changer la date de Windows). | La date de calcul suit en moins d'une minute. |
+| C-18b | Vue du compte courant › Relevés › « Rapprocher un relevé… », choisir l'export CSV du site de la banque (un mois). | Période et nombre de lignes justes ; opérations déjà saisies dans « Retrouvées » ; lignes manquantes proposées avec un libellé et une catégorie plausibles ; après « Créer », elles passent dans « Retrouvées » ; « Dans l'appli, pas chez la banque » ne liste que des opérations réellement absentes du relevé. Noter toute ligne mal lue (montant, date, libellé). |
 | C-19 | `PatrimoinePlus.exe --verifier chemin\vers\patrimoineplus-donnees.xlsx` dans un terminal. | Code de sortie 0 ; date d'exemple en français (« 12 octobre 2026 »). |
 
 ## D. Limites connues (pas des anomalies)

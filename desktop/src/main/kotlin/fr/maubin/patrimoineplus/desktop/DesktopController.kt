@@ -12,6 +12,13 @@ import fr.maubin.patrimoineplus.domain.model.CategoryKind
 import fr.maubin.patrimoineplus.ui.entry.EntryData
 import fr.maubin.patrimoineplus.ui.entry.EntryForm
 import fr.maubin.patrimoineplus.ui.entry.newEntryForm
+import fr.maubin.patrimoineplus.ui.entry.buildEntry
+import fr.maubin.patrimoineplus.ui.entry.checkEntry
+import fr.maubin.patrimoineplus.ui.entry.withReferences
+import fr.maubin.patrimoineplus.data.bank.BankLine
+import fr.maubin.patrimoineplus.data.bank.BankRead
+import fr.maubin.patrimoineplus.data.bank.readBankCsv
+import java.nio.file.Files
 import fr.maubin.patrimoineplus.ui.theme.ThemeMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -128,6 +135,20 @@ data class PendingAction(
 )
 
 /*
+	Relevé de la banque ouvert pour le rapprocher d'un compte.
+	accountId : compte rapproché
+	fileName  : nom du fichier lu
+	lines     : lignes du relevé
+	skipped   : lignes illisibles ignorées
+*/
+data class BankSession(
+	val accountId : String,
+	val fileName  : String,
+	val lines     : List<BankLine>,
+	val skipped   : Int
+)
+
+/*
 	Contrôleur de l'appli PC : source des données (dossier synchronisé ou
 	démonstration), réglages mémorisés (apparence, mode discret, couleurs),
 	navigation et panneau de saisie. Sans interface : testable seul.
@@ -148,6 +169,7 @@ class DesktopController(
 	private val fPanel      = MutableStateFlow<Panel?>(null)					// panneau ouvert
 	private val fPending    = MutableStateFlow<PendingAction?>(null)			// action retenue (modifications non écrites)
 	private val fNotice     = MutableStateFlow<String?>(null)					// message ponctuel du bandeau
+	private val fBank       = MutableStateFlow<BankSession?>(null)				// relevé en cours de rapprochement
 	private var fTokens     = 0L												// numéros d'ouverture des panneaux
 
 	// Moteur de modification des données.
@@ -170,6 +192,9 @@ class DesktopController(
 
 	// Message ponctuel à montrer dans le bandeau ; null sans message.
 	val notice: StateFlow<String?> = fNotice
+
+	// Relevé de la banque en cours de rapprochement ; null sinon.
+	val bank: StateFlow<BankSession?> = fBank
 
 	init
 	{
@@ -255,6 +280,7 @@ class DesktopController(
 	*/
 	fun show(inScreen: Screen)
 	{
+		fBank.value = null
 		fNavigation.value = Navigation(inScreen)
 		fPanel.value      = null
 	}
@@ -265,6 +291,7 @@ class DesktopController(
 	*/
 	fun openAccount(inAccountId: String)
 	{
+		fBank.value = null
 		fNavigation.value = Navigation(Screen.DASHBOARD, inAccountId)
 		fPanel.value      = null
 	}
@@ -283,6 +310,7 @@ class DesktopController(
 	*/
 	fun back()
 	{
+		fBank.value = null
 		fNavigation.value = Navigation(fNavigation.value.screen)
 		fPanel.value      = null
 	}
@@ -367,6 +395,63 @@ class DesktopController(
 	}
 
 	/*
+		Lit un relevé exporté par la banque et ouvre son rapprochement avec un
+		compte ; un fichier refusé est signalé dans le bandeau.
+		inAccountId : compte rapproché
+		inPath      : fichier du relevé
+	*/
+	fun openBankStatement(
+		inAccountId : String,
+		inPath      : Path
+	)
+	{
+		val vRead = runCatching { readBankCsv(Files.readAllBytes(inPath)) }
+			.getOrElse { BankRead.Invalid("Lecture impossible : ${it.message}") }	// relevé lu
+		when (vRead)
+		{
+			is BankRead.Valid   ->
+			{
+				fBank.value       = BankSession(inAccountId, inPath.fileName.toString(), vRead.lines, vRead.skipped)
+				fNavigation.value = Navigation(Screen.DASHBOARD, inAccountId)
+				fPanel.value      = null
+			}
+			is BankRead.Invalid -> fNotice.value = "Relevé refusé : ${vRead.message}"
+		}
+	}
+
+	/*
+		Ferme le rapprochement (retour à la vue du compte).
+	*/
+	fun closeBankStatement()
+	{
+		fBank.value = null
+	}
+
+	/*
+		Crée en une fois les opérations retenues d'un rapprochement ; si l'une
+		est refusée, rien n'est créé.
+		inForms : saisies à créer
+		Retour  : null si tout est créé ; sinon le motif du refus
+	*/
+	fun createFromBank(inForms: List<EntryForm>): String?
+	{
+		val vData  = workspace.value.data											// données
+		val vEntry = EntryData(vData.accounts.filterNot { it.archived }, vData.categories, vData.assets, vData.prices, vData.transactions)	// données de saisie
+		inForms.firstNotNullOfOrNull { inForm -> checkEntry(inForm, vEntry.withReferences(inForm, vData.accounts, vData.categories)).let { if (it.isEmpty) null else "« ${inForm.label} » : ${listOfNotNull(it.general, it.amount, it.account, it.category, it.label).joinToString(" ")}" } }
+			?.let { return it }
+		val vResult = edit { inFile ->
+			inForms.fold<EntryForm, EditResult>(EditResult.Done(inFile)) { inSoFar, inForm ->
+				when (inSoFar)
+				{
+					is EditResult.Done    -> editor.saveTransaction(inSoFar.file, buildEntry(inForm, vEntry.withReferences(inForm, vData.accounts, vData.categories)))
+					is EditResult.Refused -> inSoFar
+				}
+			}
+		}																			// résultat
+		return (vResult as? EditResult.Refused)?.messages?.joinToString(" ")
+	}
+
+	/*
 		Efface le message ponctuel du bandeau.
 	*/
 	fun clearNotice()
@@ -437,6 +522,7 @@ class DesktopController(
 	*/
 	private fun openSource(inSource: Source)
 	{
+		fBank.value = null
 		update(fSettings.value.copy(source = inSource))
 		inWorkspace.open(inSource, inScope)
 		fNavigation.value = Navigation()

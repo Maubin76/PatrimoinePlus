@@ -77,6 +77,8 @@ import fr.maubin.patrimoineplus.desktop.ui.panels.StatementPanel
 import fr.maubin.patrimoineplus.desktop.ui.screens.AccountScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.CategoriesScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.DashboardScreen
+import fr.maubin.patrimoineplus.desktop.ui.screens.ReconcileScreen
+import androidx.compose.runtime.staticCompositionLocalOf
 import fr.maubin.patrimoineplus.desktop.ui.screens.SettingsScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.WelcomeScreen
 import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
@@ -91,6 +93,9 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
+// Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
+val LocalBankPicker = staticCompositionLocalOf<() -> Path?> { { null } }
+
 val kContentMaxWidth    = 1600.dp													// largeur maximale du contenu
 private const val kPageMillis  = 280													// transition entre écrans
 private const val kPanelMillis = 240													// arrivée du panneau de saisie
@@ -101,12 +106,14 @@ private val kEase       = CubicBezierEasing(0.2f, 0f, 0f, 1f)						// courbe « 
 	écran d'accueil (aucune source) ou appli complète.
 	inController     : contrôleur
 	inOnPickSaveFile : choix d'un fichier où enregistrer une copie ; null si annulé
+	inOnPickBankFile : choix d'un relevé exporté par la banque ; null si annulé
 	inOnPickFolder   : ouvre le sélecteur de dossier ; rend le dossier choisi ou null
 */
 @Composable
 fun App(
 	inController     : DesktopController,
 	inOnPickSaveFile : () -> Path? = { null },
+	inOnPickBankFile : () -> Path? = { null },
 	inOnPickFolder   : () -> Path?
 )
 {
@@ -114,7 +121,7 @@ fun App(
 	val vSpace    by inController.workspace.collectAsState()				// données
 	val vPending  by inController.pending.collectAsState()					// action retenue
 	PatrimoineTheme(inDarkTheme = vSettings.appearance.isDark(), inTrendColors = vSettings.trend) {
-		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden) {
+		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile) {
 			Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
 				if (vSpace.source == Source.None)
 				{
@@ -151,6 +158,7 @@ private fun Shell(
 	val vNav    by inController.navigation.collectAsState()					// position
 	val vPanel  by inController.panel.collectAsState()						// panneau de saisie ouvert
 	val vNotice by inController.notice.collectAsState()						// message ponctuel
+	val vBank   by inController.bank.collectAsState()							// relevé en cours de rapprochement
 	val vFocus  = remember { FocusRequester() }									// focus clavier de secours (raccourcis)
 	LaunchedEffect(Unit) { vFocus.requestFocus() }
 	LaunchedEffect(inSpace.data) { inController.dropStalePanel() }
@@ -172,12 +180,13 @@ private fun Shell(
 			Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
 				Box(Modifier.widthIn(max = kContentMaxWidth).fillMaxSize()) {
 					AnimatedContent(
-						targetState    = vNav.screen to vNav.accountId,
+						targetState    = vNav.screen to (vNav.accountId?.let { if (vBank?.accountId == it) "$it#relevé" else it }),
 						transitionSpec = { pageTransition(initialState.second, targetState.second) },
 						label          = "écran"
 					) { (inScreen, inAccountId) ->
 						when
 						{
+							inAccountId?.endsWith("#relevé") == true -> vBank?.let { ReconcileScreen(inSpace, inController, it) }
 							inAccountId != null              -> AccountScreen(inSpace, inController, inAccountId, vNav.month)
 							inScreen == Screen.DASHBOARD     -> DashboardScreen(inSpace, inController)
 							inScreen == Screen.CATEGORIES    -> CategoriesScreen(inSpace, inController)

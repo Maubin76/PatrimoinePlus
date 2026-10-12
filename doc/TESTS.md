@@ -1,11 +1,11 @@
 # Tests
 
-Tous les tests tournent sur la JVM, sans émulateur (189 tests au total) :
+Tous les tests tournent sur la JVM, sans émulateur (196 tests au total) :
 
 ```sh
-./gradlew :core:test                    # module commun : 107 tests, Kotlin pur (core/src/test)
+./gradlew :core:test                    # module commun : 113 tests, Kotlin pur (core/src/test)
 ./gradlew :app:testDebugUnitTest        # appli Android : 50 tests, Robolectric (app/src/test)
-./gradlew :desktop:test                 # appli PC : 32 tests (desktop/src/test)
+./gradlew :desktop:test                 # appli PC : 33 tests (desktop/src/test)
 ./gradlew :app:recordRoborazziDebug     # régénère les captures d'écran
 ```
 
@@ -48,6 +48,8 @@ communes (fausse source de cours, réponses Yahoo enregistrées) sont dans
 | `DashboardStateTest` (4) | `:core` `ui/dashboard` (tableau de bord du PC) | une tuile par compte actif dans l'ordre, parts qui font 100, petite courbe arrêtée à la valeur du jour, aperçu du bon type ; aperçus cohérents (catégories triées, parts des positions qui font 100, dernier relevé) ; entrées et dépenses du mois égales aux synthèses des comptes Courant, dépenses par catégorie qui redonnent les dépenses du mois ; opérations récentes triées, sans opération à venir |
 | `PositionRulesTest` (7) | `:core` `domain/calc`, `domain/rules`, `data/edit` | **achat et vente le même jour** : fichier valide et PRU / plus-value justes quel que soit l'ordre (avant : fichier refusé une fois sur deux, plus-value de 440 € au lieu de 40 €) ; **vente saisie avant une vente existante** qui la rendrait impossible : refusée, la vente ultérieure est désignée ; PC : supprimer l'achat, réduire sa quantité, retirer la position initiale ou déplacer le solde initial après la vente : refusés ; **positions initiales qui verrouillent le type Bourse** ; ordre démesuré refusé sans plantage ; valeurs nulles et actif inconnu refusés ; rangs uniques après réordonnancement (archivés à la fin) |
 | `RoundTripRobustnessTest` (3) | `:core` `data/backup`, `data/sync` | textes inhabituels (espaces de bord, retour chariot, caractère de contrôle, U+FFFE, moitié de caractère composé) : classeur lisible et **empreinte inchangée par l'aller-retour** (sinon import inutile ou faux conflit) ; montants tapés à la main (« 1.234,56 », « 1,234.56 ») ; **part détenue hors de 1 à 100 % refusée** |
+| `BankStatementTest` (6) | `:core` `data/bank` (relevé de la banque, rapprochement) | lecture sans réglage d'exports au format de plusieurs banques : colonnes Débit/Crédit avec lignes d'informations avant le tableau en Windows-1252, montant signé avec date de valeur et libellés court et détaillé, export à virgules et dates ISO avec guillemets ; fichiers refusés ; **rapprochement** par montant égal et date à cinq jours, la plus proche d'abord, chaque opération une seule fois, soldes initiaux ignorés ; lignes à créer et opérations en trop ; totaux comparés ; **saisie proposée** (libellé et catégorie d'un achat passé chez le même marchand, libellé nettoyé sinon, pas de catégorie de revenu pour un débit) ; formulaire qui passe les contrôles, remboursement compris |
+| `ReconcileUiTest` (1) | `:desktop` écran de rapprochement (sans écran) | relevé lu depuis un fichier, lignes retrouvées, création refusée tant qu'une catégorie manque, puis lignes créées en une fois et retrouvées ; fichier refusé signalé ; capture `11-rapprochement.png` |
 | `DateInputTest` (1) | `:core` `domain/format/DateInput` | dates saisies sur PC : « 5/3/2026 » et « 05/03/2026 » acceptées, 29/02 d'une année non bissextile, 31/04 et formats étrangers refusés |
 | `DesktopUiTest` (2) | `:desktop` interface (Compose, sans écran) | **parcours réel** : écran d'accueil → « Essayer avec la démonstration » → tableau de bord (patrimoine, répartition, comptes, dernières opérations, bandeau) → tuile du Livret A (vue globale) → Réglages → Fermer → écran d'accueil ; captures de 10 écrans en clair et en sombre (tableau de bord, avec les couleurs des hausses et baisses, vues des comptes, panneau de saisie, fiche d'un compte) (`desktop/build/captures-desktop`, relecture humaine) |
 | `SyncLogicTest` (2) | `:core` `data/sync/SyncLogic` | **empreinte** indépendante de l'ordre des listes et de la date d'export, différente dès qu'une donnée change ; **décision** pour chaque situation : pas de fichier (export, sauf données vides), première synchronisation (mémoriser, importer si téléphone vide, sinon conflit), ensuite (rien, export, import, mémoriser, conflit), effacement volontaire propagé |
