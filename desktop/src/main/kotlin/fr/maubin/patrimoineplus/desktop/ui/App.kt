@@ -1,5 +1,15 @@
 package fr.maubin.patrimoineplus.desktop.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
@@ -31,7 +41,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -83,6 +92,9 @@ import java.util.Locale
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 val kContentMaxWidth    = 1600.dp													// largeur maximale du contenu
+private const val kPageMillis  = 280													// transition entre écrans
+private const val kPanelMillis = 240													// arrivée du panneau de saisie
+private val kEase       = CubicBezierEasing(0.2f, 0f, 0f, 1f)						// courbe « accentuée » de Material
 
 /*
 	Racine de l'appli PC : thème selon l'apparence choisie, mode discret, puis
@@ -159,27 +171,41 @@ private fun Shell(
 			HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 			Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
 				Box(Modifier.widthIn(max = kContentMaxWidth).fillMaxSize()) {
-					when
-					{
-						vNav.accountId != null           -> AccountScreen(inSpace, inController, vNav.accountId!!, vNav.month)
-						vNav.screen == Screen.DASHBOARD  -> DashboardScreen(inSpace, inController)
-						vNav.screen == Screen.CATEGORIES -> CategoriesScreen(inSpace, inController)
-						else                             -> SettingsScreen(inController, inOnPickFolder)
+					AnimatedContent(
+						targetState    = vNav.screen to vNav.accountId,
+						transitionSpec = { pageTransition(initialState.second, targetState.second) },
+						label          = "écran"
+					) { (inScreen, inAccountId) ->
+						when
+						{
+							inAccountId != null              -> AccountScreen(inSpace, inController, inAccountId, vNav.month)
+							inScreen == Screen.DASHBOARD     -> DashboardScreen(inSpace, inController)
+							inScreen == Screen.CATEGORIES    -> CategoriesScreen(inSpace, inController)
+							else                             -> SettingsScreen(inController, inOnPickFolder)
+						}
 					}
 				}
 			}
 		}
-		vPanel?.let { inOpen ->
-			key(inOpen.token) {
-				when (inOpen)
-				{
-					is Panel.Operation       -> OperationPanel(inController, inOpen.form)
-					is Panel.AccountSheet    -> AccountPanel(inController, inOpen.accountId)
-					is Panel.CategorySheet   -> CategoryPanel(inController, inOpen.categoryId, inOpen.kind)
-					is Panel.Statement       -> StatementPanel(inController, inOpen.accountId)
-					is Panel.Prices          -> PricesPanel(inController, inOpen.accountId)
-					is Panel.OpeningPosition -> OpeningPositionPanel(inController, inOpen.accountId)
-					is Panel.AssetSheet      -> AssetPanel(inController, inOpen.assetId)
+		AnimatedVisibility(
+			visible = vPanel != null,
+			enter   = slideInHorizontally(tween(kPanelMillis, easing = kEase)) { it / 3 } + fadeIn(tween(kPanelMillis)),
+			exit    = slideOutHorizontally(tween(kPanelMillis * 2 / 3, easing = kEase)) { it / 3 } + fadeOut(tween(kPanelMillis * 2 / 3))
+		) {
+			val vShown = remember { mutableStateOf(vPanel) }							// panneau affiché (gardé pendant sa sortie)
+			vPanel?.let { vShown.value = it }
+			vShown.value?.let { inOpen ->
+				AnimatedContent(targetState = inOpen, transitionSpec = { fadeIn(tween(kPanelMillis)) togetherWith fadeOut(tween(kPanelMillis / 2)) }, contentKey = { it.token }, label = "panneau") { inPanel ->
+					when (inPanel)
+					{
+						is Panel.Operation       -> OperationPanel(inController, inPanel.form)
+						is Panel.AccountSheet    -> AccountPanel(inController, inPanel.accountId)
+						is Panel.CategorySheet   -> CategoryPanel(inController, inPanel.categoryId, inPanel.kind)
+						is Panel.Statement       -> StatementPanel(inController, inPanel.accountId)
+						is Panel.Prices          -> PricesPanel(inController, inPanel.accountId)
+						is Panel.OpeningPosition -> OpeningPositionPanel(inController, inPanel.accountId)
+						is Panel.AssetSheet      -> AssetPanel(inController, inPanel.assetId)
+					}
 				}
 			}
 		}
@@ -199,6 +225,31 @@ private fun Shell(
 			dismissButton    = { TextButton(onClick = { inController.resolveConflict(inKeepLocal = false) }) { Text("Le fichier") } }
 		)
 	}
+}
+
+/*
+	Transition entre deux écrans : vers la vue d'un compte, la page arrive de
+	la droite ; au retour, de la gauche ; entre écrans principaux, simple
+	fondu. Courte (moins d'un tiers de seconde) pour ne jamais faire attendre.
+	inFrom : compte affiché avant ; null sur un écran principal
+	inTo   : compte affiché après ; null sur un écran principal
+*/
+private fun pageTransition(
+	inFrom : String?,
+	inTo   : String?
+): ContentTransform
+{
+	val vShift = when
+	{
+		inFrom == null && inTo != null -> 1										// ouverture d'un compte
+		inFrom != null && inTo == null -> -1									// retour au tableau de bord
+		else                           -> 0
+	}																			// sens du glissement
+	val vIn  = fadeIn(tween(kPageMillis, delayMillis = kPageMillis / 4, easing = kEase)) +
+		slideInHorizontally(tween(kPageMillis, easing = kEase)) { inWidth -> vShift * inWidth / 12 }	// arrivée
+	val vOut = fadeOut(tween(kPageMillis / 2)) +
+		slideOutHorizontally(tween(kPageMillis, easing = kEase)) { inWidth -> -vShift * inWidth / 24 }	// départ
+	return vIn togetherWith vOut
 }
 
 /*

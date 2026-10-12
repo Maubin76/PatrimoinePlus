@@ -171,7 +171,7 @@ private fun Figures(inState: DashboardState)
 			Tile(inModifier = inMod, inTitle = "Ce mois-ci") {
 				TileFigure("Entrées") { AmountText(inCents = inState.income, inStyle = MaterialTheme.typography.titleLarge, inShowPlusSign = true) }
 				Spacer(Modifier.height(10.dp))
-				TileFigure("Dépenses") { AmountText(inCents = inState.expenses, inStyle = MaterialTheme.typography.titleLarge, inShowPlusSign = true) }
+				TileFigure("Dépenses") { AmountText(inCents = -inState.expenses, inStyle = MaterialTheme.typography.titleLarge) }
 			}
 		},
 		Cell(1f) { inMod ->
@@ -299,7 +299,7 @@ private fun TilePreviewView(inPreview: TilePreview)
 		is TilePreview.Checking  ->
 		{
 			PreviewLine("Entrées du mois", inPreview.income)
-			PreviewLine("Dépenses du mois", inPreview.expenses)
+			PreviewLine("Dépenses du mois", -inPreview.expenses, inSigned = false)
 			if (inPreview.categories.isNotEmpty())
 			{
 				Spacer(Modifier.height(8.dp))
@@ -383,7 +383,7 @@ private fun ShareLine(
 
 /*
 	Ligne d'une dépense par catégorie : icône, nom, barre relative à la plus
-	grosse, montant.
+	grosse, montant dépensé (sans signe : c'est une dépense).
 	inLine    : dépense nette de la catégorie
 	inMax     : plus grosse dépense (échelle des barres)
 	inCompact : ligne resserrée (aperçu d'un compte)
@@ -408,7 +408,7 @@ fun CategoryBar(
 			Text("${inLine.percent} %", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			Spacer(Modifier.width(16.dp))
 		}
-		AmountText(inCents = -inLine.netCents, inStyle = if (inCompact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge, inShowPlusSign = true)
+		AmountText(inCents = inLine.netCents, inStyle = if (inCompact) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge)
 	}
 }
 

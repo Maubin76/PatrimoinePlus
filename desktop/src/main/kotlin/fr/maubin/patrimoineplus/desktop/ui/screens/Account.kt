@@ -150,7 +150,7 @@ private fun CheckingView(
 			add(Cell(1f) { inMod -> Figure("Ouverture", inSummary.opening, inMod, inSigned = false) })
 			if (inSummary.openings != 0L) add(Cell(1f) { inMod -> Figure("Solde initial", inSummary.openings, inMod) })
 			add(Cell(1f) { inMod -> Figure("Entrées", inSummary.income, inMod) })
-			add(Cell(1f) { inMod -> Figure("Dépenses", inSummary.expenses, inMod) })
+			add(Cell(1f) { inMod -> Figure("Dépenses", -inSummary.expenses, inMod, inSigned = false) })
 			if (inSummary.savings != 0L) add(Cell(1f) { inMod -> Figure("Épargne", inSummary.savings, inMod) })
 			if (inSummary.transfers != 0L) add(Cell(1f) { inMod -> Figure("Virements internes", inSummary.transfers, inMod) })
 			add(Cell(1.2f) { inMod -> Figure("Clôture", inSummary.closing, inMod, inSigned = false, inStrong = true) })

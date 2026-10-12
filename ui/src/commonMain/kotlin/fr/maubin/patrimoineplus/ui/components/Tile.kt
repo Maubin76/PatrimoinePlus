@@ -1,11 +1,15 @@
 package fr.maubin.patrimoineplus.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -25,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -38,11 +43,13 @@ import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.domain.calc.SeriesPoint
 
 private val kTileShape = RoundedCornerShape(20.dp)								// forme d'une tuile
+private const val kHoverMillis = 160												// fondu du survol
+private const val kPressMillis = 90												// enfoncement au clic
 
 /*
 	Tuile du tableau de bord : carte bordée, titre facultatif avec une action
 	à droite, contenu libre. Cliquable, elle souligne son bord au survol de
-	la souris (PC) ; un clic l'ouvre.
+	la souris (PC) en fondu et s'enfonce légèrement au clic, qui l'ouvre.
 	inModifier : modificateur appliqué
 	inTitle    : titre de la tuile ; null sans titre
 	inOnClick  : action d'un clic ; null pour une tuile inerte
@@ -63,13 +70,17 @@ fun Tile(
 	val vColors   = MaterialTheme.colorScheme										// palette courante
 	val vSource   = remember { MutableInteractionSource() }						// survol et clics
 	val vHovered  by vSource.collectIsHoveredAsState()							// souris au-dessus
+	val vPressed  by vSource.collectIsPressedAsState()							// bouton de la souris enfoncé
 	val vActive   = inOnClick != null && vHovered								// mise en avant du survol
 	val vClick    = if (inOnClick != null) Modifier.clickable(interactionSource = vSource, indication = null, role = Role.Button, onClickLabel = inClickLabel, onClick = inOnClick) else Modifier
+	val vFill     by animateColorAsState(if (vActive) vColors.surfaceContainerLow else vColors.surface, tween(kHoverMillis), label = "fond")	// fond, en fondu
+	val vEdge     by animateColorAsState(if (vActive) vColors.outline else vColors.outlineVariant, tween(kHoverMillis), label = "bord")	// bord, en fondu
+	val vScale    by animateFloatAsState(if (inOnClick != null && vPressed) 0.985f else 1f, tween(kPressMillis), label = "appui")	// léger enfoncement au clic
 	Surface(
-		modifier = inModifier.hoverable(vSource).then(vClick),
+		modifier = inModifier.graphicsLayer { scaleX = vScale; scaleY = vScale }.hoverable(vSource).then(vClick),
 		shape    = kTileShape,
-		color    = if (vActive) vColors.surfaceContainerLow else vColors.surface,
-		border   = BorderStroke(1.dp, if (vActive) vColors.outline else vColors.outlineVariant)
+		color    = vFill,
+		border   = BorderStroke(1.dp, vEdge)
 	) {
 		Column(Modifier.padding(24.dp)) {
 			if (inTitle != null || inAction != null)
