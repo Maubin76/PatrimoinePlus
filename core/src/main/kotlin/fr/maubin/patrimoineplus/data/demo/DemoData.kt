@@ -3,6 +3,7 @@ package fr.maubin.patrimoineplus.data.demo
 import fr.maubin.patrimoineplus.domain.calc.kPriceScale
 import fr.maubin.patrimoineplus.domain.calc.kQuantityScale
 import fr.maubin.patrimoineplus.domain.calc.tradeCashCents
+import fr.maubin.patrimoineplus.data.DataSet
 import fr.maubin.patrimoineplus.domain.model.Account
 import fr.maubin.patrimoineplus.domain.model.AccountStatement
 import fr.maubin.patrimoineplus.domain.model.AccountType
@@ -21,30 +22,12 @@ import java.util.UUID
 private const val kMonths = 6													// mois d'historique générés
 
 /*
-	Jeu de données de démonstration complet (synthétique).
-	accounts     : comptes
-	categories   : catégories
-	assets       : actifs
-	transactions : opérations
-	prices       : cours relevés
-	statements   : relevés de solde
-*/
-data class DemoBundle(
-	val accounts     : List<Account>,
-	val categories   : List<Category>,
-	val assets       : List<Asset>,
-	val transactions : List<Transaction>,
-	val prices       : List<AssetPrice>,
-	val statements   : List<AccountStatement>
-)
-
-/*
 	Construit six mois de données de démonstration finissant aujourd'hui, plus
 	une opération « à venir ». Pur et déterministe pour une date donnée (hors
 	identifiants) : testable sur la JVM. Toutes les valeurs sont fictives.
 	inToday : date du jour
 */
-fun buildDemoData(inToday: LocalDate): DemoBundle
+fun buildDemoData(inToday: LocalDate): DataSet
 {
 	val vCourant = Account(newId(), "Compte courant", AccountType.CHECKING, "Banque démo", 100, 0)	// compte courant
 	val vJoint   = Account(newId(), "Compte joint", AccountType.CHECKING, "Banque démo", 50, 1)		// compte joint
@@ -159,7 +142,7 @@ fun buildDemoData(inToday: LocalDate): DemoBundle
 
 	val vStatement = AccountStatement(newId(), vLivretA.id, inToday.withDayOfMonth(1).minusDays(1),
 		1_200_000 + 30_000L * (kMonths - 1) + 3_820)							// relevé avec 38,20 € d'intérêts non saisis
-	return DemoBundle(listOf(vCourant, vJoint, vLivretA, vLdds, vPea), vCats, listOf(vWorld, vUs), vOps, vPrices, listOf(vStatement))
+	return DataSet(listOf(vCourant, vJoint, vLivretA, vLdds, vPea), vCats, listOf(vWorld, vUs), vOps, vPrices, listOf(vStatement))
 }
 
 /*

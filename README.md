@@ -16,6 +16,8 @@ dans [`doc/SPEC.md`](doc/SPEC.md) ; la couverture des tests dans
 ```sh
 ./gradlew :app:assembleDebug        # APK : app/build/outputs/apk/debug/app-debug.apk
 ./gradlew :core:test                # tests du module commun (Kotlin pur)
+./gradlew :desktop:run               # lance l'appli PC (Windows)
+./gradlew :desktop:test             # tests de l'appli PC
 ./gradlew :app:testDebugUnitTest    # tests de l'appli Android (Robolectric)
 ./gradlew :app:assembleRelease      # APK optimisé (R8), signé avec la clé de debug :
                                     # app/build/outputs/apk/release/app-release.apk
@@ -26,8 +28,8 @@ dans [`doc/SPEC.md`](doc/SPEC.md) ; la couverture des tests dans
 GitHub Actions (`.github/workflows/ci.yml`) : à chaque push sur `main`
 seulement (les branches de travail ne la déclenchent pas ; lancement manuel
 possible depuis l'onglet Actions), la CI installe le JDK 21, lance tous les
-tests JVM (`:core:test` et `:app:testDebugUnitTest`) puis construit l'APK
-debug. En cas
+tests JVM (`:core:test`, `:app:testDebugUnitTest`, `:desktop:test`) puis
+construit l'APK debug. En cas
 d'échec, les rapports de tests sont joints à l'exécution (artefact
 « rapports-tests », 14 jours). Un nouveau push sur la même branche annule
 l'exécution en cours. Les tests ne dépendent ni du fuseau horaire ni de la
@@ -64,16 +66,24 @@ frontières :
         data/backup/   format de sauvegarde (classeur Excel, ancien JSON), rotation
         data/demo/     données de démonstration
         data/market/   analyse des cours, client Yahoo Finance
+        data/sync/     synchronisation par fichier : empreintes, décision
+        data/DataSet   toutes les données en modèles du domaine (base, fichier, démo)
         testFixtures/  aides de test partagées (fausse source de cours, réponses enregistrées)
+        ui/            états des écrans (accueil, comptes, vue d'un compte), sans Compose
 :app    appli Android (dépend de :core)
         data/          base Room (db), dépôts (repo), réglages DataStore (settings),
                        sauvegarde sur le téléphone, mise à jour des cours (market)
         di/            modules Hilt (horloge, base, réglages, source de cours)
         ui/            écrans Compose, ViewModels, thème, navigation, composants
+:desktop appli PC, Compose Multiplatform (dépend de :core)
+        data/          réglages (%APPDATA%\PatrimoinePlus), espace de travail
+        ui/            thème, composants, écrans
 ```
 
 Le code commun garde ses noms de packages : passer d'un module à l'autre n'a
-changé aucun import.
+changé aucun import. Les états des écrans sont calculés par les mêmes
+fonctions sur le téléphone et sur le PC : les chiffres affichés sont
+identiques.
 
 Règles :
 
@@ -210,6 +220,30 @@ direct entre téléphones reste possible.
   supprimer les fichiers qu'elle avait créés ; la rotation ne s'applique
   qu'aux fichiers créés depuis la réinstallation (l'import, lui, passe par le
   sélecteur de fichiers et reste possible).
+
+## Appli PC (en cours, branche `desktop`)
+
+Appli Windows en Compose Multiplatform (`:desktop`), même style noir et blanc
+que le téléphone, mise en page en deux colonnes pour grand écran. Lancement :
+`./gradlew :desktop:run` (installateur prévu à l'étape D).
+
+- **Écran d'accueil** : choisir le dossier synchronisé avec le téléphone, ou
+  **essayer avec la démonstration** (données fictives en mémoire, rien n'est lu
+  ni écrit sur le disque). Le choix est mémorisé et rouvert au lancement
+  suivant ; Réglages › Données permet d'en changer ou de fermer.
+- **Écrans** (consultation pour l'instant) : Accueil (total, variation du mois,
+  répartition, évolution), Comptes (répartition, liste), vue d'un compte
+  (Courant mois par mois ; Épargne et Bourse en vue globale, positions),
+  Réglages (source, apparence, mode discret).
+- **Dossier synchronisé** : le fichier `patrimoineplus-donnees.xlsx` est lu,
+  vérifié comme à l'import, puis surveillé (toutes les 2 s) et relu dès qu'il
+  change. Un fichier illisible (copie interrompue) est refusé et les
+  dernières données valides restent affichées ; le bandeau du haut indique
+  l'état.
+- Réglages de l'appli PC : `%APPDATA%\PatrimoinePlus\desktop.properties`.
+- **Dette connue** : le thème et les composants graphiques (montants, courbe,
+  barres, icônes) sont copiés de l'appli Android ; un module d'interface
+  partagé Android/PC pourra les factoriser.
 
 ## Synchronisation avec le PC
 

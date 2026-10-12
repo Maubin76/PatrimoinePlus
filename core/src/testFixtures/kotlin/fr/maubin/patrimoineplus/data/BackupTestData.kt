@@ -17,7 +17,7 @@ import java.time.LocalDate
 /*
 	Fichier d'export construit à partir des données de démonstration.
 */
-internal fun demoBackupFile(): BackupFile
+fun demoBackupFile(): BackupFile
 {
 	val vDemo = buildDemoData(LocalDate.parse("2026-10-08"))				// démonstration
 	return BackupFile(
