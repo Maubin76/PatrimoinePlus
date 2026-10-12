@@ -4,6 +4,9 @@ import fr.maubin.patrimoineplus.ui.theme.ThemeMode
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import fr.maubin.patrimoineplus.ui.budget.Budget
+import fr.maubin.patrimoineplus.ui.budget.decodeBudget
+import fr.maubin.patrimoineplus.ui.budget.encodeBudget
 import java.nio.file.StandardCopyOption
 import java.util.Properties
 
@@ -98,6 +101,31 @@ class DesktopConfig(private val inFile: Path)
 		Files.newBufferedWriter(vTemp, Charsets.UTF_8).use { vProps.store(it, "Réglages de PatrimoinePlus (PC)") }
 		Files.move(vTemp, inFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
 	}
+
+	/*
+		Lit le budget prévisionnel (fichier budget.json à côté des réglages) ;
+		vide s'il est absent ou illisible.
+	*/
+	fun loadBudget(): Budget =
+		budgetFile().takeIf { Files.isRegularFile(it) }?.let { inPath -> runCatching { decodeBudget(Files.readString(inPath)) }.getOrNull() } ?: Budget()
+
+	/*
+		Enregistre le budget prévisionnel (fichier temporaire puis remplacement).
+		inBudget : budget
+	*/
+	fun saveBudget(inBudget: Budget)
+	{
+		val vFile = budgetFile()														// fichier du budget
+		vFile.parent?.let { Files.createDirectories(it) }
+		val vTemp = vFile.resolveSibling("budget.json.tmp")								// écriture provisoire
+		Files.writeString(vTemp, encodeBudget(inBudget))
+		Files.move(vTemp, vFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+	}
+
+	/*
+		Fichier du budget, à côté de celui des réglages.
+	*/
+	private fun budgetFile(): Path = inFile.resolveSibling("budget.json")
 
 	companion object
 	{

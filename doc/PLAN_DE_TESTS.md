@@ -132,6 +132,7 @@ identifiant (A-03, C-12…) pour le retour.
 | C-18g | Saisie rapide : cinq tickets à la suite au clavier (Tab, Entrée), un revenu avec « + », Ctrl+Entrée. | Catégories proposées plausibles ; tout enregistré d'un coup ; une ligne fausse est signalée et rien n'est enregistré. |
 | C-18h | Bilan annuel de l'année écoulée et de l'année en cours ; « Exporter en PDF… ». | Chiffres cohérents avec l'Analyse ; le PDF s'ouvre et s'imprime proprement (accents, euros, pages numérotées). |
 | C-18i | Projection : changer horizon, épargne mensuelle, rendements, part en bourse ; « Valeurs par défaut ». | Chiffres et courbe mis à jour ; prudent ≤ central ≤ favorable. |
+| C-18j | Budget : créer des lignes d'entrées, de dépenses, d'investissements ; en suivre certaines (catégorie, compte) ; basculer Prévu / Réel du mois ; changer de mois ; relancer l'appli. | Schéma lisible (étiquettes sans chevauchement), reste ou déficit justes ; réel et écarts cohérents avec l'Analyse ; budget retrouvé après relance. |
 | C-19 | `PatrimoinePlus.exe --verifier chemin\vers\patrimoineplus-donnees.xlsx` dans un terminal. | Code de sortie 0 ; date d'exemple en français (« 12 octobre 2026 »). |
 
 ## D. Limites connues (pas des anomalies)

@@ -47,6 +47,7 @@ import fr.maubin.patrimoineplus.desktop.DesktopController
 import fr.maubin.patrimoineplus.desktop.data.WorkspaceState
 import fr.maubin.patrimoineplus.desktop.ui.components.CellField
 import fr.maubin.patrimoineplus.desktop.ui.components.Hint
+import fr.maubin.patrimoineplus.desktop.ui.components.MenuCell
 import fr.maubin.patrimoineplus.domain.format.parseEuros
 import fr.maubin.patrimoineplus.domain.model.CategoryKind
 import fr.maubin.patrimoineplus.ui.components.AmountText
@@ -204,33 +205,5 @@ private fun BatchLine(
 			}
 		}
 		inError?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(bottom = 4.dp)) }
-	}
-}
-
-/*
-	Case à choix (compte, catégorie) : bouton discret et menu.
-	inText     : texte affiché
-	inOptions  : choix (valeur, texte)
-	inOnSelect : nouveau choix
-	inModifier : place
-	inMuted    : texte grisé (valeur proposée, pas encore choisie)
-*/
-@Composable
-private fun MenuCell(
-	inText     : String,
-	inOptions  : List<Pair<String, String>>,
-	inOnSelect : (String) -> Unit,
-	inModifier : Modifier,
-	inMuted    : Boolean = false
-)
-{
-	var vOpen by remember { mutableStateOf(false) }										// menu ouvert
-	Box(inModifier) {
-		TextButton(onClick = { vOpen = true }, modifier = Modifier.fillMaxWidth()) {
-			Text(inText, maxLines = 1, overflow = TextOverflow.Ellipsis, color = if (inMuted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface, modifier = Modifier.fillMaxWidth())
-		}
-		DropdownMenu(expanded = vOpen, onDismissRequest = { vOpen = false }) {
-			inOptions.forEach { (inValue, inLabel) -> DropdownMenuItem(text = { Text(inLabel) }, onClick = { vOpen = false; inOnSelect(inValue) }) }
-		}
 	}
 }

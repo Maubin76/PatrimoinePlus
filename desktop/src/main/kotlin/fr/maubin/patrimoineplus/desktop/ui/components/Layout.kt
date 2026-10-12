@@ -21,6 +21,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -187,5 +191,33 @@ fun CellField(
 			}
 		)
 		androidx.compose.material3.HorizontalDivider(color = if (inError) vColors.error else vColors.outlineVariant)
+	}
+}
+
+/*
+	Case à choix (compte, catégorie) : bouton discret et menu.
+	inText     : texte affiché
+	inOptions  : choix (valeur, texte)
+	inOnSelect : nouveau choix
+	inModifier : place
+	inMuted    : texte grisé (valeur proposée, pas encore choisie)
+*/
+@Composable
+fun MenuCell(
+	inText     : String,
+	inOptions  : List<Pair<String, String>>,
+	inOnSelect : (String) -> Unit,
+	inModifier : Modifier,
+	inMuted    : Boolean = false
+)
+{
+	var vOpen by remember { mutableStateOf(false) }										// menu ouvert
+	Box(inModifier) {
+		androidx.compose.material3.TextButton(onClick = { vOpen = true }, modifier = Modifier.fillMaxWidth()) {
+			Text(inText, maxLines = 1, overflow = TextOverflow.Ellipsis, color = if (inMuted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface, modifier = Modifier.fillMaxWidth())
+		}
+		androidx.compose.material3.DropdownMenu(expanded = vOpen, onDismissRequest = { vOpen = false }) {
+			inOptions.forEach { (inValue, inLabel) -> androidx.compose.material3.DropdownMenuItem(text = { Text(inLabel) }, onClick = { vOpen = false; inOnSelect(inValue) }) }
+		}
 	}
 }

@@ -79,6 +79,7 @@ import fr.maubin.patrimoineplus.desktop.ui.screens.CategoriesScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.DashboardScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.AnalysisScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.BatchScreen
+import fr.maubin.patrimoineplus.desktop.ui.screens.BudgetScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.ProjectionScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.ReportScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.OperationsScreen
@@ -205,6 +206,7 @@ private fun Shell(
 							inScreen == Screen.BATCH         -> BatchScreen(inSpace, inController)
 							inScreen == Screen.REPORT        -> ReportScreen(inSpace, inController)
 							inScreen == Screen.PROJECTION    -> ProjectionScreen(inSpace, inController)
+							inScreen == Screen.BUDGET        -> BudgetScreen(inSpace, inController)
 							inScreen == Screen.CATEGORIES    -> CategoriesScreen(inSpace, inController)
 							else                             -> SettingsScreen(inController, inOnPickFolder)
 						}
@@ -352,7 +354,7 @@ private fun Rail(
 				verticalAlignment = Alignment.CenterVertically
 			) {
 				Icon(
-					imageVector        = when (inEntry) { Screen.DASHBOARD -> LineIcons.Home; Screen.OPERATIONS -> LineIcons.Search; Screen.ANALYSIS -> LineIcons.Bars; Screen.BATCH -> LineIcons.Edit; Screen.REPORT -> LineIcons.Document; Screen.PROJECTION -> LineIcons.Trend; Screen.CATEGORIES -> LineIcons.Grid; Screen.SETTINGS -> LineIcons.Sliders },
+					imageVector        = when (inEntry) { Screen.DASHBOARD -> LineIcons.Home; Screen.OPERATIONS -> LineIcons.Search; Screen.ANALYSIS -> LineIcons.Bars; Screen.BATCH -> LineIcons.Edit; Screen.REPORT -> LineIcons.Document; Screen.PROJECTION -> LineIcons.Trend; Screen.BUDGET -> LineIcons.Wallet; Screen.CATEGORIES -> LineIcons.Grid; Screen.SETTINGS -> LineIcons.Sliders },
 					contentDescription = null,
 					tint               = if (vActive) vColors.onPrimary else vColors.onSurface,
 					modifier           = Modifier.size(20.dp)

@@ -13,6 +13,7 @@ import fr.maubin.patrimoineplus.ui.entry.EntryData
 import fr.maubin.patrimoineplus.ui.entry.EntryForm
 import fr.maubin.patrimoineplus.ui.entry.newEntryForm
 import fr.maubin.patrimoineplus.ui.search.SearchQuery
+import fr.maubin.patrimoineplus.ui.budget.Budget
 import fr.maubin.patrimoineplus.ui.entry.BatchRow
 import fr.maubin.patrimoineplus.ui.entry.checkBatchRow
 import fr.maubin.patrimoineplus.ui.projection.ProjectionInput
@@ -51,6 +52,7 @@ enum class Screen(val label: String)
 	ANALYSIS("Analyse"),														// dépenses et revenus mois par mois
 	REPORT("Bilan annuel"),														// bilan d'une année, PDF
 	PROJECTION("Projection"),													// patrimoine à quelques années
+	BUDGET("Budget"),															// budget prévisionnel et cashflow
 	CATEGORIES("Catégories"),													// catégories de dépense et de revenu
 	SETTINGS("Réglages")														// source, apparence
 }
@@ -185,6 +187,7 @@ class DesktopController(
 	private val fFocus      = MutableStateFlow(0)								// demandes de focus du champ de recherche (Ctrl+F)
 	private val fBatch      = MutableStateFlow<List<BatchRow>>(emptyList())	// lignes de la saisie en grille
 	private val fProjection = MutableStateFlow<ProjectionInput?>(null)			// hypothèses de la projection ; null : par défaut
+	private val fBudget     = MutableStateFlow(inConfig.loadBudget())			// budget prévisionnel
 	private var fRowKeys    = 0L												// identifiants des lignes de la grille
 	private var fTokens     = 0L												// numéros d'ouverture des panneaux
 
@@ -220,6 +223,9 @@ class DesktopController(
 
 	// Hypothèses de la projection ; null pour celles par défaut.
 	val projection: StateFlow<ProjectionInput?> = fProjection
+
+	// Budget prévisionnel mensuel (enregistré sur le PC).
+	val budget: StateFlow<Budget> = fBudget
 
 	// Relevé de la banque en cours de rapprochement ; null sinon.
 	val bank: StateFlow<BankSession?> = fBank
@@ -524,6 +530,16 @@ class DesktopController(
 		fBatch.value = listOf(newBatchRow(vRows.last()).copy(accountId = vRows.last().accountId))
 		fNotice.value = "${vRows.size} opération(s) enregistrée(s)."
 		return emptyMap()
+	}
+
+	/*
+		Remplace le budget prévisionnel et l'enregistre sur le PC.
+		inBudget : budget
+	*/
+	fun setBudget(inBudget: Budget)
+	{
+		fBudget.value = inBudget
+		runCatching { inConfig.saveBudget(inBudget) }.onFailure { fNotice.value = "Budget non enregistré : ${it.message}" }
 	}
 
 	/*
