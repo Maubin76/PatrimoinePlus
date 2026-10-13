@@ -167,7 +167,8 @@ fun GoalsScreen(
 					inSpace  = inSpace,
 					inChange = { vDraft = it; vLast = it },
 					inClose  = { vDraft = null },
-					inSave   = { inGoal ->
+					inSave   = save@{ inGoal ->
+						if (vDraft == null) return@save								// panneau déjà fermé (double clic pendant sa disparition)
 						inController.setGoals(Goals(if (vGoals.goals.any { it.id == inGoal.id }) vGoals.goals.map { if (it.id == inGoal.id) inGoal else it } else vGoals.goals + inGoal))
 						vDraft = null
 					},

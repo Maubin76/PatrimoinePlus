@@ -64,6 +64,7 @@ fun CategoryPanel(
 	*/
 	fun save()
 	{
+		if (inController.panel.value == null) return						// panneau déjà fermé (double clic pendant sa disparition)
 		val vResult = inController.edit { inFile ->
 			if (vCategory == null) inController.editor.createCategory(inFile, vName, vIcon, vKind)
 			else inController.editor.updateCategory(inFile, vCategory.copy(name = vName, icon = vIcon))
@@ -108,7 +109,7 @@ fun CategoryPanel(
 
 	if (vDelete && vCategory != null)
 	{
-		val vOthers = vSpace.data.categories.filter { it.kind == vCategory.kind && it.id != vCategory.id }	// remplacements possibles
+		val vOthers = vSpace.data.categories.filter { it.kind == vCategory.kind && it.id != vCategory.id && !it.archived }	// remplacements possibles
 		AlertDialog(
 			onDismissRequest = { vDelete = false },
 			title            = { Text("Supprimer « ${vCategory.name} » ?") },

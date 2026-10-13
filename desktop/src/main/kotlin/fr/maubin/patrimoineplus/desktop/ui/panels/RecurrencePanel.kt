@@ -59,6 +59,7 @@ fun RecurrencePanel(
 	*/
 	fun save()
 	{
+		if (inController.panel.value == null) return						// panneau déjà fermé (double clic pendant sa disparition)
 		val vEnd = if (vEndText.isBlank()) null else parseFrenchDate(vEndText)		// fin lue
 		if (vBadDay || (vEndText.isNotBlank() && vEnd == null))
 		{

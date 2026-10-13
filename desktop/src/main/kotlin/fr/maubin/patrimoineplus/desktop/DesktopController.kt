@@ -771,6 +771,9 @@ class DesktopController(
 		update(fSettings.value.copy(source = inSource))
 		fBudget.value = inConfig.loadBudget(inSource)
 		fGoals.value  = inConfig.loadGoals(inSource)
+		fProjection.value = null													// hypothèses de l'autre source
+		fBatch.value      = emptyList()												// lignes saisies sur les comptes de l'autre source
+		fQuery.value      = SearchQuery()											// critères sur les comptes de l'autre source
 		inWorkspace.open(inSource, inScope)
 		fNavigation.value = Navigation()
 		fPanel.value      = null

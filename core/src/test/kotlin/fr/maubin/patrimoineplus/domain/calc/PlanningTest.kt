@@ -27,6 +27,9 @@ import fr.maubin.patrimoineplus.ui.budget.BudgetLine
 import fr.maubin.patrimoineplus.ui.budget.BudgetSection
 import fr.maubin.patrimoineplus.ui.budget.ExpenseTheme
 import fr.maubin.patrimoineplus.ui.budget.compareBudget
+import fr.maubin.patrimoineplus.ui.planning.buildRecurrence
+import fr.maubin.patrimoineplus.ui.planning.editRecurrenceForm
+import fr.maubin.patrimoineplus.ui.planning.nextOccurrence
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -182,5 +185,29 @@ class PlanningTest
 		assertEquals(fr.maubin.patrimoineplus.domain.kLeisure.id, vMoved.recurrences.single().categoryId)
 		assertTrue((vEditor.deleteAccount(vMoved, kChecking.id, true) as EditResult.Done).file.recurrences.isEmpty())
 		assertTrue((vEditor.deleteRecurrence(vMoved, kRent.id) as EditResult.Done).file.recurrences.isEmpty())
+		val vRefused = vEditor.updateAccount(vMoved, kChecking.copy(type = AccountType.SAVINGS))	// type d'un compte utilisé par une récurrence
+		assertTrue(vRefused is EditResult.Refused && "récurrente" in (vRefused as EditResult.Refused).messages.single())
+		assertTrue(vEditor.updateAccount(vMoved, kChecking.copy(name = "Courant")) is EditResult.Done)	// renommer reste possible
+	}
+
+	/*
+		Saisie d'une récurrence : prochaine échéance après la dernière créée
+		et à partir d'aujourd'hui ; un remboursement régulier garde son signe
+		et sa dernière échéance à la modification.
+	*/
+	@Test
+	fun recurrenceForms()
+	{
+		assertEquals(d("2026-11-05"), nextOccurrence(kRent.copy(last = d("2026-10-05")), kToday))
+		assertEquals(d("2026-11-05"), nextOccurrence(kRent, kToday))								// échéances passées non créées : pas de rattrapage affiché
+		assertEquals(d("2026-10-12"), nextOccurrence(kRent.copy(start = kToday), kToday))			// aujourd'hui compris
+		assertEquals(d("2026-11-12"), nextOccurrence(kRent.copy(start = kToday, last = kToday), kToday))	// saisie du jour déjà créée
+		assertEquals(d("2027-01-05"), nextOccurrence(kRent.copy(start = d("2027-01-05")), kToday))
+		assertNull(nextOccurrence(kRent.copy(end = d("2026-10-31")), kToday))						// terminée
+		val vRefund = kRent.copy(amountCents = eur(30.0), last = d("2026-10-05"))					// remboursement mensuel sur une catégorie de dépense
+		val vForm   = editRecurrenceForm(vRefund, listOf(kGroceries))								// saisie
+		assertTrue(vForm.refund)
+		assertEquals(vRefund, buildRecurrence(vForm))
+		assertEquals(kRent, buildRecurrence(editRecurrenceForm(kRent, listOf(kGroceries))))
 	}
 }

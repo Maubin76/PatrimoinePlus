@@ -3,7 +3,7 @@
 Campagne complète à mener sur le téléphone (Android 16) et le PC (Windows),
 après le développement de l'appli PC (branche `desktop`, 2026-10-12), mis à
 jour après la revue de code et la refonte du PC en tableau de bord. Les tests
-automatiques (189, voir [`TESTS.md`](TESTS.md)) couvrent les calculs, les
+automatiques (250, voir [`TESTS.md`](TESTS.md)) couvrent les calculs, les
 règles, les formats, la synchronisation et les interfaces sans écran ; ce plan
 couvre ce qu'ils ne peuvent pas voir : le vrai téléphone, la vraie fenêtre,
 Syncthing, le ressenti.
@@ -41,7 +41,7 @@ identifiant (A-03, C-12…) pour le retour.
 | A-13 | Supprimer un compte sans opération, puis un compte avec opérations (définitif). | Suppression simple ; définitive après double confirmation, virements supprimés des deux côtés. |
 | A-14 | Catégories : créer, renommer, réordonner, supprimer une catégorie utilisée en la réaffectant. | Opérations passées dans la catégorie de remplacement. |
 | A-15 | Créer un compte « Biens immobiliers » à 50 % et un compte « Objets de collection » ; ajouter un bien déjà possédé et un objet payé depuis le compte courant ; vendre un objet (prix versé sur le compte courant) ; annuler la vente ; supprimer un objet vendu. | Pas de champ « Solde initial » ; valeur au prix d'achat (bien compté pour moitié) ; l'achat débite le compte payeur sans changer le patrimoine ; la vente fait apparaître la plus-value ; annuler la vente rend l'objet détenu ; supprimer l'objet supprime aussi sa vente. Après synchronisation, mêmes biens sur le PC. |
-| A-16 | Comptes › « Opérations récurrentes » : créer une dépense mensuelle commencée le mois dernier, un virement trimestriel ; saisir une opération avec « Répéter : Chaque mois » ; créer un compte « Crédit » (prêt commencé il y a un an) ; quitter puis rouvrir l'appli le lendemain d'une échéance ; supprimer une opération créée par une récurrence ; synchroniser avec le PC. | Échéances passées créées dès l'enregistrement, une seule fois ; récurrence de « Répéter » partant du mois suivant ; crédit : capital restant dû juste, prochaines mensualités, virement du capital et dépense des intérêts créés à chaque échéance ; opération supprimée non recréée ; après synchronisation, aucune opération en double sur le téléphone ni sur le PC. |
+| A-16 | Comptes › « Opérations récurrentes » : créer une dépense mensuelle commencée le mois dernier, un virement trimestriel ; saisir une opération avec « Répéter : Chaque mois » ; créer un compte « Crédit » (prêt commencé il y a un an) ; quitter puis rouvrir l'appli le lendemain d'une échéance ; supprimer une opération créée par une récurrence ; synchroniser avec le PC. | Échéances passées créées dès l'enregistrement, une seule fois ; récurrence de « Répéter » partant de la date de l'opération saisie, première échéance suivante le mois d'après (pas de doublon) ; crédit : capital restant dû juste, prochaines mensualités, virement du capital et dépense des intérêts créés à chaque échéance ; opération supprimée non recréée ; après synchronisation, aucune opération en double sur le téléphone ni sur le PC. |
 
 ### Saisie et vues
 
@@ -140,7 +140,27 @@ identifiant (A-03, C-12…) pour le retour.
 | C-18k | Objectifs : depuis la page vide, reprendre une idée ; créer un objectif de chaque nature (patrimoine, compte, type, épargne mensuelle, taux, montant à la main, à cocher) avec et sans échéance ; modifier, cocher, supprimer ; masquer les montants ; relancer l'appli. | Avancements cohérents avec le tableau de bord et l'Analyse ; rythme, date estimée et effort mensuel plausibles ; états justes (en bonne voie, en retard, échéance dépassée, atteint) ; saisies illisibles refusées avec un message ; montants masqués en mode discret ; objectifs retrouvés après relance. |
 | C-19 | `PatrimoinePlus.exe --verifier chemin\vers\patrimoineplus-donnees.xlsx` dans un terminal. | Code de sortie 0 ; date d'exemple en français (« 12 octobre 2026 »). |
 
-## D. Limites connues (pas des anomalies)
+## D. Correctifs de la revue du 2026-10-13
+
+| # | Étape | Résultat attendu |
+|---|---|---|
+| D-01 | (Téléphone puis PC) Vendre un objet avec le prix versé sur un livret, puis supprimer définitivement ce livret. | La vente reste (l'objet n'est pas « redevenu détenu ») sans versement ; les autres comptes ne bougent pas. |
+| D-02 | Supprimer définitivement le compte qui a payé un objet vendu. | L'achat et sa vente disparaissent ensemble ; le fichier reste lisible sur l'autre appareil. |
+| D-03 | Changer le type d'un compte sans opération mais utilisé par une récurrence ou un crédit. | Refusé : « Le type ne peut plus changer : un crédit ou une opération récurrente utilise ce compte. » |
+| D-04 | Modifier un compte sans opération pour le passer en « Objets de collection ». | Accepté ; son solde initial disparaît. |
+| D-05 | Modifier l'achat d'un objet vendu pour en faire une dépense (PC : nature de l'opération). | Refusé avec la date de la vente. |
+| D-06 | Créer une récurrence de remboursement (dépense, « Remboursement » coché), la rouvrir et enregistrer sans rien changer. | Elle reste un remboursement (montant positif) ; aucune échéance recréée. |
+| D-07 | Téléphone : récurrence avec une date de fin (« Fin (facultatif) », JJ/MM/AAAA), puis une date illisible. | Fin enregistrée, plus d'échéance après ; date illisible signalée sous le champ. |
+| D-08 | Saisir une opération avec « Répéter : Chaque mois » ; regarder « prochaine échéance ». | Prochaine échéance le mois suivant ; aucune opération en double aujourd'hui. |
+| D-09 | Budget : catégories « Prêt-à-porter » et « Prêt immobilier ». | La première dans Vie quotidienne, la seconde dans Crédit. |
+| D-10 | Créer un crédit commencé il y a deux ans ; Bilan de l'année. | Capital remboursé et intérêts comptés seulement depuis la création dans l'appli. |
+| D-11 | Double-clic rapide sur « Enregistrer » (PC : panneaux d'opération, compte, bien, récurrence, objectif ; téléphone : bien, récurrence, crédit). | Un seul enregistrement. |
+| D-12 | PC : passer de la démonstration aux vraies données après avoir ouvert Projection, Saisie rapide et une recherche. | Hypothèses, lignes et critères remis à zéro (rien de la démo). |
+| D-13 | Mode discret : page d'un crédit (PC et téléphone), Projection, ventes du Bilan. | Capital emprunté, intérêts restants, crédits restant dus et prix d'achat masqués. |
+| D-14 | Supprimer une catégorie de dépense alors qu'une catégorie archivée existe. | L'archivée n'est pas proposée en remplacement ; un nouveau crédit ne la réutilise pas. |
+| D-15 | Modifier une donnée sur le téléphone pendant qu'il importe le fichier du PC (difficile à provoquer : synchroniser juste après une saisie). | Au pire « Données modifiées pendant la synchronisation… » ; la saisie n'est jamais perdue, la synchronisation suivante règle l'écart. |
+
+## E. Limites connues (pas des anomalies)
 
 - Les cours automatiques ne sont récupérés que par le téléphone.
 - Titres cotés uniquement hors zone euro : pas de conversion de devise.
@@ -151,3 +171,12 @@ identifiant (A-03, C-12…) pour le retour.
   dossier de Java.
 - Téléphone : quand la liste tient sur l'écran, le bouton « + » peut couvrir le
   montant de la dernière ligne.
+- Pas de confirmation pour « Annuler la vente » ni pour supprimer une
+  récurrence ou un objectif.
+- Les mensualités d'un crédit ne sont pas listées dans les récurrences du
+  téléphone (elles sont sur la page du crédit).
+- Mode discret : les pourcentages (variation annuelle, taux des objectifs) et
+  les montants dans les champs de saisie (budget, épargne de la projection)
+  restent visibles.
+- Désarchiver un compte crée les échéances manquées pendant l'archivage.
+- Un objectif sur un compte Crédit (solde négatif) ne peut pas s'exprimer.

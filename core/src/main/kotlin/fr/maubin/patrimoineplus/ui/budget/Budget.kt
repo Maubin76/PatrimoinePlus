@@ -45,13 +45,15 @@ enum class ExpenseTheme(val label: String)
 */
 fun themeOfCategory(inName: String): ExpenseTheme
 {
-	val vKey = java.text.Normalizer.normalize(inName.trim().lowercase(), java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}"), "")	// nom sans accents
+	val vKey   = java.text.Normalizer.normalize(inName.trim().lowercase(), java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}"), "")	// nom sans accents
+	val vFirst = vKey.split(Regex("[^a-z]+")).firstOrNull { it.isNotEmpty() }.orEmpty()	// premier mot
+	val vLoan  = vFirst in setOf("credit", "credits", "pret", "prets", "emprunt", "emprunts") && !Regex("^pret[^a-z]+a[^a-z]+porter").containsMatchIn(vKey)	// crédit, prêt, emprunt (pas « prêt-à-porter »)
 	return when
 	{
 		vKey.startsWith("logement")                                                     -> ExpenseTheme.HOUSING
 		vKey.startsWith("transport")                                                    -> ExpenseTheme.TRANSPORT
 		vKey.startsWith("abonnement")                                                   -> ExpenseTheme.SUBSCRIPTIONS
-		vKey.startsWith("credit") || vKey.startsWith("pret") || vKey.startsWith("emprunt") -> ExpenseTheme.CREDIT
+		vLoan                                                                           -> ExpenseTheme.CREDIT
 		else                                                                            -> ExpenseTheme.DAILY
 	}
 }
@@ -218,7 +220,8 @@ fun compareBudget(
 		.mapValues { (_, inTxs) -> -inTxs.sumOf { inTx -> inTx.postings.sumOf { it.amountCents } } }
 		.toMutableMap()																// dépenses nettes du mois par thème
 	val vLoans  = inData.accounts.filter { it.type == AccountType.LOAN }.map { it.id }.toSet()	// comptes Crédit
-	val vRepaid = vMonthTxs.filter { it.kind == TransactionKind.TRANSFER }.sumOf { inTx -> inTx.postings.filter { it.accountId in vLoans }.sumOf { it.amountCents } }	// capital remboursé dans le mois
+	val vTracked = inBudget.lines.filter { it.section == BudgetSection.INVESTMENT }.mapNotNull { it.accountId }.toSet()	// comptes suivis en investissement (comptés là, pas ici)
+	val vRepaid = vMonthTxs.filter { it.kind == TransactionKind.TRANSFER }.sumOf { inTx -> inTx.postings.filter { it.accountId in vLoans && it.accountId !in vTracked && it.amountCents > 0 }.sumOf { it.amountCents } }	// capital remboursé dans le mois
 	if (vRepaid != 0L) vSpent[ExpenseTheme.CREDIT] = (vSpent[ExpenseTheme.CREDIT] ?: 0L) + vRepaid
 	val vThemes = ExpenseTheme.entries.mapNotNull { inTheme ->
 		vViews.filter { it.theme == inTheme }.takeIf { it.isNotEmpty() }?.let { ThemeView(inTheme, it, vSpent[inTheme] ?: 0L) }

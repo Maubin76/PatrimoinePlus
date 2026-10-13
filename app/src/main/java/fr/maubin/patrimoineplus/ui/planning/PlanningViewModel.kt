@@ -51,6 +51,8 @@ class PlanningViewModel @Inject constructor(
 	private val inClock    : Clock
 ) : ViewModel()
 {
+	private var fSaving = false															// enregistrement en cours (un second appui est ignoré)
+
 	// État à afficher.
 	val state: StateFlow<PlanningState> =
 		combine(inPlanning.observeRecurrences(), inPlanning.observeLoans(), inAccounts.observeAccounts(), inCategories.observeCategories()) { inRecs, inLoans, inList, inCats ->
@@ -83,7 +85,11 @@ class PlanningViewModel @Inject constructor(
 			inOnDone(vErrors, null)
 			return
 		}
-		viewModelScope.launch { inOnDone(RecurrenceErrors(), inPlanning.saveRecurrence(buildRecurrence(inForm))) }
+		if (fSaving) return
+		fSaving = true
+		viewModelScope.launch {
+			try { inOnDone(RecurrenceErrors(), inPlanning.saveRecurrence(buildRecurrence(inForm))) } finally { fSaving = false }
+		}
 	}
 
 	/*
@@ -108,6 +114,10 @@ class PlanningViewModel @Inject constructor(
 	)
 	{
 		val vShare = inAccount.share.trim().toIntOrNull()?.takeIf { it in kMinShare..kMaxShare } ?: run { inOnDone("Part détenue : de $kMinShare à $kMaxShare %."); return }	// part lue
-		viewModelScope.launch { inOnDone(inPlanning.createLoan(inAccount.name, inAccount.institution, vShare, buildLoan(inLoan))) }
+		if (fSaving) return
+		fSaving = true
+		viewModelScope.launch {
+			try { inOnDone(inPlanning.createLoan(inAccount.name, inAccount.institution, vShare, buildLoan(inLoan))) } finally { fSaving = false }
+		}
 	}
 }

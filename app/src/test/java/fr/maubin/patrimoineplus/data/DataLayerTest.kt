@@ -35,6 +35,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import fr.maubin.patrimoineplus.data.sync.syncFingerprint
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -136,6 +137,37 @@ class DataLayerTest
 		val vSpend    = Transaction("x1", LocalDate.parse("2026-10-02"), TransactionKind.STANDARD, "Réparation", category("Divers"),
 			postings = listOf(Posting("xp1", vObjects.id, -5_000)))					// dépense sur le compte de biens
 		assertTrue((fTransactions.save(vSpend) as SaveResult.Rejected).errors.contains(ValidationError.PropertyOnly))
+	}
+
+	/*
+		Corrections de la relecture : supprimer le compte qui a reçu le prix
+		d'une vente garde la vente, sans versement ; un compte utilisé par une
+		récurrence ne change plus de type ; un import ne remplace pas des
+		données modifiées depuis la décision de synchronisation.
+	*/
+	@Test
+	fun reviewFixesOnPlanningAndSync() = runTest {
+		val vChecking = account("Courant", AccountType.CHECKING)					// compte payeur
+		val vLivret   = account("Livret", AccountType.SAVINGS)						// compte qui reçoit le prix
+		val vObjects  = account("Collection", AccountType.COLLECTIBLE)				// compte de biens
+		fTransactions.save(Transaction("b1", LocalDate.parse("2026-09-01"), TransactionKind.ACQUISITION, "Montre",
+			postings = listOf(Posting("bp1", vObjects.id, 420_000), Posting("bp2", vChecking.id, -420_000))))
+		fTransactions.save(Transaction("s1", LocalDate.parse("2026-10-01"), TransactionKind.DISPOSAL, "Montre",
+			postings = listOf(Posting("sp1", vObjects.id, -420_000), Posting("sp2", vLivret.id, 500_000)), linkedId = "b1"))
+		assertEquals(0, fAccounts.deletePermanently(vLivret.id))
+		assertEquals(listOf(vObjects.id), fTransactions.observeTransactions().first().single { it.id == "s1" }.postings.map { it.accountId })	// vente gardée sans versement
+		val vFood     = category("Courses")												// catégorie de dépense
+		val vJoint    = account("Joint", AccountType.CHECKING)						// compte sans opération, utilisé par une récurrence
+		assertEquals(null, fPlanning.saveRecurrence(Recurrence("r", "Cantine", vJoint.id, null, vFood, -6_000, Frequency.MONTHLY, LocalDate.parse("2026-12-01"))))
+		assertEquals(SaveResult.Rejected(listOf(SetupError.TypeUsed)), fAccounts.update(vJoint.copy(type = AccountType.SAVINGS)))
+		val vBackup   = BackupRepository(fDb, kClock)										// sauvegarde
+		val vFile     = vBackup.snapshot()													// contenu au moment de la décision
+		val vExpected = syncFingerprint(vFile)												// son empreinte
+		fPlanning.deleteRecurrence("r")														// modification pendant la synchronisation
+		assertFalse(vBackup.replaceAll(vFile.copy(recurrences = emptyList(), accounts = emptyList(), transactions = emptyList()), vExpected))
+		assertEquals(3, fAccounts.observeAccounts().first().size)						// rien n'a été remplacé
+		assertTrue(vBackup.replaceAll(vFile, syncFingerprint(vBackup.snapshot())))
+		assertEquals(1, fPlanning.observeRecurrences().first().size)
 	}
 
 	/*

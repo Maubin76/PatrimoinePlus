@@ -38,6 +38,8 @@ import fr.maubin.patrimoineplus.ui.theme.ThemeMode
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.ui.home.HomeAccountLine
 import fr.maubin.patrimoineplus.data.demo.buildDemoData
+import fr.maubin.patrimoineplus.ui.planning.editRecurrenceForm
+import fr.maubin.patrimoineplus.ui.planning.RecurrenceSheet
 import fr.maubin.patrimoineplus.domain.calc.Ledger
 import fr.maubin.patrimoineplus.domain.calc.wealthAt
 import fr.maubin.patrimoineplus.domain.calc.wealthSeries
@@ -238,6 +240,24 @@ class ScreenshotTest
 			RecurrencesSection(kDemo.recurrences, kDemo.accounts, kDemo.categories, kToday, {}, {})
 		}
 	})
+
+	/*
+		Feuille de modification d'une opération récurrente de la
+		démonstration, avec sa date de fin facultative.
+	*/
+	@Test
+	@Config(qualifiers = "w360dp-h1600dp-xxhdpi")
+	fun recurrenceSheet()
+	{
+		fCompose.setContent {
+			PatrimoineTheme(inDarkTheme = false) {
+				AccountsContent(demoAccounts(), {}, {}, {}, {})
+				RecurrenceSheet(editRecurrenceForm(kDemo.recurrences.first(), kDemo.categories).copy(end = kToday.plusYears(1)), kDemo.accounts, kDemo.categories, { _, _ -> }, {}, {})
+			}
+		}
+		fCompose.waitForIdle()
+		captureScreenRoboImage("$kOutDir/recurrence-sheet.png")
+	}
 
 	/*
 		Vue du crédit auto de la démonstration : capital restant dû, prochaines

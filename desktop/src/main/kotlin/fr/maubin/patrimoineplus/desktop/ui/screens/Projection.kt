@@ -52,6 +52,8 @@ import fr.maubin.patrimoineplus.ui.projection.kProjectionSpreadSavings
 import fr.maubin.patrimoineplus.ui.projection.projectWealth
 import fr.maubin.patrimoineplus.ui.components.smoothPath
 import fr.maubin.patrimoineplus.domain.format.formatEuros
+import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
+import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
 
 private val kHorizons = listOf(5, 10, 20, 30)											// horizons proposés, en années
 
@@ -96,7 +98,7 @@ fun ProjectionScreen(
 					{
 						Spacer(Modifier.height(10.dp))
 						TileFigure("Crédits restant dus") { AmountText(inCents = vResult.last.debt, inStyle = MaterialTheme.typography.titleMedium) }
-						Hint("${formatEuros(vResult.points.first().debt)} aujourd’hui")
+						Hint("${if (LocalAmountsHidden.current) kMaskedAmount else formatEuros(vResult.points.first().debt)} aujourd’hui")
 					}
 				}
 			},

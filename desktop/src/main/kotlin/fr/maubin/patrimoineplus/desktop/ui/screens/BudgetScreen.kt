@@ -255,7 +255,7 @@ private fun LineRow(
 	{
 		BudgetSection.INCOME     -> inSpace.data.categories.filter { it.kind == CategoryKind.INCOME && !it.archived }.sortedBy { it.sortOrder }.map { it.id to it.name }
 		BudgetSection.EXPENSE    -> ExpenseTheme.entries.map { it.name to it.label }
-		BudgetSection.INVESTMENT -> inSpace.data.accounts.filter { it.type != AccountType.CHECKING && !it.archived }.map { it.id to it.name }
+		BudgetSection.INVESTMENT -> inSpace.data.accounts.filter { (it.type == AccountType.SAVINGS || it.type == AccountType.BROKERAGE || it.type.isProperty) && !it.archived }.map { it.id to it.name }
 	}																						// suivis possibles
 	val vTracked = if (vLine.section == BudgetSection.EXPENSE) inView.theme?.name else vLine.categoryId ?: vLine.accountId	// suivi actuel
 	val vNone    = if (vLine.section == BudgetSection.INVESTMENT) "Aucun compte" else "Sans catégorie"	// ligne non suivie

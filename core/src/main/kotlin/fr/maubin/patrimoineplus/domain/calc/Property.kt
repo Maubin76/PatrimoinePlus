@@ -99,3 +99,37 @@ fun orphanedSale(inTransactions: List<Transaction>): Transaction?
 	val vPurchases = inTransactions.filter { it.kind == TransactionKind.ACQUISITION }.map { it.id }.toSet()	// achats restants
 	return inTransactions.firstOrNull { it.kind == TransactionKind.DISPOSAL && it.linkedId !in vPurchases }
 }
+
+/*
+	Effet de la suppression définitive d'un compte sur les opérations.
+	removed : opérations supprimées
+	trimmed : ventes de biens gardées sans leur versement (le compte supprimé
+	          avait reçu le prix : elles deviennent des ventes sans versement)
+*/
+data class AccountRemoval(
+	val removed : Set<String>,
+	val trimmed : List<Transaction>
+)
+
+/*
+	Opérations à supprimer ou à corriger quand un compte est supprimé
+	définitivement : toutes celles qui le touchent, sauf la vente d'un bien
+	dont seul le versement le touchait (gardée sans versement) ; et les ventes
+	dont l'achat disparaît (une vente ne reste jamais sans son achat).
+	inTransactions : toutes les opérations
+	inAccounts     : comptes (pour reconnaître les comptes de biens)
+	inAccountId    : compte supprimé
+*/
+fun accountRemoval(
+	inTransactions : List<Transaction>,
+	inAccounts     : List<Account>,
+	inAccountId    : String
+): AccountRemoval
+{
+	val vProperties = inAccounts.filter { it.type.isProperty }.map { it.id }.toSet()	// comptes de biens
+	val vTouched    = inTransactions.filter { inTx -> inTx.postings.any { it.accountId == inAccountId } }	// opérations du compte
+	val vPaidOnly   = vTouched.filter { inTx -> inTx.kind == TransactionKind.DISPOSAL && propertyPosting(inTx, vProperties)?.accountId != inAccountId }	// ventes dont seul le versement touche le compte
+	val vRemoved    = (vTouched - vPaidOnly.toSet()).map { it.id }.toMutableSet()		// opérations supprimées
+	vRemoved += inTransactions.filter { it.kind == TransactionKind.DISPOSAL && it.linkedId in vRemoved }.map { it.id }
+	return AccountRemoval(vRemoved, vPaidOnly.filter { it.id !in vRemoved }.map { inTx -> inTx.copy(postings = inTx.postings.filter { it.accountId != inAccountId }) })
+}

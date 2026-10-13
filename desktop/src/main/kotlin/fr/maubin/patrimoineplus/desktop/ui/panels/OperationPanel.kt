@@ -75,6 +75,7 @@ fun OperationPanel(
 	*/
 	fun save()
 	{
+		if (inController.panel.value == null) return						// panneau déjà fermé (double clic pendant sa disparition)
 		val vChecks = checkEntry(vForm, vEntry)									// erreurs de saisie
 		if (!vChecks.isEmpty || vBadDay)
 		{

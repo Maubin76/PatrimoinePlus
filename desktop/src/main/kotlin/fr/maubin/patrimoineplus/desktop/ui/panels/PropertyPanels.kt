@@ -59,6 +59,7 @@ fun PurchasePanel(
 	*/
 	fun save()
 	{
+		if (inController.panel.value == null) return						// panneau déjà fermé (double clic pendant sa disparition)
 		vErrors = checkPurchase(vForm, vData.accounts)
 		if (!vErrors.isEmpty || vBadDay) return
 		finish(inController, inController.edit { inController.editor.saveTransaction(it, buildPurchase(vForm)) }) { vGeneral = it }
@@ -76,7 +77,7 @@ fun PurchasePanel(
 		FormError(vGeneral)
 		Picker("Compte", vData.accounts.filter { it.type.isProperty && (!it.archived || it.id == vForm.accountId) }.map { it.id to it.name }, vForm.accountId, { vForm = vForm.copy(accountId = it) }, vErrors.account.takeIf { vAccount == null }, inEnabled = vSale == null)
 		FormField(vForm.name, { vForm = vForm.copy(name = it) }, "Nom", vErrors.name, inSupport = if (vNoun == "bien") "Par exemple « Appartement Lyon 3e »" else "Par exemple « Montre de 1968 »")
-		FormField(vForm.price, { vForm = vForm.copy(price = it) }, "Prix d’achat (€)", vErrors.price, inSupport = if (vSale != null) "Vendu : modifiez d’abord la vente pour changer le prix." else "Compté à ce prix dans le patrimoine", inNumeric = true)
+		FormField(vForm.price, { vForm = vForm.copy(price = it) }, "Prix d’achat (€)", vErrors.price, inSupport = if (vSale != null) "Vendu : annulez d’abord la vente pour changer le prix." else "Compté à ce prix dans le patrimoine", inNumeric = true)
 		Picker(
 			inLabel    = "Payé depuis",
 			inOptions  = listOf(kOwned to "Déjà possédé (aucun compte débité)") + vData.accounts.filter { !it.type.isProperty && (!it.archived || it.id == vForm.paidFrom) }.map { it.id to it.name },
@@ -138,6 +139,7 @@ fun SalePanel(
 	*/
 	fun save()
 	{
+		if (inController.panel.value == null) return						// panneau déjà fermé (double clic pendant sa disparition)
 		vErrors = checkSale(vForm, vItem, vData.accounts)
 		if (!vErrors.isEmpty || vBadDay) return
 		finish(inController, inController.edit { inController.editor.saveTransaction(it, buildSale(vForm, vItem)) }) { vGeneral = it }

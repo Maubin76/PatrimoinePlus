@@ -158,7 +158,8 @@ class RecurringUiTest
 		fCompose.waitForIdle()
 		assertTrue(vApp.workspace.value.data.transactions.any { it.label == "Box internet" && it.date == kToday })
 		val vBox = vApp.workspace.value.data.recurrences.single { it.label == "Box internet" }	// récurrence créée
-		assertEquals(kToday.plusMonths(1), vBox.start)
+		assertEquals(kToday, vBox.start)															// l'opération saisie est la première échéance
+		assertEquals(kToday, vBox.last)																// déjà créée : pas de doublon
 		assertEquals(-4_500L, vBox.amountCents)
 		vApp.openPanel(Panel.AccountSheet(null))
 		fCompose.waitForIdle()

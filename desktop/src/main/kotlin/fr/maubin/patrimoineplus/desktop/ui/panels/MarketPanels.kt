@@ -41,6 +41,7 @@ fun StatementPanel(
 	*/
 	fun save()
 	{
+		if (inController.panel.value == null) return						// panneau déjà fermé (double clic pendant sa disparition)
 		val vCents = parseEuros(vAmount) ?: run { vError = "Montant illisible (ex. 12 038,20)."; return }	// solde lu
 		val vDay   = vDate ?: run { vError = kBadDate; return }						// date lue
 		finish(inController, inController.edit { inController.editor.putStatement(it, inAccountId, vDay, vCents) }) { vError = it }
@@ -83,6 +84,7 @@ fun PricesPanel(
 	*/
 	fun save()
 	{
+		if (inController.panel.value == null) return						// panneau déjà fermé (double clic pendant sa disparition)
 		val vChanged = vInputs.filter { (inAsset, inText) -> inText.trim() != vStart[inAsset] }	// cours modifiés
 		val vPrices  = vChanged.mapNotNull { (inAsset, inText) -> parseScaled(inText)?.takeIf { it > 0 }?.let { inAsset to it } }.toMap()	// cours lus
 		val vDay     = vDate ?: run { vError = kBadDate; return }					// date lue
@@ -134,6 +136,7 @@ fun OpeningPositionPanel(
 	*/
 	fun save()
 	{
+		if (inController.panel.value == null) return						// panneau déjà fermé (double clic pendant sa disparition)
 		val vQuantity = parseScaled(vQty)?.takeIf { it > 0 }					// quantité lue
 		val vPrice    = parseScaled(vPru)?.takeIf { it > 0 }					// prix de revient lu
 		vError = when
@@ -198,6 +201,7 @@ fun AssetPanel(
 	*/
 	fun save()
 	{
+		if (inController.panel.value == null) return						// panneau déjà fermé (double clic pendant sa disparition)
 		finish(inController, inController.edit { inController.editor.updateAsset(it, inAssetId, vName, vIsin, vTicker) }) { vError = it }
 	}
 

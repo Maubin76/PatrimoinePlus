@@ -131,7 +131,7 @@ class PlanningRepository @Inject constructor(
 		run {
 			val vCats     = categories()														// catégories
 			val vCategory = inLoan.categoryId.takeIf { inId -> vCats.any { it.id == inId } }
-				?: vCats.firstOrNull { it.kind == CategoryKind.EXPENSE && themeOfCategory(it.name) == ExpenseTheme.CREDIT }?.id
+				?: vCats.firstOrNull { it.kind == CategoryKind.EXPENSE && !it.archived && themeOfCategory(it.name) == ExpenseTheme.CREDIT }?.id
 				?: Category(UUID.randomUUID().toString(), "Crédit", "bank", CategoryKind.EXPENSE, (vCats.filter { it.kind == CategoryKind.EXPENSE }.maxOfOrNull { it.sortOrder } ?: -1) + 1)
 					.also { inDb.categoryDao().insertAll(listOf(it.toEntity(vNow, vNow))) }.id	// catégorie des intérêts
 			val vAccount  = Account(UUID.randomUUID().toString(), inName.trim(), AccountType.LOAN, inInstitution?.trim()?.ifEmpty { null }, inShare, inDb.accountDao().maxSortOrder() + 1)	// compte Crédit

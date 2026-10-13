@@ -240,7 +240,8 @@ fun buildAnnualReport(
 		loans       = vEnd.accounts.filter { it.account.type == AccountType.LOAN }.mapNotNull { inValue ->
 			val vBegin = -vStart.accounts.first { it.account.id == inValue.account.id }.valueCents	// capital restant dû au début
 			val vLoan  = inData.loans.firstOrNull { it.accountId == inValue.account.id }			// tableau d'amortissement
-			val vRows  = vLoan?.let { inLoan -> amortization(inLoan).filter { !it.date.isBefore(vFrom) && !it.date.isAfter(vTo) && (inLoan.last == null || !it.date.isAfter(inLoan.last)) } }	// mensualités de la période
+			val vSince = inData.transactions.firstOrNull { inTx -> inTx.kind == TransactionKind.OPENING && inTx.postings.any { it.accountId == inValue.account.id } }?.date	// début du suivi dans l'appli
+			val vRows  = vLoan?.let { inLoan -> amortization(inLoan).filter { !it.date.isBefore(vFrom) && !it.date.isAfter(vTo) && (vSince == null || it.date.isAfter(vSince)) && (inLoan.last == null || !it.date.isAfter(inLoan.last)) } }	// mensualités de la période, suivies dans l'appli
 			val vIn    = vYearTxs.filter { it.kind == TransactionKind.TRANSFER }.sumOf { inTx -> inTx.postings.filter { it.accountId == inValue.account.id && it.amountCents > 0 }.sumOf { it.amountCents } }	// virements reçus
 			if (vBegin == 0L && inValue.valueCents == 0L) null
 			else LoanYear(inValue.account, vBegin, -inValue.valueCents, vRows?.sumOf { it.capital } ?: vIn, vRows?.sumOf { it.interest + it.insurance })

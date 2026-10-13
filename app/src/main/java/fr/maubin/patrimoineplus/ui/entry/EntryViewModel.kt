@@ -190,11 +190,20 @@ class EntryViewModel @Inject constructor(
 		inOnDone : (String?) -> Unit
 	)
 	{
+		if (fSaving) return																	// second appui pendant l'enregistrement
+		fSaving = true
 		viewModelScope.launch {
-			when (val vResult = inTransactions.save(inTx))							// résultat
+			try
 			{
-				is SaveResult.Saved    -> inOnDone(null)
-				is SaveResult.Rejected -> inOnDone(vResult.errors.joinToString(" ") { it.message })
+				when (val vResult = inTransactions.save(inTx))						// résultat
+				{
+					is SaveResult.Saved    -> inOnDone(null)
+					is SaveResult.Rejected -> inOnDone(vResult.errors.joinToString(" ") { it.message })
+				}
+			}
+			finally
+			{
+				fSaving = false
 			}
 		}
 	}

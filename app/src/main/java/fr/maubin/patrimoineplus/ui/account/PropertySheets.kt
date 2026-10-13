@@ -62,7 +62,7 @@ fun PurchaseSheet(
 	val vNoun    = inAccounts.firstOrNull { it.id == vForm.accountId }?.let { propertyNoun(it.type) } ?: "bien"	// « bien » ou « objet »
 	FormSheet(inTitle = if (vForm.id == null) "Nouvel $vNoun" else "Modifier l’$vNoun", inOnDismiss = inOnDismiss) {
 		TextInput(vForm.name, { vForm = vForm.copy(name = it) }, "Nom", vErrors.name, if (vNoun == "bien") "Par exemple « Appartement Lyon 3e »" else "Par exemple « Montre de 1968 »")
-		AmountInput(vForm.price, { vForm = vForm.copy(price = it) }, "Prix d’achat", vErrors.price, if (inSold) "Vendu : modifiez d’abord la vente pour changer le prix." else "Compté à ce prix dans le patrimoine.")
+		AmountInput(vForm.price, { vForm = vForm.copy(price = it) }, "Prix d’achat", vErrors.price, if (inSold) "Vendu : annulez d’abord la vente pour changer le prix." else "Compté à ce prix dans le patrimoine.")
 		Picker(
 			inLabel    = "Payé depuis",
 			inOptions  = listOf<Pair<String?, String>>(null to "Déjà possédé (aucun compte débité)") + inAccounts.filter { !it.type.isProperty && (!it.archived || it.id == vForm.paidFrom) }.map { it.id to it.name },

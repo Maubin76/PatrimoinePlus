@@ -110,6 +110,7 @@ class AccountsViewModel @Inject constructor(
 			}
 			else
 			{
+				if (inForm.type.isProperty && inForm.type != inEditing.type) inAccounts.setOpening(inEditing.id, Opening(0, inForm.openingDate))	// un compte de biens n'a pas de solde initial
 				inAccounts.update(inEditing.copy(name = inForm.name, type = inForm.type, institution = inForm.institution, sharePercent = vShare!!))
 					.also { if (it is SaveResult.Saved) inAccounts.setOpening(inEditing.id, vOpening) }
 			}																	// résultat

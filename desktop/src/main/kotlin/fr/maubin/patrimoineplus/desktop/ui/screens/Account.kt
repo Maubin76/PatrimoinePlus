@@ -75,7 +75,8 @@ import fr.maubin.patrimoineplus.ui.property.newPurchaseForm
 import fr.maubin.patrimoineplus.ui.property.newSaleForm
 import fr.maubin.patrimoineplus.ui.property.propertyNoun
 import fr.maubin.patrimoineplus.domain.calc.amortization
-import fr.maubin.patrimoineplus.domain.format.formatEuros
+import fr.maubin.patrimoineplus.domain.format.formatEuros
+import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
 
 private val kDayTitle = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANCE)	// en-tête d'un jour
 private val kShortDay = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date d'une opération
@@ -377,7 +378,7 @@ private fun LoanView(
 	{
 		Tile(
 			inTitle  = "Tableau d’amortissement",
-			inAction = { Text("${formatEuros(vLoan.principal)} à ${rateText(vLoan.rateBp)} sur ${vLoan.months} mois", style = MaterialTheme.typography.bodyMedium, color = vMuted) }
+			inAction = { Text("${if (LocalAmountsHidden.current) kMaskedAmount else formatEuros(vLoan.principal)} à ${rateText(vLoan.rateBp)} sur ${vLoan.months} mois", style = MaterialTheme.typography.bodyMedium, color = vMuted) }
 		) {
 			Row(Modifier.fillMaxWidth().padding(vertical = 6.dp, horizontal = 8.dp)) {
 				listOf("N°" to 0.5f, "Date" to 1.2f, "Mensualité" to 1f, "Capital" to 1f, "Intérêts" to 1f, "Assurance" to 1f, "Restant dû" to 1.2f).forEach { (inHead, inWeight) ->

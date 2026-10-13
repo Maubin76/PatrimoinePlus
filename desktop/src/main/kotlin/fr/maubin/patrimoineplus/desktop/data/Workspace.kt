@@ -288,6 +288,7 @@ class Workspace(private val inClock: Clock)
 		{
 			adopt(vFile, syncFingerprint(vFile))
 		}
+		applyDue()																	// échéances arrivées pendant le conflit
 	}
 
 	/*

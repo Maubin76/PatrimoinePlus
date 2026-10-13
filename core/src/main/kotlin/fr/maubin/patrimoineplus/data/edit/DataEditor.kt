@@ -41,6 +41,7 @@ import fr.maubin.patrimoineplus.domain.calc.remainingAt
 import fr.maubin.patrimoineplus.domain.calc.dueOperations
 import fr.maubin.patrimoineplus.ui.budget.ExpenseTheme
 import fr.maubin.patrimoineplus.ui.budget.themeOfCategory
+import fr.maubin.patrimoineplus.domain.calc.accountRemoval
 
 private const val kPositiveValues = "Quantité et cours doivent être positifs."		// refus d'une valeur nulle ou négative
 
@@ -151,6 +152,10 @@ class DataEditor(
 		if (vOld.type != inAccount.type.name && operationCount(inFile, inAccount.id) > 0)
 		{
 			return refused(SetupError.TypeLocked)
+		}
+		if (vOld.type != inAccount.type.name && (inFile.loans.any { it.accountId == inAccount.id || it.payFrom == inAccount.id } || inFile.recurrences.any { it.accountId == inAccount.id || it.toAccountId == inAccount.id }))
+		{
+			return refused(SetupError.TypeUsed)
 		}
 		if (inAccount.type.isProperty && openingOf(inFile.transactions, inAccount.id) != null)
 		{
@@ -295,7 +300,9 @@ class DataEditor(
 	/*
 		Supprime un compte. Simple : seulement s'il n'a pas d'autre opération que
 		son solde initial (supprimé avec lui). Définitive : toutes les opérations
-		qui le touchent (un virement en entier) et ses relevés.
+		qui le touchent (un virement en entier) et ses relevés ; la vente d'un
+		bien dont il avait reçu le prix est gardée sans versement, et la vente
+		d'un bien dont l'achat disparaît est supprimée avec lui.
 		inFile      : contenu
 		inId        : compte
 		inPermanent : suppression définitive
@@ -311,10 +318,15 @@ class DataEditor(
 		{
 			return EditResult.Refused(listOf("Ce compte a des opérations : archivez-le ou supprimez-le définitivement."))
 		}
+		val vData    = inFile.toDataSet()												// modèles du domaine
+		val vRemoval = accountRemoval(vData.transactions, vData.accounts, inId)		// opérations supprimées ou corrigées
+		val vTrimmed = vRemoval.trimmed.associateBy { it.id }						// ventes gardées sans versement
 		return EditResult.Done(
 			inFile.copy(
 				accounts     = inFile.accounts.filterNot { it.id == inId },
-				transactions = inFile.transactions.filterNot { inTx -> inTx.postings.any { it.accountId == inId } },
+				transactions = inFile.transactions.filterNot { it.id in vRemoval.removed }.map { inTx ->
+					vTrimmed[inTx.id]?.let { inKept -> inTx.copy(postings = inTx.postings.filter { inPosting -> inKept.postings.any { it.id == inPosting.id } }, updatedAt = now()) } ?: inTx
+				},
 				statements   = inFile.statements.filterNot { it.accountId == inId },
 				recurrences  = inFile.recurrences.filterNot { it.accountId == inId || it.toAccountId == inId },
 				loans        = inFile.loans.filterNot { it.accountId == inId || it.payFrom == inId }
@@ -688,7 +700,7 @@ class DataEditor(
 	{
 		var vFile = inFile																// contenu modifié
 		val vCategory = inLoan.categoryId.takeIf { inId -> vFile.categories.any { it.id == inId } }
-			?: vFile.categories.firstOrNull { it.kind == CategoryKind.EXPENSE.name && themeOfCategory(it.name) == ExpenseTheme.CREDIT }?.id
+			?: vFile.categories.firstOrNull { it.kind == CategoryKind.EXPENSE.name && !it.archived && themeOfCategory(it.name) == ExpenseTheme.CREDIT }?.id
 			?: when (val vCreated = createCategory(vFile, "Crédit", "bank", CategoryKind.EXPENSE))
 			{
 				is EditResult.Done    -> { vFile = vCreated.file; vCreated.id!! }
@@ -722,8 +734,8 @@ class DataEditor(
 	/*
 		Crée les opérations des échéances arrivées (voir dueOperations) et
 		avance les récurrences et les crédits. Une opération qui ne passe pas
-		les règles de saisie (catégorie archivée, compte disparu…) n'est pas
-		créée, mais son échéance est passée : elle ne sera pas reproposée.
+		les règles de saisie (catégorie disparue…) n'est pas créée, mais son
+		échéance est passée : elle ne sera pas reproposée.
 		Les horodatages des opérations créées sont tirés de leur date : deux
 		appareils qui créent la même échéance écrivent exactement la même
 		opération. Null s'il n'y a rien à faire.

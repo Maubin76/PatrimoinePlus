@@ -42,6 +42,7 @@ import fr.maubin.patrimoineplus.ui.report.reportYears
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import fr.maubin.patrimoineplus.domain.format.formatEuros
+import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
 
 private val kLongDay = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)	// date en toutes lettres
 
@@ -145,7 +146,7 @@ fun ReportScreen(
 					Tile(inModifier = inMod, inTitle = "Biens") {
 						if (vReport.bought.isEmpty() && vReport.sold.isEmpty()) Hint("Aucun achat ni vente de bien sur la période.")
 						vReport.bought.forEach { Line(if (it.paid) "Achat · ${it.name}" else "Ajouté (déjà possédé) · ${it.name}", it.cost) }
-						vReport.sold.forEach { Line("Vente · ${it.name} (achat ${formatEuros(it.cost)})", it.salePrice ?: 0L) }
+						vReport.sold.forEach { Line("Vente · ${it.name} (achat ${if (LocalAmountsHidden.current) kMaskedAmount else formatEuros(it.cost)})", it.salePrice ?: 0L) }
 						if (vReport.sold.isNotEmpty())
 						{
 							HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)

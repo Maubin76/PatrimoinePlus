@@ -155,5 +155,9 @@ class BudgetTest
 		assertEquals(ExpenseTheme.SUBSCRIPTIONS, themeOfCategory("abonnement"))
 		assertEquals(ExpenseTheme.CREDIT, themeOfCategory("Crédit auto"))
 		assertEquals(ExpenseTheme.DAILY, themeOfCategory("Santé"))
+		assertEquals(ExpenseTheme.CREDIT, themeOfCategory("Prêt immobilier"))
+		assertEquals(ExpenseTheme.CREDIT, themeOfCategory("Emprunts"))
+		assertEquals(ExpenseTheme.DAILY, themeOfCategory("Prêt-à-porter"))					// vêtements, pas un crédit
+		assertEquals(ExpenseTheme.DAILY, themeOfCategory("Accréditation"))				// « crédit » au milieu d'un mot
 	}
 }

@@ -182,6 +182,10 @@ class TransactionValidator(
 		{
 			vErrors += ValidationError.PropertyOnly
 		}
+		if (inReplaced?.kind == TransactionKind.ACQUISITION && inTx.kind != TransactionKind.ACQUISITION)
+		{
+			inOtherLedger.transactions().firstOrNull { it.kind == TransactionKind.DISPOSAL && it.linkedId == inTx.id }?.let { vErrors += ValidationError.SoldPurchase(it.date) }	// un achat vendu reste un achat
+		}
 		if (vErrors.isEmpty() && (inTx.trades.isNotEmpty() || inReplaced?.trades?.isNotEmpty() == true))
 		{
 			positionError(inTx, Ledger(inOtherLedger.transactions() + inTx), tradedPairs(listOfNotNull(inTx, inReplaced)))?.let { vErrors += it }
@@ -401,7 +405,7 @@ class TransactionValidator(
 		{
 			inErrors += ValidationError.SaleBeforePurchase
 		}
-		val vBought = vPurchase.postings.first { isProperty(it.accountId) }				// entrée du bien
+		val vBought = vPurchase.postings.firstOrNull { isProperty(it.accountId) } ?: run { inErrors += ValidationError.MissingPurchase; return }	// entrée du bien
 		val vLegs   = inTx.postings.filter { isProperty(it.accountId) }					// sorties du bien
 		val vPaid   = inTx.postings.filterNot { isProperty(it.accountId) }				// versements du prix
 		if (inTx.postings.size !in 1..2 || vLegs.size != 1 || vLegs.single().accountId != vBought.accountId || vLegs.single().amountCents != -vBought.amountCents || vPaid.any { it.amountCents <= 0 })

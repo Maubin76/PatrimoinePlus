@@ -18,7 +18,8 @@ import javax.inject.Singleton
 import fr.maubin.patrimoineplus.data.backup.toDto
 import fr.maubin.patrimoineplus.data.backup.toDomain
 import fr.maubin.patrimoineplus.data.db.toDomain
-import fr.maubin.patrimoineplus.data.db.toEntity
+import fr.maubin.patrimoineplus.data.db.toEntity
+import fr.maubin.patrimoineplus.data.sync.syncFingerprint
 
 /*
 	Export et import de toute la base, sous forme de fichier JSON versionné.
@@ -67,9 +68,12 @@ class BackupRepository @Inject constructor(
 		Remplace toutes les données par celles d'un fichier déjà vérifié.
 		inFile : contenu valide (voir decodeBackup)
 	*/
-	suspend fun replaceAll(inFile: BackupFile)
-	{
+	suspend fun replaceAll(
+		inFile     : BackupFile,
+		inExpected : String? = null
+	): Boolean =
 		inDb.withTransaction {
+			if (inExpected != null && syncFingerprint(snapshot()) != inExpected) return@withTransaction false	// données modifiées entre-temps : rien n'est remplacé
 			fDao.deleteAll()
 			fDao.insertAccounts(inFile.accounts.map { AccountEntity(it.id, it.name, it.type, it.institution, it.sharePercent, it.sortOrder, it.archived, it.createdAt, it.updatedAt) })
 			inDb.categoryDao().insertAll(inFile.categories.map { CategoryEntity(it.id, it.name, it.icon, it.kind, it.sortOrder, it.archived, it.createdAt, it.updatedAt) })
@@ -81,6 +85,6 @@ class BackupRepository @Inject constructor(
 			fDao.insertPrices(inFile.prices.map { AssetPriceEntity(it.id, it.assetId, LocalDate.parse(it.date), it.unitPrice) })
 			inDb.planningDao().upsertRecurrences(inFile.recurrences.map { it.toDomain().toEntity() })
 			inDb.planningDao().upsertLoans(inFile.loans.map { it.toDomain().toEntity() })
+			true
 		}
-	}
 }

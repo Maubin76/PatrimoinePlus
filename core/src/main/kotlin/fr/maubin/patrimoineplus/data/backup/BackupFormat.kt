@@ -192,7 +192,9 @@ data class BackupFile(
 	// Contenu en nombres d'éléments (fenêtre de conflit : la date d'export n'y a pas de sens).
 	val contents: String
 		get() = "${accounts.size} compte(s), ${categories.size} catégorie(s), ${transactions.size} opération(s), " +
-			"${assets.size} actif(s), ${prices.size} cours, ${statements.size} relevé(s)"
+			"${assets.size} actif(s), ${prices.size} cours, ${statements.size} relevé(s)" +
+			(if (recurrences.isNotEmpty()) ", ${recurrences.size} récurrence(s)" else "") +
+			(if (loans.isNotEmpty()) ", ${loans.size} crédit(s)" else "")
 
 	// Résumé lisible du contenu et de sa date d'export, pour la confirmation d'import.
 	val summary: String

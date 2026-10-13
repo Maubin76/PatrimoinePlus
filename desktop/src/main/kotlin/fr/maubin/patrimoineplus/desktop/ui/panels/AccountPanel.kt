@@ -69,6 +69,7 @@ fun AccountPanel(
 	*/
 	fun save()
 	{
+		if (inController.panel.value == null) return						// panneau déjà fermé (double clic pendant sa disparition)
 		val vShare   = vForm.share.trim().toIntOrNull()							// part détenue lue
 		val vCents   = if (vForm.opening.isBlank() || vForm.type.isProperty || (vAccount == null && vForm.type == AccountType.LOAN)) 0L else parseEuros(vForm.opening)	// solde initial lu (aucun pour un compte de biens ou un crédit à créer)
 		vError = when
@@ -98,7 +99,8 @@ fun AccountPanel(
 			}
 			else
 			{
-				when (val vUpdated = inController.editor.updateAccount(inFile, vAccount.copy(name = vForm.name, type = vForm.type, institution = vForm.institution, sharePercent = vShare!!)))
+				val vBase = if (vForm.type.isProperty) (inController.editor.setOpening(inFile, vAccount.id, OpeningBalance(0, vForm.openingDate)) as? EditResult.Done)?.file ?: inFile else inFile	// un compte de biens n'a pas de solde initial
+				when (val vUpdated = inController.editor.updateAccount(vBase, vAccount.copy(name = vForm.name, type = vForm.type, institution = vForm.institution, sharePercent = vShare!!)))
 				{
 					is EditResult.Done    -> inController.editor.setOpening(vUpdated.file, vAccount.id, vBalance)
 					is EditResult.Refused -> vUpdated

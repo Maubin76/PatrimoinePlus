@@ -24,6 +24,8 @@ import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import fr.maubin.patrimoineplus.domain.calc.accountRemoval
+import kotlinx.coroutines.flow.first
 
 
 /*
@@ -135,6 +137,10 @@ class AccountRepository @Inject constructor(
 		if (vOld.type != inAccount.type.name && operationCount(inAccount.id) > 0)
 		{
 			return SaveResult.Rejected(listOf(SetupError.TypeLocked))
+		}
+		if (vOld.type != inAccount.type.name && (inDb.planningDao().loans().any { it.accountId == inAccount.id || it.payFrom == inAccount.id } || inDb.planningDao().recurrences().any { it.accountId == inAccount.id || it.toAccountId == inAccount.id }))
+		{
+			return SaveResult.Rejected(listOf(SetupError.TypeUsed))
 		}
 		if (inAccount.type.isProperty && openingTransaction(inAccount.id) != null)
 		{
@@ -292,16 +298,25 @@ class AccountRepository @Inject constructor(
 	/*
 		Supprime définitivement un compte et toutes les opérations qui le
 		touchent ; un virement est supprimé en entier, ce qui modifie aussi
-		l'autre compte. À n'appeler qu'après double confirmation.
+		l'autre compte ; la vente d'un bien dont il avait reçu le prix est
+		gardée sans versement, celle d'un bien dont l'achat disparaît est
+		supprimée. À n'appeler qu'après double confirmation.
 		inId : compte
 		Retour : nombre d'opérations supprimées
 	*/
 	suspend fun deletePermanently(inId: String): Int =
 		inDb.withTransaction {
-			val vTxIds = fDao.transactionIdsOf(inId)							// opérations concernées
+			val vAll     = fTxDao.getAll().map { it.toDomain() }				// opérations
+			val vRemoval = accountRemoval(vAll, fDao.observeAll().first().map { it.toDomain() }, inId)	// opérations supprimées ou corrigées
+			val vTxIds   = vRemoval.removed.toList()							// opérations concernées
 			if (vTxIds.isNotEmpty())
 			{
 				fTxDao.deleteByIds(vTxIds)
+			}
+			val vNow     = inClock.millis()										// horodatage
+			vRemoval.trimmed.forEach { inTx ->
+				val vCreated = fTxDao.getById(inTx.id)?.createdAt ?: vNow		// création conservée
+				fTxDao.save(inTx.toHeaderEntity(vCreated, vNow), inTx.toPostingEntities(), inTx.toTradeEntities())
 			}
 			inDb.planningDao().deleteRecurrencesOf(inId)
 			inDb.planningDao().deleteLoansOf(inId)

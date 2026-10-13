@@ -121,7 +121,9 @@ class AnnualReportTest
 		assertEquals(85_000L, vSold.salePrice)
 		assertEquals(25_000L, vReport.propertyGains)
 		val vLoan   = vDemo.loans.single()													// crédit auto
-		val vYear   = amortization(vLoan).filter { it.date.year == 2026 && !it.date.isAfter(vToday) }	// mensualités de 2026
+		val vSince  = vDemo.transactions.single { inTx -> inTx.kind == TransactionKind.OPENING && inTx.postings.any { it.accountId == vLoan.accountId } }.date	// début du suivi
+		val vYear   = amortization(vLoan).filter { it.date.year == 2026 && !it.date.isAfter(vToday) && it.date.isAfter(vSince) }	// mensualités de 2026 suivies dans l'appli
+		assertTrue(amortization(vLoan).any { it.date.year == 2026 && !it.date.isAfter(vSince) })	// des mensualités antérieures au suivi sont bien écartées
 		val vCar    = vReport.loans.single()													// crédit du bilan
 		assertEquals(remainingAt(vLoan, vToday), vCar.end)
 		assertEquals(vYear.sumOf { it.capital }, vCar.repaid)

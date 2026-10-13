@@ -129,6 +129,8 @@ fun loanPreview(inForm: LoanForm): Long? =
 	start       : première échéance
 	end         : dernière échéance possible ; null sans fin
 	notes       : notes
+	refund      : remboursement (montant reçu dans une catégorie de dépense)
+	last        : dernière échéance déjà créée (gardée en modification)
 */
 data class RecurrenceForm(
 	val id          : String?    = null,
@@ -142,7 +144,9 @@ data class RecurrenceForm(
 	val frequency   : Frequency  = Frequency.MONTHLY,
 	val start       : LocalDate,
 	val end         : LocalDate? = null,
-	val notes       : String     = ""
+	val notes       : String     = "",
+	val refund      : Boolean    = false,
+	val last        : LocalDate? = null
 )
 
 /*
@@ -182,7 +186,9 @@ fun editRecurrenceForm(
 		frequency   = inRec.frequency,
 		start       = inRec.start,
 		end         = inRec.end,
-		notes       = inRec.notes.orEmpty()
+		notes       = inRec.notes.orEmpty(),
+		refund      = inRec.toAccountId == null && inRec.amountCents > 0 && inCategories.firstOrNull { it.id == inRec.categoryId }?.kind == CategoryKind.EXPENSE,
+		last        = inRec.last
 	)
 
 /*
@@ -228,19 +234,21 @@ fun buildRecurrence(inForm: RecurrenceForm): Recurrence
 		accountId   = inForm.accountId!!,
 		toAccountId = inForm.toAccountId.takeIf { inForm.transfer },
 		categoryId  = inForm.categoryId.takeIf { !inForm.transfer },
-		amountCents = if (!inForm.transfer && inForm.expense) -vCents else vCents,
+		amountCents = if (!inForm.transfer && inForm.expense && !inForm.refund) -vCents else vCents,
 		frequency   = inForm.frequency,
 		start       = inForm.start,
 		end         = inForm.end,
+		last        = inForm.last,
 		notes       = inForm.notes.trim().ifEmpty { null }
 	)
 }
 
 /*
 	Récurrence qui reprend une opération saisie (« Répéter ») : mêmes compte,
-	catégorie, montant et libellé, première échéance une période après la
-	date de l'opération. Null pour un ordre de bourse ou une saisie
-	illisible.
+	catégorie, montant et libellé ; la série part de la date de l'opération
+	(qui en est la première échéance, déjà saisie) : un 31 donne ensuite le
+	dernier jour des mois plus courts sans dériver. Null pour un ordre de
+	bourse ou une saisie illisible.
 	inForm      : saisie de l'opération (vérifiée)
 	inLabel     : libellé retenu pour l'opération
 	inFrequency : fréquence choisie
@@ -261,18 +269,19 @@ fun recurrenceFromEntry(
 		categoryId  = inForm.categoryId.takeIf { inForm.mode != EntryMode.TRANSFER },
 		amountCents = if (inForm.mode == EntryMode.EXPENSE && !inForm.refund) -vCents else vCents,
 		frequency   = inFrequency,
-		start       = inForm.date.plusMonths(inFrequency.months.toLong()),
+		start       = inForm.date,
+		last        = inForm.date,
 		notes       = inForm.notes.trim().ifEmpty { null }
 	)
 }
 
 /*
-	Prochaine échéance d'une récurrence après une date ; null si elle est
-	terminée.
+	Prochaine échéance d'une récurrence à partir d'une date (celle du jour
+	comprise tant qu'elle n'est pas créée) ; null si elle est terminée.
 	inRec   : récurrence
 	inToday : date du jour
 */
 fun nextOccurrence(
 	inRec   : Recurrence,
 	inToday : LocalDate
-): LocalDate? = occurrences(inRec, maxOf(inToday, inRec.last ?: inToday), inToday.plusYears(2)).firstOrNull()
+): LocalDate? = occurrences(inRec, listOfNotNull(inRec.last, inToday.minusDays(1)).max(), maxOf(inToday, inRec.start).plusYears(2)).firstOrNull()

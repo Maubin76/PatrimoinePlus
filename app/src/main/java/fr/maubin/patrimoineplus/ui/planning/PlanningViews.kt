@@ -45,6 +45,10 @@ import fr.maubin.patrimoineplus.ui.components.TextInput
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import fr.maubin.patrimoineplus.domain.format.formatFrenchDate
+import fr.maubin.patrimoineplus.domain.format.parseFrenchDate
+import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
+import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
 
 private val kDay = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)			// date d'une échéance
 
@@ -126,6 +130,9 @@ fun RecurrenceSheet(
 	var vForm    by remember { mutableStateOf(inStart) }									// saisie en cours
 	var vErrors  by remember { mutableStateOf(RecurrenceErrors()) }						// erreurs par champ
 	var vGeneral by remember { mutableStateOf<String?>(null) }								// refus
+	var vEndText by remember { mutableStateOf(inStart.end?.let(::formatFrenchDate).orEmpty()) }	// fin tapée
+	val vEnd     = if (vEndText.isBlank()) null else parseFrenchDate(vEndText)				// fin lue
+	val vEndError = if (vEndText.isNotBlank() && vEnd == null) "Date illisible : JJ/MM/AAAA." else null	// fin illisible
 	val vKinds   = listOf("Dépense", "Revenu", "Virement")									// natures
 	val vKind    = when { vForm.transfer -> 2; vForm.expense -> 0; else -> 1 }				// nature choisie
 	val vUsable  = inAccounts.filter { !it.type.isProperty && (!it.archived || it.id == vForm.accountId || it.id == vForm.toAccountId) }	// comptes proposés
@@ -145,11 +152,12 @@ fun RecurrenceSheet(
 		}
 		SegmentedChoice(Frequency.entries, vForm.frequency, { it.label.removePrefix("Chaque ") }, { vForm = vForm.copy(frequency = it) })
 		DateInput(vForm.start, { vForm = vForm.copy(start = it) }, "Première échéance")
+		TextInput(vEndText, { vEndText = it }, "Fin (facultatif)", vErrors.end ?: vEndError, "JJ/MM/AAAA ; vide : sans fin")
 		TextInput(vForm.notes, { vForm = vForm.copy(notes = it) }, "Notes (facultatif)")
 		Text("Chaque échéance crée l’opération à sa date ; une échéance déjà passée est créée dès l’enregistrement.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		vGeneral?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
 		Button(
-			onClick        = { inOnSave(vForm) { inErrors, inRefusal -> vErrors = inErrors; vGeneral = inRefusal } },
+			onClick        = { if (vEndError == null) inOnSave(vForm.copy(end = vEnd)) { inErrors, inRefusal -> vErrors = inErrors; vGeneral = inRefusal } },
 			contentPadding = PaddingValues(vertical = 14.dp),
 			modifier       = Modifier.fillMaxWidth()
 		) {
@@ -249,7 +257,7 @@ fun LoanSection(
 	}
 	Spacer(Modifier.height(8.dp))
 	Text(
-		"Dernière mensualité le ${inSchedule.last().date.format(kDay)} · intérêts restants ${formatEuros(vNext.sumOf { it.interest })}",
+		"Dernière mensualité le ${inSchedule.last().date.format(kDay)} · intérêts restants ${if (LocalAmountsHidden.current) kMaskedAmount else formatEuros(vNext.sumOf { it.interest })}",
 		style    = MaterialTheme.typography.bodySmall,
 		color    = vColors.onSurfaceVariant,
 		modifier = Modifier.padding(start = 4.dp)

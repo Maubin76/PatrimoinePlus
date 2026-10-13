@@ -150,6 +150,7 @@ class PropertyTest
 		assertTrue(ValidationError.InvalidSale in errors(kSale.copy(postings = listOf(kSale.postings[0], kSale.postings[1].copy(amountCents = eur(-500.0))))))
 		assertEquals(listOf(ValidationError.SoldPurchase(d("2026-09-20"))), errors(kVinyls.copy(postings = listOf(kVinyls.postings[0].copy(amountCents = eur(700.0))))))
 		assertEquals(emptyList<ValidationError>(), errors(kVinyls.copy(label = "Vinyles rares")))	// renommer reste possible
+		assertTrue(ValidationError.SoldPurchase(d("2026-09-20")) in errors(kVinyls.copy(kind = fr.maubin.patrimoineplus.domain.model.TransactionKind.STANDARD)))	// un achat vendu reste un achat
 	}
 
 	/*
@@ -195,5 +196,35 @@ class PropertyTest
 		assertTrue(vEditor.deleteTransactions(vFile, listOf(kVinyls.id, kSale.id)) is EditResult.Done)
 		assertEquals(BackupRead.Valid(vFile), decodeBackup(encodeBackup(vFile)))
 		assertEquals(kSale.linkedId, (decodeBackup(encodeBackup(vFile)) as BackupRead.Valid).file.transactions.single { it.id == kSale.id }.linkedId)
+	}
+
+	/*
+		Suppression définitive d'un compte : la vente dont il a reçu le prix
+		est gardée sans versement ; un achat payé par lui disparaît, et sa
+		vente avec ; le compte de biens supprimé emporte ses achats et ventes ;
+		le fichier obtenu reste valide.
+	*/
+	@Test
+	fun accountDeletion()
+	{
+		val vWatchSale = buildSale(SaleForm(purchaseId = kWatch.id, date = d("2026-10-01"), price = "5000", soldTo = kLivret.id), item(kWatch))	// montre vendue sur le livret
+		val vAll       = kData.transactions + vWatchSale											// opérations
+		val vChecking  = accountRemoval(vAll, kData.accounts, kChecking.id)						// courant supprimé
+		assertTrue(kWatch.id in vChecking.removed && vWatchSale.id in vChecking.removed)			// achat payé par le courant, et sa vente
+		assertTrue(kSale.id !in vChecking.removed)
+		assertEquals(listOf(kSale.copy(postings = kSale.postings.filter { it.accountId != kChecking.id })), vChecking.trimmed)	// vente gardée sans versement
+		assertEquals(1, vChecking.trimmed.single().postings.size)
+		val vLivret    = accountRemoval(vAll, kData.accounts, kLivret.id)						// livret supprimé
+		assertEquals(emptySet<String>(), vLivret.removed)
+		assertEquals(listOf(vWatchSale.id), vLivret.trimmed.map { it.id })
+		val vObjects   = accountRemoval(vAll, kData.accounts, kObjects.id)						// compte de biens supprimé
+		assertEquals(setOf(kWatch.id, kVinyls.id, kSale.id, vWatchSale.id), vObjects.removed)
+		assertTrue(vObjects.trimmed.isEmpty())
+		val vEditor    = DataEditor(Clock.fixed(Instant.parse("2026-10-12T09:00:00Z"), ZoneId.of("Europe/Paris")))	// moteur
+		val vFile      = backupFileOf(kData.copy(transactions = vAll))							// fichier
+		val vAfter     = (vEditor.deleteAccount(vFile, kChecking.id, true) as EditResult.Done).file	// courant supprimé
+		assertEquals(1, vAfter.transactions.single { it.id == kSale.id }.postings.size)
+		assertTrue(vAfter.transactions.none { it.id == kWatch.id || it.id == vWatchSale.id })
+		assertTrue(fr.maubin.patrimoineplus.data.backup.validateBackup(vAfter) is BackupRead.Valid)
 	}
 }

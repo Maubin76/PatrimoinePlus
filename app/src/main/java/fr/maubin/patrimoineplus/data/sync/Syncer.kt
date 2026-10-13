@@ -168,7 +168,7 @@ class Syncer(
 					SyncAction.NOTHING  -> idle()
 					SyncAction.RECORD   -> record(vLocalFp)
 					SyncAction.EXPORT   -> export(vFolder, vLocal, vLocalFp)
-					SyncAction.IMPORT   -> import(vFile!!, vFileFp!!)
+					SyncAction.IMPORT   -> import(vFile!!, vFileFp!!, vLocalFp)
 					SyncAction.CONFLICT ->
 					{
 						fPending = vFile
@@ -204,7 +204,7 @@ class Syncer(
 				}
 				else
 				{
-					import(vFile, syncFingerprint(vFile))
+					import(vFile, syncFingerprint(vFile), null)				// choix explicite : remplacement sans condition
 				}
 			}
 			catch (inError: Exception)
@@ -251,17 +251,22 @@ class Syncer(
 		Remplace les données du téléphone par celles du fichier.
 		inFile        : contenu du fichier, vérifié
 		inFingerprint : son empreinte
+		inLocal       : empreinte des données du téléphone lors de la décision ; null : sans contrôle
 	*/
 	private suspend fun import(
 		inFile        : BackupFile,
-		inFingerprint : String
+		inFingerprint : String,
+		inLocal       : String?
 	): SyncStatus
 	{
 		if (!inHooks.beforeImport())
 		{
 			return SyncStatus.Failed("Sauvegarde de sécurité impossible : les données du téléphone n’ont pas été remplacées.")
 		}
-		inBackup.replaceAll(inFile)
+		if (!inBackup.replaceAll(inFile, inLocal))
+		{
+			return SyncStatus.Failed("Données modifiées pendant la synchronisation : rien n’a été remplacé, relancez la synchronisation.")
+		}
 		inHooks.afterImport()
 		return record(inFingerprint)
 	}
