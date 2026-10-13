@@ -143,7 +143,7 @@ fun OperationsScreen(
 					inOnOpen   = {
 						if (vSelected.isNotEmpty()) { vSelected = if (vId in vSelected) vSelected - vId else vSelected + vId; vAnchor = inIndex }
 						else if (inHit.transaction.kind == TransactionKind.OPENING) Unit
-						else inController.openPanel(Panel.Operation(editEntryForm(inHit.transaction, inSpace.data.categories)))
+						else inController.openTransaction(inHit.transaction)
 					}
 				)
 			}

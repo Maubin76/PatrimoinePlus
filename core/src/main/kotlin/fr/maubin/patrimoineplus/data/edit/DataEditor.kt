@@ -13,6 +13,7 @@ import fr.maubin.patrimoineplus.data.toDataSet
 import fr.maubin.patrimoineplus.domain.calc.Ledger
 import fr.maubin.patrimoineplus.domain.calc.OversoldSale
 import fr.maubin.patrimoineplus.domain.calc.findOversold
+import fr.maubin.patrimoineplus.domain.calc.orphanedSale
 import fr.maubin.patrimoineplus.domain.calc.tradedPairs
 import fr.maubin.patrimoineplus.domain.model.Account
 import fr.maubin.patrimoineplus.domain.model.AccountType
@@ -103,6 +104,7 @@ class DataEditor(
 	): EditResult
 	{
 		validateAccount(inName, inShare).refusal()?.let { return it }
+		if (inType.isProperty && inOpening != null && inOpening.cents != 0L) return refused(SetupError.PropertyOpening)
 		val vNow     = now()														// horodatage
 		val vAccount = AccountDto(
 			id           = inNewId(),
@@ -139,6 +141,10 @@ class DataEditor(
 		if (vOld.type != inAccount.type.name && operationCount(inFile, inAccount.id) > 0)
 		{
 			return refused(SetupError.TypeLocked)
+		}
+		if (inAccount.type.isProperty && openingOf(inFile.transactions, inAccount.id) != null)
+		{
+			return refused(SetupError.PropertyOpening)
 		}
 		val vNew = vOld.copy(
 			name         = inAccount.name.trim(),
@@ -191,7 +197,8 @@ class DataEditor(
 		inOpening : OpeningBalance
 	): EditResult
 	{
-		if (inFile.accounts.none { it.id == inId }) return refused(SetupError.NotFound)
+		val vAccount = inFile.accounts.firstOrNull { it.id == inId } ?: return refused(SetupError.NotFound)	// compte
+		if (AccountType.valueOf(vAccount.type).isProperty && inOpening.cents != 0L) return refused(SetupError.PropertyOpening)
 		val vOld = openingOf(inFile.transactions, inId)							// solde initial actuel
 		val vNow = now()															// horodatage
 		val vTxs = when
@@ -451,13 +458,16 @@ class DataEditor(
 			createdAt  = vCreated,
 			updatedAt  = vNow,
 			postings   = inTx.postings.map { PostingDto(it.id, it.accountId, it.amountCents) },
-			trades     = inTx.trades.map { TradeDto(it.id, it.assetId, it.side.name, it.quantity, it.unitPrice, it.feesCents) }
+			trades     = inTx.trades.map { TradeDto(it.id, it.assetId, it.side.name, it.quantity, it.unitPrice, it.feesCents) },
+			linkedId   = inTx.linkedId
 		)																			// opération enregistrée
 		return EditResult.Done(inFile.copy(transactions = inFile.transactions.filterNot { it.id == inTx.id } + vDto), inTx.id)
 	}
 
 	/*
-		Supprime des opérations (un virement en entier : il est une seule opération).
+		Supprime des opérations (un virement en entier : il est une seule
+		opération). Refusé si cela rend une vente de titres impossible, ou
+		laisse la vente d'un bien sans son achat.
 		inFile : contenu
 		inIds  : identifiants
 	*/
@@ -470,6 +480,9 @@ class DataEditor(
 		val vRemoved = inFile.toDataSet().transactions.filter { it.id in inIds }	// opérations supprimées
 		findOversold(Ledger(vFile.toDataSet().transactions), tradedPairs(vRemoved))?.let { inSale ->
 			return EditResult.Refused(listOf(laterSaleMessage(inSale)))
+		}
+		orphanedSale(vFile.toDataSet().transactions)?.let { inSale ->
+			return EditResult.Refused(listOf(ValidationError.SaleWithoutPurchase(inSale.label).message))
 		}
 		return EditResult.Done(vFile)
 	}

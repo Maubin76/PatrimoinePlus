@@ -88,6 +88,16 @@ import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import fr.maubin.patrimoineplus.domain.calc.PropertyItem
+import fr.maubin.patrimoineplus.ui.property.PurchaseForm
+import fr.maubin.patrimoineplus.ui.property.SaleForm
+import fr.maubin.patrimoineplus.ui.property.buildPurchase
+import fr.maubin.patrimoineplus.ui.property.buildSale
+import fr.maubin.patrimoineplus.ui.property.editPurchaseForm
+import fr.maubin.patrimoineplus.ui.property.editSaleForm
+import fr.maubin.patrimoineplus.ui.property.newPurchaseForm
+import fr.maubin.patrimoineplus.ui.property.newSaleForm
+import fr.maubin.patrimoineplus.ui.property.propertyNoun
 
 private val kMonthTitle = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.FRANCE)	// en-tête d'un mois
 private val kShortDay   = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)	// date en tête du sous-titre
@@ -112,6 +122,8 @@ private val kDayFormat = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANC
 	onDelOpening  : retrait d'une position initiale
 	onRefresh     : mise à jour des cours à la demande
 	onAsset       : ouvre la fiche d'un actif
+	onProperty    : ouvre l'achat d'un bien
+	onSell        : ouvre la vente d'un bien
 */
 data class AccountDetailActions(
 	val onBack         : () -> Unit                    = {},
@@ -130,7 +142,9 @@ data class AccountDetailActions(
 	val onAddOpening   : () -> Unit                    = {},
 	val onDelOpening   : (OpeningPositionItem) -> Unit = {},
 	val onRefresh      : () -> Unit                    = {},
-	val onAsset        : (String) -> Unit              = {}
+	val onAsset        : (String) -> Unit              = {},
+	val onProperty     : (PropertyItem) -> Unit        = {},
+	val onSell         : (PropertyItem) -> Unit        = {}
 )
 
 /*
@@ -166,6 +180,8 @@ fun AccountDetailScreen(
 	var vPrices    by remember { mutableStateOf(false) }						// mise à jour des cours
 	var vOpening   by remember { mutableStateOf(false) }						// ajout d'une position initiale
 	var vAsset     by remember { mutableStateOf<String?>(null) }				// fiche d'actif ouverte
+	var vPurchase  by remember { mutableStateOf<PurchaseForm?>(null) }		// achat d'un bien ouvert
+	var vSale      by remember { mutableStateOf<SaleForm?>(null) }			// vente d'un bien ouverte
 	val vRefresh   by inViewModel.refreshing.collectAsStateWithLifecycle()	// mise à jour des cours en cours
 	val vQuotesAt  by inViewModel.quotesUpdatedAt.collectAsStateWithLifecycle()	// dernière mise à jour des cours
 	val vSnackbar  = remember { SnackbarHostState() }						// messages éphémères
@@ -202,6 +218,8 @@ fun AccountDetailScreen(
 				{
 					vSelection.isNotEmpty() && inOp.editable -> vSelection = vSelection.toggle(inOp.transaction.id)
 					vSelection.isNotEmpty() -> Unit
+					inOp.transaction.kind == TransactionKind.ACQUISITION -> inEntry.propertyOf(inOp.transaction)?.let { vPurchase = editPurchaseForm(it) }
+					inOp.transaction.kind == TransactionKind.DISPOSAL    -> inEntry.propertyOf(inOp.transaction)?.let { vSale = editSaleForm(it) }
 					inOp.editable           -> vEntry = inEntry.editForm(inOp.transaction)
 					else                    -> vScope.launch {
 						vSnackbar.showSnackbar(
@@ -219,7 +237,10 @@ fun AccountDetailScreen(
 			},
 			onClearSelect  = { vSelection = emptySet() },
 			onDeleteSel    = { vConfirm = true },
-			onAdd          = { vEntry = inEntry.newForm(inViewModel.accountId) },
+			onAdd          = {
+				if (vState.account?.type?.isProperty == true) vPurchase = newPurchaseForm(inViewModel.accountId, inViewModel.today())
+				else vEntry = inEntry.newForm(inViewModel.accountId)
+			},
 			onAddStatement = { vStatement = true },
 			onAdjust       = { inItem ->
 				val vIncome = inItem.gapCents > 0											// écart en faveur du compte
@@ -236,9 +257,42 @@ fun AccountDetailScreen(
 			onAddOpening   = { vOpening = true },
 			onDelOpening   = { inViewModel.removeOpeningPosition(it.trade.id) },
 			onRefresh      = { inViewModel.refreshQuotes(inForce = true, inOnMessage = vNotify) },
-			onAsset        = { vAsset = it }
+			onAsset        = { vAsset = it },
+			onProperty     = { vPurchase = editPurchaseForm(it) },
+			onSell         = { inItem -> vSale = if (inItem.disposal != null) editSaleForm(inItem) else newSaleForm(inItem, inViewModel.today()) }
 		)
 	)
+
+	vPurchase?.let { inForm ->
+		val vSold = vExtras.properties.firstOrNull { it.acquisition.id == inForm.id }?.disposal	// vente du bien
+		PurchaseSheet(
+			inStart     = inForm,
+			inAccounts  = inEntry.allAccounts(),
+			inSold      = vSold != null,
+			inOnSave    = { inSaved, inOnRefus -> inEntry.saveProperty(buildPurchase(inSaved)) { inMessage -> if (inMessage == null) vPurchase = null else inOnRefus(inMessage) } },
+			inOnDelete  = {
+				inEntry.delete(listOfNotNull(inForm.id, vSold?.id), vNotify)
+				vPurchase = null
+			},
+			inOnDismiss = { vPurchase = null }
+		)
+	}
+
+	vSale?.let { inForm ->
+		vExtras.properties.firstOrNull { it.acquisition.id == inForm.purchaseId }?.let { inItem ->
+			SaleSheet(
+				inStart        = inForm,
+				inItem         = inItem,
+				inAccounts     = inEntry.allAccounts(),
+				inOnSave       = { inSaved, inOnRefus -> inEntry.saveProperty(buildSale(inSaved, inItem)) { inMessage -> if (inMessage == null) vSale = null else inOnRefus(inMessage) } },
+				inOnCancelSale = {
+					inForm.id?.let { inEntry.delete(listOf(it), vNotify) }
+					vSale = null
+				},
+				inOnDismiss    = { vSale = null }
+			)
+		}
+	}
 
 	vEntry?.let { inForm ->
 		TransactionSheet(
@@ -523,7 +577,15 @@ private fun LazyListScope.globalContent(
 )
 {
 	val vPortfolio = inExtras.portfolio											// portefeuille (Bourse)
-	if (vPortfolio != null)
+	val vAccount   = inState.account												// compte affiché
+	if (vAccount != null && vAccount.type.isProperty)
+	{
+		item { PropertyHeader(inExtras.properties, inExtras.asOf ?: inState.month.atEndOfMonth(), vAccount.sharePercent) }
+		chartSection("Évolution de la valeur", inState.series)
+		item { Spacer(Modifier.height(28.dp)) }
+		item { PropertySection(inExtras.properties, inExtras.asOf ?: inState.month.atEndOfMonth(), propertyNoun(vAccount.type), inExtras.accountNames, inActions.onAdd, inActions.onProperty, inActions.onSell) }
+	}
+	else if (vPortfolio != null)
 	{
 		item { PortfolioHeader(vPortfolio) }
 		chartSection("Évolution de la valeur", inExtras.valueSeries)

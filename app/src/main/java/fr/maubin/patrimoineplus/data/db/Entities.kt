@@ -71,13 +71,14 @@ data class AssetEntity(
 data class TransactionEntity(
 	@PrimaryKey val id   : String,											// UUID
 	val date             : LocalDate,										// date (texte ISO)
-	val kind             : String,											// STANDARD, TRANSFER, TRADE, OPENING
+	val kind             : String,											// STANDARD, TRANSFER, TRADE, OPENING, ACQUISITION, DISPOSAL
 	val label            : String,											// libellé
 	val categoryId       : String?,											// catégorie
 	val assetId          : String?,											// actif rattaché (dividende)
 	val notes            : String?,											// notes
 	val createdAt        : Long,											// création, ms epoch
-	val updatedAt        : Long												// modification, ms epoch
+	val updatedAt        : Long,											// modification, ms epoch
+	val linkedId         : String? = null										// vente d'un bien : son achat (version 3)
 )
 
 /*

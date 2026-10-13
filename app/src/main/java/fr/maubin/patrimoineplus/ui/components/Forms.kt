@@ -41,6 +41,10 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 
 private val kDateFormat = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)	// date affichée dans les champs
 
@@ -258,4 +262,49 @@ fun ConfirmDialog(
 		confirmButton    = { TextButton(onClick = inOnConfirm) { Text(inAction) } },
 		dismissButton    = { TextButton(onClick = inOnDismiss) { Text("Annuler") } }
 	)
+}
+
+/*
+	Liste déroulante générique : options (identifiant, texte).
+	inLabel    : libellé du champ
+	inOptions  : options proposées
+	inSelected : identifiant choisi
+	inError    : message d'erreur ; null sans erreur
+	inOnSelect : choix d'une option
+*/
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun Picker(
+	inLabel    : String,
+	inOptions  : List<Pair<String?, String>>,
+	inSelected : String?,
+	inError    : String?,
+	inOnSelect : (String?) -> Unit
+)
+{
+	var vOpen by remember { mutableStateOf(false) }							// liste ouverte
+	ExposedDropdownMenuBox(expanded = vOpen, onExpandedChange = { vOpen = it }) {
+		OutlinedTextField(
+			value          = inOptions.firstOrNull { it.first == inSelected }?.second.orEmpty(),
+			onValueChange  = {},
+			readOnly       = true,
+			label          = { Text(inLabel) },
+			isError        = inError != null,
+			supportingText = inError?.let { { Text(it) } },
+			trailingIcon   = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = vOpen) },
+			singleLine     = true,
+			modifier       = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+		)
+		ExposedDropdownMenu(expanded = vOpen, onDismissRequest = { vOpen = false }, containerColor = MaterialTheme.colorScheme.surface) {
+			inOptions.forEach { (inId, inText) ->
+				DropdownMenuItem(
+					text    = { Text(inText) },
+					onClick = {
+						inOnSelect(inId)
+						vOpen = false
+					}
+				)
+			}
+		}
+	}
 }

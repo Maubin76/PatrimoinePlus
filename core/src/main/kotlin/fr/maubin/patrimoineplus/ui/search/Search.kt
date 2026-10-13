@@ -7,6 +7,7 @@ import fr.maubin.patrimoineplus.domain.model.Transaction
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
 import java.time.LocalDate
 import kotlin.math.abs
+import fr.maubin.patrimoineplus.ui.property.propertyNature
 
 /*
 	Critères de recherche dans les opérations ; un critère vide ne filtre pas.
@@ -116,6 +117,7 @@ private fun hit(
 			SearchHit(inTx, if (inAccountId != null) vMain.amountCents else vTo.amountCents, "${vName(vFrom.accountId)} → ${vName(vTo.accountId)} · Virement", "repeat")
 		}
 		TransactionKind.TRADE    -> SearchHit(inTx, vMain.amountCents, "${vName(vMain.accountId)} · Ordre de bourse", "chart")
+		TransactionKind.ACQUISITION, TransactionKind.DISPOSAL -> SearchHit(inTx, vMain.amountCents, "${vName(vMain.accountId)} · ${propertyNature(inTx)}", "home")
 		else                     ->
 		{
 			val vCategory = inTx.categoryId?.let { inCategories[it] }					// catégorie

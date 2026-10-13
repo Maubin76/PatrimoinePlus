@@ -38,6 +38,14 @@ import java.nio.file.Path
 import java.time.Clock
 import java.time.LocalDate
 import java.time.YearMonth
+import fr.maubin.patrimoineplus.domain.calc.propertyItems
+import fr.maubin.patrimoineplus.domain.model.Transaction
+import fr.maubin.patrimoineplus.domain.model.TransactionKind
+import fr.maubin.patrimoineplus.ui.entry.editEntryForm
+import fr.maubin.patrimoineplus.ui.property.PurchaseForm
+import fr.maubin.patrimoineplus.ui.property.SaleForm
+import fr.maubin.patrimoineplus.ui.property.editPurchaseForm
+import fr.maubin.patrimoineplus.ui.property.editSaleForm
 
 private const val kDayCheckMillis = 60_000L										// contrôle du changement de jour
 
@@ -133,6 +141,20 @@ sealed interface Panel
 		token   : numéro d'ouverture
 	*/
 	data class AssetSheet(val assetId: String, override val token: Long = 0) : Panel
+
+	/*
+		Achat d'un bien (compte Immobilier ou Collection), nouveau ou modifié.
+		form  : saisie de départ
+		token : numéro d'ouverture
+	*/
+	data class Purchase(val form: PurchaseForm, override val token: Long = 0) : Panel
+
+	/*
+		Vente d'un bien, nouvelle ou modifiée.
+		form  : saisie de départ
+		token : numéro d'ouverture
+	*/
+	data class Sale(val form: SaleForm, override val token: Long = 0) : Panel
 }
 
 /*
@@ -377,6 +399,26 @@ class DesktopController(
 			is Panel.Prices          -> inPanel.copy(token = vToken)
 			is Panel.OpeningPosition -> inPanel.copy(token = vToken)
 			is Panel.AssetSheet      -> inPanel.copy(token = vToken)
+			is Panel.Purchase        -> inPanel.copy(token = vToken)
+			is Panel.Sale            -> inPanel.copy(token = vToken)
+		}
+	}
+
+	/*
+		Ouvre la saisie qui convient à une opération : achat ou vente d'un
+		bien dans leur propre panneau, sinon le panneau d'opération.
+		inTx : opération
+	*/
+	fun openTransaction(inTx: Transaction)
+	{
+		val vData = workspace.value.data											// données
+		val vItem = propertyItems(vData.transactions, vData.accounts).firstOrNull { it.acquisition.id == inTx.id || it.disposal?.id == inTx.id }	// bien concerné
+		when
+		{
+			inTx.kind == TransactionKind.ACQUISITION && vItem != null -> openPanel(Panel.Purchase(editPurchaseForm(vItem)))
+			inTx.kind == TransactionKind.DISPOSAL && vItem != null    -> openPanel(Panel.Sale(editSaleForm(vItem)))
+			inTx.kind == TransactionKind.OPENING                      -> inTx.postings.firstOrNull()?.let { openPanel(Panel.AccountSheet(it.accountId)) }
+			else                                                      -> openPanel(Panel.Operation(editEntryForm(inTx, vData.categories)))
 		}
 	}
 
@@ -395,7 +437,7 @@ class DesktopController(
 	fun newOperation()
 	{
 		val vData = workspace.value.data											// données
-		val vForm = newEntryForm(EntryData(vData.accounts.filterNot { it.archived }, vData.categories, vData.assets, vData.prices, vData.transactions), fNavigation.value.accountId, today())	// formulaire
+		val vForm = newEntryForm(EntryData(vData.accounts.filterNot { it.archived || it.type.isProperty }, vData.categories, vData.assets, vData.prices, vData.transactions), fNavigation.value.accountId, today())	// formulaire
 		openPanel(Panel.Operation(vForm))
 	}
 
@@ -417,6 +459,8 @@ class DesktopController(
 			is Panel.Prices          -> vData.accounts.none { it.id == vPanel.accountId }
 			is Panel.OpeningPosition -> vData.accounts.none { it.id == vPanel.accountId }
 			is Panel.AssetSheet      -> vData.assets.none { it.id == vPanel.assetId }
+			is Panel.Purchase        -> vPanel.form.id != null && vData.transactions.none { it.id == vPanel.form.id }
+			is Panel.Sale            -> vData.transactions.none { it.id == vPanel.form.purchaseId } || (vPanel.form.id != null && vData.transactions.none { it.id == vPanel.form.id })
 		}
 		if (vStale)
 		{
@@ -490,7 +534,7 @@ class DesktopController(
 	*/
 	fun newBatchRow(inAfter: BatchRow?): BatchRow
 	{
-		val vAccounts = workspace.value.data.accounts.filterNot { it.archived }	// comptes actifs
+		val vAccounts = workspace.value.data.accounts.filterNot { it.archived || it.type.isProperty }	// comptes actifs
 		val vDefault  = (vAccounts.firstOrNull { it.type == fr.maubin.patrimoineplus.domain.model.AccountType.CHECKING } ?: vAccounts.firstOrNull())?.id	// compte par défaut
 		return BatchRow(++fRowKeys, inAfter?.date ?: fr.maubin.patrimoineplus.domain.format.formatFrenchDate(today()), inAfter?.accountId ?: vDefault)
 	}
@@ -512,7 +556,7 @@ class DesktopController(
 	fun saveBatch(): Map<Long, String>
 	{
 		val vData   = workspace.value.data											// données
-		val vEntry  = EntryData(vData.accounts.filterNot { it.archived }, vData.categories.filterNot { it.archived }, vData.assets, vData.prices, vData.transactions)	// données de saisie
+		val vEntry  = EntryData(vData.accounts.filterNot { it.archived || it.type.isProperty }, vData.categories.filterNot { it.archived }, vData.assets, vData.prices, vData.transactions)	// données de saisie
 		val vRows   = fBatch.value.filterNot { it.isBlank }							// lignes remplies
 		val vChecks = vRows.associate { it.key to checkBatchRow(it, vEntry) }			// contrôles
 		val vErrors = vChecks.filterValues { it.error != null }.mapValues { it.value.error!! }	// lignes refusées
@@ -625,7 +669,7 @@ class DesktopController(
 	fun createFromBank(inForms: List<EntryForm>): String?
 	{
 		val vData  = workspace.value.data											// données
-		val vEntry = EntryData(vData.accounts.filterNot { it.archived }, vData.categories, vData.assets, vData.prices, vData.transactions)	// données de saisie
+		val vEntry = EntryData(vData.accounts.filterNot { it.archived || it.type.isProperty }, vData.categories, vData.assets, vData.prices, vData.transactions)	// données de saisie
 		inForms.firstNotNullOfOrNull { inForm -> checkEntry(inForm, vEntry.withReferences(inForm, vData.accounts, vData.categories)).let { if (it.isEmpty) null else "« ${inForm.label} » : ${listOfNotNull(it.general, it.amount, it.account, it.category, it.label).joinToString(" ")}" } }
 			?.let { return it }
 		val vResult = edit { inFile ->

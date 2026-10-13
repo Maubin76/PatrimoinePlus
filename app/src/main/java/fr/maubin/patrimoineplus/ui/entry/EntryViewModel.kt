@@ -24,7 +24,9 @@ import kotlinx.coroutines.launch
 import java.time.Clock
 import java.time.LocalDate
 import java.util.UUID
-import javax.inject.Inject
+import javax.inject.Inject
+import fr.maubin.patrimoineplus.domain.calc.PropertyItem
+import fr.maubin.patrimoineplus.domain.calc.propertyItems
 
 /*
 	ViewModel de la saisie d'une opération (dépense, revenu, virement, ordre) :
@@ -62,7 +64,7 @@ class EntryViewModel @Inject constructor(
 			combine(inAccounts.observeAccounts(), inCategories.observeCategories(), inMarket.observeAssets(), ::Triple),
 			combine(inMarket.observePrices(), inTransactions.observeTransactions(), inSettings.lastAccountId, ::Triple)
 		) { (inList, inCats, inAssets), (inPrices, inTxs, inLast) ->
-			EntryData(inList.filterNot { it.archived }, inCats.filterNot { it.archived }.sortedBy { it.sortOrder }, inAssets, inPrices, inTxs, inLast)
+			EntryData(inList.filterNot { it.archived || it.type.isProperty }, inCats.filterNot { it.archived }.sortedBy { it.sortOrder }, inAssets, inPrices, inTxs, inLast)
 		}.stateIn(viewModelScope, SharingStarted.Eagerly, EntryData())
 
 	/*
@@ -152,6 +154,38 @@ class EntryViewModel @Inject constructor(
 				}
 			}
 			is SaveResult.Rejected -> inOnDone(EntryErrors(general = vResult.errors.joinToString(" ") { it.message }))
+		}
+	}
+
+	/*
+		Tous les comptes, archivés et comptes de biens compris (saisie des biens).
+	*/
+	fun allAccounts(): List<Account> = fAll.value.first
+
+	/*
+		Bien concerné par un achat ou une vente ; null s'il est introuvable.
+		inTx : achat ou vente d'un bien
+	*/
+	fun propertyOf(inTx: Transaction): PropertyItem? =
+		propertyItems(data.value.transactions, fAll.value.first).firstOrNull { it.acquisition.id == inTx.id || it.disposal?.id == inTx.id }
+
+	/*
+		Enregistre l'achat ou la vente d'un bien, déjà vérifié par sa saisie ;
+		renvoie le refus des règles, ou null s'il est enregistré.
+		inTx     : opération construite
+		inOnDone : reçoit le refus (null : enregistré)
+	*/
+	fun saveProperty(
+		inTx     : Transaction,
+		inOnDone : (String?) -> Unit
+	)
+	{
+		viewModelScope.launch {
+			when (val vResult = inTransactions.save(inTx))							// résultat
+			{
+				is SaveResult.Saved    -> inOnDone(null)
+				is SaveResult.Rejected -> inOnDone(vResult.errors.joinToString(" ") { it.message })
+			}
 		}
 	}
 

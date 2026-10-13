@@ -187,7 +187,7 @@ private fun BatchLine(
 			CellField(inRow.date, { inOnChange(inRow.copy(date = it)) }, Modifier.weight(1f).padding(end = 12.dp).focusRequester(inFocus).then(vEnter), inPlaceholder = "JJ/MM/AAAA")
 			MenuCell(
 				inText     = vData.accounts.firstOrNull { it.id == inRow.accountId }?.name ?: "Compte…",
-				inOptions  = vData.accounts.filterNot { it.archived }.map { it.id to it.name },
+				inOptions  = vData.accounts.filterNot { it.archived || it.type.isProperty }.map { it.id to it.name },
 				inOnSelect = { inOnChange(inRow.copy(accountId = it)) },
 				inModifier = Modifier.weight(1.4f).padding(end = 12.dp)
 			)

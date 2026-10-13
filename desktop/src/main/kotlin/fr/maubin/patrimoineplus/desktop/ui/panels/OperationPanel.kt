@@ -62,7 +62,7 @@ fun OperationPanel(
 	var vErrors by remember(inInitial) { mutableStateOf(EntryErrors()) }		// erreurs affichées
 	var vBadDay by remember(inInitial) { mutableStateOf(false) }				// date illisible
 	var vDelete by remember(inInitial) { mutableStateOf(false) }				// suppression demandée
-	val vEntry  = EntryData(vData.accounts.filterNot { it.archived }, vData.categories.filterNot { it.archived }.sortedBy { it.sortOrder }, vData.assets, vData.prices, vData.transactions)
+	val vEntry  = EntryData(vData.accounts.filterNot { it.archived || it.type.isProperty }, vData.categories.filterNot { it.archived }.sortedBy { it.sortOrder }, vData.assets, vData.prices, vData.transactions)
 		.withReferences(vForm, vData.accounts, vData.categories)				// données de saisie (comptes archivés de l'opération compris)
 
 	/*

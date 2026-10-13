@@ -61,7 +61,8 @@ import fr.maubin.patrimoineplus.ui.components.FormSheet
 import fr.maubin.patrimoineplus.ui.components.SegmentedChoice
 import fr.maubin.patrimoineplus.ui.components.TextInput
 import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
-import kotlin.math.abs
+import kotlin.math.abs
+import fr.maubin.patrimoineplus.ui.components.Picker
 
 /*
 	Feuille de saisie d'une opération : dépense, revenu, virement entre deux
@@ -357,51 +358,6 @@ private fun AccountPicker(
 )
 {
 	Picker(inLabel, inAccounts.map { it.id as String? to "${it.name}  ·  ${it.type.label}" }, inSelected, inError) { it?.let(inOnSelect) }
-}
-
-/*
-	Liste déroulante générique : options (identifiant, texte).
-	inLabel    : libellé du champ
-	inOptions  : options proposées
-	inSelected : identifiant choisi
-	inError    : message d'erreur ; null sans erreur
-	inOnSelect : choix d'une option
-*/
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun Picker(
-	inLabel    : String,
-	inOptions  : List<Pair<String?, String>>,
-	inSelected : String?,
-	inError    : String?,
-	inOnSelect : (String?) -> Unit
-)
-{
-	var vOpen by remember { mutableStateOf(false) }							// liste ouverte
-	ExposedDropdownMenuBox(expanded = vOpen, onExpandedChange = { vOpen = it }) {
-		OutlinedTextField(
-			value          = inOptions.firstOrNull { it.first == inSelected }?.second.orEmpty(),
-			onValueChange  = {},
-			readOnly       = true,
-			label          = { Text(inLabel) },
-			isError        = inError != null,
-			supportingText = inError?.let { { Text(it) } },
-			trailingIcon   = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = vOpen) },
-			singleLine     = true,
-			modifier       = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-		)
-		ExposedDropdownMenu(expanded = vOpen, onDismissRequest = { vOpen = false }, containerColor = MaterialTheme.colorScheme.surface) {
-			inOptions.forEach { (inId, inText) ->
-				DropdownMenuItem(
-					text    = { Text(inText) },
-					onClick = {
-						inOnSelect(inId)
-						vOpen = false
-					}
-				)
-			}
-		}
-	}
 }
 
 /*

@@ -20,25 +20,31 @@ import org.robolectric.annotation.Config
 import java.io.File
 
 /*
-	Test de migration de la base : une vraie base de la version 1, créée à
-	partir du schéma exporté, est ouverte par la version actuelle sans perte.
+	Tests de migration de la base : une vraie base d'une ancienne version,
+	créée à partir du schéma exporté, est ouverte par la version actuelle sans perte.
 */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35])
 class MigrationTest
 {
 	/*
-		Version 1 → 2 : la colonne du symbole de cotation est ajoutée aux actifs ;
-		les actifs existants sont conservés tels quels, sans symbole.
+		Crée une vraie base d'une ancienne version à partir de son schéma
+		exporté, puis y exécute des insertions.
+		inVersion : version du schéma
+		inName    : nom du fichier
+		inInserts : requêtes d'insertion
 	*/
-	@Test
-	fun version1To2KeepsAssets() = runTest {
+	private fun oldDatabase(
+		inVersion : Int,
+		inName    : String,
+		vararg inInserts : String
+	)
+	{
 		val vContext = ApplicationProvider.getApplicationContext<Context>()		// contexte
-		val vName    = "migration-test.db"										// fichier de test
-		vContext.deleteDatabase(vName)
-		val vSchema  = Json.parseToJsonElement(File("schemas/fr.maubin.patrimoineplus.data.db.PatrimoineDatabase/1.json").readText())
-			.jsonObject.getValue("database").jsonObject									// schéma de la version 1
-		SQLiteDatabase.openOrCreateDatabase(vContext.getDatabasePath(vName).apply { parentFile?.mkdirs() }, null).use { inDb ->
+		vContext.deleteDatabase(inName)
+		val vSchema  = Json.parseToJsonElement(File("schemas/fr.maubin.patrimoineplus.data.db.PatrimoineDatabase/$inVersion.json").readText())
+			.jsonObject.getValue("database").jsonObject									// schéma de la version
+		SQLiteDatabase.openOrCreateDatabase(vContext.getDatabasePath(inName).apply { parentFile?.mkdirs() }, null).use { inDb ->
 			vSchema.getValue("entities").jsonArray.forEach { inEntity ->
 				val vTable = inEntity.jsonObject.getValue("tableName").jsonPrimitive.content	// table
 				inDb.execSQL(inEntity.jsonObject.getValue("createSql").jsonPrimitive.content.replace("\${TABLE_NAME}", vTable))
@@ -47,16 +53,47 @@ class MigrationTest
 				}
 			}
 			vSchema.getValue("setupQueries").jsonArray.forEach { inDb.execSQL(it.jsonPrimitive.content) }
-			inDb.execSQL("INSERT INTO asset (id, name, isin, archived, createdAt, updatedAt) VALUES ('a1', 'ETF Monde', 'LU1681043599', 0, 1, 2)")
-			inDb.version = 1
+			inInserts.forEach { inDb.execSQL(it) }
+			inDb.version = inVersion
 		}
-		val vDb = Room.databaseBuilder(vContext, PatrimoineDatabase::class.java, vName).allowMainThreadQueries().build()	// version actuelle
+	}
+
+	/*
+		Version 1 → 2 : la colonne du symbole de cotation est ajoutée aux actifs ;
+		les actifs existants sont conservés tels quels, sans symbole.
+	*/
+	@Test
+	fun version1To2KeepsAssets() = runTest {
+		val vContext = ApplicationProvider.getApplicationContext<Context>()		// contexte
+		oldDatabase(1, "migration-test.db", "INSERT INTO asset (id, name, isin, archived, createdAt, updatedAt) VALUES ('a1', 'ETF Monde', 'LU1681043599', 0, 1, 2)")
+		val vDb = Room.databaseBuilder(vContext, PatrimoineDatabase::class.java, "migration-test.db").allowMainThreadQueries().build()	// version actuelle
 		val vAssets = vDb.assetDao().observeAll().first()						// actifs après migration
 		assertEquals(listOf("ETF Monde"), vAssets.map { it.name })
 		assertEquals("LU1681043599", vAssets.single().isin)
 		assertNull(vAssets.single().ticker)
 		vDb.assetDao().update(vAssets.single().copy(ticker = "CW8.PA"))
 		assertEquals("CW8.PA", vDb.assetDao().observeAll().first().single().ticker)
+		vDb.close()
+	}
+
+	/*
+		Version 2 → 3 : la colonne de l'opération liée est ajoutée ; les
+		opérations existantes sont conservées, sans lien.
+	*/
+	@Test
+	fun version2To3KeepsTransactions() = runTest {
+		val vContext = ApplicationProvider.getApplicationContext<Context>()		// contexte
+		oldDatabase(
+			2, "migration-test-3.db",
+			"INSERT INTO account (id, name, type, institution, sharePercent, sortOrder, archived, createdAt, updatedAt) VALUES ('c1', 'Courant', 'CHECKING', NULL, 100, 0, 0, 1, 2)",
+			"INSERT INTO txn (id, date, kind, label, categoryId, assetId, notes, createdAt, updatedAt) VALUES ('t1', '2026-10-01', 'OPENING', 'Solde initial', NULL, NULL, NULL, 1, 2)",
+			"INSERT INTO posting (id, transactionId, accountId, amountCents) VALUES ('p1', 't1', 'c1', 150000)"
+		)
+		val vDb = Room.databaseBuilder(vContext, PatrimoineDatabase::class.java, "migration-test-3.db").allowMainThreadQueries().build()	// version actuelle
+		val vTxs = vDb.transactionDao().getAll()									// opérations après migration
+		assertEquals(listOf("Solde initial"), vTxs.map { it.transaction.label })
+		assertNull(vTxs.single().transaction.linkedId)
+		assertEquals(150_000L, vTxs.single().postings.single().amountCents)
 		vDb.close()
 	}
 }

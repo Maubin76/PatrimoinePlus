@@ -333,7 +333,7 @@ private fun monthlySaved(
 	inToday  : LocalDate
 ): List<Long>
 {
-	val vFirst    = inData.transactions.minOfOrNull { YearMonth.from(it.date) } ?: return emptyList()	// premier mois suivi
+	val vFirst    = inData.transactions.filterNot { it.kind == TransactionKind.ACQUISITION || it.kind == TransactionKind.DISPOSAL }.minOfOrNull { YearMonth.from(it.date) } ?: return emptyList()	// premier mois suivi (achats de biens anciens exclus)
 	val vById     = inData.accounts.associateBy { it.id }									// comptes par identifiant
 	val vExpenses = inData.categories.filter { it.kind == CategoryKind.EXPENSE }.map { it.id }.toSet()	// catégories de dépense
 	val vChecking = inData.accounts.filter { it.type == AccountType.CHECKING }				// comptes Courant

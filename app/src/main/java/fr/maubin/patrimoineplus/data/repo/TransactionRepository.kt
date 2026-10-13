@@ -9,6 +9,7 @@ import fr.maubin.patrimoineplus.data.db.toTradeEntities
 import fr.maubin.patrimoineplus.data.db.toEntity
 import fr.maubin.patrimoineplus.domain.calc.Ledger
 import fr.maubin.patrimoineplus.domain.calc.findOversold
+import fr.maubin.patrimoineplus.domain.calc.orphanedSale
 import fr.maubin.patrimoineplus.domain.calc.tradedPairs
 import fr.maubin.patrimoineplus.domain.model.Asset
 import fr.maubin.patrimoineplus.domain.model.Transaction
@@ -72,8 +73,8 @@ class TransactionRepository @Inject constructor(
 
 	/*
 		Supprime des opérations (unitaire ou multiple), sauf si cela rend une
-		vente impossible (titres plus détenus à sa date) : rien n'est alors
-		supprimé.
+		vente impossible (titres plus détenus à sa date) ou laisse la vente
+		d'un bien sans son achat : rien n'est alors supprimé.
 		inIds : identifiants
 		Retour : null si supprimées ; sinon le motif du refus
 	*/
@@ -85,6 +86,9 @@ class TransactionRepository @Inject constructor(
 			if (vSale != null)
 			{
 				return@withTransaction ValidationError.BreaksLaterSale(vSale.transaction.label, vSale.transaction.date).message
+			}
+			orphanedSale(vAll - vRemoved.toSet())?.let { inOrphan ->
+				return@withTransaction ValidationError.SaleWithoutPurchase(inOrphan.label).message
 			}
 			fDao.deleteByIds(inIds)
 			null

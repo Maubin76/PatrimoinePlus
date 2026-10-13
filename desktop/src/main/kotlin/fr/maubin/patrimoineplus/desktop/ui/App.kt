@@ -97,7 +97,9 @@ import java.nio.file.Path
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Locale
+import java.util.Locale
+import fr.maubin.patrimoineplus.desktop.ui.panels.PurchasePanel
+import fr.maubin.patrimoineplus.desktop.ui.panels.SalePanel
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -234,6 +236,8 @@ private fun Shell(
 						is Panel.Prices          -> PricesPanel(inController, inPanel.accountId)
 						is Panel.OpeningPosition -> OpeningPositionPanel(inController, inPanel.accountId)
 						is Panel.AssetSheet      -> AssetPanel(inController, inPanel.assetId)
+						is Panel.Purchase        -> PurchasePanel(inController, inPanel.form)
+						is Panel.Sale            -> SalePanel(inController, inPanel.form)
 					}
 				}
 			}

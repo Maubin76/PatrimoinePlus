@@ -211,7 +211,7 @@ fun allocationColor(inRank: Int): Color =
 
 /*
 	Teinte d'un type de compte (répartitions par type) : courant, épargne,
-	bourse, du plus foncé au plus clair.
+	bourse, immobilier, collection, du plus foncé au plus clair.
 	inType : type de compte
 */
 @Composable
@@ -221,4 +221,6 @@ fun typeColor(inType: AccountType): Color =
 		AccountType.CHECKING  -> MaterialTheme.colorScheme.onSurface
 		AccountType.SAVINGS   -> MaterialTheme.colorScheme.secondary
 		AccountType.BROKERAGE -> MaterialTheme.colorScheme.tertiary
+		AccountType.REAL_ESTATE -> MaterialTheme.colorScheme.onSurfaceVariant
+		AccountType.COLLECTIBLE -> MaterialTheme.colorScheme.outline
 	}

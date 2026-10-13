@@ -158,7 +158,9 @@ class DesktopEditingTest
 		val vApp = demoApp()														// contrôleur
 		fCompose.onNodeWithText("Ajouter un compte").performScrollTo().performClick()
 		type("Nom", "Livret jeune")
-		fCompose.onAllNodesWithText("Épargne").onLast().performClick()		// choix du panneau (la répartition affiche aussi « Épargne »)
+		fCompose.onNodeWithText("Type").performClick()								// liste des types du panneau
+		fCompose.waitForIdle()
+		fCompose.onNodeWithText("Épargne (livret)").performClick()
 		type("Solde initial (€)", "1 600")
 		fCompose.onNodeWithText("Enregistrer").performClick()
 		fCompose.waitForIdle()

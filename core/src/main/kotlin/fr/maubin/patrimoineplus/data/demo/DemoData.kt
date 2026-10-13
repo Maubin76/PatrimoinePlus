@@ -34,6 +34,8 @@ fun buildDemoData(inToday: LocalDate): DataSet
 	val vLivretA = Account(newId(), "Livret A", AccountType.SAVINGS, "Banque démo", 100, 2)			// livret A
 	val vLdds    = Account(newId(), "LDDS", AccountType.SAVINGS, "Banque démo", 100, 3)				// LDDS
 	val vPea     = Account(newId(), "PEA", AccountType.BROKERAGE, "Courtier démo", 100, 4)			// PEA
+	val vHome    = Account(newId(), "Résidence principale", AccountType.REAL_ESTATE, null, 50, 5)	// immobilier, détenu à moitié
+	val vObjects = Account(newId(), "Collection", AccountType.COLLECTIBLE, null, 100, 6)			// objets de collection
 	val vCats    = DefaultCatalog.categories()								// catégories
 	val vWorld   = Asset(newId(), "ETF Monde (démo)")							// premier actif
 	val vUs      = Asset(newId(), "ETF États-Unis (démo)")						// second actif
@@ -137,12 +139,39 @@ fun buildDemoData(inToday: LocalDate): DataSet
 			vPrices += AssetPrice(newId(), vUs.id, vEnd, vUsPrice + 30_000)
 		}
 	}
+	/*
+		Ajoute l'achat d'un bien si sa date n'est pas future.
+		inDate    : date
+		inAccount : compte de biens
+		inName    : nom du bien
+		inCents   : prix d'achat
+		inPayer   : compte payeur ; null pour un bien déjà possédé
+		Retour : l'achat ; null s'il est futur
+	*/
+	fun acquire(inDate: LocalDate, inAccount: Account, inName: String, inCents: Long, inPayer: Account?): Transaction?
+	{
+		if (inDate.isAfter(inToday)) return null
+		return Transaction(newId(), inDate, TransactionKind.ACQUISITION, inName,
+			postings = listOfNotNull(inPayer?.let { Posting(newId(), it.id, -inCents) }, Posting(newId(), inAccount.id, inCents))).also { vOps += it }
+	}
+
+	acquire(vStart, vHome, "Appartement (démo)", 24_000_000, null)
+	acquire(vStart, vObjects, "Lithographie", 180_000, null)
+	acquire(vStart.plusMonths(3).plusDays(7), vObjects, "Montre de collection", 420_000, vCourant)
+	acquire(vStart, vObjects, "Vinyles des années 70", 60_000, null)?.let { inVinyls ->
+		val vSold = vStart.plusMonths(4).plusDays(19)											// vente des vinyles
+		if (!vSold.isAfter(inToday))
+		{
+			vOps += Transaction(newId(), vSold, TransactionKind.DISPOSAL, inVinyls.label,
+				postings = listOf(Posting(newId(), vCourant.id, 85_000), Posting(newId(), vObjects.id, -60_000)), linkedId = inVinyls.id)
+		}
+	}
 	vOps += Transaction(newId(), inToday.plusDays(5), TransactionKind.STANDARD, "Loyer (à venir)", cat("Logement"),
 		postings = listOf(Posting(newId(), vCourant.id, -95_000)))
 
 	val vStatement = AccountStatement(newId(), vLivretA.id, inToday.withDayOfMonth(1).minusDays(1),
 		1_200_000 + 30_000L * (kMonths - 1) + 3_820)							// relevé avec 38,20 € d'intérêts non saisis
-	return DataSet(listOf(vCourant, vJoint, vLivretA, vLdds, vPea), vCats, listOf(vWorld, vUs), vOps, vPrices, listOf(vStatement))
+	return DataSet(listOf(vCourant, vJoint, vLivretA, vLdds, vPea, vHome, vObjects), vCats, listOf(vWorld, vUs), vOps, vPrices, listOf(vStatement))
 }
 
 /*

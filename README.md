@@ -183,13 +183,25 @@ dans `app/build/outputs/roborazzi/`.
 Détail complet : [`doc/SPEC.md` § 2](doc/SPEC.md#2-modèle-de-données).
 
 - **Base Room** (`data/db`), seule source de données, schéma exporté dans
-  `app/schemas` (version 1). Tables : `account`, `category`, `asset`, `txn`
+  `app/schemas` (version 3 ; migrations automatiques 1 → 2 → 3). Tables : `account`, `category`, `asset`, `txn`
   (opérations), `posting` (jambes), `trade` (ordres), `account_statement`
   (relevés), `asset_price` (cours). Aucun solde ni total stocké.
-- **Comptes** créés dans l'application, trois types : Courant, Épargne, Bourse ;
-  établissement et part détenue (compte joint) facultatifs.
+- **Comptes** créés dans l'application, cinq types : Courant, Épargne, Bourse,
+  et deux comptes de biens, **Immobilier** et **Collection** (objets de
+  collection) ; établissement et part détenue (compte joint, indivision)
+  facultatifs.
 - **Opérations à jambes** : dépense ou revenu (1 jambe), virement (2 jambes de
-  somme nulle), ordre de bourse (1 jambe + 1 ordre), solde initial.
+  somme nulle), ordre de bourse (1 jambe + 1 ordre), solde initial, **achat
+  d'un bien** (jambe du compte de biens, et du compte payeur s'il a été payé
+  depuis un compte) et **vente d'un bien** (liée à son achat par `linkedId` :
+  sortie au prix d'achat, prix de vente versé sur un compte ou non).
+- **Comptes de biens** : pas un vrai compte en banque ; ils ne reçoivent que
+  des achats et des ventes de biens et valent le **prix d'achat des biens
+  détenus** (part détenue appliquée au patrimoine). Un achat payé depuis un
+  compte ne change pas le patrimoine ; une vente y fait apparaître la plus-
+  ou moins-value. Saisie sur le téléphone (vue du compte : « Ajouter »,
+  « Vendre ») comme sur le PC (page du compte, panneaux d'achat et de vente).
+  Les projections les gardent stables ; l'analyse des dépenses les ignore.
 - **Montants** en centimes ; quantités et cours en dix-millièmes.
 - **Dépôts** (`data/repo`) : toute opération passe par `TransactionValidator`
   avant d'atteindre la base ; suppression d'un compte (simple, archivage ou
@@ -217,7 +229,8 @@ direct entre téléphones reste possible.
   Fichiers **non chiffrés**, lisibles par toute appli ayant accès aux fichiers.
 - **Classeur** (`data/backup/BackupWorkbook.kt`, écrit et lu sans
   bibliothèque par `data/backup/xlsx/`) : un onglet par type de compte
-  (Courant, Épargne, Bourse : une ligne par mouvement sur un compte, ordres
+  (Courant, Épargne, Bourse, Immobilier, Collection : une ligne par mouvement
+  sur un compte, ordres
   de bourse détaillés), puis Comptes, Catégories, Actifs, Cours, Relevés et
   Fichier (signature, version). En-têtes figés et filtrables, dates et
   montants en vrais nombres, négatifs en rouge. Les identifiants sont dans des

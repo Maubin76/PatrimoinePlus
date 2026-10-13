@@ -62,7 +62,8 @@ fun BackupFile.toDataSet(): DataSet =
 				assetId    = inTx.assetId,
 				notes      = inTx.notes,
 				postings   = inTx.postings.map { Posting(it.id, it.accountId, it.amountCents) },
-				trades     = inTx.trades.map { Trade(it.id, it.assetId, TradeSide.valueOf(it.side), it.quantity, it.unitPrice, it.feesCents) }
+				trades     = inTx.trades.map { Trade(it.id, it.assetId, TradeSide.valueOf(it.side), it.quantity, it.unitPrice, it.feesCents) },
+				linkedId   = inTx.linkedId
 			)
 		},
 		prices       = prices.map { AssetPrice(it.id, it.assetId, LocalDate.parse(it.date), it.unitPrice) },

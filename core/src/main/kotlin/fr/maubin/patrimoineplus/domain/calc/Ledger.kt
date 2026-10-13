@@ -21,7 +21,7 @@ import java.time.YearMonth
 	expenses  : dépenses nettes (opérations STANDARD négatives, diminuées des
 	            remboursements : montants positifs d'une catégorie de dépense)
 	savings   : virements nets entre un compte Courant et un compte Épargne ou Bourse
-	transfers : autres virements nets
+	transfers : autres virements nets, achats et ventes de biens
 	trades    : mouvements d'espèces des ordres de bourse
 	openings  : soldes initiaux saisis dans le mois
 */
@@ -50,8 +50,8 @@ data class CategoryLine(
 )
 
 /*
-	Rang d'une opération dans sa journée : soldes initiaux, puis achats,
-	puis le reste, puis ventes. Un achat et une vente du même jour se
+	Rang d'une opération dans sa journée : soldes initiaux, puis achats
+	(titres, biens), puis le reste, puis ventes. Un achat et une vente du même jour se
 	traitent donc toujours dans cet ordre, quel que soit l'ordre de saisie ou
 	du fichier (quantités détenues, PRU, plus-values).
 	inTx : opération
@@ -60,6 +60,8 @@ internal fun dayRank(inTx: Transaction): Int =
 	when
 	{
 		inTx.kind == TransactionKind.OPENING            -> 0
+		inTx.kind == TransactionKind.ACQUISITION        -> 1
+		inTx.kind == TransactionKind.DISPOSAL           -> 3
 		inTx.trades.any { it.side == TradeSide.BUY }  -> 1
 		inTx.trades.any { it.side == TradeSide.SELL } -> 3
 		else                                          -> 2
@@ -125,6 +127,7 @@ class Ledger(inTransactions: List<Transaction>)
 						TransactionKind.STANDARD -> if (vAmount < 0 || inTx.categoryId in inExpenseIds) vExpenses += vAmount else vIncome += vAmount
 						TransactionKind.TRADE    -> vTrades += vAmount
 						TransactionKind.OPENING  -> vOpenings += vAmount
+						TransactionKind.ACQUISITION, TransactionKind.DISPOSAL -> vTransfers += vAmount
 						TransactionKind.TRANSFER ->
 						{
 							val vOther = inTx.postings.firstOrNull { it.accountId != inAccount.id }	// jambe opposée

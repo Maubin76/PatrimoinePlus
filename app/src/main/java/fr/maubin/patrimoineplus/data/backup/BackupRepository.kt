@@ -48,7 +48,8 @@ class BackupRepository @Inject constructor(
 					TransactionDto(
 						vHead.id, vHead.date.toString(), vHead.kind, vHead.label, vHead.categoryId, vHead.assetId, vHead.notes, vHead.createdAt, vHead.updatedAt,
 						inTx.postings.map { PostingDto(it.id, it.accountId, it.amountCents) },
-						inTx.trades.map { TradeDto(it.id, it.assetId, it.side, it.quantity, it.unitPrice, it.feesCents) }
+						inTx.trades.map { TradeDto(it.id, it.assetId, it.side, it.quantity, it.unitPrice, it.feesCents) },
+						vHead.linkedId
 					)
 				},
 				statements   = fDao.statements().map { StatementDto(it.id, it.accountId, it.date.toString(), it.balanceCents) },
@@ -67,7 +68,7 @@ class BackupRepository @Inject constructor(
 			fDao.insertAccounts(inFile.accounts.map { AccountEntity(it.id, it.name, it.type, it.institution, it.sharePercent, it.sortOrder, it.archived, it.createdAt, it.updatedAt) })
 			inDb.categoryDao().insertAll(inFile.categories.map { CategoryEntity(it.id, it.name, it.icon, it.kind, it.sortOrder, it.archived, it.createdAt, it.updatedAt) })
 			inDb.assetDao().insertAll(inFile.assets.map { AssetEntity(it.id, it.name, it.isin, it.archived, it.createdAt, it.updatedAt, it.ticker) })
-			fDao.insertTransactions(inFile.transactions.map { TransactionEntity(it.id, LocalDate.parse(it.date), it.kind, it.label, it.categoryId, it.assetId, it.notes, it.createdAt, it.updatedAt) })
+			fDao.insertTransactions(inFile.transactions.map { TransactionEntity(it.id, LocalDate.parse(it.date), it.kind, it.label, it.categoryId, it.assetId, it.notes, it.createdAt, it.updatedAt, it.linkedId) })
 			inDb.transactionDao().insertPostings(inFile.transactions.flatMap { inTx -> inTx.postings.map { PostingEntity(it.id, inTx.id, it.accountId, it.amountCents) } })
 			inDb.transactionDao().insertTrades(inFile.transactions.flatMap { inTx -> inTx.trades.map { TradeEntity(it.id, inTx.id, it.assetId, it.side, it.quantity, it.unitPrice, it.feesCents) } })
 			fDao.insertStatements(inFile.statements.map { AccountStatementEntity(it.id, it.accountId, LocalDate.parse(it.date), it.balanceCents) })

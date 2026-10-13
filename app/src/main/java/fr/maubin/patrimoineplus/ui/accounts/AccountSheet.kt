@@ -25,6 +25,7 @@ import fr.maubin.patrimoineplus.ui.components.DateInput
 import fr.maubin.patrimoineplus.ui.components.FormSheet
 import fr.maubin.patrimoineplus.ui.components.SegmentedChoice
 import fr.maubin.patrimoineplus.ui.components.TextInput
+import fr.maubin.patrimoineplus.ui.components.Picker
 
 /*
 	Feuille de création ou de modification d'un compte : nom, type,
@@ -53,13 +54,14 @@ fun AccountSheet(
 	var vErrors by remember { mutableStateOf(AccountFormErrors()) }			// erreurs affichées
 	FormSheet(inTitle = if (inEditing == null) "Nouveau compte" else "Modifier le compte", inOnDismiss = inOnDismiss) {
 		TextInput(vForm.name, { vForm = vForm.copy(name = it) }, "Nom", vErrors.name)
-		SegmentedChoice(
-			inOptions  = AccountType.entries,
-			inSelected = vForm.type,
-			inLabel    = { it.label },
-			inOnSelect = { vForm = vForm.copy(type = it) },
-			inEnabled  = !inTypeLocked
-		)
+		if (inTypeLocked)
+		{
+			Text("Type : ${accountTypeChoice(vForm.type)}", style = MaterialTheme.typography.bodyLarge)
+		}
+		else
+		{
+			Picker("Type", AccountType.entries.map { it.name as String? to accountTypeChoice(it) }, vForm.type.name, null) { inName -> inName?.let { vForm = vForm.copy(type = AccountType.valueOf(it)) } }
+		}
 		if (inTypeLocked)
 		{
 			Text(
@@ -68,7 +70,7 @@ fun AccountSheet(
 				color = MaterialTheme.colorScheme.onSurfaceVariant
 			)
 		}
-		TextInput(vForm.institution, { vForm = vForm.copy(institution = it) }, "Établissement (facultatif)")
+		TextInput(vForm.institution, { vForm = vForm.copy(institution = it) }, if (vForm.type.isProperty) "Description (facultatif)" else "Établissement (facultatif)")
 		OutlinedTextField(
 			value           = vForm.share,
 			onValueChange   = { inText -> vForm = vForm.copy(share = inText.filter { it.isDigit() }.take(3)) },
@@ -76,18 +78,29 @@ fun AccountSheet(
 			suffix          = { Text("%") },
 			singleLine      = true,
 			isError         = vErrors.share != null,
-			supportingText  = { Text(vErrors.share ?: "50 % pour un compte joint : seule votre part compte dans le patrimoine.") },
+			supportingText  = { Text(vErrors.share ?: if (vForm.type.isProperty) "50 % pour des biens détenus à deux : seule votre part compte dans le patrimoine." else "50 % pour un compte joint : seule votre part compte dans le patrimoine.") },
 			keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
 			modifier        = Modifier.fillMaxWidth()
 		)
-		AmountInput(
-			inValue    = vForm.opening,
-			inOnChange = { vForm = vForm.copy(opening = it) },
-			inLabel    = if (vForm.type == AccountType.BROKERAGE) "Espèces au départ" else "Solde initial",
-			inError    = vErrors.opening,
-			inSupport  = if (vForm.type == AccountType.BROKERAGE) "Les positions initiales se saisiront avec les actifs (étape 5)." else "Le solde lu dans l’appli de la banque ; un signe moins pour un découvert."
-		)
-		DateInput(vForm.openingDate, { vForm = vForm.copy(openingDate = it) }, "Date du solde initial")
+		if (vForm.type.isProperty)
+		{
+			Text(
+				text  = "Pas de solde initial : ajoutez ensuite chaque bien depuis la page du compte, avec son prix d’achat. Le compte vaut le prix d’achat des biens détenus.",
+				style = MaterialTheme.typography.bodyMedium,
+				color = MaterialTheme.colorScheme.onSurfaceVariant
+			)
+		}
+		else
+		{
+			AmountInput(
+				inValue    = vForm.opening,
+				inOnChange = { vForm = vForm.copy(opening = it) },
+				inLabel    = if (vForm.type == AccountType.BROKERAGE) "Espèces au départ" else "Solde initial",
+				inError    = vErrors.opening,
+				inSupport  = if (vForm.type == AccountType.BROKERAGE) "Les positions initiales se saisiront avec les actifs (étape 5)." else "Le solde lu dans l’appli de la banque ; un signe moins pour un découvert."
+			)
+			DateInput(vForm.openingDate, { vForm = vForm.copy(openingDate = it) }, "Date du solde initial")
+		}
 		vErrors.general?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
 		Button(
 			onClick        = { inOnSave(vForm) { vErrors = it } },
@@ -105,3 +118,17 @@ fun AccountSheet(
 		}
 	}
 }
+
+/*
+	Libellé d'un type dans la liste des types de compte.
+	inType : type
+*/
+fun accountTypeChoice(inType: AccountType): String =
+	when (inType)
+	{
+		AccountType.CHECKING    -> "Courant"
+		AccountType.SAVINGS     -> "Épargne (livret)"
+		AccountType.BROKERAGE   -> "Bourse (PEA, compte-titres)"
+		AccountType.REAL_ESTATE -> "Biens immobiliers"
+		AccountType.COLLECTIBLE -> "Objets de collection"
+	}

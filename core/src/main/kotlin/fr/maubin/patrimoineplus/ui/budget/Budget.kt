@@ -117,6 +117,7 @@ data class BudgetView(
 	Compare chaque ligne au réel d'un mois : entrées et dépenses par leur
 	catégorie (tous comptes, remboursements déduits), investissements par
 	les versements reçus sur leur compte (virements entrants moins sortants,
+	achats de biens pour un compte Immobilier ou Collection,
 	opérations à venir comprises dans le mois). Fonction pure.
 	inBudget : budget
 	inData   : données
@@ -140,7 +141,7 @@ fun compareBudget(
 				vSign * vMonthTxs.filter { it.kind == TransactionKind.STANDARD && it.categoryId == inLine.categoryId }.sumOf { inTx -> inTx.postings.sumOf { it.amountCents } }
 			}
 			inLine.section == BudgetSection.INVESTMENT && inLine.accountId != null ->
-				vMonthTxs.filter { it.kind == TransactionKind.TRANSFER }.sumOf { inTx -> inTx.postings.filter { it.accountId == inLine.accountId }.sumOf { it.amountCents } }
+				vMonthTxs.filter { it.kind == TransactionKind.TRANSFER || it.kind == TransactionKind.ACQUISITION }.sumOf { inTx -> inTx.postings.filter { it.accountId == inLine.accountId }.sumOf { it.amountCents } }
 			else -> null
 		}
 	}																				// réel d'une ligne

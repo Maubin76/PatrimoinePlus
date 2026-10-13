@@ -35,6 +35,7 @@ object CategoryIcons
 		"chart" to lineIcon("chart", "M4 4 V20 H20", "M7 15 L11 11 L14 13 L19 7"),
 		"undo" to lineIcon("undo", "M9 14 L4 9 L9 4", "M4 9 H15 A5 5 0 0 1 15 19 H11"),
 		"plus" to lineIcon("plus", "M12 5 V19", "M5 12 H19"),
+		"gem" to lineIcon("gem", "M7 4 H17 L21 9 L12 20 L3 9 Z", "M3 9 H21", "M10 4 L8 9 L12 20 L16 9 L14 4"),
 		"dots" to lineIcon("dots", circle(6f, 12f, 1.2f), circle(12f, 12f, 1.2f), circle(18f, 12f, 1.2f))
 	)
 
@@ -46,7 +47,7 @@ object CategoryIcons
 		"plane" to "Avion", "health" to "Croix médicale", "sport" to "Haltère", "ticket" to "Billet", "bag" to "Sac",
 		"repeat" to "Abonnement", "bolt" to "Éclair", "phone" to "Téléphone", "book" to "Livre", "paw" to "Patte",
 		"gift" to "Cadeau", "bank" to "Banque", "work" to "Mallette", "percent" to "Pourcentage", "chart" to "Courbe",
-		"undo" to "Retour", "plus" to "Plus", "dots" to "Divers"
+		"undo" to "Retour", "plus" to "Plus", "gem" to "Pierre précieuse", "dots" to "Divers"
 	)
 
 	// Clés disponibles, dans l'ordre de la grille de choix.

@@ -79,7 +79,7 @@ class EntryLogicTest
 	@Test
 	fun editThenBuildIsIdentity()
 	{
-		val vTxs = kDemo.transactions.filter { it.kind != TransactionKind.OPENING }	// opérations modifiables
+		val vTxs = kDemo.transactions.filter { it.kind != TransactionKind.OPENING && it.kind != TransactionKind.ACQUISITION && it.kind != TransactionKind.DISPOSAL }	// opérations modifiables (les biens ont leur propre saisie)
 		assertTrue(vTxs.any { it.kind == TransactionKind.TRANSFER } && vTxs.any { it.kind == TransactionKind.TRADE })
 		vTxs.forEach { inTx ->
 			val vForm = editEntryForm(inTx, kDemo.categories)						// formulaire

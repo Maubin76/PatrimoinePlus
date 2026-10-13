@@ -97,6 +97,41 @@ sealed class ValidationError(val message: String)
 
 	// Une position initiale doit être un achat.
 	data object OpeningMustBuy : ValidationError("Une position initiale se saisit comme un achat.")
+
+	// Opération ordinaire sur un compte de biens.
+	data object PropertyOnly : ValidationError("Un compte Immobilier ou Collection ne reçoit que des achats et des ventes de biens.")
+
+	// Achat ou vente d'un bien hors d'un compte de biens, ou payé par un autre compte de biens.
+	data object NotProperty : ValidationError("Un bien s'enregistre sur un compte Immobilier ou Collection, et se paie depuis un autre compte.")
+
+	// Prix d'achat nul, négatif, ou compte payeur débité d'un autre montant.
+	data object InvalidPurchase : ValidationError("Le prix d'achat doit être positif ; le compte payeur est débité de ce prix.")
+
+	// Vente sans achat connu.
+	data object MissingPurchase : ValidationError("Achat du bien introuvable.")
+
+	// Bien déjà vendu.
+	data object AlreadySold : ValidationError("Ce bien est déjà vendu.")
+
+	// Vente datée avant l'achat.
+	data object SaleBeforePurchase : ValidationError("La vente ne peut pas précéder l'achat.")
+
+	// Vente qui ne sort pas le bien de son compte pour son prix d'achat, ou prix de vente négatif.
+	data object InvalidSale : ValidationError("La vente sort le bien de son compte pour son prix d'achat ; le prix de vente est positif.")
+
+	/*
+		Achat modifié qui ne correspond plus à sa vente (compte, prix, date).
+		date : date de la vente
+	*/
+	data class SoldPurchase(val date: LocalDate) :
+		ValidationError("Ce bien a été vendu le ${date.format(kShortDate)} : modifiez ou supprimez d'abord sa vente.")
+
+	/*
+		Suppression d'un achat sans sa vente.
+		label : bien vendu
+	*/
+	data class SaleWithoutPurchase(val label: String) :
+		ValidationError("« $label » a été vendu : supprimez aussi sa vente.")
 }
 
 /*
@@ -140,6 +175,12 @@ class TransactionValidator(
 			TransactionKind.TRANSFER -> checkTransfer(inTx, vErrors)
 			TransactionKind.TRADE    -> checkTrade(inTx, inOtherLedger, vErrors)
 			TransactionKind.OPENING  -> checkOpening(inTx, vErrors)
+			TransactionKind.ACQUISITION -> checkAcquisition(inTx, inOtherLedger, vErrors)
+			TransactionKind.DISPOSAL    -> checkDisposal(inTx, inOtherLedger, vErrors)
+		}
+		if (inTx.kind != TransactionKind.ACQUISITION && inTx.kind != TransactionKind.DISPOSAL && inTx.postings.any { isProperty(it.accountId) })
+		{
+			vErrors += ValidationError.PropertyOnly
 		}
 		if (vErrors.isEmpty() && (inTx.trades.isNotEmpty() || inReplaced?.trades?.isNotEmpty() == true))
 		{
@@ -288,6 +329,92 @@ class TransactionValidator(
 			checkTradeValues(inTrade.assetId, inTrade.quantity, inTrade.unitPrice, inTrade.feesCents, inErrors)
 		}
 	}
+
+	/*
+		Achat d'un bien : une jambe positive (le prix) sur un compte de biens,
+		et la jambe du compte payeur (hors comptes de biens), débité du même
+		prix, s'il y en a un ; ni catégorie, ni ordre, ni opération liée. Un
+		bien déjà vendu garde son compte, son prix, et une date d'achat
+		antérieure à la vente.
+		inTx          : opération
+		inOtherLedger : autres opérations (ventes)
+		inErrors      : violations, complétées
+	*/
+	private fun checkAcquisition(
+		inTx          : Transaction,
+		inOtherLedger : Ledger,
+		inErrors      : MutableList<ValidationError>
+	)
+	{
+		checkNoCategory(inTx, inErrors)
+		if (inTx.trades.isNotEmpty()) inErrors += ValidationError.UnexpectedTrade
+		val vLegs = inTx.postings.filter { isProperty(it.accountId) }				// jambes sur un compte de biens
+		val vPay  = inTx.postings.filterNot { isProperty(it.accountId) }			// jambes de paiement
+		if (inTx.postings.size !in 1..2 || vLegs.size != 1 || inTx.linkedId != null)
+		{
+			inErrors += ValidationError.NotProperty
+			return
+		}
+		val vCost = vLegs.single().amountCents										// prix d'achat
+		if (vCost <= 0 || vPay.any { it.amountCents != -vCost })
+		{
+			inErrors += ValidationError.InvalidPurchase
+		}
+		inOtherLedger.transactions().firstOrNull { it.kind == TransactionKind.DISPOSAL && it.linkedId == inTx.id }?.let { inSale ->
+			val vOut = inSale.postings.firstOrNull { isProperty(it.accountId) }	// sortie du bien
+			if (vOut?.accountId != vLegs.single().accountId || vOut.amountCents != -vCost || inSale.date.isBefore(inTx.date))
+			{
+				inErrors += ValidationError.SoldPurchase(inSale.date)
+			}
+		}
+	}
+
+	/*
+		Vente d'un bien : liée à un achat connu, pas encore vendu, d'une date
+		au moins égale ; une jambe sort le bien de son compte pour son prix
+		d'achat, une autre (facultative, hors comptes de biens) reçoit le prix
+		de vente, positif ; ni catégorie, ni ordre.
+		inTx          : opération
+		inOtherLedger : autres opérations (achat, autres ventes)
+		inErrors      : violations, complétées
+	*/
+	private fun checkDisposal(
+		inTx          : Transaction,
+		inOtherLedger : Ledger,
+		inErrors      : MutableList<ValidationError>
+	)
+	{
+		checkNoCategory(inTx, inErrors)
+		if (inTx.trades.isNotEmpty()) inErrors += ValidationError.UnexpectedTrade
+		val vOthers   = inOtherLedger.transactions()										// autres opérations
+		val vPurchase = vOthers.firstOrNull { it.id == inTx.linkedId && it.kind == TransactionKind.ACQUISITION }	// achat vendu
+		if (vPurchase == null)
+		{
+			inErrors += ValidationError.MissingPurchase
+			return
+		}
+		if (vOthers.any { it.kind == TransactionKind.DISPOSAL && it.linkedId == vPurchase.id })
+		{
+			inErrors += ValidationError.AlreadySold
+		}
+		if (inTx.date.isBefore(vPurchase.date))
+		{
+			inErrors += ValidationError.SaleBeforePurchase
+		}
+		val vBought = vPurchase.postings.first { isProperty(it.accountId) }				// entrée du bien
+		val vLegs   = inTx.postings.filter { isProperty(it.accountId) }					// sorties du bien
+		val vPaid   = inTx.postings.filterNot { isProperty(it.accountId) }				// versements du prix
+		if (inTx.postings.size !in 1..2 || vLegs.size != 1 || vLegs.single().accountId != vBought.accountId || vLegs.single().amountCents != -vBought.amountCents || vPaid.any { it.amountCents <= 0 })
+		{
+			inErrors += ValidationError.InvalidSale
+		}
+	}
+
+	/*
+		Vrai si le compte est un compte de biens (Immobilier, Collection).
+		inAccountId : compte
+	*/
+	private fun isProperty(inAccountId: String): Boolean = inAccounts[inAccountId]?.type?.isProperty == true
 
 	/*
 		Vérifie le nombre de jambes.

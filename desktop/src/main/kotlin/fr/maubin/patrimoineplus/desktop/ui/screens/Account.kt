@@ -60,12 +60,20 @@ import fr.maubin.patrimoineplus.ui.components.TileFigure
 import fr.maubin.patrimoineplus.ui.components.allocationColor
 import fr.maubin.patrimoineplus.ui.components.kAllocationSlots
 import fr.maubin.patrimoineplus.ui.components.monthTitle
-import fr.maubin.patrimoineplus.ui.entry.editEntryForm
 import fr.maubin.patrimoineplus.ui.home.accountDetail
 import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.material3.Button
+import fr.maubin.patrimoineplus.domain.calc.propertyItems
+import fr.maubin.patrimoineplus.domain.model.Account
+import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
+import fr.maubin.patrimoineplus.ui.property.editPurchaseForm
+import fr.maubin.patrimoineplus.ui.property.editSaleForm
+import fr.maubin.patrimoineplus.ui.property.newPurchaseForm
+import fr.maubin.patrimoineplus.ui.property.newSaleForm
+import fr.maubin.patrimoineplus.ui.property.propertyNoun
 
 private val kDayTitle = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANCE)	// en-tête d'un jour
 private val kShortDay = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date d'une opération
@@ -102,8 +110,7 @@ fun AccountScreen(
 		return
 	}
 	val vOpen: (OperationItem) -> Unit = { inItem ->
-		if (inItem.editable) inController.openPanel(Panel.Operation(editEntryForm(inItem.transaction, vData.categories)))
-		else inController.openPanel(Panel.AccountSheet(inAccountId))
+		inController.openTransaction(inItem.transaction)
 	}																				// ouvre une opération
 	Column(
 		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
@@ -123,6 +130,7 @@ fun AccountScreen(
 			AccountType.CHECKING  -> CheckingView(vState, vExtras, inController, vOpen)
 			AccountType.SAVINGS   -> SavingsView(vState, vExtras, inController, vOpen)
 			AccountType.BROKERAGE -> BrokerageView(vState, vExtras, inController, vOpen)
+			AccountType.REAL_ESTATE, AccountType.COLLECTIBLE -> PropertyView(vState, inSpace, inController, vAccount)
 		}
 	}
 }
@@ -243,6 +251,87 @@ private fun BrokerageView(
 	)
 	inState.account?.let { inAccount -> PositionsTile(vPortfolio, inExtras, inAccount.id, inController) }
 	OperationsTile(inState, inOnOpen)
+}
+
+/*
+	Compte Immobilier ou Collection : valeur au prix d'achat, nombre de biens
+	et plus-values des ventes en tuiles, puis courbe de la valeur, puis biens
+	détenus (ajout, modification, vente) et biens vendus.
+	inState      : état global (courbe)
+	inSpace      : données
+	inController : contrôleur
+	inAccount    : compte de biens
+*/
+@Composable
+private fun PropertyView(
+	inState      : AccountDetailState,
+	inSpace      : WorkspaceState,
+	inController : DesktopController,
+	inAccount    : Account
+)
+{
+	val vItems = remember(inSpace.data, inAccount.id) { propertyItems(inSpace.data.transactions, inSpace.data.accounts, inAccount.id) }	// biens du compte
+	val vToday = inSpace.today																// date du jour
+	val vSold  = vItems.filter { inItem -> inItem.disposal?.date?.isAfter(vToday) == false }	// biens vendus
+	val vHeld  = vItems - vSold.toSet()														// biens détenus (ou achetés plus tard)
+	val vNoun  = propertyNoun(inAccount.type)												// « bien » ou « objet »
+	val vNames = inSpace.data.accounts.associate { it.id to it.name }						// noms des comptes
+	val vMuted = MaterialTheme.colorScheme.onSurfaceVariant								// texte secondaire
+	val vValue = vHeld.filter { it.heldAt(vToday) }.sumOf { it.cost }						// valeur au prix d'achat
+	TileRow(
+		Cell(1.3f) { inMod -> Figure("Valeur au prix d’achat", vValue, inMod, inSigned = false, inStrong = true, inNote = if (inAccount.sharePercent < 100) "Comptée pour ${inAccount.sharePercent} % dans le patrimoine" else null) },
+		Cell(1f) { inMod -> Tile(inModifier = inMod) { TileFigure(if (vNoun == "bien") "Biens détenus" else "Objets détenus") { Text(vHeld.size.toString(), style = MaterialTheme.typography.titleLarge) } } },
+		Cell(1f) { inMod -> Figure("Plus-values des ventes", vSold.sumOf { it.gain ?: 0L }, inMod, inTrend = true) },
+		inMinWidth = 900.dp
+	)
+	ChartTile("Évolution de la valeur", inState.series, inState.series.lastOrNull()?.month, Modifier.fillMaxWidth())
+	Tile(
+		inTitle  = if (vNoun == "bien") "Biens détenus" else "Objets détenus",
+		inAction = { Button(onClick = { inController.openPanel(Panel.Purchase(newPurchaseForm(inAccount.id, vToday))) }) { Text("Ajouter un $vNoun") } }
+	) {
+		if (vHeld.isEmpty()) Hint("Aucun $vNoun : ajoutez-en un avec son prix d’achat. Payé depuis un compte, il en débite le prix ; déjà possédé, il n’en débite aucun.")
+		vHeld.forEach { inItem ->
+			Row(
+				modifier          = Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(onClickLabel = "Modifier") { inController.openPanel(Panel.Purchase(editPurchaseForm(inItem))) }.padding(horizontal = 8.dp, vertical = 6.dp),
+				verticalAlignment = Alignment.CenterVertically
+			) {
+				Icon(CategoryIcons.of(if (inAccount.type == AccountType.REAL_ESTATE) "home" else "gem"), contentDescription = null, modifier = Modifier.size(20.dp))
+				Spacer(Modifier.width(14.dp))
+				Column(Modifier.weight(1f)) {
+					Text(inItem.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+					Text("Acheté le ${inItem.acquisition.date.format(kFullDay)} · " + (inItem.paidFrom?.let { "payé depuis ${vNames[it] ?: "un compte supprimé"}" } ?: "déjà possédé"), style = MaterialTheme.typography.bodyMedium, color = vMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+				}
+				AmountText(inCents = inItem.cost, inStyle = MaterialTheme.typography.bodyLarge)
+				Spacer(Modifier.width(16.dp))
+				OutlinedButton(onClick = { inController.openPanel(Panel.Sale(inItem.disposal?.let { editSaleForm(inItem) } ?: newSaleForm(inItem, vToday))) }) { Text(if (inItem.disposal != null) "Vente prévue" else "Vendre") }
+			}
+		}
+	}
+	if (vSold.isNotEmpty())
+	{
+		Tile(inTitle = if (vNoun == "bien") "Biens vendus" else "Objets vendus") {
+			Row(Modifier.fillMaxWidth().padding(vertical = 6.dp, horizontal = 8.dp)) {
+				listOf("Nom" to 2.4f, "Achat" to 1f, "Vente" to 1f, "Plus-value" to 1f).forEach { (inHead, inWeight) ->
+					Text(inHead, style = MaterialTheme.typography.labelLarge, color = vMuted, modifier = Modifier.weight(inWeight))
+				}
+			}
+			HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+			vSold.forEach { inItem ->
+				Row(
+					modifier          = Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(onClickLabel = "Modifier la vente") { inController.openPanel(Panel.Sale(editSaleForm(inItem))) }.padding(horizontal = 8.dp, vertical = 6.dp),
+					verticalAlignment = Alignment.CenterVertically
+				) {
+					Column(Modifier.weight(2.4f)) {
+						Text(inItem.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+						Text("Vendu le ${inItem.disposal!!.date.format(kFullDay)}" + (inItem.soldTo?.let { " · versé sur ${vNames[it] ?: "un compte supprimé"}" } ?: " · sans versement"), style = MaterialTheme.typography.bodyMedium, color = vMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+					}
+					AmountText(inCents = inItem.cost, inStyle = MaterialTheme.typography.bodyLarge, inModifier = Modifier.weight(1f))
+					AmountText(inCents = inItem.salePrice ?: 0L, inStyle = MaterialTheme.typography.bodyLarge, inModifier = Modifier.weight(1f))
+					AmountText(inCents = inItem.gain ?: 0L, inStyle = MaterialTheme.typography.bodyLarge, inShowPlusSign = true, inTrend = true, inModifier = Modifier.weight(1f))
+				}
+			}
+		}
+	}
 }
 
 /*

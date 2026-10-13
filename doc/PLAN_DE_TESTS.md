@@ -40,6 +40,7 @@ identifiant (A-03, C-12…) pour le retour.
 | A-12 | Réordonner (appui long, glisser), modifier, archiver, désarchiver un compte. | Ordre, nom, état conservés après redémarrage. |
 | A-13 | Supprimer un compte sans opération, puis un compte avec opérations (définitif). | Suppression simple ; définitive après double confirmation, virements supprimés des deux côtés. |
 | A-14 | Catégories : créer, renommer, réordonner, supprimer une catégorie utilisée en la réaffectant. | Opérations passées dans la catégorie de remplacement. |
+| A-15 | Créer un compte « Biens immobiliers » à 50 % et un compte « Objets de collection » ; ajouter un bien déjà possédé et un objet payé depuis le compte courant ; vendre un objet (prix versé sur le compte courant) ; annuler la vente ; supprimer un objet vendu. | Pas de champ « Solde initial » ; valeur au prix d'achat (bien compté pour moitié) ; l'achat débite le compte payeur sans changer le patrimoine ; la vente fait apparaître la plus-value ; annuler la vente rend l'objet détenu ; supprimer l'objet supprime aussi sa vente. Après synchronisation, mêmes biens sur le PC. |
 
 ### Saisie et vues
 
@@ -113,6 +114,7 @@ identifiant (A-03, C-12…) pour le retour.
 | C-05 | « Réorganiser », déplacer une tuile avec les flèches, « Terminer » ; relancer. | Nouvel ordre gardé, et retrouvé sur le téléphone après synchronisation. |
 | C-06 | Agrandir et réduire la fenêtre, ouvrir le panneau de saisie. | Les tuiles se réorganisent (plus ou moins de colonnes, empilées quand c'est étroit) ; rien de coupé. |
 | C-07 | Vue d'un compte Courant (mois par mois), d'un livret, d'un PEA (tableau des positions, répartition des titres). | Tuiles de chiffres, courbe, opérations ; mêmes valeurs que le téléphone. |
+| C-07b | Comptes de biens sur le PC : page d'un compte Immobilier et d'un compte Collection ; « Ajouter un objet », « Vendre », modifier un bien vendu, Ctrl+N depuis cette page ; créer un compte de biens (type dans la liste). | Tuiles valeur, nombre, plus-values ; panneaux d'achat et de vente (plus-value en direct) ; prix d'un bien vendu verrouillé avec un message ; la saisie d'opération ne propose pas les comptes de biens ; pas de solde initial pour ces types. Mêmes chiffres que le téléphone. |
 | C-08 | « Nouvelle opération » et Ctrl+N (fenêtre au premier plan, sans avoir cliqué dedans ; puis après avoir fermé un panneau). | Panneau à droite, compte affiché présélectionné ; formulaire vide à chaque fois ; Échap ferme. |
 | C-09 | Dans un champ, Entrée (et Entrée du pavé numérique) ; avec le focus sur « Supprimer » (Tab), Entrée. | Entrée dans un champ enregistre ; sur « Supprimer », c'est la suppression qui est demandée (avec confirmation). |
 | C-10 | Saisir dépense, remboursement, revenu, virement, ordre avec nouvel actif. Passer d'« Ordre » (actif choisi) à « Revenu ». | Mêmes résultats que sur le téléphone ; le revenu n'est pas rattaché à l'actif. |

@@ -52,7 +52,7 @@ fun accountTotals(
 			when (inTx.kind)
 			{
 				TransactionKind.OPENING  -> vOpening   += vAmount
-				TransactionKind.TRANSFER -> vTransfers += vAmount
+				TransactionKind.TRANSFER, TransactionKind.ACQUISITION, TransactionKind.DISPOSAL -> vTransfers += vAmount
 				TransactionKind.TRADE    -> vTrades    += vAmount
 				TransactionKind.STANDARD -> if (vAmount >= 0) vIncome += vAmount else vExpenses += vAmount
 			}

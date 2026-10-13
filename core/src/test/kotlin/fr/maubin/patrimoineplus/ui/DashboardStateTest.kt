@@ -42,6 +42,7 @@ class DashboardStateTest
 				AccountType.CHECKING  -> assertTrue(inTile.preview is TilePreview.Checking)
 				AccountType.SAVINGS   -> assertTrue(inTile.preview is TilePreview.Savings)
 				AccountType.BROKERAGE -> assertTrue(inTile.preview is TilePreview.Brokerage)
+				AccountType.REAL_ESTATE, AccountType.COLLECTIBLE -> assertTrue(inTile.preview is TilePreview.Property)
 			}
 		}
 		assertEquals(kState.home.totalCents, kState.home.groups.sumOf { it.subtotalCents })
@@ -66,6 +67,11 @@ class DashboardStateTest
 				is TilePreview.Brokerage -> if (vPreview.positions.isNotEmpty())
 				{
 					assertEquals(100, vPreview.positions.sumOf { it.second } + vPreview.others)
+				}
+				is TilePreview.Property  ->
+				{
+					assertTrue(vPreview.items.size <= kTileTopItems)
+					assertEquals(inTile.valueCents, vPreview.items.sumOf { it.second } + vPreview.others)	// biens détenus = valeur du compte
 				}
 				is TilePreview.Savings   ->
 				{

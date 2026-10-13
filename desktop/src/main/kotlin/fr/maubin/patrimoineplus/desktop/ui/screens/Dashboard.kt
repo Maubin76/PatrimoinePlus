@@ -339,6 +339,19 @@ private fun TilePreviewView(inPreview: TilePreview)
 				if (inPreview.others > 0) ShareLine("Autres", inPreview.others)
 			}
 		}
+		is TilePreview.Property  ->
+		{
+			if (inPreview.count == 0) Hint("Aucun bien détenu.")
+			inPreview.items.forEach { (inName, inCost) -> PreviewLine(inName, inCost, inSigned = false) }
+			if (inPreview.others > 0) PreviewLine("Autres (${inPreview.count - inPreview.items.size})", inPreview.others, inSigned = false)
+			if (inPreview.gains != 0L)
+			{
+				Row(Modifier.fillMaxWidth().heightIn(min = 28.dp), verticalAlignment = Alignment.CenterVertically) {
+					Text("Plus-values des ventes", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+					AmountText(inCents = inPreview.gains, inStyle = MaterialTheme.typography.bodyMedium, inShowPlusSign = true, inTrend = true)
+				}
+			}
+		}
 	}
 }
 
@@ -476,7 +489,7 @@ private fun RecentTile(
 				inTitle   = inOp.title,
 				inDetail  = "${inOp.transaction.date.format(kShortDay)} · ${inOp.detail}",
 				inCents   = inOp.amount,
-				inOnClick = { inController.openPanel(Panel.Operation(editEntryForm(inOp.transaction, inSpace.data.categories))) }
+				inOnClick = { inController.openTransaction(inOp.transaction) }
 			)
 		}
 	}

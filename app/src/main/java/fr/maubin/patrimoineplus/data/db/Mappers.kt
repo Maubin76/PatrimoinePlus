@@ -98,7 +98,8 @@ fun TransactionWithDetails.toDomain(): Transaction =
 		assetId    = transaction.assetId,
 		notes      = transaction.notes,
 		postings   = postings.map { Posting(it.id, it.accountId, it.amountCents) },
-		trades     = trades.map { Trade(it.id, it.assetId, TradeSide.valueOf(it.side), it.quantity, it.unitPrice, it.feesCents) }
+		trades     = trades.map { Trade(it.id, it.assetId, TradeSide.valueOf(it.side), it.quantity, it.unitPrice, it.feesCents) },
+		linkedId   = transaction.linkedId
 	)
 
 /*
@@ -110,7 +111,7 @@ fun Transaction.toHeaderEntity(
 	inCreatedAt : Long,
 	inUpdatedAt : Long
 ): TransactionEntity =
-	TransactionEntity(id, date, kind.name, label, categoryId, assetId, notes, inCreatedAt, inUpdatedAt)
+	TransactionEntity(id, date, kind.name, label, categoryId, assetId, notes, inCreatedAt, inUpdatedAt, linkedId)
 
 /*
 	Jambes d'une opération du domaine vers la base.

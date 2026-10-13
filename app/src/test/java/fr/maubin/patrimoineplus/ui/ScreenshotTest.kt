@@ -365,6 +365,18 @@ class ScreenshotTest
 	}
 
 	/*
+		Vue du compte Collection de démonstration : valeur au prix d'achat,
+		plus-value des ventes, objets détenus (« Vendre ») et vendus.
+	*/
+	@Test
+	@Config(qualifiers = "w360dp-h1800dp-xxhdpi")
+	fun collectionDetail() = captureRoboImage("$kOutDir/account-collection.png") {
+		PatrimoineTheme(inDarkTheme = false) {
+			AccountDetailContent(demoDetail(6), demoExtras(6), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
+		}
+	}
+
+	/*
 		Feuille de saisie en mode ordre (vente) : quantité détenue, montant calculé.
 	*/
 	@Test

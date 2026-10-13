@@ -461,7 +461,7 @@ class Workspace(private val inClock: Clock)
 			transactions = vDemo.transactions.map { inTx ->
 				fr.maubin.patrimoineplus.data.backup.TransactionDto(inTx.id, inTx.date.toString(), inTx.kind.name, inTx.label, inTx.categoryId, inTx.assetId, inTx.notes, vNow, vNow,
 					inTx.postings.map { fr.maubin.patrimoineplus.data.backup.PostingDto(it.id, it.accountId, it.amountCents) },
-					inTx.trades.map { fr.maubin.patrimoineplus.data.backup.TradeDto(it.id, it.assetId, it.side.name, it.quantity, it.unitPrice, it.feesCents) })
+					inTx.trades.map { fr.maubin.patrimoineplus.data.backup.TradeDto(it.id, it.assetId, it.side.name, it.quantity, it.unitPrice, it.feesCents) }, inTx.linkedId)
 			},
 			statements   = vDemo.statements.map { fr.maubin.patrimoineplus.data.backup.StatementDto(it.id, it.accountId, it.date.toString(), it.balanceCents) },
 			prices       = vDemo.prices.map { fr.maubin.patrimoineplus.data.backup.PriceDto(it.id, it.assetId, it.date.toString(), it.unitPrice) }

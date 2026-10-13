@@ -38,7 +38,8 @@ data class AnalysisRow(
 	totalIncome  : revenus de chaque mois
 	savingsRate  : taux d'épargne de chaque mois, en pour mille ((revenus − dépenses) / revenus) ; null sans revenu
 	rises        : catégories de dépense dont le dernier mois complet dépasse le plus la moyenne
-	firstIndex   : premier mois suivi (première opération) ; les moyennes partent de là
+	firstIndex   : premier mois suivi (première opération, hors achats et
+	               ventes de biens, souvent anciens) ; les moyennes partent de là
 */
 data class ExpenseAnalysis(
 	val months       : List<YearMonth>,
@@ -80,7 +81,7 @@ fun buildExpenseAnalysis(
 	val vIndex  = vMonths.withIndex().associate { it.value to it.index }				// rang de chaque mois
 	val vNet    = mutableMapOf<String, LongArray>()										// montant net par catégorie et par mois
 	val vByCat  = inData.categories.associateBy { it.id }								// catégories par identifiant
-	val vFirst  = inData.transactions.minOfOrNull { YearMonth.from(it.date) }?.let { inStart -> vIndex[inStart] ?: if (inStart.isBefore(vMonths.first())) 0 else vMonths.lastIndex } ?: vMonths.lastIndex	// premier mois suivi
+	val vFirst  = inData.transactions.filterNot { it.kind == TransactionKind.ACQUISITION || it.kind == TransactionKind.DISPOSAL }.minOfOrNull { YearMonth.from(it.date) }?.let { inStart -> vIndex[inStart] ?: if (inStart.isBefore(vMonths.first())) 0 else vMonths.lastIndex } ?: vMonths.lastIndex	// premier mois suivi
 	inData.transactions
 		.filter { it.kind == TransactionKind.STANDARD && !it.date.isAfter(inToday) && it.categoryId in vByCat }
 		.forEach { inTx ->

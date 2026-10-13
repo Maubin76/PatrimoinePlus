@@ -127,7 +127,7 @@ fun ReconcileScreen(
 							inTitle   = inTx.label,
 							inDetail  = inTx.date.format(kDay),
 							inCents   = inTx.postings.filter { it.accountId == inSession.accountId }.sumOf { it.amountCents },
-							inOnClick = { inController.openPanel(Panel.Operation(editEntryForm(inTx, inSpace.data.categories))) }
+							inOnClick = { inController.openTransaction(inTx) }
 						)
 					}
 				}

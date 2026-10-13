@@ -53,6 +53,7 @@ private const val kAccountId   = "ID compte"									// identifiant du compte
 private const val kCategoryId  = "ID catégorie"								// identifiant de la catégorie
 private const val kAssetId     = "ID actif"										// identifiant de l'actif
 private const val kLinkedAsset = "ID actif rattaché"							// actif rattaché à l'opération
+private const val kLinkedTx    = "ID opération liée"							// achat d'un bien vendu
 private const val kStatementId = "ID relevé"									// identifiant du relevé
 private const val kPriceId     = "ID cours"										// identifiant du cours
 private const val kSortOrder   = "Ordre"										// rang d'affichage
@@ -224,7 +225,7 @@ private fun operationColumns(inType: AccountType): List<Column> =
 	listOf(Column(kDate, 12.0), Column(kAccount, 22.0), Column(kLabel, 34.0), Column(kNature, 14.0), Column(kCategory, 20.0), Column(kAmount, 15.0)) +
 	(if (inType == AccountType.BROKERAGE) listOf(Column(kAsset, 26.0), Column(kSide, 8.0), Column(kQuantity, 11.0), Column(kPrice, 12.0), Column(kFees, 10.0)) else emptyList()) +
 	listOf(Column(kNotes, 30.0)) +
-	tech(kTxId, kPostingId, kTradeId, kAccountId, kCategoryId, kAssetId, kLinkedAsset, kCreated, kUpdated)
+	tech(kTxId, kPostingId, kTradeId, kAccountId, kCategoryId, kAssetId, kLinkedAsset, kLinkedTx, kCreated, kUpdated)
 
 /*
 	Ligne d'un onglet d'opérations : une jambe, un ordre, ou les deux fusionnés
@@ -253,6 +254,8 @@ private fun operationRow(
 		TransactionKind.TRANSFER -> "Virement"
 		TransactionKind.TRADE    -> "Ordre"
 		TransactionKind.OPENING  -> "Solde initial"
+		TransactionKind.ACQUISITION -> "Achat de bien"
+		TransactionKind.DISPOSAL    -> "Vente de bien"
 	}																			// nature lisible
 	val vCells = mutableListOf<Cell>(
 		Cell.Date(LocalDate.parse(inTx.date)),
@@ -275,7 +278,7 @@ private fun operationRow(
 	vCells += text(inTx.notes.orEmpty())
 	vCells += listOf(
 		techText(inTx.id), techText(inPosting?.id.orEmpty()), techText(inTrade?.id.orEmpty()), techText(inPosting?.accountId.orEmpty()),
-		techText(inTx.categoryId.orEmpty()), techText(inTrade?.assetId.orEmpty()), techText(inTx.assetId.orEmpty()),
+		techText(inTx.categoryId.orEmpty()), techText(inTrade?.assetId.orEmpty()), techText(inTx.assetId.orEmpty()), techText(inTx.linkedId.orEmpty()),
 		techNumber(inTx.createdAt), techNumber(inTx.updatedAt)
 	)
 	return vCells
@@ -301,6 +304,7 @@ internal fun backupFromSheets(inSheets: List<ReadSheet>): BackupFile
 	val vPostings = mutableMapOf<String, MutableList<PostingDto>>()			// jambes par opération
 	val vTrades   = mutableMapOf<String, MutableList<TradeDto>>()				// ordres par opération
 	AccountType.entries.forEach { inType ->
+		if (inType.isProperty && inType.label !in vByName) return@forEach		// classeur antérieur aux comptes de biens
 		val vSheet = sheet(inType.label)										// onglet du type
 		requireColumns(vSheet, kTxId, kDate, kLabel, kNature, kAmount, kPostingId, kAccountId)
 		vSheet.rows.forEach { inRow ->
@@ -314,6 +318,7 @@ internal fun backupFromSheets(inSheets: List<ReadSheet>): BackupFile
 					categoryId = inRow.opt(kCategoryId),
 					assetId    = inRow.opt(kLinkedAsset),
 					notes      = inRow.opt(kNotes),
+					linkedId   = inRow.opt(kLinkedTx),
 					createdAt  = inRow.opt(kCreated)?.let { decimal(it).toLong() } ?: 0L,
 					updatedAt  = inRow.opt(kUpdated)?.let { decimal(it).toLong() } ?: 0L
 				)
@@ -483,6 +488,8 @@ private fun natureKind(inText: String): String =
 		"virement", "transfer"          -> TransactionKind.TRANSFER.name
 		"ordre", "trade"                -> TransactionKind.TRADE.name
 		"solde initial", "opening"      -> TransactionKind.OPENING.name
+		"achat de bien", "acquisition"  -> TransactionKind.ACQUISITION.name
+		"vente de bien", "disposal"     -> TransactionKind.DISPOSAL.name
 		else                            -> throw WorkbookException("Nature d’opération inconnue : « $inText ».")
 	}
 

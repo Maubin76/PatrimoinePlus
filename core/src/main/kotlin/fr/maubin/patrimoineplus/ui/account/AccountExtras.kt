@@ -14,7 +14,9 @@ import fr.maubin.patrimoineplus.domain.model.AssetPrice
 import fr.maubin.patrimoineplus.domain.model.Trade
 import fr.maubin.patrimoineplus.domain.model.Transaction
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
-import java.time.LocalDate
+import java.time.LocalDate
+import fr.maubin.patrimoineplus.domain.calc.PropertyItem
+import fr.maubin.patrimoineplus.domain.calc.propertyItems
 
 /*
 	Relevé de la banque, avec l'écart au solde calculé.
@@ -57,17 +59,24 @@ data class PortfolioView(
 
 /*
 	Compléments de la vue d'un compte, indépendants du mois affiché : relevés
-	(Courant, Épargne) ou portefeuille et positions initiales (Bourse).
+	(Courant, Épargne), portefeuille et positions initiales (Bourse), ou biens
+	(Immobilier, Collection).
 	statements       : relevés, du plus récent au plus ancien
 	portfolio        : portefeuille ; null hors compte Bourse
 	openingPositions : positions initiales du compte Bourse
 	valueSeries      : valeur du compte Bourse en fin de mois, depuis son ouverture
+	properties       : biens d'un compte Immobilier ou Collection, du plus récent au plus ancien
+	accountNames     : noms des comptes (payeurs et bénéficiaires des biens)
+	asOf             : date de calcul (biens détenus ou vendus) ; null hors compte de biens
 */
 data class AccountExtras(
 	val statements       : List<StatementItem>       = emptyList(),
 	val portfolio        : PortfolioView?            = null,
 	val openingPositions : List<OpeningPositionItem> = emptyList(),
-	val valueSeries      : List<SeriesPoint>         = emptyList()
+	val valueSeries      : List<SeriesPoint>         = emptyList(),
+	val properties       : List<PropertyItem>        = emptyList(),
+	val accountNames     : Map<String, String>       = emptyMap(),
+	val asOf             : LocalDate?                = null
 )
 
 /*
@@ -93,6 +102,10 @@ fun buildAccountExtras(
 	val vAccount = inAccounts.firstOrNull { it.id == inAccountId } ?: return AccountExtras()	// compte affiché
 	val vLedger  = Ledger(inTransactions)										// grand livre
 	val vNames   = inAssets.associate { it.id to it.name }						// noms des actifs
+	if (vAccount.type.isProperty)
+	{
+		return AccountExtras(properties = propertyItems(inTransactions, inAccounts, inAccountId), accountNames = inAccounts.associate { it.id to it.name }, asOf = inToday)
+	}
 	if (vAccount.type != AccountType.BROKERAGE)
 	{
 		return AccountExtras(

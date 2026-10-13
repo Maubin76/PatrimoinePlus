@@ -87,8 +87,8 @@ fun defaultProjectionInput(
 }
 
 /*
-	Projette le patrimoine mois par mois : les comptes Courant restent
-	stables, l'épargne et la bourse capitalisent à leur rendement, l'épargne
+	Projette le patrimoine mois par mois : les comptes Courant et les biens
+	(immobilier, collection, à leur prix d'achat) restent stables, l'épargne et la bourse capitalisent à leur rendement, l'épargne
 	mensuelle est versée chaque mois selon la part en bourse. Trois
 	scénarios : rendements diminués, tels quels, augmentés. Ce n'est qu'une
 	estimation : rendements constants, sans impôts ni inflation.
@@ -104,7 +104,7 @@ fun projectWealth(
 {
 	val vWealth = wealthAt(inData.accounts, Ledger(inData.transactions), inToday, inData.prices)	// patrimoine actuel
 	val vTypes  = vWealth.byType														// par type
-	val vCash   = (vTypes[AccountType.CHECKING] ?: 0L).toDouble()						// comptes Courant
+	val vCash   = (vWealth.totalCents - (vTypes[AccountType.SAVINGS] ?: 0L) - (vTypes[AccountType.BROKERAGE] ?: 0L)).toDouble()	// comptes Courant et biens (immobilier, collection), stables
 	val vSaved  = (vTypes[AccountType.SAVINGS] ?: 0L).toDouble()						// épargne
 	val vStock  = (vTypes[AccountType.BROKERAGE] ?: 0L).toDouble()					// bourse
 	val vShare  = inInput.stockShare.coerceIn(0, 100) / 100.0							// part versée en bourse

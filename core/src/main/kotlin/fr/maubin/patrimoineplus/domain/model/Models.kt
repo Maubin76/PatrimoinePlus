@@ -13,7 +13,14 @@ enum class AccountType(val label: String)
 {
 	CHECKING("Courant"),
 	SAVINGS("Épargne"),
-	BROKERAGE("Bourse")
+	BROKERAGE("Bourse"),
+	REAL_ESTATE("Immobilier"),												// biens immobiliers, comptés à leur prix d'achat
+	COLLECTIBLE("Collection");												// objets de collection, comptés à leur prix d'achat
+
+	// Vrai pour un compte de biens (immobilier, collection) : pas un vrai compte
+	// en banque, il ne reçoit que des achats et des ventes de biens et vaut le
+	// prix d'achat des biens détenus.
+	val isProperty: Boolean get() = this == REAL_ESTATE || this == COLLECTIBLE
 }
 
 /*
@@ -71,7 +78,9 @@ enum class TransactionKind
 	STANDARD,																// dépense ou revenu, une jambe, une catégorie
 	TRANSFER,																// virement entre deux de mes comptes, deux jambes
 	TRADE,																	// ordre de bourse, une jambe et un ordre
-	OPENING																	// solde initial d'un compte
+	OPENING,																// solde initial d'un compte
+	ACQUISITION,															// achat d'un bien : jambe du compte de biens, et du compte payeur s'il y en a un
+	DISPOSAL																// vente d'un bien : sortie au prix d'achat, et prix de vente versé sur un compte s'il y en a un
 }
 
 /*
@@ -124,6 +133,7 @@ data class Trade(
 	notes      : notes libres
 	postings   : jambes
 	trades     : ordres de bourse
+	linkedId   : opération liée (vente d'un bien : son achat) ; null sinon
 */
 data class Transaction(
 	val id         : String,
@@ -134,7 +144,8 @@ data class Transaction(
 	val assetId    : String?       = null,
 	val notes      : String?       = null,
 	val postings   : List<Posting> = emptyList(),
-	val trades     : List<Trade>   = emptyList()
+	val trades     : List<Trade>   = emptyList(),
+	val linkedId   : String?       = null
 )
 {
 	/*

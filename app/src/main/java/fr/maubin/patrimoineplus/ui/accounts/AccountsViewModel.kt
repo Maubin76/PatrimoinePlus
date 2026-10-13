@@ -92,7 +92,7 @@ class AccountsViewModel @Inject constructor(
 	)
 	{
 		val vShare   = inForm.share.trim().toIntOrNull()							// part détenue lue
-		val vCents   = if (inForm.opening.isBlank()) 0L else parseEuros(inForm.opening)	// solde initial lu
+		val vCents   = if (inForm.opening.isBlank() || inForm.type.isProperty) 0L else parseEuros(inForm.opening)	// solde initial lu (aucun pour un compte de biens)
 		val vChecked = AccountFormErrors(
 			share   = if (vShare == null || vShare !in kMinShare..kMaxShare) "Entre $kMinShare et $kMaxShare %." else null,
 			opening = if (vCents == null) "Montant illisible (ex. 1 234,56)." else null

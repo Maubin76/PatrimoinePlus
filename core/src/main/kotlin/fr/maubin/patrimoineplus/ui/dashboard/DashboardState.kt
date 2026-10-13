@@ -8,6 +8,7 @@ import fr.maubin.patrimoineplus.domain.calc.accountValueSeries
 import fr.maubin.patrimoineplus.domain.calc.amountOn
 import fr.maubin.patrimoineplus.domain.calc.balanceSeries
 import fr.maubin.patrimoineplus.domain.calc.monthChange
+import fr.maubin.patrimoineplus.domain.calc.propertyItems
 import fr.maubin.patrimoineplus.domain.calc.statementGap
 import fr.maubin.patrimoineplus.domain.calc.valuePortfolio
 import fr.maubin.patrimoineplus.domain.calc.wholePercents
@@ -23,6 +24,8 @@ import fr.maubin.patrimoineplus.ui.home.HomeUiState
 import fr.maubin.patrimoineplus.ui.home.buildHomeState
 import java.time.LocalDate
 import java.time.YearMonth
+import fr.maubin.patrimoineplus.ui.property.propertyNature
+import fr.maubin.patrimoineplus.ui.property.propertyIcon
 
 const val kTileSeriesMonths   = 12												// mois de la petite courbe d'une tuile
 const val kTileTopItems       = 3												// catégories ou positions montrées dans une tuile
@@ -76,6 +79,20 @@ sealed interface TilePreview
 		// Plus-value latente en pour mille du prix de revient ; null sans position.
 		val ratePermille: Long? get() = if (costCents > 0) unrealizedCents * 1000 / costCents else null
 	}
+
+	/*
+		Compte Immobilier ou Collection : biens détenus.
+		count  : nombre de biens détenus
+		items  : plus gros biens (nom, prix d'achat), du plus cher au moins cher
+		others : prix d'achat des autres biens ; 0 s'il n'y en a pas
+		gains  : plus- et moins-values des biens vendus, cumulées
+	*/
+	data class Property(
+		val count  : Int,
+		val items  : List<Pair<String, Long>>,
+		val others : Long,
+		val gains  : Long
+	) : TilePreview
 }
 
 /*
@@ -244,6 +261,17 @@ private fun preview(
 			val vLast     = inData.statements.filter { it.accountId == inAccount.id }.maxByOrNull { it.date }	// dernier relevé
 			TilePreview.Savings(vYear, vIncome, vLast?.let { StatementItem(it, statementGap(it, inLedger)) })
 		}
+		AccountType.REAL_ESTATE, AccountType.COLLECTIBLE ->
+		{
+			val vItems = propertyItems(inData.transactions, inData.accounts, inAccount.id)	// biens du compte
+			val vHeld  = vItems.filter { it.heldAt(inToday) }.sortedByDescending { it.cost }	// biens détenus
+			TilePreview.Property(
+				count  = vHeld.size,
+				items  = vHeld.take(kTileTopItems).map { it.name to it.cost },
+				others = vHeld.drop(kTileTopItems).sumOf { it.cost },
+				gains  = vItems.filter { it.disposal != null && !it.disposal.date.isAfter(inToday) }.sumOf { it.gain ?: 0L }
+			)
+		}
 		AccountType.BROKERAGE ->
 		{
 			val vValue    = valuePortfolio(inLedger, inAccount.id, inToday, inData.prices)	// portefeuille
@@ -299,6 +327,7 @@ private fun recentOperation(
 			RecentOperation(inTx, vTo.amountCents, inTx.label, "${vName(vFrom.accountId)} → ${vName(vTo.accountId)}", "repeat")
 		}
 		TransactionKind.TRADE    -> RecentOperation(inTx, vFirst.amountCents, inTx.label, "${vName(vFirst.accountId)} · Ordre de bourse", "chart")
+		TransactionKind.ACQUISITION, TransactionKind.DISPOSAL -> RecentOperation(inTx, vFirst.amountCents, inTx.label, "${vName(vFirst.accountId)} · ${propertyNature(inTx)}", propertyIcon(inTx, inById))
 		else                     -> RecentOperation(inTx, vFirst.amountCents, inTx.label, "${vName(vFirst.accountId)} · ${vCategory?.name ?: "Sans catégorie"}", vCategory?.icon ?: "dots")
 	}
 }

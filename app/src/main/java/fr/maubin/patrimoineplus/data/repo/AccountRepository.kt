@@ -78,7 +78,7 @@ class AccountRepository @Inject constructor(
 	/*
 		Crée un compte, placé en fin de liste, avec son solde initial éventuel.
 		inName        : nom
-		inType        : Courant, Épargne ou Bourse
+		inType        : Courant, Épargne, Bourse, Immobilier ou Collection
 		inInstitution : établissement, facultatif
 		inShare       : part détenue, en %
 		inOpening     : solde initial ; null ou montant nul pour aucun
@@ -95,6 +95,10 @@ class AccountRepository @Inject constructor(
 		if (vErrors.isNotEmpty())
 		{
 			return SaveResult.Rejected(vErrors)
+		}
+		if (inType.isProperty && inOpening != null && inOpening.cents != 0L)
+		{
+			return SaveResult.Rejected(listOf(SetupError.PropertyOpening))
 		}
 		val vNow = inClock.millis()												// horodatage
 		return inDb.withTransaction {
@@ -132,6 +136,10 @@ class AccountRepository @Inject constructor(
 		{
 			return SaveResult.Rejected(listOf(SetupError.TypeLocked))
 		}
+		if (inAccount.type.isProperty && openingTransaction(inAccount.id) != null)
+		{
+			return SaveResult.Rejected(listOf(SetupError.PropertyOpening))
+		}
 		val vClean = inAccount.copy(name = inAccount.name.trim(), institution = inAccount.institution?.trim()?.ifEmpty { null }, sortOrder = vOld.sortOrder)	// champs nettoyés, rang actuel conservé
 		fDao.update(vClean.toEntity(vOld.createdAt, inClock.millis()))
 		return SaveResult.Saved(inAccount.id)
@@ -149,7 +157,8 @@ class AccountRepository @Inject constructor(
 
 	/*
 		Crée, modifie ou supprime le solde initial d'un compte. Un montant nul
-		supprime l'opération, sauf si elle porte des positions initiales.
+		supprime l'opération, sauf si elle porte des positions initiales. Un
+		compte Immobilier ou Collection n'a jamais de solde initial.
 		inId      : compte
 		inOpening : nouveau solde initial
 	*/
@@ -158,6 +167,7 @@ class AccountRepository @Inject constructor(
 		inOpening : Opening
 	)
 	{
+		if (fDao.getById(inId)?.let { AccountType.valueOf(it.type).isProperty } == true) return
 		val vNow = inClock.millis()												// horodatage
 		inDb.withTransaction {
 			val vOld = openingTransaction(inId)									// solde initial existant

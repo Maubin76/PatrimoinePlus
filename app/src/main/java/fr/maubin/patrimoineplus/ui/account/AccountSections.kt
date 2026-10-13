@@ -65,6 +65,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
+import fr.maubin.patrimoineplus.domain.calc.PropertyItem
 
 private val kShortDate = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)	// date courte
 
@@ -555,5 +556,119 @@ fun AssetSheet(
 			contentPadding = PaddingValues(vertical = 14.dp),
 			modifier       = Modifier.fillMaxWidth()
 		) { Text("Enregistrer") }
+	}
+}
+
+/*
+	En-tête d'un compte Immobilier ou Collection : valeur au prix d'achat des
+	biens détenus, nombre de biens et plus-values des ventes.
+	inItems  : biens du compte
+	inToday  : date du jour
+	inShare  : part détenue, en %
+*/
+@Composable
+fun PropertyHeader(
+	inItems : List<PropertyItem>,
+	inToday : LocalDate,
+	inShare : Int
+)
+{
+	val vColors = MaterialTheme.colorScheme											// palette courante
+	val vHeld   = inItems.filter { it.heldAt(inToday) }								// biens détenus
+	val vSold   = inItems.filter { inItem -> inItem.disposal?.date?.isAfter(inToday) == false }	// biens vendus
+	Column(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+		AmountText(inCents = vHeld.sumOf { it.cost }, inStyle = MaterialTheme.typography.displaySmall)
+		Spacer(Modifier.height(8.dp))
+		Text(if (inShare < 100) "Valeur au prix d’achat · comptée pour $inShare %" else "Valeur au prix d’achat", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+	}
+	if (vSold.isNotEmpty())
+	{
+		Spacer(Modifier.height(12.dp))
+		BorderedCard {
+			Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+				Text("Plus-values des ventes", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+				AmountText(inCents = vSold.sumOf { it.gain ?: 0L }, inStyle = MaterialTheme.typography.bodyLarge, inShowPlusSign = true, inTrend = true)
+			}
+		}
+	}
+}
+
+/*
+	Biens d'un compte Immobilier ou Collection : détenus (toucher pour
+	modifier, « Vendre »), puis vendus avec leur plus-value (toucher pour
+	modifier la vente) ; ajout d'un bien.
+	inItems   : biens du compte
+	inToday   : date du jour
+	inNoun    : « bien » ou « objet »
+	inNames   : noms des comptes par identifiant
+	inOnAdd   : ajout d'un bien
+	inOnOpen  : ouvre l'achat d'un bien
+	inOnSell  : ouvre la vente d'un bien (nouvelle ou existante)
+*/
+@Composable
+fun PropertySection(
+	inItems  : List<PropertyItem>,
+	inToday  : LocalDate,
+	inNoun   : String,
+	inNames  : Map<String, String>,
+	inOnAdd  : () -> Unit,
+	inOnOpen : (PropertyItem) -> Unit,
+	inOnSell : (PropertyItem) -> Unit
+)
+{
+	val vColors = MaterialTheme.colorScheme											// palette courante
+	val vSold   = inItems.filter { inItem -> inItem.disposal?.date?.isAfter(inToday) == false }	// biens vendus
+	val vHeld   = inItems - vSold.toSet()												// biens détenus (ou achetés plus tard)
+	SectionHeader(inTitle = if (inNoun == "bien") "Biens détenus" else "Objets détenus", inLinkLabel = "Ajouter", inOnLink = inOnAdd)
+	Spacer(Modifier.height(8.dp))
+	BorderedCard {
+		if (vHeld.isEmpty())
+		{
+			EmptyState(inTitle = "Aucun $inNoun", inBody = "Ajoutez-en un avec son prix d’achat : payé depuis un compte, il en débite le prix ; déjà possédé, il n’en débite aucun.")
+		}
+		vHeld.forEachIndexed { inIndex, inItem ->
+			if (inIndex > 0) HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = vColors.outlineVariant)
+			Row(
+				modifier          = Modifier.fillMaxWidth().clickable(onClickLabel = "Modifier") { inOnOpen(inItem) }.padding(start = 20.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
+				verticalAlignment = Alignment.CenterVertically
+			) {
+				Column(Modifier.weight(1f)) {
+					Text(inItem.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+					Text(
+						text     = inItem.acquisition.date.format(kShortDate) + " · " + (inItem.paidFrom?.let { inNames[it] ?: "compte supprimé" } ?: "déjà possédé"),
+						style    = MaterialTheme.typography.bodyMedium,
+						color    = vColors.onSurfaceVariant,
+						maxLines = 1,
+						overflow = TextOverflow.Ellipsis
+					)
+					AmountText(inCents = inItem.cost, inStyle = MaterialTheme.typography.bodyMedium)
+				}
+				OutlinedButton(onClick = { inOnSell(inItem) }) { Text(if (inItem.disposal != null) "Vente prévue" else "Vendre") }
+			}
+		}
+	}
+	if (vSold.isNotEmpty())
+	{
+		Spacer(Modifier.height(20.dp))
+		SectionHeader(inTitle = if (inNoun == "bien") "Biens vendus" else "Objets vendus")
+		Spacer(Modifier.height(8.dp))
+		BorderedCard {
+			vSold.forEachIndexed { inIndex, inItem ->
+				if (inIndex > 0) HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = vColors.outlineVariant)
+				Row(
+					modifier          = Modifier.fillMaxWidth().clickable(onClickLabel = "Modifier la vente") { inOnSell(inItem) }.padding(horizontal = 20.dp, vertical = 12.dp),
+					verticalAlignment = Alignment.CenterVertically
+				) {
+					Column(Modifier.weight(1f)) {
+						Text(inItem.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+						Text("Vendu le ${inItem.disposal!!.date.format(kShortDate)}", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+					}
+					Column(horizontalAlignment = Alignment.End) {
+						AmountText(inCents = inItem.salePrice ?: 0L, inStyle = MaterialTheme.typography.bodyLarge)
+						AmountText(inCents = inItem.gain ?: 0L, inStyle = MaterialTheme.typography.bodyMedium, inShowPlusSign = true, inTrend = true)
+					}
+				}
+			}
+		}
 	}
 }

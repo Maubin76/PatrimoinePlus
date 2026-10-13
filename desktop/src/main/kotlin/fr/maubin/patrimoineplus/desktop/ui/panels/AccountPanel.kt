@@ -3,6 +3,7 @@ package fr.maubin.patrimoineplus.desktop.ui.panels
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -59,12 +60,12 @@ fun AccountPanel(
 	fun save()
 	{
 		val vShare   = vForm.share.trim().toIntOrNull()							// part détenue lue
-		val vCents   = if (vForm.opening.isBlank()) 0L else parseEuros(vForm.opening)	// solde initial lu
+		val vCents   = if (vForm.opening.isBlank() || vForm.type.isProperty) 0L else parseEuros(vForm.opening)	// solde initial lu (aucun pour un compte de biens)
 		vError = when
 		{
 			vShare == null -> "Part détenue illisible (1 à 100)."
 			vCents == null -> "Solde initial illisible (ex. 1 250,00)."
-			vDateBad       -> kBadDate
+			vDateBad && !vForm.type.isProperty -> kBadDate
 			else           -> null
 		}
 		if (vError != null) return
@@ -108,12 +109,19 @@ fun AccountPanel(
 	) {
 		FormError(vError)
 		FormField(vForm.name, { vForm = vForm.copy(name = it) }, "Nom")
-		Choice(AccountType.entries.map { it to it.label }, vForm.type, { vForm = vForm.copy(type = it) }, inEnabled = vOps == 0)
+		Picker("Type", AccountType.entries.map { it to typeChoice(it) }, vForm.type, { vForm = vForm.copy(type = it) }, inEnabled = vOps == 0)
 		if (vOps > 0) Text("Le type ne change plus : le compte a des opérations.")
-		FormField(vForm.institution, { vForm = vForm.copy(institution = it) }, "Établissement (facultatif)")
-		FormField(vForm.share, { vForm = vForm.copy(share = it) }, "Part détenue (%)", inSupport = "50 pour un compte joint à deux.", inNumeric = true)
-		FormField(vForm.opening, { vForm = vForm.copy(opening = it) }, "Solde initial (€)", inSupport = "Solde à la date ci-dessous ; vide : aucun.", inNumeric = true)
-		DateField(vForm.openingDate, { inDate -> vDateBad = inDate == null; inDate?.let { vForm = vForm.copy(openingDate = it) } }, "Date du solde initial")
+		FormField(vForm.institution, { vForm = vForm.copy(institution = it) }, if (vForm.type.isProperty) "Description (facultatif)" else "Établissement (facultatif)")
+		FormField(vForm.share, { vForm = vForm.copy(share = it) }, "Part détenue (%)", inSupport = if (vForm.type.isProperty) "50 pour des biens détenus à deux (indivision, couple)." else "50 pour un compte joint à deux.", inNumeric = true)
+		if (vForm.type.isProperty)
+		{
+			Text("Pas de solde initial : ajoutez ensuite chaque bien depuis la page du compte, avec son prix d’achat. Le compte vaut le prix d’achat des biens détenus.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+		}
+		else
+		{
+			FormField(vForm.opening, { vForm = vForm.copy(opening = it) }, "Solde initial (€)", inSupport = "Solde à la date ci-dessous ; vide : aucun.", inNumeric = true)
+			DateField(vForm.openingDate, { inDate -> vDateBad = inDate == null; inDate?.let { vForm = vForm.copy(openingDate = it) } }, "Date du solde initial")
+		}
 	}
 
 	if (vDelete && vAccount != null)
@@ -149,3 +157,17 @@ fun AccountPanel(
 		)
 	}
 }
+
+/*
+	Libellé d'un type dans la liste des types de compte.
+	inType : type
+*/
+private fun typeChoice(inType: AccountType): String =
+	when (inType)
+	{
+		AccountType.CHECKING    -> "Courant"
+		AccountType.SAVINGS     -> "Épargne (livret)"
+		AccountType.BROKERAGE   -> "Bourse (PEA, compte-titres)"
+		AccountType.REAL_ESTATE -> "Biens immobiliers"
+		AccountType.COLLECTIBLE -> "Objets de collection"
+	}

@@ -36,7 +36,7 @@ fun backupFileOf(inData: DataSet): BackupFile
 		transactions = vDemo.transactions.map { inTx ->
 			TransactionDto(inTx.id, inTx.date.toString(), inTx.kind.name, inTx.label, inTx.categoryId, inTx.assetId, inTx.notes, 1, 2,
 				inTx.postings.map { PostingDto(it.id, it.accountId, it.amountCents) },
-				inTx.trades.map { TradeDto(it.id, it.assetId, it.side.name, it.quantity, it.unitPrice, it.feesCents) })
+				inTx.trades.map { TradeDto(it.id, it.assetId, it.side.name, it.quantity, it.unitPrice, it.feesCents) }, inTx.linkedId)
 		},
 		statements   = vDemo.statements.map { StatementDto(it.id, it.accountId, it.date.toString(), it.balanceCents) },
 		prices       = vDemo.prices.map { PriceDto(it.id, it.assetId, it.date.toString(), it.unitPrice) }

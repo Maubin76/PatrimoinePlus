@@ -33,6 +33,7 @@ class Converters
 	version est exporté dans app/schemas ; toute évolution passe par une
 	migration, pour ne jamais perdre de données.
 	Version 2 : symbole de cotation des actifs (colonne ajoutée, migration automatique).
+	Version 3 : opération liée (vente d'un bien → son achat ; colonne ajoutée, migration automatique).
 */
 @Database(
 	entities     = [
@@ -45,9 +46,9 @@ class Converters
 		AccountStatementEntity::class,
 		AssetPriceEntity::class
 	],
-	version       = 2,
+	version       = 3,
 	exportSchema  = true,
-	autoMigrations = [AutoMigration(from = 1, to = 2)]
+	autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)]
 )
 @TypeConverters(Converters::class)
 abstract class PatrimoineDatabase : RoomDatabase()

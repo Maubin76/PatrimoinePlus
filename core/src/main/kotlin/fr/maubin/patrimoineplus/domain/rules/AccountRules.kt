@@ -26,6 +26,9 @@ sealed class SetupError(val message: String)
 	// Le type d'un compte qui a des opérations ne peut plus changer.
 	data object TypeLocked : SetupError("Le type ne peut plus changer : ce compte a des opérations.")
 
+	// Un compte de biens n'a pas de solde initial.
+	data object PropertyOpening : SetupError("Un compte Immobilier ou Collection n’a pas de solde initial : ajoutez ses biens un par un.")
+
 	// Élément introuvable (supprimé entre-temps).
 	data object NotFound : SetupError("Élément introuvable.")
 }

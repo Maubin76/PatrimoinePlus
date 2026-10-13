@@ -18,6 +18,7 @@ import fr.maubin.patrimoineplus.domain.model.Transaction
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
 import java.time.LocalDate
 import java.time.YearMonth
+import fr.maubin.patrimoineplus.ui.property.propertyIcon
 
 private const val kSeriesMonths = 12											// mois de la courbe d'évolution
 
@@ -141,6 +142,18 @@ fun buildAccountDetail(
 				TransactionKind.TRANSFER -> if (vAmt < 0) "Virement vers ${vOther ?: "un compte supprimé"}" else "Virement depuis ${vOther ?: "un compte supprimé"}"
 				TransactionKind.TRADE    -> "Ordre de bourse"
 				TransactionKind.OPENING  -> "Solde initial"
+				TransactionKind.ACQUISITION -> when
+				{
+					vAmt < 0       -> "Achat d’un bien · ${vOther ?: "compte supprimé"}"
+					vOther != null -> "Achat payé depuis $vOther"
+					else           -> "Bien déjà possédé"
+				}
+				TransactionKind.DISPOSAL    -> when
+				{
+					vAmt > 0       -> "Vente d’un bien · ${vOther ?: "compte supprimé"}"
+					vOther != null -> "Vente, prix versé sur $vOther"
+					else           -> "Vente"
+				}
 			},
 			icon        = when (inTx.kind)
 			{
@@ -148,6 +161,7 @@ fun buildAccountDetail(
 				TransactionKind.TRANSFER -> "repeat"
 				TransactionKind.TRADE    -> "chart"
 				TransactionKind.OPENING  -> "plus"
+				TransactionKind.ACQUISITION, TransactionKind.DISPOSAL -> propertyIcon(inTx, vByAccount)
 			},
 			upcoming    = inTx.isUpcoming(inToday),
 			editable    = inTx.kind != TransactionKind.OPENING

@@ -103,6 +103,34 @@ class DataLayerTest
 	}
 
 	/*
+		Biens : un compte Immobilier ou Collection refuse un solde initial ;
+		achat payé depuis le compte courant (débité), vente liée (prix versé,
+		bien sorti au prix d'achat) ; supprimer l'achat seul est refusé, avec
+		sa vente accepté ; une dépense sur un compte de biens est refusée.
+	*/
+	@Test
+	fun propertyPurchaseAndSale() = runTest {
+		val vChecking = account("Courant", AccountType.CHECKING)					// compte payeur
+		assertEquals(SaveResult.Rejected(listOf(SetupError.PropertyOpening)), fAccounts.create("Maison", AccountType.REAL_ESTATE, null, 100, Opening(100, LocalDate.parse("2026-10-01"))))
+		val vObjects  = account("Collection", AccountType.COLLECTIBLE)				// compte de biens
+		val vBuy      = Transaction("b1", LocalDate.parse("2026-09-01"), TransactionKind.ACQUISITION, "Montre",
+			postings = listOf(Posting("bp1", vObjects.id, 420_000), Posting("bp2", vChecking.id, -420_000)))	// achat payé
+		assertTrue(fTransactions.save(vBuy) is SaveResult.Saved)
+		val vSell     = Transaction("s1", LocalDate.parse("2026-10-01"), TransactionKind.DISPOSAL, "Montre",
+			postings = listOf(Posting("sp1", vObjects.id, -420_000), Posting("sp2", vChecking.id, 500_000)), linkedId = "b1")	// vente liée
+		assertTrue(fTransactions.save(vSell) is SaveResult.Saved)
+		val vLedger   = Ledger(fTransactions.observeTransactions().first())		// grand livre relu
+		assertEquals(0L, vLedger.balanceAt(vObjects.id, LocalDate.parse("2026-10-12")))
+		assertEquals(80_000L, vLedger.balanceAt(vChecking.id, LocalDate.parse("2026-10-12")))
+		assertEquals("b1", fTransactions.observeTransactions().first().single { it.id == "s1" }.linkedId)
+		assertEquals(ValidationError.SaleWithoutPurchase("Montre").message, fTransactions.delete(listOf("b1")))
+		assertEquals(null, fTransactions.delete(listOf("b1", "s1")))
+		val vSpend    = Transaction("x1", LocalDate.parse("2026-10-02"), TransactionKind.STANDARD, "Réparation", category("Divers"),
+			postings = listOf(Posting("xp1", vObjects.id, -5_000)))					// dépense sur le compte de biens
+		assertTrue((fTransactions.save(vSpend) as SaveResult.Rejected).errors.contains(ValidationError.PropertyOnly))
+	}
+
+	/*
 		Crée une catégorie et renvoie son identifiant.
 		inName : nom
 		inKind : nature
@@ -334,7 +362,7 @@ class DataLayerTest
 	fun demoLoadsAndClears() = runTest {
 		val vDemo = DemoRepository(fDb, kClock)									// démonstration
 		vDemo.loadDemo()
-		assertEquals(5, fAccounts.observeAccounts().first().size)
+		assertEquals(7, fAccounts.observeAccounts().first().size)
 		assertTrue(fTransactions.observeTransactions().first().size > 100)
 		vDemo.clearAll()
 		assertTrue(fAccounts.observeAccounts().first().isEmpty())
@@ -451,9 +479,9 @@ class DataLayerTest
 		val vShape   = vBackup.snapshot().copy(exportedAt = "")				// contenu sauvegardé
 		account("Ajouté après la sauvegarde", AccountType.CHECKING)
 		assertTrue(decodeBackup("{}") is BackupRead.Invalid)
-		assertEquals(6, fAccounts.observeAccounts().first().size)
+		assertEquals(8, fAccounts.observeAccounts().first().size)
 		vBackup.replaceAll((readBackupXlsx(java.io.ByteArrayInputStream(vBytes)) as BackupRead.Valid).file)
-		assertEquals(5, fAccounts.observeAccounts().first().size)
+		assertEquals(7, fAccounts.observeAccounts().first().size)
 		assertEquals(vBefore, fTransactions.observeTransactions().first().sortedBy { it.id })
 		assertEquals(sorted(vShape), sorted(vBackup.snapshot().copy(exportedAt = "")))
 	}
