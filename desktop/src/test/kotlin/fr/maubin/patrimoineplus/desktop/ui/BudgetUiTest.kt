@@ -17,6 +17,7 @@ import fr.maubin.patrimoineplus.desktop.data.Workspace
 import fr.maubin.patrimoineplus.ui.budget.Budget
 import fr.maubin.patrimoineplus.ui.budget.BudgetLine
 import fr.maubin.patrimoineplus.ui.budget.BudgetSection
+import fr.maubin.patrimoineplus.ui.budget.ExpenseTheme
 import fr.maubin.patrimoineplus.ui.theme.ThemeMode
 import org.jetbrains.skia.EncodedImageFormat
 import org.junit.Assert.assertEquals
@@ -80,7 +81,8 @@ class BudgetUiTest
 			BudgetLine("2", BudgetSection.EXPENSE, "Loyer", 95_000, categoryId = vCat("Logement")),
 			BudgetLine("3", BudgetSection.EXPENSE, "Courses", 45_000, categoryId = vCat("Alimentation")),
 			BudgetLine("4", BudgetSection.EXPENSE, "Transport", 12_000, categoryId = vCat("Transport")),
-			BudgetLine("5", BudgetSection.EXPENSE, "Loisirs", 15_000, categoryId = vCat("Loisirs")),
+			BudgetLine("5", BudgetSection.EXPENSE, "Loisirs", 15_000, categoryId = vCat("Loisirs")),		// ancien budget : thème tiré de la catégorie
+			BudgetLine("8", BudgetSection.EXPENSE, "Crédit auto", 20_000, theme = ExpenseTheme.CREDIT),
 			BudgetLine("6", BudgetSection.INVESTMENT, "Livret A", 50_000, accountId = vData.accounts.first { it.name == "Livret A" }.id),
 			BudgetLine("7", BudgetSection.INVESTMENT, "PEA", 40_000, accountId = vData.accounts.first { it.name == "PEA" }.id)
 		)))
@@ -98,13 +100,15 @@ class BudgetUiTest
 		assertEquals(BudgetSection.EXPENSE, vNew.section)
 		val vFields = fCompose.onAllNodes(hasSetTextAction())							// champs des lignes
 		val vCount  = vFields.fetchSemanticsNodes().size								// nombre de champs
-		vFields[vCount - 6].performTextInput("Abonnements")							// nom de la nouvelle ligne (dernière des dépenses, avant les 2 lignes d'investissement)
-		vFields[vCount - 5].performTextInput("30")
-		fCompose.onNodeWithText("Sans catégorie").performScrollTo().performClick()		// catégorie de la nouvelle ligne
+		assertEquals(ExpenseTheme.DAILY, vNew.theme)									// thème par défaut
+		vFields[vCount - 12].performTextInput("Netflix")								// nom de la nouvelle ligne (dernière de « Vie quotidienne », avant transports, logement, crédit et 2 investissements)
+		vFields[vCount - 11].performTextInput("30")
+		fCompose.onAllNodesWithText("Vie quotidienne").onLast().performScrollTo().performClick()	// thème de la nouvelle ligne (en-tête, puis lignes du thème)
 		fCompose.waitForIdle()
-		fCompose.onAllNodesWithText("Loisirs").onLast().performClick()					// choix du menu (dernier nœud affiché)
+		fCompose.onAllNodesWithText("Abonnements").onLast().performClick()				// choix du menu (dernier nœud affiché)
 		fCompose.waitForIdle()
-		assertTrue(vApp.budget.value.lines.any { it.name == "Abonnements" && it.amount == 3_000L && it.categoryId == vCat("Loisirs") })
+		assertTrue(vApp.budget.value.lines.any { it.name == "Netflix" && it.amount == 3_000L && it.theme == ExpenseTheme.SUBSCRIPTIONS && it.categoryId == null })
+		fCompose.onAllNodesWithText("Abonnements")[0].assertExists()					// nouvel en-tête de thème (puis le menu de la ligne)
 		fCompose.onAllNodesWithText("Réel du mois")[0].performScrollTo().performClick()			// puce du schéma (avant les en-têtes de colonnes)
 		fCompose.waitForIdle()
 		fCompose.onNodeWithText("Cashflow réel de octobre 2026").assertExists()

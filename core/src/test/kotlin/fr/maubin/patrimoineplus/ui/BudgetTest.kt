@@ -24,6 +24,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.YearMonth
+import fr.maubin.patrimoineplus.ui.budget.ExpenseTheme
+import fr.maubin.patrimoineplus.ui.budget.themeOfCategory
 
 /*
 	Budget prévisionnel (appli PC) : totaux, comparaison au réel du mois,
@@ -34,8 +36,8 @@ class BudgetTest
 	private val kBudget = Budget(listOf(
 		BudgetLine("1", BudgetSection.INCOME, "Salaire", eur(3_000.0), categoryId = kSalary.id),
 		BudgetLine("2", BudgetSection.INCOME, "Prime", eur(200.0)),
-		BudgetLine("3", BudgetSection.EXPENSE, "Courses", eur(450.0), categoryId = kGroceries.id),
-		BudgetLine("4", BudgetSection.EXPENSE, "Loyer", eur(1_000.0)),
+		BudgetLine("3", BudgetSection.EXPENSE, "Courses", eur(450.0), theme = ExpenseTheme.DAILY),
+		BudgetLine("4", BudgetSection.EXPENSE, "Loyer", eur(1_000.0), theme = ExpenseTheme.HOUSING),
 		BudgetLine("5", BudgetSection.INVESTMENT, "Livret A", eur(500.0), accountId = kLivret.id)
 	))																					// budget
 
@@ -51,8 +53,9 @@ class BudgetTest
 	}
 
 	/*
-		Réel du mois : catégorie (remboursement déduit), versements reçus par
-		le compte suivi ; lignes non suivies sans réel ; autres mois ignorés.
+		Réel du mois : catégorie d'une entrée, versements reçus par le compte
+		suivi ; dépenses par thème (catégories du thème, remboursement déduit),
+		pas sur leurs lignes ; autres mois ignorés.
 	*/
 	@Test
 	fun comparedToActual()
@@ -66,13 +69,15 @@ class BudgetTest
 		), emptyList(), emptyList())														// données
 		val vView = compareBudget(kBudget, vData, YearMonth.of(2026, 10))				// budget comparé
 		assertEquals(eur(3_100.0), vView.lines.single { it.line.id == "1" }.actual)
-		assertEquals(eur(280.0), vView.lines.single { it.line.id == "3" }.actual)
-		assertEquals(eur(-170.0), vView.lines.single { it.line.id == "3" }.gap)
+		assertNull(vView.lines.single { it.line.id == "3" }.actual)
+		assertEquals(listOf(ExpenseTheme.DAILY, ExpenseTheme.HOUSING), vView.themes.map { it.theme })
+		assertEquals(eur(280.0), vView.themes[0].actual)
+		assertEquals(eur(-170.0), vView.themes[0].gap)
+		assertEquals(0L, vView.themes[1].actual)											// aucune dépense de logement ce mois-ci
 		assertEquals(eur(400.0), vView.lines.single { it.line.id == "5" }.actual)
-		assertNull(vView.lines.single { it.line.id == "4" }.actual)
 		assertEquals(eur(3_100.0 - 280.0 - 400.0), vView.actualRemaining)
 		val vReal = cashFlow(vView, inActual = true)										// diagramme du réel
-		assertEquals(setOf("Courses", "Livret A", "Reste"), vReal.outputs.map { it.name }.toSet())		// loyer non suivi : absent du réel
+		assertEquals(setOf("Vie quotidienne", "Livret A", "Reste"), vReal.outputs.map { it.name }.toSet())	// logement nul : absent du réel
 		assertEquals(vReal.sources.sumOf { it.amount }, vReal.outputs.sumOf { it.amount })
 	}
 
@@ -107,35 +112,48 @@ class BudgetTest
 	}
 
 	/*
-		Regroupement : investissements en premier (thème « Investissements »),
-		puis dépenses regroupées par catégorie de la plus forte à la plus
-		faible (détail trié), ligne sans catégorie seule et sans détail, reste
-		en dernier.
+		Thèmes : investissements en premier, puis dépenses par thème de la plus
+		forte à la plus faible (détail trié), thème d'une seule ligne de son nom
+		sans détail, reste en dernier ; ligne d'un ancien budget rangée d'après
+		sa catégorie ; réel par thème d'après le nom des catégories.
 	*/
 	@Test
-	fun groupsByCategory()
+	fun groupsByTheme()
 	{
 		val vHousing = Category("logement", "Logement", "home", CategoryKind.EXPENSE)		// catégorie Logement
-		val vData    = DataSet(emptyList(), listOf(vHousing, kGroceries, kLeisure), emptyList(), emptyList(), emptyList(), emptyList())	// catégories
+		val vLoan    = Category("pret", "Prêt immobilier", "bank", CategoryKind.EXPENSE)	// catégorie de crédit
+		val vData    = DataSet(listOf(kChecking), listOf(vHousing, vLoan, kGroceries, kLeisure), emptyList(), listOf(
+			standard("2026-10-03", kChecking, eur(-900.0), vHousing),
+			standard("2026-10-04", kChecking, eur(-650.0), vLoan),
+			standard("2026-10-05", kChecking, eur(-120.0), kGroceries),
+			standard("2026-10-06", kChecking, eur(-80.0), kLeisure)
+		), emptyList(), emptyList())														// opérations du mois
 		val vBudget  = Budget(listOf(
 			BudgetLine("1", BudgetSection.INCOME, "Salaire", eur(3_000.0)),
-			BudgetLine("2", BudgetSection.EXPENSE, "Loyer", eur(850.0), categoryId = vHousing.id),
-			BudgetLine("3", BudgetSection.EXPENSE, "Électricité", eur(50.0), categoryId = vHousing.id),
-			BudgetLine("4", BudgetSection.EXPENSE, "Courses", eur(150.0), categoryId = kGroceries.id),
-			BudgetLine("5", BudgetSection.EXPENSE, "Marché", eur(300.0), categoryId = kGroceries.id),
-			BudgetLine("6", BudgetSection.EXPENSE, "Transports", eur(160.0)),
-			BudgetLine("7", BudgetSection.EXPENSE, "Loisirs", eur(100.0), categoryId = kLeisure.id),
-			BudgetLine("8", BudgetSection.INVESTMENT, "Actions", eur(500.0)),
-			BudgetLine("9", BudgetSection.INVESTMENT, "Crypto", eur(50.0))
-		))																					// budget
-		val vDiagram = cashFlow(compareBudget(vBudget, vData, YearMonth.of(2026, 10)), inActual = false)	// diagramme
-		assertEquals(listOf("Investissements", "Logement", "Alimentation", "Transports", "Loisirs", "Reste"), vDiagram.groups.map { it.name })
+			BudgetLine("2", BudgetSection.EXPENSE, "Loyer", eur(850.0), theme = ExpenseTheme.HOUSING),
+			BudgetLine("3", BudgetSection.EXPENSE, "Électricité", eur(50.0), categoryId = vHousing.id),	// ancien budget : thème tiré de la catégorie
+			BudgetLine("4", BudgetSection.EXPENSE, "Courses", eur(150.0), theme = ExpenseTheme.DAILY),
+			BudgetLine("5", BudgetSection.EXPENSE, "Restaurants", eur(300.0), theme = ExpenseTheme.DAILY),
+			BudgetLine("6", BudgetSection.EXPENSE, "Crédit", eur(650.0), theme = ExpenseTheme.CREDIT),
+			BudgetLine("7", BudgetSection.INVESTMENT, "Actions", eur(500.0)),
+			BudgetLine("8", BudgetSection.INVESTMENT, "Crypto", eur(50.0))
+		))																					// budget à thèmes
+		val vView    = compareBudget(vBudget, vData, YearMonth.of(2026, 10))				// budget comparé
+		val vDiagram = cashFlow(vView, inActual = false)									// diagramme prévu
+		assertEquals(listOf("Investissements", "Logement", "Crédit", "Vie quotidienne", "Reste"), vDiagram.groups.map { it.name })
 		assertEquals(listOf("Actions", "Crypto"), vDiagram.groups[0].items.map { it.name })
-		assertEquals(listOf("Marché", "Courses"), vDiagram.groups[2].items.map { it.name })
-		assertTrue(vDiagram.groups[3].items.isEmpty())										// sans catégorie : seule
-		assertTrue(vDiagram.groups[4].items.isEmpty())										// seule ligne, du nom de la catégorie
-		assertEquals(eur(840.0), vDiagram.groups.last().amount)
+		assertEquals(listOf("Loyer", "Électricité"), vDiagram.groups[1].items.map { it.name })
+		assertTrue(vDiagram.groups[2].items.isEmpty())										// une ligne du nom du thème
+		assertEquals(listOf("Restaurants", "Courses"), vDiagram.groups[3].items.map { it.name })
 		assertEquals(vDiagram.total, vDiagram.groups.sumOf { it.amount })
-		assertEquals(vDiagram.groups.sumOf { it.amount }, vDiagram.outputs.sumOf { it.amount })
+		assertEquals(listOf(ExpenseTheme.DAILY, ExpenseTheme.HOUSING, ExpenseTheme.CREDIT), vView.themes.map { it.theme })	// ordre des thèmes
+		assertEquals(listOf(eur(200.0), eur(900.0), eur(650.0)), vView.themes.map { it.actual })	// courses + loisirs, logement, prêt
+		val vReal    = cashFlow(vView, inActual = true)										// diagramme du réel
+		assertEquals(listOf("Logement", "Crédit", "Vie quotidienne"), vReal.groups.map { it.name })	// salaire non suivi : déficit, pas de reste
+		assertTrue(vReal.groups.all { it.items.isEmpty() })									// réel par thème, sans détail
+		assertEquals(ExpenseTheme.TRANSPORT, themeOfCategory("Transports"))
+		assertEquals(ExpenseTheme.SUBSCRIPTIONS, themeOfCategory("abonnement"))
+		assertEquals(ExpenseTheme.CREDIT, themeOfCategory("Crédit auto"))
+		assertEquals(ExpenseTheme.DAILY, themeOfCategory("Santé"))
 	}
 }
