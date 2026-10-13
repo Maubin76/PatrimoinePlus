@@ -59,4 +59,21 @@ class DemoDataTest
 			assertEquals(3_820L, statementGap(vDemo.statements.single(), vLedger))
 		}
 	}
+
+	/*
+		Comptes, catégories et actifs gardent leurs identifiants d'une
+		génération à l'autre (budget et objectifs du PC liés par identifiant),
+		même un autre jour ; les identifiants restent uniques.
+	*/
+	@Test
+	fun idsAreStable()
+	{
+		val vFirst  = buildDemoData(java.time.LocalDate.parse("2026-10-12"))			// première génération
+		val vSecond = buildDemoData(java.time.LocalDate.parse("2026-11-03"))			// relancée plus tard
+		assertEquals(vFirst.accounts.map { it.id }, vSecond.accounts.map { it.id })
+		assertEquals(vFirst.categories.map { it.id }, vSecond.categories.map { it.id })
+		assertEquals(vFirst.assets.map { it.id }, vSecond.assets.map { it.id })
+		val vIds = vFirst.accounts.map { it.id } + vFirst.categories.map { it.id } + vFirst.assets.map { it.id }	// identifiants stables
+		assertEquals(vIds.size, vIds.toSet().size)
+	}
 }

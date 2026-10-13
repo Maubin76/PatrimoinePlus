@@ -24,21 +24,24 @@ private const val kMonths = 6													// mois d'historique générés
 /*
 	Construit six mois de données de démonstration finissant aujourd'hui, plus
 	une opération « à venir ». Pur et déterministe pour une date donnée (hors
-	identifiants) : testable sur la JVM. Toutes les valeurs sont fictives.
+	identifiants des opérations) : testable sur la JVM. Comptes, catégories et
+	actifs gardent les mêmes identifiants d'un lancement à l'autre : le budget
+	et les objectifs du PC, qui les désignent par identifiant, restent liés
+	quand la démonstration est régénérée. Toutes les valeurs sont fictives.
 	inToday : date du jour
 */
 fun buildDemoData(inToday: LocalDate): DataSet
 {
-	val vCourant = Account(newId(), "Compte courant", AccountType.CHECKING, "Banque démo", 100, 0)	// compte courant
-	val vJoint   = Account(newId(), "Compte joint", AccountType.CHECKING, "Banque démo", 50, 1)		// compte joint
-	val vLivretA = Account(newId(), "Livret A", AccountType.SAVINGS, "Banque démo", 100, 2)			// livret A
-	val vLdds    = Account(newId(), "LDDS", AccountType.SAVINGS, "Banque démo", 100, 3)				// LDDS
-	val vPea     = Account(newId(), "PEA", AccountType.BROKERAGE, "Courtier démo", 100, 4)			// PEA
-	val vHome    = Account(newId(), "Résidence principale", AccountType.REAL_ESTATE, null, 50, 5)	// immobilier, détenu à moitié
-	val vObjects = Account(newId(), "Collection", AccountType.COLLECTIBLE, null, 100, 6)			// objets de collection
-	val vCats    = DefaultCatalog.categories()								// catégories
-	val vWorld   = Asset(newId(), "ETF Monde (démo)")							// premier actif
-	val vUs      = Asset(newId(), "ETF États-Unis (démo)")						// second actif
+	val vCourant = Account(stableId("compte:compte-courant"), "Compte courant", AccountType.CHECKING, "Banque démo", 100, 0)	// compte courant
+	val vJoint   = Account(stableId("compte:compte-joint"), "Compte joint", AccountType.CHECKING, "Banque démo", 50, 1)		// compte joint
+	val vLivretA = Account(stableId("compte:livret-a"), "Livret A", AccountType.SAVINGS, "Banque démo", 100, 2)			// livret A
+	val vLdds    = Account(stableId("compte:ldds"), "LDDS", AccountType.SAVINGS, "Banque démo", 100, 3)				// LDDS
+	val vPea     = Account(stableId("compte:pea"), "PEA", AccountType.BROKERAGE, "Courtier démo", 100, 4)			// PEA
+	val vHome    = Account(stableId("compte:residence-principale"), "Résidence principale", AccountType.REAL_ESTATE, null, 50, 5)	// immobilier, détenu à moitié
+	val vObjects = Account(stableId("compte:collection"), "Collection", AccountType.COLLECTIBLE, null, 100, 6)			// objets de collection
+	val vCats    = DefaultCatalog.categories().map { it.copy(id = stableId("categorie:${it.kind}:${it.name}")) }	// catégories, identifiants stables
+	val vWorld   = Asset(stableId("actif:etf-monde"), "ETF Monde (démo)")							// premier actif
+	val vUs      = Asset(stableId("actif:etf-etats-unis"), "ETF États-Unis (démo)")						// second actif
 	val vStart   = inToday.minusMonths(kMonths - 1L).withDayOfMonth(1)		// début de l'historique
 	val vOps     = mutableListOf<Transaction>()								// opérations générées
 	val vPrices  = mutableListOf<AssetPrice>()								// cours générés
@@ -199,3 +202,10 @@ private fun Double.toPrice(): Long = Math.round(this * kPriceScale)
 	Nouvel identifiant.
 */
 private fun newId(): String = UUID.randomUUID().toString()
+
+/*
+	Identifiant stable, dérivé d'une clé (même clé, même identifiant à
+	chaque génération de la démonstration).
+	inKey : clé lisible (« compte:livret-a »)
+*/
+private fun stableId(inKey: String): String = UUID.nameUUIDFromBytes("patrimoineplus-demo:$inKey".toByteArray(Charsets.UTF_8)).toString()
