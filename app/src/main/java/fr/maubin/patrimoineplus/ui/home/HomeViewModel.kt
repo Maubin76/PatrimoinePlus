@@ -14,7 +14,8 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import java.time.Clock
 import java.time.LocalDate
-import javax.inject.Inject
+import javax.inject.Inject
+import fr.maubin.patrimoineplus.data.repo.PlanningRepository
 
 /*
 	ViewModel de l'accueil : lit comptes, opérations et cours dans la base et
@@ -29,13 +30,14 @@ class HomeViewModel @Inject constructor(
 	inAccounts     : AccountRepository,
 	inTransactions : TransactionRepository,
 	inMarket       : MarketRepository,
-	private val inClock : Clock
+	private val inClock : Clock,
+	inPlanning     : PlanningRepository
 ) : ViewModel()
 {
 	// État exposé à l'écran, recalculé à chaque changement de la base.
 	val uiState: StateFlow<HomeUiState> =
-		combine(inAccounts.observeAccounts(), inTransactions.observeTransactions(), inMarket.observePrices()) { inAccountList, inTxs, inPrices ->
-			buildHomeState(inAccountList, inTxs, inPrices, LocalDate.now(inClock))
+		combine(inAccounts.observeAccounts(), inTransactions.observeTransactions(), inMarket.observePrices(), inPlanning.observeLoans()) { inAccountList, inTxs, inPrices, inLoans ->
+			buildHomeState(inAccountList, inTxs, inPrices, LocalDate.now(inClock), inLoans)
 		}
 			.flowOn(Dispatchers.Default)
 			.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState(today(), emptyList()))

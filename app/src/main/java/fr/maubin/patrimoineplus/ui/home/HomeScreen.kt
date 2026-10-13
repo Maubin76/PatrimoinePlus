@@ -232,11 +232,11 @@ private fun RepartitionBlock(
 	val vHidden = LocalAmountsHidden.current								// mode discret actif
 	Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
 		ProportionBar(
-			inSegments    = inState.groups.map { BarSegment(it.subtotalCents, typeColor(it.type)) },
+			inSegments    = inState.assetGroups.map { BarSegment(it.subtotalCents, typeColor(it.type)) },
 			inDescription = repartitionDescription(inState, vHidden)
 		)
 		Spacer(Modifier.height(12.dp))
-		inState.groups.forEach { inGroup ->
+		inState.assetGroups.forEach { inGroup ->
 			val vPercent = inGroup.percent										// part entière
 			Row(
 				modifier          = Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(onClickLabel = "Voir les comptes", onClick = inOnOpen),
@@ -258,6 +258,16 @@ private fun RepartitionBlock(
 				AmountText(inCents = inGroup.subtotalCents, inStyle = MaterialTheme.typography.bodyLarge)
 			}
 		}
+		if (inState.unlinkedDebtCents != 0L)
+		{
+			Row(
+				modifier          = Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(onClickLabel = "Voir les comptes", onClick = inOnOpen),
+				verticalAlignment = Alignment.CenterVertically
+			) {
+				Text("Crédits à déduire", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+				AmountText(inCents = inState.unlinkedDebtCents, inStyle = MaterialTheme.typography.bodyLarge)
+			}
+		}
 	}
 }
 
@@ -275,7 +285,7 @@ private fun repartitionDescription(
 	{
 		return "Répartition par type de compte"
 	}
-	return "Répartition : " + inState.groups.joinToString(", ") { inGroup ->
+	return "Répartition nette : " + inState.assetGroups.joinToString(", ") { inGroup ->
 		val vPercent = inGroup.percent										// part entière
 		"${inGroup.type.label} $vPercent\u202F%"
 	}

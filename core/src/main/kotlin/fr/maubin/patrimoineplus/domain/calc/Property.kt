@@ -85,6 +85,27 @@ fun propertyNets(
 	}.toMap()
 
 /*
+	Compte de biens financé par chaque compte Crédit : celui du bien détenu à
+	la date auquel son crédit est lié ; un crédit sans bien, ou dont le bien
+	est vendu, n'y figure pas.
+	inLoans        : crédits
+	inTransactions : opérations
+	inAccounts     : comptes
+	inDate         : date
+	Retour : compte de biens par compte Crédit
+*/
+fun financedAccounts(
+	inLoans        : List<Loan>,
+	inTransactions : List<Transaction>,
+	inAccounts     : List<Account>,
+	inDate         : LocalDate
+): Map<String, String>
+{
+	val vHeld = propertyItems(inTransactions, inAccounts).filter { it.heldAt(inDate) }.associateBy { it.acquisition.id }	// biens détenus
+	return inLoans.mapNotNull { inLoan -> vHeld[inLoan.propertyId]?.let { inLoan.accountId to it.accountId } }.toMap()
+}
+
+/*
 	Jambe d'une opération de bien sur un compte de biens.
 	inTx         : achat ou vente d'un bien
 	inProperties : identifiants des comptes de biens

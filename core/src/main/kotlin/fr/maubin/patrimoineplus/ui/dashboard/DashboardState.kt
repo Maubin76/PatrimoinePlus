@@ -27,7 +27,8 @@ import java.time.YearMonth
 import fr.maubin.patrimoineplus.ui.property.propertyNature
 import fr.maubin.patrimoineplus.ui.property.propertyIcon
 import fr.maubin.patrimoineplus.domain.calc.Installment
-import fr.maubin.patrimoineplus.domain.calc.amortization
+import fr.maubin.patrimoineplus.domain.calc.amortization
+import fr.maubin.patrimoineplus.domain.calc.financedAccounts
 
 const val kTileSeriesMonths   = 12												// mois de la petite courbe d'une tuile
 const val kTileTopItems       = 3												// catégories ou positions montrées dans une tuile
@@ -119,6 +120,8 @@ sealed interface TilePreview
 	series      : valeur en fin de mois, douze derniers mois au plus (depuis l'ouverture)
 	monthChange : variation depuis la fin du mois précédent ; null le premier mois
 	preview     : aperçu propre au type
+	note        : précision sous la valeur (crédit : somme due, compte déduit ;
+	              compte de biens : net des crédits) ; null sans précision
 */
 data class AccountTile(
 	val account     : Account,
@@ -126,7 +129,8 @@ data class AccountTile(
 	val weight      : AccountWeight?,
 	val series      : List<SeriesPoint>,
 	val monthChange : Long?,
-	val preview     : TilePreview
+	val preview     : TilePreview,
+	val note        : String? = null
 )
 
 /*
@@ -186,13 +190,20 @@ fun buildDashboard(
 	val vMonth     = YearMonth.from(inToday)									// mois en cours
 	val vById      = inData.accounts.associateBy { it.id }					// comptes par identifiant
 	val vExpenseIds = inData.categories.filter { it.kind == CategoryKind.EXPENSE }.map { it.id }.toSet()	// catégories de dépense
-	val vHome      = buildHomeState(inData.accounts, inData.transactions, inData.prices, inToday)	// patrimoine
-	val vAccounts  = buildAccountsState(inData.accounts, inData.transactions, inData.prices, inToday)	// valeurs et parts
+	val vHome      = buildHomeState(inData.accounts, inData.transactions, inData.prices, inToday, inData.loans)	// patrimoine net
+	val vAccounts  = buildAccountsState(inData.accounts, inData.transactions, inData.prices, inToday, inData.loans)	// valeurs nettes et parts
+	val vLinks     = financedAccounts(inData.loans, inData.transactions, inData.accounts, inToday)	// compte de biens financé par chaque crédit
 	val vChecking  = inData.accounts.filter { it.type == AccountType.CHECKING && !it.archived }	// comptes Courant actifs
 	val vSummaries = vChecking.map { vLedger.monthSummary(it, vMonth, vById, vExpenseIds) }	// synthèses du mois
 	val vTile      = { inItem: fr.maubin.patrimoineplus.ui.accounts.AccountItem ->
-		val vSeries = tileSeries(inItem.account, vLedger, inData, inToday)		// petite courbe
-		AccountTile(inItem.account, inItem.valueCents, inItem.weight, vSeries, monthChange(vSeries), preview(inItem.account, vLedger, inData, inToday, vById, vExpenseIds))
+		val vSeries = netSeries(inItem.account, vLedger, inData, inToday, vLinks)	// petite courbe, nette
+		val vNote   = when
+		{
+			inItem.account.type == AccountType.LOAN -> "Restant dû" + (inItem.deductedInto?.let { " · déduit de $it" } ?: "")
+			inItem.account.id in vLinks.values      -> "Net des crédits restant dus"
+			else                                    -> null
+		}																		// précision sous la valeur
+		AccountTile(inItem.account, inItem.valueCents, inItem.weight, vSeries, monthChange(vSeries), preview(inItem.account, vLedger, inData, inToday, vById, vExpenseIds), vNote)
 	}
 	return DashboardState(
 		home       = vHome,
@@ -212,6 +223,35 @@ fun buildDashboard(
 			.map { recentOperation(it, vById, inData) },
 		upcoming   = inData.transactions.count { it.isUpcoming(inToday) }
 	)
+}
+
+/*
+	Courbe nette d'une tuile : compte de biens moins le capital restant dû
+	des crédits liés à ses biens, mois par mois ; crédit en positif (somme
+	due) ; autres comptes inchangés.
+	inAccount : compte
+	inLedger  : grand livre
+	inData    : données
+	inToday   : date du jour
+	inLinks   : compte de biens financé par chaque compte Crédit
+*/
+private fun netSeries(
+	inAccount : Account,
+	inLedger  : Ledger,
+	inData    : DataSet,
+	inToday   : LocalDate,
+	inLinks   : Map<String, String>
+): List<SeriesPoint>
+{
+	val vOwn = tileSeries(inAccount, inLedger, inData, inToday)						// valeur du compte seul
+	if (inAccount.type == AccountType.LOAN) return vOwn.map { it.copy(valueCents = -it.valueCents) }
+	val vLoans = inLinks.filterValues { it == inAccount.id }.keys				// crédits liés à ses biens
+	if (vLoans.isEmpty()) return vOwn
+	val vSince = inLedger.transactions().firstOrNull { inTx -> inTx.postings.any { it.accountId in vLoans } }?.date?.let(YearMonth::from)	// début du suivi des crédits
+	return vOwn.filter { vSince == null || !it.month.isBefore(vSince) }.map { inPoint ->
+		val vEnd = if (inPoint.month == YearMonth.from(inToday)) inToday else inPoint.month.atEndOfMonth()	// date du point
+		inPoint.copy(valueCents = inPoint.valueCents + vLoans.sumOf { inLedger.balanceAt(it, vEnd) })
+	}
 }
 
 /*

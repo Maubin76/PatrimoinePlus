@@ -230,6 +230,9 @@ class LoanPaymentTest
 		assertEquals(eur(9_000.0), vNets.getValue(vFlat.id).debt)
 		assertEquals(eur(241_000.0), vNets.getValue(vFlat.id).net)
 		assertTrue(propertyNets(propertyItems(vLedger.transactions(), listOf(kHome)), listOf(kLoan), vLedger, kToday).isEmpty())
+		assertEquals(mapOf(kCar.id to kHome.id), financedAccounts(listOf(vLoan), vLedger.transactions(), listOf(kHome, kCar), kToday))
+		val vSale   = Transaction("vente", d("2026-10-01"), TransactionKind.DISPOSAL, "Appartement", postings = listOf(Posting("vente-p", kHome.id, -eur(250_000.0))), linkedId = vFlat.id)	// bien vendu
+		assertTrue(financedAccounts(listOf(vLoan), vLedger.transactions() + vSale, listOf(kHome, kCar), kToday).isEmpty())	// crédit d'un bien vendu : plus déduit de rien
 		val vWealth = wealthAt(listOf(kChecking, kHome, kCar), vLedger, kToday, emptyList())					// patrimoine
 		assertEquals(eur(255_000.0), vWealth.grossCents)
 		assertEquals(-eur(9_000.0), vWealth.debtCents)
@@ -249,5 +252,49 @@ class LoanPaymentTest
 		val vHome   = vDemo.loans.single { it.propertyId != null }											// prêt immobilier
 		assertEquals("Appartement (démo)", vDemo.transactions.single { it.id == vHome.propertyId }.label)
 		assertEquals(vHome.propertyId, buildDemoData(kToday).loans.single { it.propertyId != null }.propertyId)	// identifiant de l'appartement stable
+	}
+
+	/*
+		Tableau de bord en net (démonstration) : la résidence vaut son prix
+		moins le prêt immobilier lié (valeur et part comptée), le prêt est
+		affiché en positif et déduit de la résidence (pas compté deux fois) ;
+		le crédit auto, sans bien, reste « à déduire » ; parts des avoirs qui
+		font 100 ; total net inchangé ; courbe de la tuile nette ; même
+		valeurs dans l'onglet Comptes.
+	*/
+	@Test
+	fun netDashboard()
+	{
+		val vDemo   = buildDemoData(kToday)																// démonstration
+		val vBoard  = fr.maubin.patrimoineplus.ui.dashboard.buildDashboard(vDemo, kToday)					// tableau de bord
+		val vLedger = Ledger(vDemo.transactions)															// grand livre
+		val vWealth = wealthAt(vDemo.accounts, vLedger, kToday, vDemo.prices)								// patrimoine brut de calcul
+		val vHome   = vDemo.accounts.single { it.name == "Résidence principale" }						// compte de biens
+		val vLoanAc = vDemo.accounts.single { it.name == "Prêt immobilier" }								// crédit lié
+		val vCarAc  = vDemo.accounts.single { it.name == "Crédit auto" }									// crédit sans bien
+		val vOwed   = -vLedger.balanceAt(vLoanAc.id, kToday)												// restant dû du prêt
+		val vTile   = { inId: String -> vBoard.tiles.single { it.account.id == inId } }					// tuile d'un compte
+		assertEquals(eur(240_000.0) - vOwed, vTile(vHome.id).valueCents)
+		assertEquals("Net des crédits restant dus", vTile(vHome.id).note)
+		assertEquals(vTile(vHome.id).valueCents, vTile(vHome.id).series.last().valueCents)
+		assertTrue(vTile(vHome.id).series.all { it.valueCents < eur(240_000.0) })							// courbe nette depuis le suivi du prêt (pas de mois sans lui)
+		assertEquals(java.time.YearMonth.from(kToday).minusMonths(5), vBoard.home.series.first().month)	// courbe du patrimoine : depuis le début du suivi, pas l'achat ancien de l'appartement
+		assertEquals(vOwed, vTile(vLoanAc.id).valueCents)
+		assertEquals("Restant dû · déduit de Résidence principale", vTile(vLoanAc.id).note)
+		assertNull(vTile(vLoanAc.id).weight)
+		assertTrue(vTile(vLoanAc.id).series.all { it.valueCents >= 0 })
+		assertEquals(-vLedger.balanceAt(vCarAc.id, kToday), vTile(vCarAc.id).valueCents)
+		assertEquals(vWealth.totalCents, vBoard.home.totalCents)
+		assertEquals(-vLedger.balanceAt(vCarAc.id, kToday), vBoard.home.unlinkedDebtCents)
+		assertEquals(-vWealth.debtCents, vBoard.home.debtCents)
+		assertEquals(vWealth.grossCents, vBoard.home.grossCents)
+		assertEquals(100, vBoard.home.assetGroups.sumOf { it.percent })
+		val vRealEstate = vBoard.home.assetGroups.single { it.type == AccountType.REAL_ESTATE }			// groupe Immobilier
+		assertTrue(kotlin.math.abs(eur(120_000.0) - vOwed / 2 - vRealEstate.subtotalCents) <= 1L)					// parts à 50 % (arrondi au centime)
+		assertEquals(vBoard.home.totalCents, vBoard.home.assetGroups.sumOf { it.subtotalCents } - vBoard.home.unlinkedDebtCents)
+		assertEquals(100, vBoard.tiles.mapNotNull { it.weight }.sumOf { it.percent })
+		val vList   = fr.maubin.patrimoineplus.ui.accounts.buildAccountsState(vDemo.accounts, vDemo.transactions, vDemo.prices, kToday, vDemo.loans)	// onglet Comptes
+		assertEquals("Résidence principale", vList.active.single { it.account.id == vLoanAc.id }.deductedInto)
+		assertEquals(vTile(vHome.id).valueCents, vList.active.single { it.account.id == vHome.id }.valueCents)
 	}
 }

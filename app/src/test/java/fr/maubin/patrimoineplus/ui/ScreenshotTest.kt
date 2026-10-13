@@ -65,7 +65,8 @@ import fr.maubin.patrimoineplus.ui.accounts.buildAccountsState
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
-import fr.maubin.patrimoineplus.ui.entry.newEntryForm
+import fr.maubin.patrimoineplus.ui.entry.newEntryForm
+import fr.maubin.patrimoineplus.ui.home.buildHomeState
 
 private const val kOutDir = "build/outputs/roborazzi"						// dossier des captures
 
@@ -90,14 +91,8 @@ class ScreenshotTest
 	*/
 	private fun demoAccounts(): AccountsUiState
 	{
-		val vLedger = Ledger(kDemo.transactions)								// grand livre
-		val vValues = kDemo.accounts.map { accountValue(it, vLedger, kToday, kDemo.prices) }	// valeurs du jour
-		val vWeights = accountWeights(vValues.associate { it.account.id to it.countedCents })	// parts du patrimoine
-		val vItems  = vValues.map { inValue ->
-			AccountItem(inValue.account, inValue.valueCents,
-				kDemo.transactions.count { inTx -> inTx.postings.any { it.accountId == inValue.account.id } } - 1, vWeights[inValue.account.id])
-		}																		// comptes valorisés
-		val vOld    = AccountItem(kDemo.accounts[2].copy(id = "ancien", name = "Ancien livret", archived = true), 0, 3)	// compte archivé
+		val vItems = buildAccountsState(kDemo.accounts, kDemo.transactions, kDemo.prices, kToday, kDemo.loans).active	// comptes valorisés, en net
+		val vOld   = AccountItem(kDemo.accounts[2].copy(id = "ancien", name = "Ancien livret", archived = true), 0, 3)	// compte archivé
 		return AccountsUiState(true, vItems, listOf(vOld))
 	}
 
@@ -329,7 +324,7 @@ class ScreenshotTest
 	{
 		val vToday = LocalDate.parse("2026-10-07")								// date de calcul
 		val vDemo  = buildDemoData(vToday)										// démonstration
-		val vState = toHomeUiState(wealthAt(vDemo.accounts, Ledger(vDemo.transactions), vToday, vDemo.prices), wealthSeries(vDemo.accounts, Ledger(vDemo.transactions), vDemo.prices, vToday))	// état calculé
+		val vState = buildHomeState(vDemo.accounts, vDemo.transactions, vDemo.prices, vToday, vDemo.loans)	// état calculé, en net
 		captureRoboImage("$kOutDir/home-demo.png", content = shell(false, false, TopLevelDestination.Home) {
 			HomeContent(vState, {}, {})
 		})

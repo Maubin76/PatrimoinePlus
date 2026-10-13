@@ -5,7 +5,8 @@ import fr.maubin.patrimoineplus.domain.model.AccountStatement
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.domain.model.AssetPrice
 import java.time.LocalDate
-import java.time.YearMonth
+import java.time.YearMonth
+import fr.maubin.patrimoineplus.domain.model.TransactionKind
 
 /*
 	Valeur d'un compte à une date, entière et à hauteur de la part détenue.
@@ -18,6 +19,51 @@ data class AccountValue(
 	val valueCents   : Long,
 	val countedCents : Long
 )
+
+/*
+	Valeur nette d'un compte, telle qu'affichée dans le patrimoine.
+	valueCents   : valeur entière nette : compte de biens moins le capital
+	               restant dû des crédits liés à ses biens ; compte Crédit en
+	               positif (somme due)
+	countedCents : part dans le patrimoine net (part détenue appliquée) ; nulle
+	               pour un crédit lié, déjà déduite du compte de biens ;
+	               négative pour un crédit sans bien
+	deductedInto : compte de biens dont un crédit lié est déduit ; null sinon
+*/
+data class NetValue(
+	val valueCents   : Long,
+	val countedCents : Long,
+	val deductedInto : String? = null
+)
+
+/*
+	Valeurs nettes des comptes : le capital restant dû d'un crédit lié à un
+	bien est retiré du compte de ce bien (à 100 % pour la valeur, à la part du
+	crédit pour la valeur comptée) et n'est plus compté à part ; un crédit sans
+	bien reste à déduire du total. La somme des valeurs comptées reste le
+	patrimoine net.
+	inValues : valeurs des comptes
+	inLinks  : compte de biens financé par chaque compte Crédit (financedAccounts)
+*/
+fun netValues(
+	inValues : List<AccountValue>,
+	inLinks  : Map<String, String>
+): Map<String, NetValue>
+{
+	val vById = inValues.associateBy { it.account.id }							// valeurs par compte
+	return inValues.associate { inValue ->
+		val vId = inValue.account.id												// compte
+		inValue.account.id to when
+		{
+			inValue.account.type == AccountType.LOAN -> NetValue(-inValue.valueCents, if (vId in inLinks) 0L else inValue.countedCents, inLinks[vId])
+			else                                    ->
+			{
+				val vLoans = inLinks.filterValues { it == vId }.keys.mapNotNull(vById::get)	// crédits liés à ses biens
+				NetValue(inValue.valueCents + vLoans.sumOf { it.valueCents }, inValue.countedCents + vLoans.sumOf { it.countedCents })
+			}
+		}
+	}
+}
 
 /*
 	Patrimoine à une date.
@@ -96,8 +142,10 @@ fun wealthAt(
 
 /*
 	Série mensuelle du patrimoine : une valeur par fin de mois, du mois de la
-	première opération jusqu'au mois de la date de fin. Le mois en cours est
-	arrêté à la date de fin (les opérations à venir sont exclues).
+	première opération jusqu'au mois de la date de fin. Un bien déjà possédé
+	(achat sans compte payeur, souvent daté de loin) n'avance pas ce début :
+	la courbe ne montre pas des mois où lui seul serait compté. Le mois en
+	cours est arrêté à la date de fin (les opérations à venir sont exclues).
 	inAccounts : comptes
 	inLedger   : grand livre
 	inPrices   : cours relevés
@@ -110,7 +158,7 @@ fun wealthSeries(
 	inUntil    : LocalDate
 ): List<SeriesPoint>
 {
-	val vFirst = inLedger.transactions().firstOrNull()?.date ?: return emptyList()	// première opération
+	val vFirst = (inLedger.transactions().firstOrNull { !(it.kind == TransactionKind.ACQUISITION && it.postings.size == 1) } ?: inLedger.transactions().firstOrNull())?.date ?: return emptyList()	// première opération suivie
 	if (vFirst.isAfter(inUntil))
 	{
 		return emptyList()

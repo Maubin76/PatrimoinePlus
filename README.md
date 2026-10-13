@@ -223,8 +223,14 @@ Détail complet : [`doc/SPEC.md` § 2](doc/SPEC.md#2-modèle-de-données).
   finance** (achat d'un compte Immobilier ou Collection) : la page du crédit
   et celle du bien montrent sa **valeur nette** (prix d'achat moins capital
   restant dû des crédits liés, à 100 %) ; le lien disparaît si l'achat est
-  supprimé. Tableau de bord et accueil : **patrimoine net**, avec le
-  **brut** (hors crédits) et les crédits comptés. Page du compte : capital
+  supprimé. Tableau de bord, accueil et onglet Comptes sont **en net** : un
+  compte de biens vaut son prix d'achat moins le capital restant dû des
+  crédits liés à ses biens (valeur, part et répartition) ; un crédit
+  s'affiche **en positif** (somme due), avec le compte dont il est déduit ;
+  un crédit sans bien reste « à déduire » sous la répartition. Patrimoine
+  net en grand, avec le brut (hors crédits) et les crédits. La courbe du
+  patrimoine part du début du suivi, pas de la date d'achat ancienne d'un
+  bien déjà possédé. Page du compte : capital
   restant dû, mensualité, intérêts restants, bien financé, tableau
   d'amortissement (PC) ou prochaines mensualités (téléphone). Dans le
   budget, le thème Crédit compte le capital remboursé et les intérêts.

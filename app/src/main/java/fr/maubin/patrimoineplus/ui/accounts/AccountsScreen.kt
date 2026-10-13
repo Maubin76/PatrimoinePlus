@@ -55,7 +55,8 @@ import fr.maubin.patrimoineplus.ui.planning.PlanningViewModel
 import fr.maubin.patrimoineplus.ui.planning.RecurrenceForm
 import fr.maubin.patrimoineplus.ui.planning.RecurrencesSection
 import fr.maubin.patrimoineplus.ui.planning.RecurrenceSheet
-import fr.maubin.patrimoineplus.ui.planning.editRecurrenceForm
+import fr.maubin.patrimoineplus.ui.planning.editRecurrenceForm
+import fr.maubin.patrimoineplus.domain.model.AccountType
 
 /*
 	Onglet des comptes : liste réordonnable avec la valeur de chaque compte,
@@ -291,6 +292,10 @@ private fun AccountRow(
 		Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
 			Text(inItem.account.name, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
 			Text(accountDetail(inItem.account), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+			if (inItem.account.type == AccountType.LOAN)
+			{
+				Text("Restant dû" + (inItem.deductedInto?.let { " · déduit de $it" } ?: ""), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+			}
 		}
 		Spacer(Modifier.width(16.dp))
 		Column(horizontalAlignment = Alignment.End) {

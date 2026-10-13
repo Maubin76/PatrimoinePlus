@@ -60,7 +60,8 @@ import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
 import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import fr.maubin.patrimoineplus.ui.components.monthTitle
+import fr.maubin.patrimoineplus.ui.components.monthTitle
+import fr.maubin.patrimoineplus.domain.model.AccountType
 
 private val kShortDay   = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date courte
 private val kAccountMin = 300.dp													// largeur minimale d'une tuile de compte
@@ -226,11 +227,11 @@ private fun RepartitionTile(
 {
 	Tile(inModifier = inModifier, inTitle = "Répartition") {
 		ProportionBar(
-			inSegments    = inState.home.groups.map { BarSegment(it.subtotalCents, typeColor(it.type)) },
-			inDescription = "Répartition par type de compte"
+			inSegments    = inState.home.assetGroups.map { BarSegment(it.subtotalCents, typeColor(it.type)) },
+			inDescription = "Répartition par type de compte, nette des crédits"
 		)
 		Spacer(Modifier.height(16.dp))
-		inState.home.groups.forEach { inGroup ->
+		inState.home.assetGroups.forEach { inGroup ->
 			Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
 				SeriesDot(typeColor(inGroup.type))
 				Spacer(Modifier.width(12.dp))
@@ -239,6 +240,15 @@ private fun RepartitionTile(
 				Spacer(Modifier.width(16.dp))
 				AmountText(inCents = inGroup.subtotalCents, inStyle = MaterialTheme.typography.bodyLarge)
 			}
+		}
+		if (inState.home.unlinkedDebtCents != 0L)
+		{
+			HorizontalDivider(Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
+			Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
+				Text("Crédits à déduire", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+				AmountText(inCents = inState.home.unlinkedDebtCents, inStyle = MaterialTheme.typography.bodyLarge)
+			}
+			Hint("Crédits sans bien financé ; les autres sont déjà déduits de leur bien.")
 		}
 	}
 }
@@ -283,9 +293,10 @@ private fun AccountTileView(
 		}
 		Spacer(Modifier.height(16.dp))
 		AmountText(inCents = inTile.valueCents, inStyle = MaterialTheme.typography.headlineMedium)
+		inTile.note?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = vMuted, maxLines = 1, overflow = TextOverflow.Ellipsis) }
 		inTile.monthChange?.let { inChange ->
 			Row(verticalAlignment = Alignment.CenterVertically) {
-				AmountText(inCents = inChange, inStyle = MaterialTheme.typography.bodyMedium, inShowPlusSign = true, inTrend = true)
+				AmountText(inCents = inChange, inStyle = MaterialTheme.typography.bodyMedium, inShowPlusSign = true, inTrend = inTile.account.type != AccountType.LOAN)	// crédit : une baisse n'est pas une perte
 				Text(" ce mois-ci", style = MaterialTheme.typography.bodyMedium, color = vMuted)
 			}
 		}

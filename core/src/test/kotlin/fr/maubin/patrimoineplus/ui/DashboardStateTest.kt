@@ -72,11 +72,12 @@ class DashboardStateTest
 				is TilePreview.Property  ->
 				{
 					assertTrue(vPreview.items.size <= kTileTopItems)
-					assertEquals(inTile.valueCents, vPreview.items.sumOf { it.second } + vPreview.others)	// biens détenus = valeur du compte
+					if (inTile.note == null) assertEquals(inTile.valueCents, vPreview.items.sumOf { it.second } + vPreview.others)	// biens détenus = valeur du compte
+					else assertTrue(vPreview.items.sumOf { it.second } + vPreview.others > inTile.valueCents)	// bien financé : valeur nette, sous le prix d'achat
 				}
 				is TilePreview.Loan      ->
 				{
-					assertEquals(-inTile.valueCents, vPreview.remaining)									// capital restant dû = moins le solde
+					assertEquals(inTile.valueCents, vPreview.remaining)									// crédit affiché en positif : capital restant dû
 					assertTrue(vPreview.next!!.date.isAfter(kToday))
 				}
 				is TilePreview.Savings   ->

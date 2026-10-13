@@ -177,7 +177,9 @@ refuse un fichier au format 5.
 | E-08 | Créer un crédit en choisissant « Bien financé » (bien détenu d'un compte Immobilier ou Collection). | Page du crédit : tuile « Bien financé » avec prix d'achat, restant dû et valeur nette ; page du bien : « reste dû … · valeur nette … » et valeur nette du compte. |
 | E-09 | Sur la page d'un crédit existant, changer le bien financé, puis « Aucun ». | Lien enregistré et retrouvé sur l'autre appareil après synchronisation ; « Aucun » retire la valeur nette. |
 | E-10 | Supprimer l'achat d'un bien financé. | Le crédit reste, sans bien financé. |
-| E-11 | Tableau de bord (PC) et accueil (téléphone) avec au moins un crédit. | « Patrimoine net » en grand ; dessous « Brut … · Crédits … » ; net = brut + crédits. Sans crédit : affichage inchangé. |
+| E-11 | Tableau de bord (PC) et accueil (téléphone) avec au moins un crédit. | « Patrimoine net » en grand ; dessous « Brut … · Crédits … » (crédits en positif) ; net = brut − crédits. Sans crédit : affichage inchangé. |
+| E-11b | Tuiles du tableau de bord, répartition (PC et accueil du téléphone), onglet Comptes, avec un crédit lié à un bien et un crédit sans bien. | Le compte de biens vaut prix − restant dû (« Net des crédits restant dus »), sa part et sa courbe aussi ; le crédit lié s'affiche en positif « Restant dû · déduit de … », sans part ; le crédit sans bien apparaît en « Crédits à déduire » sous la répartition ; parts des avoirs = 100 % ; total = net. |
+| E-11c | Ajouter un bien déjà possédé daté d'il y a plusieurs années. | La courbe du patrimoine ne remonte pas à cette date (pas de mois où seul le bien compte). |
 | E-12 | Mode discret. | Montants masqués partout, y compris brut, crédits, valeur nette et « Intérêts et assurance » de la saisie. |
 | E-13 | Budget et Analyse sur un mois avec mensualité. | Thème Crédit = capital + intérêts et assurance ; Analyse : la catégorie Crédit ne compte que les intérêts et l'assurance. |
 | E-14 | Ouvrir le classeur dans Excel. | Nature « Mensualité » sur les onglets Courant et Crédit ; onglet Crédits : colonne « Bien financé ». |

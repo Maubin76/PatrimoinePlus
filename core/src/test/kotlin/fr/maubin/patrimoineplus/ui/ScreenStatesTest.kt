@@ -28,7 +28,7 @@ class ScreenStatesTest
 	{
 		val vHome     = buildHomeState(kDemo.accounts, kDemo.transactions, kDemo.prices, kToday)	// accueil
 		val vAccounts = buildAccountsState(kDemo.accounts, kDemo.transactions, kDemo.prices, kToday)	// comptes
-		val vCounted  = (vAccounts.active + vAccounts.archived).sumOf { shareOf(it.valueCents, it.account.sharePercent) }	// patrimoine recompté
+		val vCounted  = (vAccounts.active + vAccounts.archived).sumOf { shareOf(if (it.account.type == fr.maubin.patrimoineplus.domain.model.AccountType.LOAN) -it.valueCents else it.valueCents, it.account.sharePercent) }	// patrimoine recompté (crédits affichés en positif)
 		assertEquals(vCounted, vHome.totalCents)
 		assertTrue(vHome.series.size in 2..12)
 		assertEquals("9 octobre 2026", homeDate(kToday))

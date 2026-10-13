@@ -6,20 +6,26 @@ import fr.maubin.patrimoineplus.domain.calc.wholePercents
 import fr.maubin.patrimoineplus.domain.model.Account
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
-import java.time.LocalDate
+import java.time.LocalDate
+import fr.maubin.patrimoineplus.domain.calc.netValues
+import fr.maubin.patrimoineplus.domain.calc.financedAccounts
+import fr.maubin.patrimoineplus.domain.model.Loan
 
 /*
 	Compte affiché dans la liste.
-	account    : compte
-	valueCents : valeur entière aujourd'hui
-	operations : nombre d'opérations, hors solde initial
-	weight     : part du compte dans le patrimoine (part détenue appliquée) ; null s'il n'y compte pas (valeur nulle ou négative)
+	account      : compte
+	valueCents   : valeur entière nette aujourd'hui (compte de biens moins ses
+	               crédits liés ; crédit : somme due, en positif)
+	operations   : nombre d'opérations, hors solde initial
+	weight       : part du compte dans le patrimoine net (part détenue appliquée) ; null s'il n'y compte pas (valeur nulle ou négative)
+	deductedInto : nom du compte de biens dont ce crédit est déduit ; null sinon
 */
 data class AccountItem(
-	val account    : Account,
-	val valueCents : Long,
-	val operations : Int,
-	val weight     : AccountWeight? = null
+	val account      : Account,
+	val valueCents   : Long,
+	val operations   : Int,
+	val weight       : AccountWeight? = null,
+	val deductedInto : String?        = null
 )
 
 /*
@@ -97,30 +103,36 @@ fun accountWeights(inCounted: Map<String, Long>): Map<String, AccountWeight>
 }
 
 /*
-	État de la liste des comptes à partir des données : valeur du jour,
-	nombre d'opérations (hors solde initial), part dans le patrimoine ; actifs
-	et archivés séparés. Partagé par les applis.
+	État de la liste des comptes à partir des données : valeur nette du jour
+	(comptes de biens moins leurs crédits liés, crédits en positif), nombre
+	d'opérations (hors solde initial), part dans le patrimoine net ; actifs et
+	archivés séparés. Partagé par les applis.
 	inAccounts     : comptes
 	inTransactions : opérations
 	inPrices       : cours relevés
 	inToday        : date de valorisation
+	inLoans        : crédits (biens financés)
 */
 fun buildAccountsState(
 	inAccounts     : List<Account>,
 	inTransactions : List<fr.maubin.patrimoineplus.domain.model.Transaction>,
 	inPrices       : List<fr.maubin.patrimoineplus.domain.model.AssetPrice>,
-	inToday        : LocalDate
+	inToday        : LocalDate,
+	inLoans        : List<Loan> = emptyList()
 ): AccountsUiState
 {
 	val vLedger  = Ledger(inTransactions)										// grand livre
-	val vValues  = inAccounts.associateWith { accountValue(it, vLedger, inToday, inPrices) }	// valeur de chaque compte
-	val vWeights = accountWeights(vValues.values.associate { it.account.id to it.countedCents })	// part de chaque compte
+	val vNets    = netValues(inAccounts.map { accountValue(it, vLedger, inToday, inPrices) }, financedAccounts(inLoans, inTransactions, inAccounts, inToday))	// valeur nette de chaque compte
+	val vWeights = accountWeights(vNets.mapValues { it.value.countedCents })	// part de chaque compte
+	val vNames   = inAccounts.associate { it.id to it.name }					// noms des comptes
 	val vItems   = inAccounts.map { inAccount ->
+		val vNet = vNets.getValue(inAccount.id)									// valeur nette
 		AccountItem(
-			account    = inAccount,
-			valueCents = vValues.getValue(inAccount).valueCents,
-			operations = inTransactions.count { inTx -> inTx.kind != TransactionKind.OPENING && inTx.postings.any { it.accountId == inAccount.id } },
-			weight     = vWeights[inAccount.id]
+			account      = inAccount,
+			valueCents   = vNet.valueCents,
+			operations   = inTransactions.count { inTx -> inTx.kind != TransactionKind.OPENING && inTx.postings.any { it.accountId == inAccount.id } },
+			weight       = vWeights[inAccount.id],
+			deductedInto = vNet.deductedInto?.let(vNames::get)
 		)
 	}																			// comptes valorisés
 	return AccountsUiState(true, vItems.filterNot { it.account.archived }, vItems.filter { it.account.archived })
