@@ -50,6 +50,7 @@ import fr.maubin.patrimoineplus.ui.projection.defaultProjectionInput
 import fr.maubin.patrimoineplus.ui.projection.kProjectionSpreadBrokerage
 import fr.maubin.patrimoineplus.ui.projection.kProjectionSpreadSavings
 import fr.maubin.patrimoineplus.ui.projection.projectWealth
+import fr.maubin.patrimoineplus.ui.components.smoothPath
 
 private val kHorizons = listOf(5, 10, 20, 30)											// horizons proposés, en années
 
@@ -202,12 +203,7 @@ private fun Chart(inResult: Projection)
 			*/
 			fun series(inValue: (Int) -> Long, inColor: Color, inWidth: Float, inDash: Boolean)
 			{
-				val vPath = Path().apply {
-					inResult.points.forEachIndexed { inIndex, inPoint ->
-						val vPoint = Offset(vX(inPoint.year), vY(inValue(inIndex)))					// point
-						if (inIndex == 0) moveTo(vPoint.x, vPoint.y) else lineTo(vPoint.x, vPoint.y)
-					}
-				}
+				val vPath = smoothPath(inResult.points.mapIndexed { inIndex, inPoint -> Offset(vX(inPoint.year), vY(inValue(inIndex))) })	// tracé lissé
 				drawPath(vPath, inColor, style = Stroke(width = inWidth, pathEffect = if (inDash) PathEffect.dashPathEffect(floatArrayOf(8f, 6f)) else null))
 			}
 			series({ inResult.points[it].contributed }, vLight, 1.5.dp.toPx(), false)

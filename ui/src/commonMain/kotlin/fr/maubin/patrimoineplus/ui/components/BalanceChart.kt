@@ -101,9 +101,7 @@ fun BalanceChart(
 				val vZero = vInset + (size.height - 2 * vInset) * (1f - (0 - vMin) / vSpan)	// ordonnée du zéro
 				drawLine(vColors.outlineVariant, Offset(0f, vZero), Offset(size.width, vZero), 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f)))
 			}
-			val vPath = Path().apply {
-				inSeries.indices.forEach { inIndex -> if (inIndex == 0) moveTo(at(0).x, at(0).y) else lineTo(at(inIndex).x, at(inIndex).y) }
-			}																	// tracé de la courbe
+			val vPath = smoothPath(inSeries.indices.map(::at))					// tracé lissé de la courbe
 			drawPath(vPath, vColors.onSurface, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
 			inSeries.indices.forEach { inIndex ->
 				val vChosen = inIndex == vPicked								// point mis en avant

@@ -148,12 +148,7 @@ fun Sparkline(
 		val vPad    = 4.dp.toPx()													// marge (épaisseur du trait, point final)
 		val vStepX  = (size.width - vPad) / (inSeries.size - 1)						// écart entre deux mois
 		val vY      = { inValue: Long -> if (vMax == vMin) size.height / 2f else vPad + (size.height - 2 * vPad) * (1f - (inValue - vMin) / vSpan) }	// ordonnée
-		val vPath = Path().apply {
-			inSeries.forEachIndexed { inIndex, inPoint ->
-				val vX = inIndex * vStepX												// abscisse
-				if (inIndex == 0) moveTo(vX, vY(inPoint.valueCents)) else lineTo(vX, vY(inPoint.valueCents))
-			}
-		}																			// tracé
+		val vPath = smoothPath(inSeries.mapIndexed { inIndex, inPoint -> Offset(inIndex * vStepX, vY(inPoint.valueCents)) })	// tracé lissé
 		drawPath(vPath, vLine, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
 		drawCircle(vLine, radius = 3.5.dp.toPx(), center = Offset(size.width - vPad, vY(inSeries.last().valueCents)))
 	}
