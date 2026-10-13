@@ -17,9 +17,13 @@ import fr.maubin.patrimoineplus.domain.rules.validateAccount
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.time.LocalDate
+import fr.maubin.patrimoineplus.domain.model.Frequency
+import fr.maubin.patrimoineplus.domain.model.Loan
+import fr.maubin.patrimoineplus.domain.model.Recurrence
+import fr.maubin.patrimoineplus.domain.calc.kMaxTradeCents
 
 const val kBackupFormat  = "patrimoineplus"										// signature du fichier
-const val kBackupVersion = 3													// version du format (2 : symbole de cotation des actifs ; 3 : comptes de biens, achats et ventes de biens)
+const val kBackupVersion = 4													// version du format (2 : symbole de cotation des actifs ; 3 : comptes de biens ; 4 : opérations récurrentes et crédits)
 
 private val kJson = Json { prettyPrint = true; ignoreUnknownKeys = false }		// lecteur et écrivain JSON
 
@@ -133,6 +137,41 @@ data class PriceDto(
 )
 
 /*
+	Opération récurrente exportée.
+*/
+@Serializable
+data class RecurrenceDto(
+	val id          : String,
+	val label       : String,
+	val accountId   : String,
+	val toAccountId : String? = null,
+	val categoryId  : String? = null,
+	val amountCents : Long,
+	val frequency   : String,
+	val start       : String,
+	val end         : String? = null,
+	val last        : String? = null,
+	val notes       : String? = null
+)
+
+/*
+	Crédit exporté.
+*/
+@Serializable
+data class LoanDto(
+	val id         : String,
+	val accountId  : String,
+	val principal  : Long,
+	val rateBp     : Int,
+	val months     : Int,
+	val firstDue   : String,
+	val insurance  : Long,
+	val payFrom    : String,
+	val categoryId : String,
+	val last       : String? = null
+)
+
+/*
 	Fichier d'export complet : toute la base, versionnée.
 */
 @Serializable
@@ -145,7 +184,9 @@ data class BackupFile(
 	val assets       : List<AssetDto>,
 	val transactions : List<TransactionDto>,
 	val statements   : List<StatementDto>,
-	val prices       : List<PriceDto>
+	val prices       : List<PriceDto>,
+	val recurrences  : List<RecurrenceDto> = emptyList(),
+	val loans        : List<LoanDto>       = emptyList()
 )
 {
 	// Contenu en nombres d'éléments (fenêtre de conflit : la date d'export n'y a pas de sens).
@@ -249,6 +290,13 @@ fun validateBackup(inFile: BackupFile): BackupRead
 		if (inTx.trades.any { it.assetId !in vAssets }) return BackupRead.Invalid("Actif inconnu dans « ${inTx.label} ».")
 	}
 	if (vFile.statements.any { it.accountId !in vAccounts }) return BackupRead.Invalid("Relevé d’un compte inconnu.")
+	vDomain.recurrences.firstOrNull { recurrenceError(it, vAccounts, vCategories) != null }?.let {
+		return BackupRead.Invalid("Opération récurrente « ${it.label} » invalide : ${recurrenceError(it, vAccounts, vCategories)}")
+	}
+	vDomain.loans.firstOrNull { loanError(it, vAccounts, vCategories) != null }?.let {
+		return BackupRead.Invalid("Crédit invalide : ${loanError(it, vAccounts, vCategories)}")
+	}
+	if ((vFile.recurrences.map { it.id } + vFile.loans.map { it.id }).let { it.size != it.toSet().size }) return BackupRead.Invalid("Identifiants en double dans le fichier.")
 	if (vFile.prices.any { it.assetId !in vAssets }) return BackupRead.Invalid("Cours d’un actif inconnu.")
 	if (vFile.prices.groupBy { it.assetId to it.date }.any { it.value.size > 1 }) return BackupRead.Invalid("Deux cours pour un même actif et un même jour.")
 	val vValidator = TransactionValidator(vAccounts, vCategories, vAssets)	// règles de saisie
@@ -270,12 +318,16 @@ fun validateBackup(inFile: BackupFile): BackupRead
 	categories   : catégories
 	assets       : actifs
 	transactions : opérations
+	recurrences  : opérations récurrentes
+	loans        : crédits
 */
 private data class DomainContent(
 	val accounts     : List<Account>,
 	val categories   : List<Category>,
 	val assets       : List<Asset>,
-	val transactions : List<Transaction>
+	val transactions : List<Transaction>,
+	val recurrences  : List<Recurrence>,
+	val loans        : List<Loan>
 )
 
 /*
@@ -301,8 +353,86 @@ private fun toDomain(inFile: BackupFile): DomainContent =
 				trades     = inTx.trades.map { Trade(it.id, it.assetId, TradeSide.valueOf(it.side), it.quantity, it.unitPrice, it.feesCents) },
 				linkedId   = inTx.linkedId
 			)
-		}
+		},
+		recurrences  = inFile.recurrences.map { it.toDomain() },
+		loans        = inFile.loans.map { it.toDomain() }
 	).also {
 		inFile.statements.forEach { inStatement -> LocalDate.parse(inStatement.date) }
 		inFile.prices.forEach { inPrice -> LocalDate.parse(inPrice.date) }
+	}
+
+/*
+	Opération récurrente du domaine ; lève une exception sur une valeur inconnue.
+*/
+fun RecurrenceDto.toDomain(): Recurrence =
+	Recurrence(id, label, accountId, toAccountId, categoryId, amountCents, Frequency.valueOf(frequency), LocalDate.parse(start), end?.let(LocalDate::parse), last?.let(LocalDate::parse), notes)
+
+/*
+	Opération récurrente exportée.
+*/
+fun Recurrence.toDto(): RecurrenceDto =
+	RecurrenceDto(id, label, accountId, toAccountId, categoryId, amountCents, frequency.name, start.toString(), end?.toString(), last?.toString(), notes)
+
+/*
+	Crédit du domaine ; lève une exception sur une date illisible.
+*/
+fun LoanDto.toDomain(): Loan =
+	Loan(id, accountId, principal, rateBp, months, LocalDate.parse(firstDue), insurance, payFrom, categoryId, last?.let(LocalDate::parse))
+
+/*
+	Crédit exporté.
+*/
+fun Loan.toDto(): LoanDto =
+	LoanDto(id, accountId, principal, rateBp, months, firstDue.toString(), insurance, payFrom, categoryId, last?.toString())
+
+/*
+	Défaut d'une opération récurrente ; null si elle est valable : libellé,
+	comptes connus et différents, catégorie connue pour une dépense ou un
+	revenu, montant non nul (positif pour un virement), fin après le début.
+	inRec        : opération récurrente
+	inAccounts   : comptes par identifiant
+	inCategories : catégories par identifiant
+*/
+fun recurrenceError(
+	inRec        : Recurrence,
+	inAccounts   : Map<String, Account>,
+	inCategories : Map<String, Category>
+): String? =
+	when
+	{
+		inRec.label.isBlank()                                              -> "libellé vide."
+		inRec.accountId !in inAccounts                                     -> "compte inconnu."
+		inRec.toAccountId != null && inRec.toAccountId !in inAccounts      -> "compte d’arrivée inconnu."
+		inRec.toAccountId == inRec.accountId                               -> "deux comptes identiques."
+		inRec.toAccountId == null && inRec.categoryId !in inCategories     -> "catégorie inconnue."
+		inRec.toAccountId != null && inRec.categoryId != null              -> "un virement ne prend pas de catégorie."
+		inRec.amountCents == 0L || (inRec.toAccountId != null && inRec.amountCents < 0) -> "montant nul ou négatif."
+		inRec.end != null && inRec.end.isBefore(inRec.start)               -> "fin avant le début."
+		listOfNotNull(inRec.accountId, inRec.toAccountId).any { inAccounts[it]?.type?.isProperty == true } -> "un compte Immobilier ou Collection ne reçoit pas d’opération récurrente."
+		else                                                               -> null
+	}
+
+/*
+	Défaut d'un crédit ; null s'il est valable : compte de type Crédit,
+	compte payeur ordinaire, catégorie de dépense, montant, taux et durée
+	plausibles.
+	inLoan       : crédit
+	inAccounts   : comptes par identifiant
+	inCategories : catégories par identifiant
+*/
+fun loanError(
+	inLoan       : Loan,
+	inAccounts   : Map<String, Account>,
+	inCategories : Map<String, Category>
+): String? =
+	when
+	{
+		inAccounts[inLoan.accountId]?.type != AccountType.LOAN                       -> "le compte du crédit doit être de type Crédit."
+		inAccounts[inLoan.payFrom].let { it == null || it.type == AccountType.LOAN || it.type.isProperty } -> "compte payeur invalide."
+		inCategories[inLoan.categoryId]?.kind != CategoryKind.EXPENSE                -> "catégorie des intérêts : choisissez une catégorie de dépense."
+		inLoan.principal <= 0 || inLoan.principal >= kMaxTradeCents                  -> "montant emprunté invalide."
+		inLoan.rateBp !in 0..3_000                                                   -> "taux hors de 0 à 30 %."
+		inLoan.months !in 1..600                                                     -> "durée hors de 1 à 600 mois."
+		inLoan.insurance < 0                                                         -> "assurance négative."
+		else                                                                         -> null
 	}

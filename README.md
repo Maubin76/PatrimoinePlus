@@ -183,13 +183,40 @@ dans `app/build/outputs/roborazzi/`.
 Détail complet : [`doc/SPEC.md` § 2](doc/SPEC.md#2-modèle-de-données).
 
 - **Base Room** (`data/db`), seule source de données, schéma exporté dans
-  `app/schemas` (version 3 ; migrations automatiques 1 → 2 → 3). Tables : `account`, `category`, `asset`, `txn`
+  `app/schemas` (version 4 ; migrations automatiques 1 → 2 → 3 → 4). Tables : `account`, `category`, `asset`, `txn`
   (opérations), `posting` (jambes), `trade` (ordres), `account_statement`
-  (relevés), `asset_price` (cours). Aucun solde ni total stocké.
-- **Comptes** créés dans l'application, cinq types : Courant, Épargne, Bourse,
-  et deux comptes de biens, **Immobilier** et **Collection** (objets de
-  collection) ; établissement et part détenue (compte joint, indivision)
+  (relevés), `asset_price` (cours), `recurrence` (opérations récurrentes),
+  `loan` (crédits). Aucun solde ni total stocké.
+- **Comptes** créés dans l'application, six types : Courant, Épargne, Bourse,
+  deux comptes de biens, **Immobilier** et **Collection** (objets de
+  collection), et **Crédit** (solde négatif : capital restant dû, déduit du
+  patrimoine) ; établissement et part détenue (compte joint, indivision)
   facultatifs.
+- **Opérations récurrentes** : dépense, revenu ou virement répété chaque
+  mois, trimestre ou année, à partir d'une première échéance (fin
+  facultative ; un 31 devient le dernier jour des mois plus courts). Chaque
+  échéance arrivée crée l'opération **toute seule** : au lancement de
+  l'appli et au retour au premier plan (téléphone), à l'ouverture et au
+  changement de jour (PC), après un import ou une synchronisation, et dès
+  l'enregistrement pour les échéances déjà passées. L'opération créée a un
+  identifiant tiré de la récurrence et de sa date, et des horodatages tirés
+  de sa date : créée sur le téléphone et sur le PC, elle n'en fait qu'une ;
+  la récurrence retient sa dernière échéance créée, si bien qu'une opération
+  supprimée n'est pas recréée. Saisie : « Répéter » dans la saisie d'une
+  opération, ou section « Opérations récurrentes » (onglet Comptes du
+  téléphone, écran Récurrences du PC).
+- **Crédits** : un compte Crédit créé avec son tableau d'amortissement
+  (montant, taux nominal, durée, première mensualité, assurance mensuelle,
+  compte payeur, catégorie des intérêts, « Crédit » créée si besoin) ;
+  mensualité constante, intérêts sur le capital restant, dernière mensualité
+  qui solde. Les mensualités déjà passées sont tenues pour payées : le compte
+  part du capital restant dû du jour. Chaque mensualité suivante crée à sa
+  date un virement du capital (compte payeur → compte Crédit) et une dépense
+  des intérêts et de l'assurance. Page du compte : capital restant dû,
+  mensualité, intérêts restants, tableau d'amortissement (PC) ou prochaines
+  mensualités (téléphone). Dans le budget, le thème Crédit compte le capital
+  remboursé et les intérêts. Un remboursement anticipé se saisit comme un
+  virement vers le compte Crédit (le tableau, lui, ne change pas).
 - **Opérations à jambes** : dépense ou revenu (1 jambe), virement (2 jambes de
   somme nulle), ordre de bourse (1 jambe + 1 ordre), solde initial, **achat
   d'un bien** (jambe du compte de biens, et du compte payeur s'il a été payé
@@ -229,10 +256,11 @@ direct entre téléphones reste possible.
   Fichiers **non chiffrés**, lisibles par toute appli ayant accès aux fichiers.
 - **Classeur** (`data/backup/BackupWorkbook.kt`, écrit et lu sans
   bibliothèque par `data/backup/xlsx/`) : un onglet par type de compte
-  (Courant, Épargne, Bourse, Immobilier, Collection : une ligne par mouvement
-  sur un compte, ordres
-  de bourse détaillés), puis Comptes, Catégories, Actifs, Cours, Relevés et
-  Fichier (signature, version). En-têtes figés et filtrables, dates et
+  (Courant, Épargne, Bourse, Immobilier, Collection, Crédit : une ligne par
+  mouvement sur un compte, ordres
+  de bourse détaillés), puis Comptes, Catégories, Actifs, Cours, Relevés,
+  Récurrences, Crédits et Fichier (signature, version ; format 4). Un
+  classeur plus ancien, sans les derniers onglets, reste lisible. En-têtes figés et filtrables, dates et
   montants en vrais nombres, négatifs en rouge. Les identifiants sont dans des
   colonnes techniques repliées : ils rendent la restauration exacte. Un
   virement entre deux types de comptes figure sur les deux onglets et n'est

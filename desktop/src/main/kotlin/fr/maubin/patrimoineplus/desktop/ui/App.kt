@@ -99,7 +99,9 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import fr.maubin.patrimoineplus.desktop.ui.panels.PurchasePanel
-import fr.maubin.patrimoineplus.desktop.ui.panels.SalePanel
+import fr.maubin.patrimoineplus.desktop.ui.panels.SalePanel
+import fr.maubin.patrimoineplus.desktop.ui.panels.RecurrencePanel
+import fr.maubin.patrimoineplus.desktop.ui.screens.RecurringScreen
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -210,6 +212,7 @@ private fun Shell(
 							inScreen == Screen.REPORT        -> ReportScreen(inSpace, inController)
 							inScreen == Screen.PROJECTION    -> ProjectionScreen(inSpace, inController)
 							inScreen == Screen.BUDGET        -> BudgetScreen(inSpace, inController)
+							inScreen == Screen.RECURRING     -> RecurringScreen(inSpace, inController)
 							inScreen == Screen.GOALS         -> GoalsScreen(inSpace, inController)
 							inScreen == Screen.CATEGORIES    -> CategoriesScreen(inSpace, inController)
 							else                             -> SettingsScreen(inController, inOnPickFolder)
@@ -238,6 +241,7 @@ private fun Shell(
 						is Panel.AssetSheet      -> AssetPanel(inController, inPanel.assetId)
 						is Panel.Purchase        -> PurchasePanel(inController, inPanel.form)
 						is Panel.Sale            -> SalePanel(inController, inPanel.form)
+						is Panel.Recurring       -> RecurrencePanel(inController, inPanel.form)
 					}
 				}
 			}
@@ -360,7 +364,7 @@ private fun Rail(
 				verticalAlignment = Alignment.CenterVertically
 			) {
 				Icon(
-					imageVector        = when (inEntry) { Screen.DASHBOARD -> LineIcons.Home; Screen.OPERATIONS -> LineIcons.Search; Screen.ANALYSIS -> LineIcons.Bars; Screen.BATCH -> LineIcons.Edit; Screen.REPORT -> LineIcons.Document; Screen.PROJECTION -> LineIcons.Trend; Screen.BUDGET -> LineIcons.Wallet; Screen.GOALS -> LineIcons.Target; Screen.CATEGORIES -> LineIcons.Grid; Screen.SETTINGS -> LineIcons.Sliders },
+					imageVector        = when (inEntry) { Screen.DASHBOARD -> LineIcons.Home; Screen.OPERATIONS -> LineIcons.Search; Screen.ANALYSIS -> LineIcons.Bars; Screen.BATCH -> LineIcons.Edit; Screen.RECURRING -> LineIcons.Repeat; Screen.REPORT -> LineIcons.Document; Screen.PROJECTION -> LineIcons.Trend; Screen.BUDGET -> LineIcons.Wallet; Screen.GOALS -> LineIcons.Target; Screen.CATEGORIES -> LineIcons.Grid; Screen.SETTINGS -> LineIcons.Sliders },
 					contentDescription = null,
 					tint               = if (vActive) vColors.onPrimary else vColors.onSurface,
 					modifier           = Modifier.size(20.dp)

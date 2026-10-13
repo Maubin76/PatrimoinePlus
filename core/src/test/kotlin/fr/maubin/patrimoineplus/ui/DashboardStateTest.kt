@@ -43,6 +43,7 @@ class DashboardStateTest
 				AccountType.SAVINGS   -> assertTrue(inTile.preview is TilePreview.Savings)
 				AccountType.BROKERAGE -> assertTrue(inTile.preview is TilePreview.Brokerage)
 				AccountType.REAL_ESTATE, AccountType.COLLECTIBLE -> assertTrue(inTile.preview is TilePreview.Property)
+				AccountType.LOAN -> assertTrue(inTile.preview is TilePreview.Loan)
 			}
 		}
 		assertEquals(kState.home.totalCents, kState.home.groups.sumOf { it.subtotalCents })
@@ -72,6 +73,11 @@ class DashboardStateTest
 				{
 					assertTrue(vPreview.items.size <= kTileTopItems)
 					assertEquals(inTile.valueCents, vPreview.items.sumOf { it.second } + vPreview.others)	// biens détenus = valeur du compte
+				}
+				is TilePreview.Loan      ->
+				{
+					assertEquals(-inTile.valueCents, vPreview.remaining)									// capital restant dû = moins le solde
+					assertTrue(vPreview.next!!.date.isAfter(kToday))
 				}
 				is TilePreview.Savings   ->
 				{

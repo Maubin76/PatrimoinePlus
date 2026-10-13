@@ -1,6 +1,7 @@
 package fr.maubin.patrimoineplus.ui.budget
 
 import fr.maubin.patrimoineplus.data.DataSet
+import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.domain.model.CategoryKind
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
 import kotlinx.serialization.Serializable
@@ -177,7 +178,8 @@ data class BudgetView(
 /*
 	Compare chaque ligne au réel d'un mois : entrées par leur catégorie
 	(tous comptes), dépenses par thème (catégories du thème, tous comptes,
-	remboursements déduits), investissements par
+	remboursements déduits ; le thème Crédit compte aussi le capital
+	remboursé, virements vers un compte Crédit), investissements par
 	les versements reçus sur leur compte (virements entrants moins sortants,
 	achats de biens pour un compte Immobilier ou Collection,
 	opérations à venir comprises dans le mois). Fonction pure.
@@ -213,7 +215,11 @@ fun compareBudget(
 	val vSpent  = vMonthTxs
 		.filter { it.kind == TransactionKind.STANDARD && vKinds[it.categoryId] == CategoryKind.EXPENSE }
 		.groupBy { themeOfCategory(vNames.getValue(it.categoryId!!)) }
-		.mapValues { (_, inTxs) -> -inTxs.sumOf { inTx -> inTx.postings.sumOf { it.amountCents } } }	// dépenses nettes du mois par thème
+		.mapValues { (_, inTxs) -> -inTxs.sumOf { inTx -> inTx.postings.sumOf { it.amountCents } } }
+		.toMutableMap()																// dépenses nettes du mois par thème
+	val vLoans  = inData.accounts.filter { it.type == AccountType.LOAN }.map { it.id }.toSet()	// comptes Crédit
+	val vRepaid = vMonthTxs.filter { it.kind == TransactionKind.TRANSFER }.sumOf { inTx -> inTx.postings.filter { it.accountId in vLoans }.sumOf { it.amountCents } }	// capital remboursé dans le mois
+	if (vRepaid != 0L) vSpent[ExpenseTheme.CREDIT] = (vSpent[ExpenseTheme.CREDIT] ?: 0L) + vRepaid
 	val vThemes = ExpenseTheme.entries.mapNotNull { inTheme ->
 		vViews.filter { it.theme == inTheme }.takeIf { it.isNotEmpty() }?.let { ThemeView(inTheme, it, vSpent[inTheme] ?: 0L) }
 	}																				// thèmes du budget

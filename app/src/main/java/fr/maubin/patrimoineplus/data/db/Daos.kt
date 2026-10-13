@@ -361,6 +361,8 @@ interface BackupDao
 	@Transaction
 	suspend fun deleteAll()
 	{
+		deleteRecurrences()
+		deleteLoans()
 		deleteTrades()
 		deletePostings()
 		deleteTransactions()
@@ -370,6 +372,14 @@ interface BackupDao
 		deleteCategories()
 		deleteAccounts()
 	}
+
+	// Efface les opérations récurrentes.
+	@Query("DELETE FROM recurrence")
+	suspend fun deleteRecurrences()
+
+	// Efface les crédits.
+	@Query("DELETE FROM loan")
+	suspend fun deleteLoans()
 
 	// Efface les ordres.
 	@Query("DELETE FROM trade")
@@ -430,4 +440,100 @@ interface BackupDao
 	*/
 	@Insert
 	suspend fun insertTransactions(inTxs: List<TransactionEntity>)
+}
+
+/*
+	Accès aux opérations récurrentes et aux crédits.
+*/
+@Dao
+interface PlanningDao
+{
+	// Opérations récurrentes, observées.
+	@Query("SELECT * FROM recurrence ORDER BY label")
+	fun observeRecurrences(): Flow<List<RecurrenceEntity>>
+
+	// Crédits, observés.
+	@Query("SELECT * FROM loan")
+	fun observeLoans(): Flow<List<LoanEntity>>
+
+	// Opérations récurrentes.
+	@Query("SELECT * FROM recurrence")
+	suspend fun recurrences(): List<RecurrenceEntity>
+
+	// Crédits.
+	@Query("SELECT * FROM loan")
+	suspend fun loans(): List<LoanEntity>
+
+	/*
+		Crée ou remplace des opérations récurrentes.
+		inItems : récurrences
+	*/
+	@Insert(onConflict = OnConflictStrategy.REPLACE)
+	suspend fun upsertRecurrences(inItems: List<RecurrenceEntity>)
+
+	/*
+		Crée ou remplace des crédits.
+		inItems : crédits
+	*/
+	@Insert(onConflict = OnConflictStrategy.REPLACE)
+	suspend fun upsertLoans(inItems: List<LoanEntity>)
+
+	/*
+		Supprime une opération récurrente.
+		inId : récurrence
+	*/
+	@Query("DELETE FROM recurrence WHERE id = :inId")
+	suspend fun deleteRecurrence(inId: String)
+
+	/*
+		Supprime un crédit (tableau d'amortissement).
+		inId : crédit
+	*/
+	@Query("DELETE FROM loan WHERE id = :inId")
+	suspend fun deleteLoan(inId: String)
+
+	/*
+		Supprime les récurrences et crédits liés à un compte supprimé.
+		inId : compte
+	*/
+	@Query("DELETE FROM recurrence WHERE accountId = :inId OR toAccountId = :inId")
+	suspend fun deleteRecurrencesOf(inId: String)
+
+	/*
+		Supprime les crédits liés à un compte supprimé.
+		inId : compte
+	*/
+	@Query("DELETE FROM loan WHERE accountId = :inId OR payFrom = :inId")
+	suspend fun deleteLoansOf(inId: String)
+
+	/*
+		Réaffecte la catégorie des récurrences.
+		inFrom : catégorie supprimée
+		inTo   : catégorie de remplacement
+	*/
+	@Query("UPDATE recurrence SET categoryId = :inTo WHERE categoryId = :inFrom")
+	suspend fun reassignRecurrences(inFrom: String, inTo: String)
+
+	/*
+		Réaffecte la catégorie des intérêts des crédits.
+		inFrom : catégorie supprimée
+		inTo   : catégorie de remplacement
+	*/
+	@Query("UPDATE loan SET categoryId = :inTo WHERE categoryId = :inFrom")
+	suspend fun reassignLoans(inFrom: String, inTo: String)
+
+	/*
+		Nombre de récurrences et de crédits qui utilisent une catégorie.
+		inId : catégorie
+	*/
+	@Query("SELECT (SELECT COUNT(*) FROM recurrence WHERE categoryId = :inId) + (SELECT COUNT(*) FROM loan WHERE categoryId = :inId)")
+	suspend fun categoryUsage(inId: String): Int
+
+	// Efface toutes les récurrences.
+	@Query("DELETE FROM recurrence")
+	suspend fun deleteAllRecurrences()
+
+	// Efface tous les crédits.
+	@Query("DELETE FROM loan")
+	suspend fun deleteAllLoans()
 }

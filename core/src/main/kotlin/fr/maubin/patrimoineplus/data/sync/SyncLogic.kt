@@ -37,7 +37,9 @@ fun syncFingerprint(inFile: BackupFile): String
 			inTx.copy(label = inTx.label.canonical(), notes = inTx.notes.canonicalOrNull(), postings = inTx.postings.sortedBy { it.id }, trades = inTx.trades.sortedBy { it.id })
 		},
 		statements   = inFile.statements.sortedBy { it.id },
-		prices       = inFile.prices.sortedBy { it.id }
+		prices       = inFile.prices.sortedBy { it.id },
+		recurrences  = inFile.recurrences.sortedBy { it.id }.map { it.copy(label = it.label.canonical(), notes = it.notes.canonicalOrNull()) },
+		loans        = inFile.loans.sortedBy { it.id }
 	)																			// forme canonique
 	val vDigest = MessageDigest.getInstance("SHA-256").digest(encodeBackup(vCanonical).toByteArray(Charsets.UTF_8))	// empreinte brute
 	return vDigest.joinToString("") { "%02x".format(it) }

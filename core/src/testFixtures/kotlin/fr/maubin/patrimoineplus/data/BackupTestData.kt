@@ -13,6 +13,7 @@ import fr.maubin.patrimoineplus.data.backup.kBackupFormat
 import fr.maubin.patrimoineplus.data.backup.kBackupVersion
 import fr.maubin.patrimoineplus.data.demo.buildDemoData
 import java.time.LocalDate
+import fr.maubin.patrimoineplus.data.backup.toDto
 
 /*
 	Fichier d'export construit à partir des données de démonstration.
@@ -39,6 +40,8 @@ fun backupFileOf(inData: DataSet): BackupFile
 				inTx.trades.map { TradeDto(it.id, it.assetId, it.side.name, it.quantity, it.unitPrice, it.feesCents) }, inTx.linkedId)
 		},
 		statements   = vDemo.statements.map { StatementDto(it.id, it.accountId, it.date.toString(), it.balanceCents) },
-		prices       = vDemo.prices.map { PriceDto(it.id, it.assetId, it.date.toString(), it.unitPrice) }
+		prices       = vDemo.prices.map { PriceDto(it.id, it.assetId, it.date.toString(), it.unitPrice) },
+		recurrences  = vDemo.recurrences.map { it.toDto() },
+		loans        = vDemo.loans.map { it.toDto() }
 	)
 }

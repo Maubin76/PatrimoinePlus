@@ -31,6 +31,16 @@ import fr.maubin.patrimoineplus.domain.rules.validateReassignment
 import java.time.Clock
 import java.time.LocalDate
 import java.util.UUID
+import fr.maubin.patrimoineplus.domain.model.Recurrence
+import fr.maubin.patrimoineplus.domain.model.Loan
+import fr.maubin.patrimoineplus.data.backup.recurrenceError
+import fr.maubin.patrimoineplus.data.backup.loanError
+import fr.maubin.patrimoineplus.data.backup.toDto
+import fr.maubin.patrimoineplus.domain.calc.amortization
+import fr.maubin.patrimoineplus.domain.calc.remainingAt
+import fr.maubin.patrimoineplus.domain.calc.dueOperations
+import fr.maubin.patrimoineplus.ui.budget.ExpenseTheme
+import fr.maubin.patrimoineplus.ui.budget.themeOfCategory
 
 private const val kPositiveValues = "Quantité et cours doivent être positifs."		// refus d'une valeur nulle ou négative
 
@@ -305,7 +315,9 @@ class DataEditor(
 			inFile.copy(
 				accounts     = inFile.accounts.filterNot { it.id == inId },
 				transactions = inFile.transactions.filterNot { inTx -> inTx.postings.any { it.accountId == inId } },
-				statements   = inFile.statements.filterNot { it.accountId == inId }
+				statements   = inFile.statements.filterNot { it.accountId == inId },
+				recurrences  = inFile.recurrences.filterNot { it.accountId == inId || it.toAccountId == inId },
+				loans        = inFile.loans.filterNot { it.accountId == inId || it.payFrom == inId }
 			),
 			inId
 		)
@@ -369,14 +381,15 @@ class DataEditor(
 	}
 
 	/*
-		Nombre d'opérations qui utilisent une catégorie.
+		Nombre d'opérations, de récurrences et de crédits qui utilisent une
+		catégorie.
 		inFile : contenu
 		inId   : catégorie
 	*/
 	fun categoryUsage(
 		inFile : BackupFile,
 		inId   : String
-	): Int = inFile.transactions.count { it.categoryId == inId }
+	): Int = inFile.transactions.count { it.categoryId == inId } + inFile.recurrences.count { it.categoryId == inId } + inFile.loans.count { it.categoryId == inId }
 
 	/*
 		Supprime une catégorie ; si elle est utilisée, ses opérations passent
@@ -400,6 +413,15 @@ class DataEditor(
 			validateReassignment(vFrom, vTo).refusal()?.let { return it }
 			val vNow = now()														// horodatage
 			vTxs = vTxs.map { if (it.categoryId == inId) it.copy(categoryId = vTo.id, updatedAt = vNow) else it }
+			return EditResult.Done(
+				inFile.copy(
+					categories   = inFile.categories.filterNot { it.id == inId },
+					transactions = vTxs,
+					recurrences  = inFile.recurrences.map { if (it.categoryId == inId) it.copy(categoryId = vTo.id) else it },
+					loans        = inFile.loans.map { if (it.categoryId == inId) it.copy(categoryId = vTo.id) else it }
+				),
+				inId
+			)
 		}
 		return EditResult.Done(inFile.copy(categories = inFile.categories.filterNot { it.id == inId }, transactions = vTxs), inId)
 	}
@@ -609,6 +631,128 @@ class DataEditor(
 		inFile : BackupFile,
 		inId   : String
 	): EditResult = EditResult.Done(inFile.copy(statements = inFile.statements.filterNot { it.id == inId }))
+
+	// ---------- Opérations récurrentes et crédits ----------
+
+	/*
+		Crée ou remplace une opération récurrente, après vérification. Une
+		récurrence modifiée garde sa dernière échéance créée (les échéances
+		passées ne sont pas recréées).
+		inFile : contenu
+		inRec  : opération récurrente
+	*/
+	fun saveRecurrence(
+		inFile : BackupFile,
+		inRec  : Recurrence
+	): EditResult
+	{
+		val vData = inFile.toDataSet()												// modèles du domaine
+		recurrenceError(inRec, vData.accounts.associateBy { it.id }, vData.categories.associateBy { it.id })?.let { return EditResult.Refused(listOf(it.replaceFirstChar { c -> c.uppercase() })) }
+		val vKept = vData.recurrences.firstOrNull { it.id == inRec.id }?.last		// dernière échéance déjà créée
+		val vSaved = inRec.copy(label = inRec.label.trim(), notes = inRec.notes?.trim()?.ifEmpty { null }, last = vKept ?: inRec.last)	// récurrence retenue
+		return EditResult.Done(inFile.copy(recurrences = inFile.recurrences.filterNot { it.id == inRec.id } + vSaved.toDto()), inRec.id)
+	}
+
+	/*
+		Supprime une opération récurrente (les opérations déjà créées restent).
+		inFile : contenu
+		inId   : récurrence
+	*/
+	fun deleteRecurrence(
+		inFile : BackupFile,
+		inId   : String
+	): EditResult = EditResult.Done(inFile.copy(recurrences = inFile.recurrences.filterNot { it.id == inId }))
+
+	/*
+		Crée un crédit : un compte de type Crédit en fin de liste, son solde
+		initial du jour (moins le capital restant dû après les mensualités
+		déjà passées), et son tableau d'amortissement. Les mensualités passées sont
+		tenues pour payées avant le suivi dans l'appli ; les suivantes seront
+		créées à leur date. Sans catégorie choisie, les intérêts vont dans la
+		catégorie de dépense « Crédit », créée si besoin.
+		inFile        : contenu
+		inName        : nom du compte
+		inInstitution : établissement, facultatif
+		inShare       : part détenue, en %
+		inLoan        : paramètres (identifiants de compte et de crédit ignorés ; catégorie vide : « Crédit »)
+		inToday       : date du jour
+	*/
+	fun createLoan(
+		inFile        : BackupFile,
+		inName        : String,
+		inInstitution : String?,
+		inShare       : Int,
+		inLoan        : Loan,
+		inToday       : LocalDate
+	): EditResult
+	{
+		var vFile = inFile																// contenu modifié
+		val vCategory = inLoan.categoryId.takeIf { inId -> vFile.categories.any { it.id == inId } }
+			?: vFile.categories.firstOrNull { it.kind == CategoryKind.EXPENSE.name && themeOfCategory(it.name) == ExpenseTheme.CREDIT }?.id
+			?: when (val vCreated = createCategory(vFile, "Crédit", "bank", CategoryKind.EXPENSE))
+			{
+				is EditResult.Done    -> { vFile = vCreated.file; vCreated.id!! }
+				is EditResult.Refused -> return vCreated
+			}																			// catégorie des intérêts
+		val vAccount = when (val vCreated = createAccount(vFile, inName, AccountType.LOAN, inInstitution, inShare, null))
+		{
+			is EditResult.Done    -> vCreated
+			is EditResult.Refused -> return vCreated
+		}																				// compte créé
+		vFile = vAccount.file
+		val vLoan  = inLoan.copy(id = inNewId(), accountId = vAccount.id!!, categoryId = vCategory, last = amortization(inLoan).lastOrNull { !it.date.isAfter(inToday) }?.date)	// crédit
+		val vData  = vFile.toDataSet()													// modèles du domaine
+		loanError(vLoan, vData.accounts.associateBy { it.id }, vData.categories.associateBy { it.id })?.let { return EditResult.Refused(listOf(it.replaceFirstChar { c -> c.uppercase() })) }
+		val vOpen  = OpeningBalance(-remainingAt(vLoan, inToday), inToday)				// capital restant dû aujourd'hui
+		val vNow   = now()																// horodatage
+		return EditResult.Done(vFile.copy(transactions = vFile.transactions + newOpening(vLoan.accountId, vOpen, vNow), loans = vFile.loans + vLoan.toDto()), vLoan.accountId)
+	}
+
+	/*
+		Supprime le tableau d'amortissement d'un crédit : plus aucune
+		mensualité ne sera créée ; le compte et ses opérations restent.
+		inFile : contenu
+		inId   : crédit
+	*/
+	fun deleteLoan(
+		inFile : BackupFile,
+		inId   : String
+	): EditResult = EditResult.Done(inFile.copy(loans = inFile.loans.filterNot { it.id == inId }))
+
+	/*
+		Crée les opérations des échéances arrivées (voir dueOperations) et
+		avance les récurrences et les crédits. Une opération qui ne passe pas
+		les règles de saisie (catégorie archivée, compte disparu…) n'est pas
+		créée, mais son échéance est passée : elle ne sera pas reproposée.
+		Les horodatages des opérations créées sont tirés de leur date : deux
+		appareils qui créent la même échéance écrivent exactement la même
+		opération. Null s'il n'y a rien à faire.
+		inFile  : contenu
+		inToday : date du jour
+	*/
+	fun applyDue(
+		inFile  : BackupFile,
+		inToday : LocalDate
+	): BackupFile?
+	{
+		val vData = inFile.toDataSet()													// modèles du domaine
+		val vDue  = dueOperations(vData.accounts, vData.transactions, vData.recurrences, vData.loans, inToday)	// échéances arrivées
+		if (vDue.isEmpty) return null
+		val vValidator = TransactionValidator(vData.accounts.associateBy { it.id }, vData.categories.associateBy { it.id }, vData.assets.associateBy { it.id })	// règles
+		val vLedger    = Ledger(vData.transactions)										// opérations existantes
+		val vAdded     = vDue.transactions.filter { vValidator.validate(it, vLedger).isEmpty() }.map { inTx ->
+			val vStamp = inTx.date.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()	// horodatage tiré de la date
+			TransactionDto(inTx.id, inTx.date.toString(), inTx.kind.name, inTx.label, inTx.categoryId, inTx.assetId, inTx.notes, vStamp, vStamp,
+				inTx.postings.map { PostingDto(it.id, it.accountId, it.amountCents) })
+		}																				// opérations ajoutées
+		val vRecs  = vDue.recurrences.associateBy { it.id }								// récurrences avancées
+		val vLoans = vDue.loans.associateBy { it.id }									// crédits avancés
+		return inFile.copy(
+			transactions = inFile.transactions + vAdded,
+			recurrences  = inFile.recurrences.map { inRec -> vRecs[inRec.id]?.toDto() ?: inRec },
+			loans        = inFile.loans.map { inLoan -> vLoans[inLoan.id]?.toDto() ?: inLoan }
+		)
+	}
 
 	// ---------- Outils ----------
 

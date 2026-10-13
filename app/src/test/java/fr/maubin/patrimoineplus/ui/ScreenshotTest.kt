@@ -57,7 +57,12 @@ import fr.maubin.patrimoineplus.ui.theme.PatrimoineTheme
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import org.robolectric.annotation.GraphicsMode
+import org.robolectric.annotation.GraphicsMode
+import fr.maubin.patrimoineplus.ui.planning.RecurrencesSection
+import fr.maubin.patrimoineplus.ui.accounts.buildAccountsState
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.Modifier
 
 private const val kOutDir = "build/outputs/roborazzi"						// dossier des captures
 
@@ -223,6 +228,30 @@ class ScreenshotTest
 	})
 
 	/*
+		Onglet des comptes de la démonstration avec ses opérations récurrentes.
+	*/
+	@Test
+	@Config(qualifiers = "w360dp-h2200dp-xxhdpi")
+	fun accountsWithRecurrences() = captureRoboImage("$kOutDir/accounts-recurrences.png", content = shell(false, false, TopLevelDestination.Accounts) {
+		AccountsContent(buildAccountsState(kDemo.accounts, kDemo.transactions, kDemo.prices, kToday).copy(loaded = true), {}, {}, {}, {}) {
+			androidx.compose.foundation.layout.Spacer(Modifier.height(32.dp))
+			RecurrencesSection(kDemo.recurrences, kDemo.accounts, kDemo.categories, kToday, {}, {})
+		}
+	})
+
+	/*
+		Vue du crédit auto de la démonstration : capital restant dû, prochaines
+		mensualités, courbe.
+	*/
+	@Test
+	@Config(qualifiers = "w360dp-h2000dp-xxhdpi")
+	fun loanDetail() = captureRoboImage("$kOutDir/account-credit.png") {
+		PatrimoineTheme(inDarkTheme = false) {
+			AccountDetailContent(demoDetail(7), demoExtras(7), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
+		}
+	}
+
+	/*
 		Réglages, en sombre.
 	*/
 	@Test
@@ -294,7 +323,7 @@ class ScreenshotTest
 		Relevés ou portefeuille d'un compte de démonstration.
 		inIndex : rang du compte dans la démonstration
 	*/
-	private fun demoExtras(inIndex: Int = 0) = buildAccountExtras(kDemo.accounts[inIndex].id, kDemo.accounts, kDemo.transactions, kDemo.statements, kDemo.prices, kDemo.assets, kToday)
+	private fun demoExtras(inIndex: Int = 0) = buildAccountExtras(kDemo.accounts[inIndex].id, kDemo.accounts, kDemo.transactions, kDemo.statements, kDemo.prices, kDemo.assets, kToday, kDemo.loans)
 
 	/*
 		Vue d'un compte, mois en cours (synthèse, dépenses, courbe, opérations).

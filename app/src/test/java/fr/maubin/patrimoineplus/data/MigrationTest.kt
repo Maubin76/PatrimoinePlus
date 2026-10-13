@@ -96,4 +96,24 @@ class MigrationTest
 		assertEquals(150_000L, vTxs.single().postings.single().amountCents)
 		vDb.close()
 	}
+
+	/*
+		Version 3 → 4 : les tables des récurrences et des crédits sont créées,
+		vides ; les opérations existantes sont conservées.
+	*/
+	@Test
+	fun version3To4AddsPlanningTables() = runTest {
+		val vContext = ApplicationProvider.getApplicationContext<Context>()		// contexte
+		oldDatabase(
+			3, "migration-test-4.db",
+			"INSERT INTO account (id, name, type, institution, sharePercent, sortOrder, archived, createdAt, updatedAt) VALUES ('c1', 'Courant', 'CHECKING', NULL, 100, 0, 0, 1, 2)",
+			"INSERT INTO txn (id, date, kind, label, categoryId, assetId, notes, createdAt, updatedAt, linkedId) VALUES ('t1', '2026-10-01', 'OPENING', 'Solde initial', NULL, NULL, NULL, 1, 2, NULL)",
+			"INSERT INTO posting (id, transactionId, accountId, amountCents) VALUES ('p1', 't1', 'c1', 150000)"
+		)
+		val vDb = Room.databaseBuilder(vContext, PatrimoineDatabase::class.java, "migration-test-4.db").allowMainThreadQueries().build()	// version actuelle
+		assertEquals(listOf("Solde initial"), vDb.transactionDao().getAll().map { it.transaction.label })
+		assertEquals(0, vDb.planningDao().recurrences().size)
+		assertEquals(0, vDb.planningDao().loans().size)
+		vDb.close()
+	}
 }

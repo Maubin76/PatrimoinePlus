@@ -148,7 +148,8 @@ class BankStatementTest
 	/*
 		Saisie proposée : libellé et catégorie d'une saisie passée du même
 		marchand ; sinon libellé nettoyé ; une catégorie de revenu n'est pas
-		proposée pour un débit. Le formulaire construit passe les contrôles de
+		proposée pour un débit, ni une catégorie de dépense pour une entrée qui
+		n'est pas un remboursement. Le formulaire construit passe les contrôles de
 		saisie, remboursement compris.
 	*/
 	@Test
@@ -156,11 +157,13 @@ class BankStatementTest
 	{
 		val vPast  = standard("2026-09-02", kChecking, eur(-61.30), kGroceries).copy(label = "Courses Carrefour")	// saisie passée
 		val vPay   = standard("2026-09-28", kChecking, eur(2_000.0), kSalary).copy(label = "Salaire")				// revenu passé
-		val vData  = DataSet(listOf(kChecking), listOf(kGroceries, kSalary), emptyList(), listOf(vPast, vPay), emptyList(), emptyList())	// données
+		val vFees  = standard("2026-09-10", kChecking, eur(-30.0), kGroceries).copy(label = "Intérêts et assurance Crédit auto")	// dépense d'intérêts passée
+		val vData  = DataSet(listOf(kChecking), listOf(kGroceries, kSalary), emptyList(), listOf(vPast, vPay, vFees), emptyList(), emptyList())	// données
 		val vBank  = listOf(
 			BankLine(d("2026-10-05"), "CB CARREFOUR MARKET 03/10", eur(-41.00)),
 			BankLine(d("2026-10-06"), "PRLV SEPA FREE MOBILE 123456", eur(-19.99)),
-			BankLine(d("2026-10-07"), "REMB CARREFOUR", eur(8.50))
+			BankLine(d("2026-10-07"), "REMB CARREFOUR", eur(8.50)),
+			BankLine(d("2026-10-08"), "VIR INTERETS", eur(3.20))
 		)																				// relevé
 		val vMissing = reconcile(vBank, kChecking.id, vData).missing					// lignes à créer
 		val vShop    = vMissing.single { it.line.amountCents == eur(-41.00) }			// achat reconnu
@@ -170,6 +173,7 @@ class BankStatementTest
 		assertEquals("Free Mobile", vFree.label)
 		assertEquals(null, vFree.categoryId)
 		assertEquals("Carrefour Market", cleanLabel("CB CARREFOUR MARKET 03/10"))
+		assertEquals(null, vMissing.single { it.line.amountCents == eur(3.20) }.categoryId)	// entrée : pas la catégorie d'une dépense sans signe de remboursement
 		val vEntry   = EntryData(vData.accounts, vData.categories, emptyList(), emptyList(), vData.transactions)	// données de saisie
 		val vRefund  = vMissing.single { it.line.amountCents == eur(8.50) }			// remboursement du marchand
 		val vForm    = bankEntryForm(vRefund.line, vRefund.label, vRefund.categoryId, kChecking.id, vData.categories)	// formulaire

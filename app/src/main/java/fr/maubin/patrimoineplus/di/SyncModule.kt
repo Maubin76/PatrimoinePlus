@@ -23,6 +23,7 @@ import fr.maubin.patrimoineplus.data.sync.dataChanges
 import java.time.Clock
 import javax.inject.Inject
 import javax.inject.Singleton
+import fr.maubin.patrimoineplus.data.repo.PlanningRepository
 
 /*
 	Actions de l'appli autour d'un import par synchronisation : sauvegarde de
@@ -33,7 +34,8 @@ import javax.inject.Singleton
 */
 class AppSyncHooks @Inject constructor(
 	private val inAutoBackup : AutoBackup,
-	private val inSettings   : SettingsRepository
+	private val inSettings   : SettingsRepository,
+	private val inPlanning   : PlanningRepository
 ) : SyncHooks
 {
 	/*
@@ -43,11 +45,13 @@ class AppSyncHooks @Inject constructor(
 	override suspend fun beforeImport(): Boolean = inAutoBackup.backupNow() !is BackupOutcome.Failed
 
 	/*
-		Les données importées rendent l'assistant inutile.
+		Les données importées rendent l'assistant inutile ; les échéances
+		arrivées depuis sont créées (les mêmes que sur le PC, à l'identique).
 	*/
 	override suspend fun afterImport()
 	{
 		inSettings.setOnboardingDone(true)
+		inPlanning.applyDue()
 	}
 }
 
@@ -72,8 +76,9 @@ object SyncModule
 		inCategories   : CategoryRepository,
 		inTransactions : TransactionRepository,
 		inMarket       : MarketRepository,
+		inPlanning     : PlanningRepository,
 		inClock        : Clock
-	): Syncer = Syncer(inBackup, inStore, inFolders, inHooks, dataChanges(inAccounts, inCategories, inTransactions, inMarket), inClock)
+	): Syncer = Syncer(inBackup, inStore, inFolders, inHooks, dataChanges(inAccounts, inCategories, inTransactions, inMarket, inPlanning), inClock)
 }
 
 /*

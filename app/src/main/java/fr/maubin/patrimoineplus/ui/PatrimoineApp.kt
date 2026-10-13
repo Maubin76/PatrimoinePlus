@@ -56,6 +56,7 @@ import fr.maubin.patrimoineplus.ui.settings.SyncConflictDialog
 import fr.maubin.patrimoineplus.ui.shell.AppFrame
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import fr.maubin.patrimoineplus.domain.model.Frequency
 
 private const val kSlideMillis = 260									// entrée et sortie de la vue d'un compte
 
@@ -202,13 +203,15 @@ private fun MainTabs(
 	}
 
 	vEntry?.let { inForm ->
+		var vRepeat by remember(inForm) { mutableStateOf<Frequency?>(null) }		// répétition demandée
 		TransactionSheet(
 			inInitial     = inForm,
 			inData        = vData.let { inEntry.dataFor(inForm) },	// relu à chaque changement des données
 			inSuggestions = inEntry::suggestions,
-			inOnSave      = { inSaved, inOnErrors -> inEntry.save(inSaved) { if (it.isEmpty) vEntry = null else inOnErrors(it) } },
+			inOnSave      = { inSaved, inOnErrors -> inEntry.save(inSaved, { if (it.isEmpty) vEntry = null else inOnErrors(it) }, vRepeat) },
 			inOnDelete    = { vEntry = null },
-			inOnDismiss   = { vEntry = null }
+			inOnDismiss   = { vEntry = null },
+			inOnRepeat    = { vRepeat = it }
 		)
 	}
 }

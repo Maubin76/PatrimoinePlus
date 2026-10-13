@@ -73,7 +73,9 @@ import fr.maubin.patrimoineplus.ui.property.editPurchaseForm
 import fr.maubin.patrimoineplus.ui.property.editSaleForm
 import fr.maubin.patrimoineplus.ui.property.newPurchaseForm
 import fr.maubin.patrimoineplus.ui.property.newSaleForm
-import fr.maubin.patrimoineplus.ui.property.propertyNoun
+import fr.maubin.patrimoineplus.ui.property.propertyNoun
+import fr.maubin.patrimoineplus.domain.calc.amortization
+import fr.maubin.patrimoineplus.domain.format.formatEuros
 
 private val kDayTitle = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANCE)	// en-tête d'un jour
 private val kShortDay = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date d'une opération
@@ -131,6 +133,7 @@ fun AccountScreen(
 			AccountType.SAVINGS   -> SavingsView(vState, vExtras, inController, vOpen)
 			AccountType.BROKERAGE -> BrokerageView(vState, vExtras, inController, vOpen)
 			AccountType.REAL_ESTATE, AccountType.COLLECTIBLE -> PropertyView(vState, inSpace, inController, vAccount)
+			AccountType.LOAN      -> LoanView(vState, inSpace, inController, vAccount, vOpen)
 		}
 	}
 }
@@ -333,6 +336,81 @@ private fun PropertyView(
 		}
 	}
 }
+
+/*
+	Compte Crédit : capital restant dû, mensualité, intérêts restants et fin
+	en tuiles, courbe du solde, puis tableau d'amortissement (mensualités
+	passées en retrait, prochaine en gras) et opérations.
+	inState      : état global (courbe, opérations)
+	inSpace      : données (crédit)
+	inController : contrôleur
+	inAccount    : compte Crédit
+	inOnOpen     : ouvre une opération
+*/
+@Composable
+private fun LoanView(
+	inState      : AccountDetailState,
+	inSpace      : WorkspaceState,
+	inController : DesktopController,
+	inAccount    : Account,
+	inOnOpen     : (OperationItem) -> Unit
+)
+{
+	val vLoan  = inSpace.data.loans.firstOrNull { it.accountId == inAccount.id }			// crédit du compte
+	val vRows  = remember(vLoan) { vLoan?.let(::amortization).orEmpty() }				// tableau d'amortissement
+	val vToday = inSpace.today																// date du jour
+	val vNext  = vRows.firstOrNull { it.date.isAfter(vToday) }							// prochaine mensualité
+	val vLeft  = -(inState.totals?.balanceCents ?: 0L)										// capital restant dû
+	val vMuted = MaterialTheme.colorScheme.onSurfaceVariant								// texte secondaire
+	TileRow(
+		Cell(1.3f) { inMod -> Figure("Capital restant dû", vLeft, inMod, inSigned = false, inStrong = true, inNote = if (inAccount.sharePercent < 100) "Compté pour ${inAccount.sharePercent} % dans le patrimoine" else null) },
+		Cell(1f) { inMod -> Figure("Mensualité", vNext?.total ?: vRows.lastOrNull()?.total ?: 0L, inMod, inSigned = false, inNote = vNext?.let { "Prochaine le ${it.date.format(kFullDay)}" }) },
+		Cell(1f) { inMod -> Figure("Intérêts restants", vRows.filter { it.date.isAfter(vToday) }.sumOf { it.interest }, inMod, inSigned = false, inNote = vRows.lastOrNull()?.let { "Dernière mensualité le ${it.date.format(kFullDay)}" }) },
+		inMinWidth = 900.dp
+	)
+	ChartTile("Évolution du capital restant dû", inState.series.map { it.copy(valueCents = -it.valueCents) }, inState.series.lastOrNull()?.month, Modifier.fillMaxWidth())
+	if (vLoan == null)
+	{
+		Tile(inTitle = "Tableau d’amortissement") { Hint("Ce compte n’a pas de tableau d’amortissement : ses remboursements se saisissent comme des virements.") }
+	}
+	else
+	{
+		Tile(
+			inTitle  = "Tableau d’amortissement",
+			inAction = { Text("${formatEuros(vLoan.principal)} à ${rateText(vLoan.rateBp)} sur ${vLoan.months} mois", style = MaterialTheme.typography.bodyMedium, color = vMuted) }
+		) {
+			Row(Modifier.fillMaxWidth().padding(vertical = 6.dp, horizontal = 8.dp)) {
+				listOf("N°" to 0.5f, "Date" to 1.2f, "Mensualité" to 1f, "Capital" to 1f, "Intérêts" to 1f, "Assurance" to 1f, "Restant dû" to 1.2f).forEach { (inHead, inWeight) ->
+					Text(inHead, style = MaterialTheme.typography.labelLarge, color = vMuted, modifier = Modifier.weight(inWeight))
+				}
+			}
+			HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+			vRows.forEach { inRow ->
+				val vPast  = !inRow.date.isAfter(vToday)												// mensualité passée
+				val vColor = if (vPast) vMuted else MaterialTheme.colorScheme.onSurface				// teinte de la ligne
+				val vStyle = if (inRow == vNext) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyMedium	// prochaine en gras
+				Row(Modifier.fillMaxWidth().heightIn(min = 32.dp).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+					Text(inRow.index.toString(), style = vStyle, color = vColor, modifier = Modifier.weight(0.5f))
+					Text(inRow.date.format(kFullDay), style = vStyle, color = vColor, modifier = Modifier.weight(1.2f))
+					AmountText(inCents = inRow.total, inStyle = vStyle, inColor = vColor, inModifier = Modifier.weight(1f))
+					AmountText(inCents = inRow.capital, inStyle = vStyle, inColor = vColor, inModifier = Modifier.weight(1f))
+					AmountText(inCents = inRow.interest, inStyle = vStyle, inColor = vColor, inModifier = Modifier.weight(1f))
+					AmountText(inCents = inRow.insurance, inStyle = vStyle, inColor = vColor, inModifier = Modifier.weight(1f))
+					AmountText(inCents = inRow.remaining, inStyle = vStyle, inColor = vColor, inModifier = Modifier.weight(1.2f))
+				}
+			}
+			Spacer(Modifier.height(8.dp))
+			Hint("Chaque mensualité crée à sa date un virement du capital depuis ${inSpace.data.accounts.firstOrNull { it.id == vLoan.payFrom }?.name ?: "le compte payeur"} et une dépense des intérêts et de l’assurance.")
+		}
+	}
+	OperationsTile(inState, inOnOpen)
+}
+
+/*
+	Taux en points de base écrit en % (« 3,45 % »).
+	inBp : taux, en points de base
+*/
+private fun rateText(inBp: Int): String = "${inBp / 100},${(inBp % 100).toString().padStart(2, '0')} %"
 
 /*
 	Tuile d'un chiffre clé : libellé et montant.

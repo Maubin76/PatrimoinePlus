@@ -26,6 +26,11 @@ import fr.maubin.patrimoineplus.ui.components.FormSheet
 import fr.maubin.patrimoineplus.ui.components.SegmentedChoice
 import fr.maubin.patrimoineplus.ui.components.TextInput
 import fr.maubin.patrimoineplus.ui.components.Picker
+import fr.maubin.patrimoineplus.domain.model.Category
+import fr.maubin.patrimoineplus.ui.planning.LoanForm
+import fr.maubin.patrimoineplus.ui.planning.LoanErrors
+import fr.maubin.patrimoineplus.ui.planning.LoanFields
+import fr.maubin.patrimoineplus.ui.planning.checkLoan
 
 /*
 	Feuille de création ou de modification d'un compte : nom, type,
@@ -38,6 +43,9 @@ import fr.maubin.patrimoineplus.ui.components.Picker
 	inOnArchive   : archive ou désarchive le compte modifié
 	inOnDelete    : demande la suppression du compte modifié
 	inOnDismiss   : fermeture de la feuille
+	inAccounts    : comptes (compte payeur d'un crédit)
+	inCategories  : catégories (intérêts d'un crédit)
+	inOnSaveLoan  : crée un compte Crédit et son crédit ; reçoit le refus par rappel ; null : pas de création de crédit
 */
 @Composable
 fun AccountSheet(
@@ -47,11 +55,17 @@ fun AccountSheet(
 	inOnSave     : (AccountForm, (AccountFormErrors) -> Unit) -> Unit,
 	inOnArchive  : () -> Unit,
 	inOnDelete   : () -> Unit,
-	inOnDismiss  : () -> Unit
+	inOnDismiss  : () -> Unit,
+	inAccounts   : List<Account>  = emptyList(),
+	inCategories : List<Category> = emptyList(),
+	inOnSaveLoan : ((AccountForm, LoanForm, (String?) -> Unit) -> Unit)? = null
 )
 {
-	var vForm   by remember { mutableStateOf(inInitial) }						// saisie en cours
-	var vErrors by remember { mutableStateOf(AccountFormErrors()) }			// erreurs affichées
+	var vForm    by remember { mutableStateOf(inInitial) }						// saisie en cours
+	var vErrors  by remember { mutableStateOf(AccountFormErrors()) }			// erreurs affichées
+	var vLoan    by remember { mutableStateOf(LoanForm(firstDue = inInitial.openingDate.plusMonths(1).withDayOfMonth(5), payFrom = inAccounts.firstOrNull { it.type == AccountType.CHECKING && !it.archived }?.id)) }	// crédit à créer
+	var vLoanErr by remember { mutableStateOf(LoanErrors()) }					// erreurs du crédit
+	val vNewLoan = inEditing == null && vForm.type == AccountType.LOAN && inOnSaveLoan != null	// création d'un crédit
 	FormSheet(inTitle = if (inEditing == null) "Nouveau compte" else "Modifier le compte", inOnDismiss = inOnDismiss) {
 		TextInput(vForm.name, { vForm = vForm.copy(name = it) }, "Nom", vErrors.name)
 		if (inTypeLocked)
@@ -82,7 +96,11 @@ fun AccountSheet(
 			keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
 			modifier        = Modifier.fillMaxWidth()
 		)
-		if (vForm.type.isProperty)
+		if (vNewLoan)
+		{
+			LoanFields(vLoan, vLoanErr, inAccounts, inCategories) { vLoan = it }
+		}
+		else if (vForm.type.isProperty)
 		{
 			Text(
 				text  = "Pas de solde initial : ajoutez ensuite chaque bien depuis la page du compte, avec son prix d’achat. Le compte vaut le prix d’achat des biens détenus.",
@@ -103,7 +121,15 @@ fun AccountSheet(
 		}
 		vErrors.general?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
 		Button(
-			onClick        = { inOnSave(vForm) { vErrors = it } },
+			onClick        = {
+				if (vNewLoan)
+				{
+					vLoanErr = checkLoan(vLoan, inAccounts)
+					if (vForm.name.isBlank()) vErrors = AccountFormErrors(name = "Le nom est obligatoire.")
+					else if (vLoanErr.isEmpty) inOnSaveLoan!!(vForm, vLoan) { inRefusal -> vErrors = AccountFormErrors(general = inRefusal) }
+				}
+				else inOnSave(vForm) { vErrors = it }
+			},
 			contentPadding = PaddingValues(vertical = 14.dp),
 			modifier       = Modifier.fillMaxWidth()
 		) {
@@ -131,4 +157,5 @@ fun accountTypeChoice(inType: AccountType): String =
 		AccountType.BROKERAGE   -> "Bourse (PEA, compte-titres)"
 		AccountType.REAL_ESTATE -> "Biens immobiliers"
 		AccountType.COLLECTIBLE -> "Objets de collection"
+		AccountType.LOAN        -> "Crédit (prêt immobilier, auto…)"
 	}

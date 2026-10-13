@@ -49,7 +49,13 @@ import fr.maubin.patrimoineplus.ui.components.BarSegment
 import fr.maubin.patrimoineplus.ui.home.accountDetail
 import fr.maubin.patrimoineplus.ui.shell.PrivacyAction
 import fr.maubin.patrimoineplus.ui.shell.ScreenScaffold
-import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
+import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
+import androidx.compose.foundation.layout.ColumnScope
+import fr.maubin.patrimoineplus.ui.planning.PlanningViewModel
+import fr.maubin.patrimoineplus.ui.planning.RecurrenceForm
+import fr.maubin.patrimoineplus.ui.planning.RecurrencesSection
+import fr.maubin.patrimoineplus.ui.planning.RecurrenceSheet
+import fr.maubin.patrimoineplus.ui.planning.editRecurrenceForm
 
 /*
 	Onglet des comptes : liste réordonnable avec la valeur de chaque compte,
@@ -63,19 +69,37 @@ import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
 fun AccountsScreen(
 	inOnToggleHidden : () -> Unit,
 	inOnOpenAccount  : (String) -> Unit,
-	inViewModel      : AccountsViewModel = hiltViewModel()
+	inViewModel      : AccountsViewModel = hiltViewModel(),
+	inPlanning       : PlanningViewModel = hiltViewModel()
 )
 {
 	val vState    by inViewModel.uiState.collectAsStateWithLifecycle()		// état à afficher
+	val vPlan     by inPlanning.state.collectAsStateWithLifecycle()			// récurrences et crédits
 	var vCreating by remember { mutableStateOf<AccountForm?>(null) }		// création ouverte
+	var vRec      by remember { mutableStateOf<RecurrenceForm?>(null) }		// récurrence ouverte
 
 	AccountsContent(
 		inState          = vState,
 		inOnToggleHidden = inOnToggleHidden,
 		inOnAdd          = { vCreating = inViewModel.newForm() },
 		inOnOpen         = { inOnOpenAccount(it.account.id) },
-		inOnReorder      = inViewModel::reorder
+		inOnReorder      = inViewModel::reorder,
+		inExtra          = {
+			Spacer(Modifier.height(32.dp))
+			RecurrencesSection(vPlan.recurrences, vPlan.accounts, vPlan.categories, inPlanning.today(), { vRec = inPlanning.newForm() }) { vRec = editRecurrenceForm(it, vPlan.categories) }
+		}
 	)
+
+	vRec?.let { inForm ->
+		RecurrenceSheet(
+			inStart      = inForm,
+			inAccounts   = vPlan.accounts,
+			inCategories = vPlan.categories,
+			inOnSave     = { inSaved, inOnDone -> inPlanning.save(inSaved) { inErrors, inRefusal -> if (inErrors.isEmpty && inRefusal == null) vRec = null else inOnDone(inErrors, inRefusal) } },
+			inOnDelete   = { inForm.id?.let(inPlanning::delete); vRec = null },
+			inOnDismiss  = { vRec = null }
+		)
+	}
 
 	vCreating?.let { inForm ->
 		AccountSheet(
@@ -85,7 +109,10 @@ fun AccountsScreen(
 			inOnSave     = { inSaved, inOnErrors -> inViewModel.save(inSaved, null) { if (it.isEmpty) vCreating = null else inOnErrors(it) } },
 			inOnArchive  = {},
 			inOnDelete   = {},
-			inOnDismiss  = { vCreating = null }
+			inOnDismiss  = { vCreating = null },
+			inAccounts   = vPlan.accounts,
+			inCategories = vPlan.categories,
+			inOnSaveLoan = { inAccount, inLoan, inOnRefus -> inPlanning.createLoan(inAccount, inLoan) { inRefusal -> if (inRefusal == null) vCreating = null else inOnRefus(inRefusal) } }
 		)
 	}
 }
@@ -157,6 +184,7 @@ fun AccountDeletion(
 	inOnAdd          : ouvre la création d'un compte
 	inOnOpen         : ouvre la vue d'un compte
 	inOnReorder      : enregistre un nouvel ordre des comptes actifs
+	inExtra          : contenu ajouté après les comptes (opérations récurrentes)
 */
 @Composable
 fun AccountsContent(
@@ -164,7 +192,8 @@ fun AccountsContent(
 	inOnToggleHidden : () -> Unit,
 	inOnAdd          : () -> Unit,
 	inOnOpen         : (AccountItem) -> Unit,
-	inOnReorder      : (List<AccountItem>) -> Unit
+	inOnReorder      : (List<AccountItem>) -> Unit,
+	inExtra          : @Composable ColumnScope.() -> Unit = {}
 )
 {
 	ScreenScaffold(inTitle = "Comptes", inActions = { PrivacyAction(inOnToggleHidden) }) { inPadding ->
@@ -228,6 +257,7 @@ fun AccountsContent(
 					}
 				}
 			}
+			inExtra()
 		}
 	}
 }

@@ -46,6 +46,7 @@ import fr.maubin.patrimoineplus.ui.property.PurchaseForm
 import fr.maubin.patrimoineplus.ui.property.SaleForm
 import fr.maubin.patrimoineplus.ui.property.editPurchaseForm
 import fr.maubin.patrimoineplus.ui.property.editSaleForm
+import fr.maubin.patrimoineplus.ui.planning.RecurrenceForm
 
 private const val kDayCheckMillis = 60_000L										// contrôle du changement de jour
 
@@ -58,6 +59,7 @@ enum class Screen(val label: String)
 	DASHBOARD("Tableau de bord"),												// patrimoine, comptes, opérations récentes
 	OPERATIONS("Opérations"),													// recherche et modification groupée
 	BATCH("Saisie rapide"),														// saisie en grille
+	RECURRING("Récurrences"),													// opérations récurrentes et mensualités
 	ANALYSIS("Analyse"),														// dépenses et revenus mois par mois
 	REPORT("Bilan annuel"),														// bilan d'une année, PDF
 	PROJECTION("Projection"),													// patrimoine à quelques années
@@ -155,6 +157,13 @@ sealed interface Panel
 		token : numéro d'ouverture
 	*/
 	data class Sale(val form: SaleForm, override val token: Long = 0) : Panel
+
+	/*
+		Opération récurrente, nouvelle ou modifiée.
+		form  : saisie de départ
+		token : numéro d'ouverture
+	*/
+	data class Recurring(val form: RecurrenceForm, override val token: Long = 0) : Panel
 }
 
 /*
@@ -401,6 +410,7 @@ class DesktopController(
 			is Panel.AssetSheet      -> inPanel.copy(token = vToken)
 			is Panel.Purchase        -> inPanel.copy(token = vToken)
 			is Panel.Sale            -> inPanel.copy(token = vToken)
+			is Panel.Recurring       -> inPanel.copy(token = vToken)
 		}
 	}
 
@@ -461,6 +471,7 @@ class DesktopController(
 			is Panel.AssetSheet      -> vData.assets.none { it.id == vPanel.assetId }
 			is Panel.Purchase        -> vPanel.form.id != null && vData.transactions.none { it.id == vPanel.form.id }
 			is Panel.Sale            -> vData.transactions.none { it.id == vPanel.form.purchaseId } || (vPanel.form.id != null && vData.transactions.none { it.id == vPanel.form.id })
+			is Panel.Recurring       -> vPanel.form.id != null && vData.recurrences.none { it.id == vPanel.form.id }
 		}
 		if (vStale)
 		{

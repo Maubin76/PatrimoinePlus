@@ -60,6 +60,7 @@ import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
 import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import fr.maubin.patrimoineplus.ui.components.monthTitle
 
 private val kShortDay   = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date courte
 private val kAccountMin = 300.dp													// largeur minimale d'une tuile de compte
@@ -338,6 +339,21 @@ private fun TilePreviewView(inPreview: TilePreview)
 				inPreview.positions.forEach { (inName, inPercent) -> ShareLine(inName, inPercent) }
 				if (inPreview.others > 0) ShareLine("Autres", inPreview.others)
 			}
+		}
+		is TilePreview.Loan      ->
+		{
+			val vNext = inPreview.next																		// prochaine mensualité
+			if (vNext == null) Hint(if (inPreview.end == null) "Sans tableau d’amortissement." else "Dernière mensualité passée.")
+			else PreviewLine("Mensualité du ${vNext.date.format(kShortDay)}", vNext.total, inSigned = false)
+			inPreview.paid?.let { inPaid ->
+				Row(Modifier.fillMaxWidth().heightIn(min = 26.dp), verticalAlignment = Alignment.CenterVertically) {
+					Text("Remboursé", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+					MiniBar(inPaid / 100f, Modifier.width(72.dp))
+					Spacer(Modifier.width(10.dp))
+					Text("$inPaid %", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(44.dp))
+				}
+			}
+			inPreview.end?.let { Hint("Fin en ${monthTitle(java.time.YearMonth.from(it)).lowercase()}") }
 		}
 		is TilePreview.Property  ->
 		{

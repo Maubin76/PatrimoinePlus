@@ -121,7 +121,10 @@ fun reconcile(
 	Saisie proposée pour une ligne absente : la saisie passée dont le libellé
 	partage le plus de mots significatifs avec celui de la banque (la plus
 	récente à égalité) donne son libellé et sa catégorie, si la catégorie est
-	compatible avec le sens du montant ; sinon le libellé de la banque, nettoyé.
+	compatible avec le sens du montant (une entrée ne prend une catégorie de
+	dépense que pour un remboursement : saisie passée déjà remboursée, ou
+	libellé « REMB… », « avoir », « retour ») ; sinon le libellé de la banque,
+	nettoyé.
 	inLine    : ligne de la banque
 	inHistory : saisies passées catégorisées
 	inData    : données (catégories)
@@ -139,7 +142,9 @@ private fun suggest(
 		.maxWithOrNull(compareBy<Pair<Transaction, Int>> { it.second }.thenBy { it.first.date })
 		?.first																			// saisie passée la plus proche
 	val vKind  = vBest?.categoryId?.let { inId -> inData.categories.firstOrNull { it.id == inId }?.kind }	// nature de sa catégorie
-	val vFits  = vKind == CategoryKind.EXPENSE || (vKind == CategoryKind.INCOME && inLine.amountCents > 0)	// catégorie possible pour ce montant
+	val vSign  = vBest?.postings?.sumOf { it.amountCents } ?: 0L						// sens de la saisie passée
+	val vRefund = vSign > 0 || vWords.any { it.startsWith("remb") || it == "avoir" || it.startsWith("retour") }	// remboursement déjà vu, ou annoncé par la banque
+	val vFits  = (vKind == CategoryKind.EXPENSE && (inLine.amountCents < 0 || vRefund)) || (vKind == CategoryKind.INCOME && inLine.amountCents > 0)	// catégorie possible pour ce montant
 	return MissingLine(
 		line       = inLine,
 		label      = vBest?.label ?: cleanLabel(inLine.label),

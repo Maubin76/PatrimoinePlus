@@ -19,6 +19,13 @@ import fr.maubin.patrimoineplus.domain.format.editableEuros
 import fr.maubin.patrimoineplus.domain.format.parseEuros
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.ui.accounts.AccountForm
+import fr.maubin.patrimoineplus.ui.planning.LoanForm
+import fr.maubin.patrimoineplus.ui.planning.LoanErrors
+import fr.maubin.patrimoineplus.ui.planning.checkLoan
+import fr.maubin.patrimoineplus.ui.planning.buildLoan
+import fr.maubin.patrimoineplus.ui.planning.loanPreview
+import fr.maubin.patrimoineplus.domain.format.formatEuros
+import fr.maubin.patrimoineplus.domain.model.CategoryKind
 
 /*
 	Création ou modification d'un compte dans le panneau latéral : nom, type
@@ -53,6 +60,9 @@ fun AccountPanel(
 	var vError   by remember(inAccountId) { mutableStateOf<String?>(null) }	// erreur affichée
 	var vDelete  by remember(inAccountId) { mutableStateOf(false) }			// confirmation de suppression
 	var vDateBad by remember(inAccountId) { mutableStateOf(false) }			// date du solde initial illisible
+	var vLoan    by remember(inAccountId) { mutableStateOf(LoanForm(firstDue = inController.today().plusMonths(1).withDayOfMonth(5), payFrom = vSpace.data.accounts.firstOrNull { it.type == AccountType.CHECKING && !it.archived }?.id)) }	// crédit à créer
+	var vLoanErr by remember(inAccountId) { mutableStateOf(LoanErrors()) }	// erreurs du crédit
+	val vNewLoan = vAccount == null && vForm.type == AccountType.LOAN			// création d'un crédit
 
 	/*
 		Enregistre : création, ou modification puis solde initial.
@@ -60,15 +70,26 @@ fun AccountPanel(
 	fun save()
 	{
 		val vShare   = vForm.share.trim().toIntOrNull()							// part détenue lue
-		val vCents   = if (vForm.opening.isBlank() || vForm.type.isProperty) 0L else parseEuros(vForm.opening)	// solde initial lu (aucun pour un compte de biens)
+		val vCents   = if (vForm.opening.isBlank() || vForm.type.isProperty || (vAccount == null && vForm.type == AccountType.LOAN)) 0L else parseEuros(vForm.opening)	// solde initial lu (aucun pour un compte de biens ou un crédit à créer)
 		vError = when
 		{
 			vShare == null -> "Part détenue illisible (1 à 100)."
 			vCents == null -> "Solde initial illisible (ex. 1 250,00)."
-			vDateBad && !vForm.type.isProperty -> kBadDate
+			vDateBad && !vForm.type.isProperty && !vNewLoan -> kBadDate
 			else           -> null
 		}
 		if (vError != null) return
+		if (vNewLoan)
+		{
+			vLoanErr = checkLoan(vLoan, vSpace.data.accounts)
+			if (!vLoanErr.isEmpty) return
+			when (val vResult = inController.edit { inController.editor.createLoan(it, vForm.name, vForm.institution, vShare!!, buildLoan(vLoan), inController.today()) })
+			{
+				is EditResult.Done    -> inController.closePanel()
+				is EditResult.Refused -> vError = vResult.messages.joinToString(" ")
+			}
+			return
+		}
 		val vBalance = OpeningBalance(vCents!!, vForm.openingDate)				// solde initial
 		val vResult  = inController.edit { inFile ->
 			if (vAccount == null)
@@ -113,7 +134,22 @@ fun AccountPanel(
 		if (vOps > 0) Text("Le type ne change plus : le compte a des opérations.")
 		FormField(vForm.institution, { vForm = vForm.copy(institution = it) }, if (vForm.type.isProperty) "Description (facultatif)" else "Établissement (facultatif)")
 		FormField(vForm.share, { vForm = vForm.copy(share = it) }, "Part détenue (%)", inSupport = if (vForm.type.isProperty) "50 pour des biens détenus à deux (indivision, couple)." else "50 pour un compte joint à deux.", inNumeric = true)
-		if (vForm.type.isProperty)
+		if (vNewLoan)
+		{
+			FormField(vLoan.principal, { vLoan = vLoan.copy(principal = it) }, "Montant emprunté (€)", vLoanErr.principal, inNumeric = true)
+			FormField(vLoan.rate, { vLoan = vLoan.copy(rate = it) }, "Taux annuel (%)", vLoanErr.rate, inSupport = "Taux nominal, hors assurance (ex. 3,45)", inNumeric = true)
+			FormField(vLoan.months, { vLoan = vLoan.copy(months = it) }, "Durée (mois)", vLoanErr.months, inSupport = "240 pour 20 ans", inNumeric = true)
+			DateField(vLoan.firstDue, { inDate -> inDate?.let { vLoan = vLoan.copy(firstDue = it) } }, "Date de la première mensualité")
+			FormField(vLoan.insurance, { vLoan = vLoan.copy(insurance = it) }, "Assurance mensuelle (€, facultatif)", vLoanErr.insurance, inNumeric = true)
+			Picker("Payé depuis", vSpace.data.accounts.filter { !it.archived && !it.type.isProperty && it.type != AccountType.LOAN }.map { it.id to it.name }, vLoan.payFrom, { vLoan = vLoan.copy(payFrom = it) }, vLoanErr.payFrom)
+			Picker("Catégorie des intérêts", listOf<Pair<String?, String>>(null to "Crédit (créée si besoin)") + vSpace.data.categories.filter { it.kind == CategoryKind.EXPENSE && !it.archived }.map { it.id to it.name }, vLoan.categoryId, { vLoan = vLoan.copy(categoryId = it) })
+			Text(
+				(loanPreview(vLoan)?.let { "Mensualité : ${formatEuros(it)} (assurance comprise). " } ?: "") +
+					"Les mensualités déjà passées sont tenues pour payées : le compte part du capital restant dû aujourd’hui. Chaque mensualité suivante créera à sa date un virement du capital et une dépense des intérêts.",
+				style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
+			)
+		}
+		else if (vForm.type.isProperty)
 		{
 			Text("Pas de solde initial : ajoutez ensuite chaque bien depuis la page du compte, avec son prix d’achat. Le compte vaut le prix d’achat des biens détenus.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		}
@@ -170,4 +206,5 @@ private fun typeChoice(inType: AccountType): String =
 		AccountType.BROKERAGE   -> "Bourse (PEA, compte-titres)"
 		AccountType.REAL_ESTATE -> "Biens immobiliers"
 		AccountType.COLLECTIBLE -> "Objets de collection"
+		AccountType.LOAN        -> "Crédit (prêt immobilier, auto…)"
 	}

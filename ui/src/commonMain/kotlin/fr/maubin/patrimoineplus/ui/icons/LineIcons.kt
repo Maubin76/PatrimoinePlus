@@ -130,6 +130,9 @@ object LineIcons
 	// Projection : courbe montante et flèche.
 	val Trend: ImageVector = lineIcon("Projection", "M3 17 L9 11 L13 15 L21 7", "M15 7 H21 V13")
 
+	// Récurrences : deux flèches en boucle.
+	val Repeat: ImageVector = lineIcon("Récurrences", "M4 11 V9.5 A3 3 0 0 1 7 6.5 H19", "M16 3.5 L19 6.5 L16 9.5", "M20 13 V14.5 A3 3 0 0 1 17 17.5 H5", "M8 20.5 L5 17.5 L8 14.5")
+
 	// Objectifs : cible, deux anneaux et un point central.
 	val Target: ImageVector = lineIcon("Objectifs", circle(12f, 12f, 8.5f), circle(12f, 12f, 4.5f), circle(12f, 12f, 0.8f))
 

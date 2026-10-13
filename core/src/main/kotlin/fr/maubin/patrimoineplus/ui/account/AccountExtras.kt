@@ -16,7 +16,10 @@ import fr.maubin.patrimoineplus.domain.model.Transaction
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
 import java.time.LocalDate
 import fr.maubin.patrimoineplus.domain.calc.PropertyItem
-import fr.maubin.patrimoineplus.domain.calc.propertyItems
+import fr.maubin.patrimoineplus.domain.calc.propertyItems
+import fr.maubin.patrimoineplus.domain.model.Loan
+import fr.maubin.patrimoineplus.domain.calc.Installment
+import fr.maubin.patrimoineplus.domain.calc.amortization
 
 /*
 	Relevé de la banque, avec l'écart au solde calculé.
@@ -67,7 +70,9 @@ data class PortfolioView(
 	valueSeries      : valeur du compte Bourse en fin de mois, depuis son ouverture
 	properties       : biens d'un compte Immobilier ou Collection, du plus récent au plus ancien
 	accountNames     : noms des comptes (payeurs et bénéficiaires des biens)
-	asOf             : date de calcul (biens détenus ou vendus) ; null hors compte de biens
+	asOf             : date de calcul (biens détenus ou vendus, mensualités passées) ; null hors compte de biens ou crédit
+	loan             : crédit du compte Crédit ; null sinon (ou sans tableau d'amortissement)
+	schedule         : tableau d'amortissement du crédit
 */
 data class AccountExtras(
 	val statements       : List<StatementItem>       = emptyList(),
@@ -76,7 +81,9 @@ data class AccountExtras(
 	val valueSeries      : List<SeriesPoint>         = emptyList(),
 	val properties       : List<PropertyItem>        = emptyList(),
 	val accountNames     : Map<String, String>       = emptyMap(),
-	val asOf             : LocalDate?                = null
+	val asOf             : LocalDate?                = null,
+	val loan             : Loan?                     = null,
+	val schedule         : List<Installment>         = emptyList()
 )
 
 /*
@@ -88,6 +95,7 @@ data class AccountExtras(
 	inPrices       : tous les cours
 	inAssets       : tous les actifs
 	inToday        : date de valorisation
+	inLoans        : crédits (compte Crédit)
 */
 fun buildAccountExtras(
 	inAccountId    : String,
@@ -96,12 +104,18 @@ fun buildAccountExtras(
 	inStatements   : List<AccountStatement>,
 	inPrices       : List<AssetPrice>,
 	inAssets       : List<Asset>,
-	inToday        : LocalDate
+	inToday        : LocalDate,
+	inLoans        : List<Loan> = emptyList()
 ): AccountExtras
 {
 	val vAccount = inAccounts.firstOrNull { it.id == inAccountId } ?: return AccountExtras()	// compte affiché
 	val vLedger  = Ledger(inTransactions)										// grand livre
 	val vNames   = inAssets.associate { it.id to it.name }						// noms des actifs
+	if (vAccount.type == AccountType.LOAN)
+	{
+		val vLoan = inLoans.firstOrNull { it.accountId == inAccountId }						// crédit du compte
+		return AccountExtras(loan = vLoan, schedule = vLoan?.let(::amortization).orEmpty(), asOf = inToday, accountNames = inAccounts.associate { it.id to it.name })
+	}
 	if (vAccount.type.isProperty)
 	{
 		return AccountExtras(properties = propertyItems(inTransactions, inAccounts, inAccountId), accountNames = inAccounts.associate { it.id to it.name }, asOf = inToday)

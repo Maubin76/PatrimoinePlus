@@ -19,7 +19,8 @@ import java.io.OutputStream
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeFormatter
+import fr.maubin.patrimoineplus.domain.model.Frequency
 
 // Intitulés des colonnes : ils servent aussi de clés à la lecture (l'ordre des colonnes est libre).
 private const val kDate        = "Date"										// date
@@ -66,6 +67,23 @@ private const val kSheetAssets     = "Actifs"									// onglet des actifs
 private const val kSheetPrices     = "Cours"										// onglet des cours
 private const val kSheetStatements = "Relevés"									// onglet des relevés
 private const val kSheetFile       = "Fichier"									// onglet de signature
+private const val kSheetRecurring  = "Récurrences"								// onglet des opérations récurrentes (format 4)
+private const val kSheetLoans      = "Crédits"									// onglet des crédits (format 4)
+private const val kTo           = "Vers"											// compte d'arrivée d'un virement
+private const val kFrequency    = "Fréquence"									// fréquence d'une récurrence
+private const val kStart        = "Début"										// première échéance
+private const val kEnd          = "Fin"											// dernière échéance possible
+private const val kLast         = "Dernière échéance créée"						// dernière échéance créée
+private const val kPrincipal    = "Montant emprunté"								// capital emprunté
+private const val kRate         = "Taux (%)"										// taux annuel
+private const val kMonths       = "Durée (mois)"									// nombre de mensualités
+private const val kFirstDue     = "Première mensualité"							// date de la première mensualité
+private const val kInsurance    = "Assurance mensuelle"							// assurance par mois
+private const val kPayFrom      = "Payé depuis"									// compte payeur
+private const val kRecurrenceId = "ID récurrence"								// identifiant de la récurrence
+private const val kLoanId       = "ID crédit"									// identifiant du crédit
+private const val kToId         = "ID compte d'arrivée"							// compte d'arrivée
+private const val kPayFromId    = "ID compte payeur"								// compte payeur
 
 private const val kKeyFormat   = "Format"										// clé : signature
 private const val kKeyVersion  = "Version"										// clé : version
@@ -203,6 +221,35 @@ internal fun backupSheets(inFile: BackupFile): List<Sheet>
 			}
 		),
 		Sheet(
+			kSheetRecurring,
+			listOf(Column(kLabel, 30.0), Column(kAccount, 22.0), Column(kTo, 22.0), Column(kCategory, 20.0), Column(kAmount, 15.0), Column(kFrequency, 16.0),
+				Column(kStart, 12.0), Column(kEnd, 12.0), Column(kLast, 14.0), Column(kNotes, 30.0)) + tech(kRecurrenceId, kAccountId, kToId, kCategoryId),
+			inFile.recurrences.sortedBy { it.label }.map { inRec ->
+				listOf(
+					text(inRec.label), text(vAccounts[inRec.accountId]?.name.orEmpty()), text(inRec.toAccountId?.let { vAccounts[it]?.name }.orEmpty()),
+					text(inRec.categoryId?.let { vCategories[it]?.name }.orEmpty()), euros(inRec.amountCents),
+					text(Frequency.valueOf(inRec.frequency).label), Cell.Date(LocalDate.parse(inRec.start)),
+					inRec.end?.let { Cell.Date(LocalDate.parse(it)) } ?: Cell.Empty, inRec.last?.let { Cell.Date(LocalDate.parse(it)) } ?: Cell.Empty,
+					text(inRec.notes.orEmpty()),
+					techText(inRec.id), techText(inRec.accountId), techText(inRec.toAccountId.orEmpty()), techText(inRec.categoryId.orEmpty())
+				)
+			}
+		),
+		Sheet(
+			kSheetLoans,
+			listOf(Column(kAccount, 26.0), Column(kPrincipal, 16.0), Column(kRate, 10.0), Column(kMonths, 12.0), Column(kFirstDue, 14.0), Column(kInsurance, 14.0),
+				Column(kPayFrom, 22.0), Column(kCategory, 20.0), Column(kLast, 14.0)) + tech(kLoanId, kAccountId, kPayFromId, kCategoryId),
+			inFile.loans.sortedBy { vAccounts[it.accountId]?.name }.map { inLoan ->
+				listOf(
+					text(vAccounts[inLoan.accountId]?.name.orEmpty()), euros(inLoan.principal), Cell.Number(BigDecimal.valueOf(inLoan.rateBp.toLong(), 2), CellStyle.NUMBER),
+					Cell.Number(BigDecimal(inLoan.months), CellStyle.NUMBER), Cell.Date(LocalDate.parse(inLoan.firstDue)), euros(inLoan.insurance),
+					text(vAccounts[inLoan.payFrom]?.name.orEmpty()), text(vCategories[inLoan.categoryId]?.name.orEmpty()),
+					inLoan.last?.let { Cell.Date(LocalDate.parse(it)) } ?: Cell.Empty,
+					techText(inLoan.id), techText(inLoan.accountId), techText(inLoan.payFrom), techText(inLoan.categoryId)
+				)
+			}
+		),
+		Sheet(
 			kSheetFile,
 			listOf(Column(kKey, 16.0), Column(kValue, 70.0)),
 			listOf(
@@ -304,7 +351,7 @@ internal fun backupFromSheets(inSheets: List<ReadSheet>): BackupFile
 	val vPostings = mutableMapOf<String, MutableList<PostingDto>>()			// jambes par opération
 	val vTrades   = mutableMapOf<String, MutableList<TradeDto>>()				// ordres par opération
 	AccountType.entries.forEach { inType ->
-		if (inType.isProperty && inType.label !in vByName) return@forEach		// classeur antérieur aux comptes de biens
+		if ((inType.isProperty || inType == AccountType.LOAN) && inType.label !in vByName) return@forEach	// classeur antérieur à ce type de compte
 		val vSheet = sheet(inType.label)										// onglet du type
 		requireColumns(vSheet, kTxId, kDate, kLabel, kNature, kAmount, kPostingId, kAccountId)
 		vSheet.rows.forEach { inRow ->
@@ -391,6 +438,35 @@ internal fun backupFromSheets(inSheets: List<ReadSheet>): BackupFile
 		},
 		prices       = vPrices.rows.map { inRow ->
 			PriceDto(inRow.req(kPriceId), inRow.req(kAssetId), date(inRow.req(kDate)).toString(), scaledLong(inRow.req(kPrice), kPriceScale))
+		},
+		recurrences  = vByName[kSheetRecurring]?.also { requireColumns(it, kLabel, kAmount, kFrequency, kStart, kRecurrenceId, kAccountId) }?.rows.orEmpty().map { inRow ->
+			RecurrenceDto(
+				id          = inRow.req(kRecurrenceId),
+				label       = inRow.req(kLabel),
+				accountId   = inRow.req(kAccountId),
+				toAccountId = inRow.opt(kToId),
+				categoryId  = inRow.opt(kCategoryId),
+				amountCents = cents(inRow.req(kAmount)),
+				frequency   = frequencyName(inRow.req(kFrequency)),
+				start       = date(inRow.req(kStart)).toString(),
+				end         = inRow.opt(kEnd)?.let { date(it).toString() },
+				last        = inRow.opt(kLast)?.let { date(it).toString() },
+				notes       = inRow.opt(kNotes)
+			)
+		},
+		loans        = vByName[kSheetLoans]?.also { requireColumns(it, kPrincipal, kRate, kMonths, kFirstDue, kLoanId, kAccountId, kPayFromId, kCategoryId) }?.rows.orEmpty().map { inRow ->
+			LoanDto(
+				id         = inRow.req(kLoanId),
+				accountId  = inRow.req(kAccountId),
+				principal  = cents(inRow.req(kPrincipal)),
+				rateBp     = decimal(inRow.req(kRate)).setScale(2, RoundingMode.HALF_UP).movePointRight(2).intValueExact(),
+				months     = decimal(inRow.req(kMonths)).intValueExact(),
+				firstDue   = date(inRow.req(kFirstDue)).toString(),
+				insurance  = inRow.opt(kInsurance)?.let { cents(it) } ?: 0L,
+				payFrom    = inRow.req(kPayFromId),
+				categoryId = inRow.req(kCategoryId),
+				last       = inRow.opt(kLast)?.let { date(it).toString() }
+			)
 		}
 	)
 }
@@ -492,6 +568,14 @@ private fun natureKind(inText: String): String =
 		"vente de bien", "disposal"     -> TransactionKind.DISPOSAL.name
 		else                            -> throw WorkbookException("Nature d’opération inconnue : « $inText ».")
 	}
+
+/*
+	Fréquence lue (libellé français ou nom interne).
+	inText : valeur brute
+*/
+private fun frequencyName(inText: String): String =
+	Frequency.entries.firstOrNull { it.label.equals(inText.trim(), ignoreCase = true) || it.name.equals(inText.trim(), ignoreCase = true) }?.name
+		?: throw WorkbookException("Fréquence inconnue : « $inText ».")
 
 /*
 	Type de compte lu (libellé français ou nom interne).

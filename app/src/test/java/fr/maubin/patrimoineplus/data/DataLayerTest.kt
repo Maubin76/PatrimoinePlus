@@ -46,6 +46,12 @@ import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import fr.maubin.patrimoineplus.data.repo.PlanningRepository
+import fr.maubin.patrimoineplus.domain.model.Recurrence
+import fr.maubin.patrimoineplus.domain.model.Loan
+import fr.maubin.patrimoineplus.domain.model.Frequency
+import fr.maubin.patrimoineplus.domain.calc.remainingAt
+import fr.maubin.patrimoineplus.domain.calc.dueOperations
 
 /*
 	Tests de la couche données sur une base Room en mémoire (Robolectric) :
@@ -61,6 +67,7 @@ class DataLayerTest
 	private lateinit var fCategories   : CategoryRepository					// dépôt des catégories
 	private lateinit var fTransactions : TransactionRepository				// dépôt des opérations
 	private lateinit var fMarket       : MarketRepository						// dépôt des actifs et cours
+	private lateinit var fPlanning     : PlanningRepository					// dépôt des récurrences et crédits
 
 	/*
 		Ouvre une base vierge avant chaque test.
@@ -75,6 +82,7 @@ class DataLayerTest
 		fCategories   = CategoryRepository(fDb, kClock)
 		fTransactions = TransactionRepository(fDb, kClock)
 		fMarket       = MarketRepository(fDb, kClock)
+		fPlanning     = PlanningRepository(fDb, kClock)
 	}
 
 	/*
@@ -128,6 +136,45 @@ class DataLayerTest
 		val vSpend    = Transaction("x1", LocalDate.parse("2026-10-02"), TransactionKind.STANDARD, "Réparation", category("Divers"),
 			postings = listOf(Posting("xp1", vObjects.id, -5_000)))					// dépense sur le compte de biens
 		assertTrue((fTransactions.save(vSpend) as SaveResult.Rejected).errors.contains(ValidationError.PropertyOnly))
+	}
+
+	/*
+		Récurrences et crédits : récurrence commencée dans le passé, ses
+		échéances créées dès l'enregistrement et une seule fois ; récurrence
+		invalide refusée ; crédit créé (compte Crédit, catégorie « Crédit »,
+		solde du jour = capital restant dû) ; mensualités créées plus tard,
+		identiques au calcul du PC ; aller-retour par le classeur ; compte
+		supprimé : ses récurrences disparaissent.
+	*/
+	@Test
+	fun recurrencesAndLoans() = runTest {
+		val vChecking = account("Courant", AccountType.CHECKING)						// compte courant
+		val vFood     = category("Courses")												// catégorie de dépense
+		assertTrue(fPlanning.saveRecurrence(Recurrence("r", "Cantine", vChecking.id, null, null, -6_000, Frequency.MONTHLY, LocalDate.parse("2026-09-01"))) != null)	// sans catégorie : refusée
+		assertEquals(null, fPlanning.saveRecurrence(Recurrence("r", "Cantine", vChecking.id, null, vFood, -6_000, Frequency.MONTHLY, LocalDate.parse("2026-09-01"))))
+		assertEquals(2, fTransactions.observeTransactions().first().count { it.label == "Cantine" })	// 1er septembre et 1er octobre
+		assertEquals(0, fPlanning.applyDue())
+		assertEquals(LocalDate.parse("2026-10-01"), fPlanning.observeRecurrences().first().single().last)
+		val vLoan = Loan("", "", 1_500_000, 450, 48, LocalDate.parse("2025-11-05"), 1_200, vChecking.id, "")	// crédit commencé il y a onze mois
+		assertEquals(null, fPlanning.createLoan("Crédit auto", null, 100, vLoan))
+		val vSaved = fPlanning.observeLoans().first().single()								// crédit enregistré
+		assertEquals(AccountType.LOAN, fAccounts.observeAccounts().first().single { it.id == vSaved.accountId }.type)
+		assertEquals("Crédit", fCategories.observeCategories().first().single { it.id == vSaved.categoryId }.name)
+		assertEquals(LocalDate.parse("2026-10-05"), vSaved.last)
+		assertEquals(-remainingAt(vSaved, LocalDate.parse("2026-10-07")), Ledger(fTransactions.observeTransactions().first()).balanceAt(vSaved.accountId, LocalDate.parse("2026-10-07")))
+		val vLater = PlanningRepository(fDb, Clock.fixed(Instant.parse("2026-11-07T10:00:00Z"), ZoneId.of("Europe/Paris")))	// un mois plus tard
+		assertEquals(2 + 1, vLater.applyDue())											// mensualité (capital, intérêts) et cantine
+		val vPc = dueOperations(fAccounts.observeAccounts().first(), emptyList(), emptyList(), listOf(vSaved), LocalDate.parse("2026-11-07")).transactions.map { it.id }.toSet()	// calcul du PC
+		assertTrue(fTransactions.observeTransactions().first().map { it.id }.containsAll(vPc))
+		val vBackup = BackupRepository(fDb, kClock)											// sauvegarde
+		val vBytes  = java.io.ByteArrayOutputStream().also { writeBackupXlsx(vBackup.snapshot(), it) }.toByteArray()	// classeur
+		val vRecs   = fPlanning.observeRecurrences().first()								// récurrences avant
+		vBackup.replaceAll((readBackupXlsx(java.io.ByteArrayInputStream(vBytes)) as BackupRead.Valid).file)
+		assertEquals(vRecs, fPlanning.observeRecurrences().first())
+		assertEquals(listOf(vSaved.copy(last = LocalDate.parse("2026-11-05"))), fPlanning.observeLoans().first())
+		fAccounts.deletePermanently(vChecking.id)
+		assertTrue(fPlanning.observeRecurrences().first().isEmpty())
+		assertTrue(fPlanning.observeLoans().first().isEmpty())
 	}
 
 	/*
@@ -362,7 +409,7 @@ class DataLayerTest
 	fun demoLoadsAndClears() = runTest {
 		val vDemo = DemoRepository(fDb, kClock)									// démonstration
 		vDemo.loadDemo()
-		assertEquals(7, fAccounts.observeAccounts().first().size)
+		assertEquals(8, fAccounts.observeAccounts().first().size)
 		assertTrue(fTransactions.observeTransactions().first().size > 100)
 		vDemo.clearAll()
 		assertTrue(fAccounts.observeAccounts().first().isEmpty())
@@ -479,9 +526,9 @@ class DataLayerTest
 		val vShape   = vBackup.snapshot().copy(exportedAt = "")				// contenu sauvegardé
 		account("Ajouté après la sauvegarde", AccountType.CHECKING)
 		assertTrue(decodeBackup("{}") is BackupRead.Invalid)
-		assertEquals(8, fAccounts.observeAccounts().first().size)
+		assertEquals(9, fAccounts.observeAccounts().first().size)
 		vBackup.replaceAll((readBackupXlsx(java.io.ByteArrayInputStream(vBytes)) as BackupRead.Valid).file)
-		assertEquals(7, fAccounts.observeAccounts().first().size)
+		assertEquals(8, fAccounts.observeAccounts().first().size)
 		assertEquals(vBefore, fTransactions.observeTransactions().first().sortedBy { it.id })
 		assertEquals(sorted(vShape), sorted(vBackup.snapshot().copy(exportedAt = "")))
 	}
@@ -498,6 +545,8 @@ class DataLayerTest
 			assets       = inFile.assets.sortedBy { it.id },
 			transactions = inFile.transactions.sortedBy { it.id }.map { inTx -> inTx.copy(postings = inTx.postings.sortedBy { it.id }, trades = inTx.trades.sortedBy { it.id }) },
 			statements   = inFile.statements.sortedBy { it.id },
-			prices       = inFile.prices.sortedBy { it.id }
+			prices       = inFile.prices.sortedBy { it.id },
+			recurrences  = inFile.recurrences.sortedBy { it.id },
+			loans        = inFile.loans.sortedBy { it.id }
 		)
 }

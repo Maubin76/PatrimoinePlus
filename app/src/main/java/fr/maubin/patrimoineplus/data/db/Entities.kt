@@ -161,3 +161,39 @@ data class TransactionWithDetails(
 	@Relation(parentColumn = "id", entityColumn = "transactionId")
 	val trades                : List<TradeEntity>							// ordres
 )
+
+/*
+	Table des opérations récurrentes (version 4). Sans clé étrangère : un
+	compte ou une catégorie supprimés sont traités par les dépôts.
+*/
+@Entity(tableName = "recurrence")
+data class RecurrenceEntity(
+	@PrimaryKey val id   : String,											// UUID
+	val label            : String,											// libellé des opérations créées
+	val accountId        : String,											// compte (de départ d'un virement)
+	val toAccountId      : String?,											// compte d'arrivée d'un virement
+	val categoryId       : String?,											// catégorie d'une dépense ou d'un revenu
+	val amountCents      : Long,											// montant signé (virement : positif)
+	val frequency        : String,											// MONTHLY, QUARTERLY, YEARLY
+	val start            : LocalDate,										// première échéance
+	val endDate          : LocalDate?,										// dernière échéance possible
+	val last             : LocalDate?,										// dernière échéance créée
+	val notes            : String?											// notes
+)
+
+/*
+	Table des crédits amortissables (version 4).
+*/
+@Entity(tableName = "loan")
+data class LoanEntity(
+	@PrimaryKey val id   : String,											// UUID
+	val accountId        : String,											// compte Crédit
+	val principal        : Long,											// montant emprunté
+	val rateBp           : Int,												// taux annuel, en points de base
+	val months           : Int,												// nombre de mensualités
+	val firstDue         : LocalDate,										// première mensualité
+	val insurance        : Long,											// assurance mensuelle
+	val payFrom          : String,											// compte payeur
+	val categoryId       : String,											// catégorie des intérêts
+	val last             : LocalDate?										// dernière mensualité créée
+)

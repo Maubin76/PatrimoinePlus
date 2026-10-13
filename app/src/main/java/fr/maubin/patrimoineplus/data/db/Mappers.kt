@@ -11,7 +11,10 @@ import fr.maubin.patrimoineplus.domain.model.Posting
 import fr.maubin.patrimoineplus.domain.model.Trade
 import fr.maubin.patrimoineplus.domain.model.TradeSide
 import fr.maubin.patrimoineplus.domain.model.Transaction
-import fr.maubin.patrimoineplus.domain.model.TransactionKind
+import fr.maubin.patrimoineplus.domain.model.TransactionKind
+import fr.maubin.patrimoineplus.domain.model.Frequency
+import fr.maubin.patrimoineplus.domain.model.Loan
+import fr.maubin.patrimoineplus.domain.model.Recurrence
 
 // Conversions entre les tables Room et les modèles du domaine.
 
@@ -124,3 +127,27 @@ fun Transaction.toPostingEntities(): List<PostingEntity> =
 */
 fun Transaction.toTradeEntities(): List<TradeEntity> =
 	trades.map { TradeEntity(it.id, id, it.assetId, it.side.name, it.quantity, it.unitPrice, it.feesCents) }
+
+/*
+	Opération récurrente de la base vers le domaine.
+*/
+fun RecurrenceEntity.toDomain(): Recurrence =
+	Recurrence(id, label, accountId, toAccountId, categoryId, amountCents, Frequency.valueOf(frequency), start, endDate, last, notes)
+
+/*
+	Opération récurrente du domaine vers la base.
+*/
+fun Recurrence.toEntity(): RecurrenceEntity =
+	RecurrenceEntity(id, label, accountId, toAccountId, categoryId, amountCents, frequency.name, start, end, last, notes)
+
+/*
+	Crédit de la base vers le domaine.
+*/
+fun LoanEntity.toDomain(): Loan =
+	Loan(id, accountId, principal, rateBp, months, firstDue, insurance, payFrom, categoryId, last)
+
+/*
+	Crédit du domaine vers la base.
+*/
+fun Loan.toEntity(): LoanEntity =
+	LoanEntity(id, accountId, principal, rateBp, months, firstDue, insurance, payFrom, categoryId, last)

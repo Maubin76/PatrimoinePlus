@@ -50,7 +50,7 @@ class BackupFormatTest
 		val vFile = demoBackupFile()														// fichier d'origine
 		val vRead = decodeBackup(encodeBackup(vFile))								// fichier relu
 		assertEquals(BackupRead.Valid(vFile), vRead)
-		assertTrue(vFile.summary.startsWith("7 compte(s)"))
+		assertTrue(vFile.summary.startsWith("8 compte(s)"))
 	}
 
 	/*

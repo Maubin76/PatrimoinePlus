@@ -27,6 +27,7 @@ import java.time.Clock
 import java.time.LocalDate
 import java.time.YearMonth
 import javax.inject.Inject
+import fr.maubin.patrimoineplus.data.repo.PlanningRepository
 
 /*
 	ViewModel de la vue d'un compte : mois par mois (Courant) ou globale
@@ -49,7 +50,8 @@ class AccountDetailViewModel @Inject constructor(
 	private val inMarket   : MarketRepository,
 	private val inQuotes   : QuoteRefresher,
 	private val inSource   : QuoteSource,
-	private val inClock    : Clock
+	private val inClock    : Clock,
+	inPlanning             : PlanningRepository
 ) : ViewModel()
 {
 	// Identifiant du compte affiché.
@@ -69,10 +71,10 @@ class AccountDetailViewModel @Inject constructor(
 	// Relevés ou portefeuille du compte, à jour.
 	val extras: StateFlow<AccountExtras> =
 		combine(
-			combine(inAccounts.observeAccounts(), inTransactions.observeTransactions(), ::Pair),
+			combine(inAccounts.observeAccounts(), inTransactions.observeTransactions(), inPlanning.observeLoans(), ::Triple),
 			combine(inMarket.observeStatements(), inMarket.observePrices(), inMarket.observeAssets(), ::Triple)
-		) { (inList, inTxs), (inStatements, inPrices, inAssets) ->
-			buildAccountExtras(accountId, inList, inTxs, inStatements, inPrices, inAssets, LocalDate.now(inClock))
+		) { (inList, inTxs, inLoans), (inStatements, inPrices, inAssets) ->
+			buildAccountExtras(accountId, inList, inTxs, inStatements, inPrices, inAssets, LocalDate.now(inClock), inLoans)
 		}
 			.flowOn(Dispatchers.Default)
 			.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AccountExtras())

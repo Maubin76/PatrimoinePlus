@@ -61,8 +61,11 @@ import fr.maubin.patrimoineplus.ui.components.FormSheet
 import fr.maubin.patrimoineplus.ui.components.SegmentedChoice
 import fr.maubin.patrimoineplus.ui.components.TextInput
 import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
-import kotlin.math.abs
+import kotlin.math.abs
+
 import fr.maubin.patrimoineplus.ui.components.Picker
+
+import fr.maubin.patrimoineplus.domain.model.Frequency
 
 /*
 	Feuille de saisie d'une opération : dépense, revenu, virement entre deux
@@ -74,6 +77,7 @@ import fr.maubin.patrimoineplus.ui.components.Picker
 	inOnSave       : enregistre la saisie et renvoie les erreurs par rappel
 	inOnDelete     : supprime l'opération modifiée
 	inOnDismiss    : fermeture
+	inOnRepeat    : répétition choisie pour une nouvelle opération ; null : pas de répétition proposée
 */
 @Composable
 fun TransactionSheet(
@@ -82,9 +86,11 @@ fun TransactionSheet(
 	inSuggestions : (String) -> List<LabelSuggestion>,
 	inOnSave      : (EntryForm, (EntryErrors) -> Unit) -> Unit,
 	inOnDelete    : () -> Unit,
-	inOnDismiss   : () -> Unit
+	inOnDismiss   : () -> Unit,
+	inOnRepeat    : ((Frequency?) -> Unit)? = null
 )
 {
+	var vRepeat  by remember { mutableStateOf<Frequency?>(null) }				// répétition choisie
 	var vForm    by remember { mutableStateOf(inInitial) }						// saisie en cours
 	var vErrors  by remember { mutableStateOf(EntryErrors()) }				// erreurs affichées
 	var vConfirm by remember { mutableStateOf(false) }						// suppression à confirmer
@@ -107,6 +113,13 @@ fun TransactionSheet(
 		}
 		DateInput(vForm.date, { vForm = vForm.copy(date = it) }, "Date")
 		TextInput(vForm.notes, { vForm = vForm.copy(notes = it) }, "Notes (facultatif)")
+		if (inOnRepeat != null && vForm.id == null && vForm.mode != EntryMode.TRADE)
+		{
+			Picker("Répéter", listOf<Pair<String?, String>>(null to "Non") + Frequency.entries.map { it.name to it.label }, vRepeat?.name, null) { inName ->
+				vRepeat = inName?.let(Frequency::valueOf)
+				inOnRepeat(vRepeat)
+			}
+		}
 		vErrors.general?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
 		Button(
 			onClick        = { inOnSave(vForm) { vErrors = it } },

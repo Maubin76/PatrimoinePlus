@@ -282,6 +282,8 @@ class AccountRepository @Inject constructor(
 			else
 			{
 				fTxDao.deleteByIds(fDao.openingIdsOf(inId))
+				inDb.planningDao().deleteRecurrencesOf(inId)
+				inDb.planningDao().deleteLoansOf(inId)
 				fDao.deleteById(inId)
 				true
 			}
@@ -301,6 +303,8 @@ class AccountRepository @Inject constructor(
 			{
 				fTxDao.deleteByIds(vTxIds)
 			}
+			inDb.planningDao().deleteRecurrencesOf(inId)
+			inDb.planningDao().deleteLoansOf(inId)
 			fDao.deleteById(inId)
 			vTxIds.size
 		}

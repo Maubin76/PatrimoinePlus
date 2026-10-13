@@ -223,4 +223,5 @@ fun typeColor(inType: AccountType): Color =
 		AccountType.BROKERAGE -> MaterialTheme.colorScheme.tertiary
 		AccountType.REAL_ESTATE -> MaterialTheme.colorScheme.onSurfaceVariant
 		AccountType.COLLECTIBLE -> MaterialTheme.colorScheme.outline
+		AccountType.LOAN        -> MaterialTheme.colorScheme.outlineVariant
 	}

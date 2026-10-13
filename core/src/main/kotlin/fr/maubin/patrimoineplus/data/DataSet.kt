@@ -13,7 +13,10 @@ import fr.maubin.patrimoineplus.domain.model.Trade
 import fr.maubin.patrimoineplus.domain.model.TradeSide
 import fr.maubin.patrimoineplus.domain.model.Transaction
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
-import java.time.LocalDate
+import java.time.LocalDate
+import fr.maubin.patrimoineplus.domain.model.Loan
+import fr.maubin.patrimoineplus.domain.model.Recurrence
+import fr.maubin.patrimoineplus.data.backup.toDomain
 
 /*
 	Toutes les données de l'appli, en modèles du domaine : ce que lisent les
@@ -25,6 +28,8 @@ import java.time.LocalDate
 	transactions : opérations
 	prices       : cours relevés
 	statements   : relevés de solde
+	recurrences  : opérations récurrentes
+	loans        : crédits
 */
 data class DataSet(
 	val accounts     : List<Account>,
@@ -32,7 +37,9 @@ data class DataSet(
 	val assets       : List<Asset>,
 	val transactions : List<Transaction>,
 	val prices       : List<AssetPrice>,
-	val statements   : List<AccountStatement>
+	val statements   : List<AccountStatement>,
+	val recurrences  : List<Recurrence> = emptyList(),
+	val loans        : List<Loan>       = emptyList()
 )
 {
 	companion object
@@ -67,5 +74,7 @@ fun BackupFile.toDataSet(): DataSet =
 			)
 		},
 		prices       = prices.map { AssetPrice(it.id, it.assetId, LocalDate.parse(it.date), it.unitPrice) },
-		statements   = statements.map { AccountStatement(it.id, it.accountId, LocalDate.parse(it.date), it.balanceCents) }
+		statements   = statements.map { AccountStatement(it.id, it.accountId, LocalDate.parse(it.date), it.balanceCents) },
+		recurrences  = recurrences.map { it.toDomain() },
+		loans        = loans.map { it.toDomain() }
 	)

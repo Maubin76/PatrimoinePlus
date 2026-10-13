@@ -40,7 +40,9 @@ class BackupWorkbookTest
 			assets       = inFile.assets.sortedBy { it.id },
 			transactions = inFile.transactions.sortedBy { it.id }.map { inTx -> inTx.copy(postings = inTx.postings.sortedBy { it.id }, trades = inTx.trades.sortedBy { it.id }) },
 			statements   = inFile.statements.sortedBy { it.id },
-			prices       = inFile.prices.sortedBy { it.id }
+			prices       = inFile.prices.sortedBy { it.id },
+			recurrences  = inFile.recurrences.sortedBy { it.id },
+			loans        = inFile.loans.sortedBy { it.id }
 		)
 
 	/*
@@ -69,7 +71,7 @@ class BackupWorkbookTest
 	{
 		val vFile   = demoBackupFile()											// démonstration
 		val vSheets = readXlsx(ByteArrayInputStream(workbook(vFile)))			// onglets relus
-		assertEquals(listOf("Courant", "Épargne", "Bourse", "Immobilier", "Collection", "Comptes", "Catégories", "Actifs", "Cours", "Relevés", "Fichier"), vSheets.map { it.name })
+		assertEquals(listOf("Courant", "Épargne", "Bourse", "Immobilier", "Collection", "Crédit", "Comptes", "Catégories", "Actifs", "Cours", "Relevés", "Récurrences", "Crédits", "Fichier"), vSheets.map { it.name })
 		val vTypes    = vFile.accounts.associate { it.id to it.type }			// type de chaque compte
 		val vTransfer = vFile.transactions.first { inTx -> inTx.kind == "TRANSFER" && inTx.postings.map { vTypes[it.accountId] }.toSet() == setOf("CHECKING", "SAVINGS") }	// virement Courant → Épargne
 		val vOnSheets = vSheets.filter { inSheet -> inSheet.rows.any { it["ID opération"] == vTransfer.id } }.map { it.name }	// onglets qui le montrent

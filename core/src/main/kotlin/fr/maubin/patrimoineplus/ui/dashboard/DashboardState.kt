@@ -26,6 +26,8 @@ import java.time.LocalDate
 import java.time.YearMonth
 import fr.maubin.patrimoineplus.ui.property.propertyNature
 import fr.maubin.patrimoineplus.ui.property.propertyIcon
+import fr.maubin.patrimoineplus.domain.calc.Installment
+import fr.maubin.patrimoineplus.domain.calc.amortization
 
 const val kTileSeriesMonths   = 12												// mois de la petite courbe d'une tuile
 const val kTileTopItems       = 3												// catégories ou positions montrées dans une tuile
@@ -92,6 +94,20 @@ sealed interface TilePreview
 		val items  : List<Pair<String, Long>>,
 		val others : Long,
 		val gains  : Long
+	) : TilePreview
+
+	/*
+		Compte Crédit : capital restant dû et prochaine mensualité.
+		remaining : capital restant dû (positif), d'après le solde du compte
+		next      : prochaine mensualité ; null sans tableau d'amortissement ou après la dernière
+		end       : date de la dernière mensualité ; null sans tableau
+		paid      : part du capital déjà remboursée, en % ; null sans tableau
+	*/
+	data class Loan(
+		val remaining : Long,
+		val next      : Installment?,
+		val end       : LocalDate?,
+		val paid      : Int?
 	) : TilePreview
 }
 
@@ -260,6 +276,18 @@ private fun preview(
 				.sumOf { amountOn(it, inAccount.id).coerceAtLeast(0L) }				// entrées de l'année
 			val vLast     = inData.statements.filter { it.accountId == inAccount.id }.maxByOrNull { it.date }	// dernier relevé
 			TilePreview.Savings(vYear, vIncome, vLast?.let { StatementItem(it, statementGap(it, inLedger)) })
+		}
+		AccountType.LOAN ->
+		{
+			val vLoan     = inData.loans.firstOrNull { it.accountId == inAccount.id }		// crédit du compte
+			val vSchedule = vLoan?.let(::amortization).orEmpty()								// tableau d'amortissement
+			val vLeft     = (-inLedger.balanceAt(inAccount.id, inToday)).coerceAtLeast(0L)	// capital restant dû
+			TilePreview.Loan(
+				remaining = vLeft,
+				next      = vSchedule.firstOrNull { it.date.isAfter(inToday) },
+				end       = vSchedule.lastOrNull()?.date,
+				paid      = vLoan?.let { (((it.principal - vLeft) * 100) / it.principal).toInt().coerceIn(0, 100) }
+			)
 		}
 		AccountType.REAL_ESTATE, AccountType.COLLECTIBLE ->
 		{

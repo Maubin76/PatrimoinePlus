@@ -26,7 +26,10 @@ import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
 import fr.maubin.patrimoineplus.domain.calc.PropertyItem
-import fr.maubin.patrimoineplus.domain.calc.propertyItems
+import fr.maubin.patrimoineplus.domain.calc.propertyItems
+import fr.maubin.patrimoineplus.data.repo.PlanningRepository
+import fr.maubin.patrimoineplus.domain.model.Frequency
+import fr.maubin.patrimoineplus.ui.planning.recurrenceFromEntry
 
 /*
 	ViewModel de la saisie d'une opération (dépense, revenu, virement, ordre) :
@@ -48,7 +51,8 @@ class EntryViewModel @Inject constructor(
 	private val inTransactions : TransactionRepository,
 	private val inSettings     : SettingsRepository,
 	private val inQuotes       : QuoteRefresher,
-	private val inClock        : Clock
+	private val inClock        : Clock,
+	private val inPlanning     : PlanningRepository
 ) : ViewModel()
 {
 	private var fSaving = false														// enregistrement en cours
@@ -97,12 +101,16 @@ class EntryViewModel @Inject constructor(
 	/*
 		Enregistre la saisie ; renvoie les erreurs (vides si enregistrée).
 		Un second appui pendant l'enregistrement est ignoré (pas de doublon).
+		Avec une répétition, une opération récurrente reprend la saisie à
+		partir de la période suivante.
 		inForm   : saisie
 		inOnDone : reçoit les erreurs
+		inRepeat : répétition demandée ; null sans répétition
 	*/
 	fun save(
 		inForm   : EntryForm,
-		inOnDone : (EntryErrors) -> Unit
+		inOnDone : (EntryErrors) -> Unit,
+		inRepeat : Frequency? = null
 	)
 	{
 		if (fSaving)
@@ -119,7 +127,7 @@ class EntryViewModel @Inject constructor(
 		viewModelScope.launch {
 			try
 			{
-				saveChecked(inForm, inOnDone)
+				saveChecked(inForm, inOnDone, inRepeat)
 			}
 			finally
 			{
@@ -136,7 +144,8 @@ class EntryViewModel @Inject constructor(
 	*/
 	private suspend fun saveChecked(
 		inForm   : EntryForm,
-		inOnDone : (EntryErrors) -> Unit
+		inOnDone : (EntryErrors) -> Unit,
+		inRepeat : Frequency?
 	)
 	{
 		val vNewAsset = if (inForm.mode == EntryMode.TRADE && inForm.assetId == kNewAsset)
@@ -147,6 +156,7 @@ class EntryViewModel @Inject constructor(
 			is SaveResult.Saved    ->
 			{
 				inSettings.setLastAccountId(vTx.postings.first().accountId)
+				inRepeat?.takeIf { inForm.id == null }?.let { recurrenceFromEntry(inForm, vTx.label, it) }?.let { inPlanning.saveRecurrence(it) }
 				inOnDone(EntryErrors())
 				if (inForm.mode == EntryMode.TRADE && inForm.assetId == kNewAsset && inForm.newIsin.isNotBlank())
 				{

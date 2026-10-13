@@ -30,6 +30,7 @@ import java.io.ByteArrayOutputStream
 import java.time.Clock
 import javax.inject.Inject
 import javax.inject.Singleton
+import fr.maubin.patrimoineplus.data.repo.PlanningRepository
 
 private const val kDebounceMillis = 3_000L										// délai après une modification avant d'écrire le fichier
 
@@ -273,14 +274,20 @@ class Syncer(
 	inCategories   : catégories
 	inTransactions : opérations
 	inMarket       : actifs, cours et relevés
+	inPlanning     : opérations récurrentes et crédits
 */
 fun dataChanges(
 	inAccounts     : AccountRepository,
 	inCategories   : CategoryRepository,
 	inTransactions : TransactionRepository,
-	inMarket       : MarketRepository
+	inMarket       : MarketRepository,
+	inPlanning     : PlanningRepository
 ): kotlinx.coroutines.flow.Flow<Any> =
 	combine(
-		inAccounts.observeAccounts(), inCategories.observeCategories(), inTransactions.observeTransactions(),
-		inMarket.observeAssets(), inMarket.observePrices(), inMarket.observeStatements()
-	) { inValues -> inValues.toList() }
+		combine(
+			inAccounts.observeAccounts(), inCategories.observeCategories(), inTransactions.observeTransactions(),
+			inMarket.observeAssets(), inMarket.observePrices(), inMarket.observeStatements()
+		) { inValues -> inValues.toList() },
+		inPlanning.observeRecurrences(),
+		inPlanning.observeLoans()
+	) { inData, inRecs, inLoans -> listOf(inData, inRecs, inLoans) }

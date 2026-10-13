@@ -42,6 +42,8 @@ class DemoRepository @Inject constructor(
 			}
 			vBundle.prices.forEach { inDb.assetDao().putPrice(it.toEntity()) }
 			vBundle.statements.forEach { inDb.statementDao().upsert(it.toEntity()) }
+			inDb.planningDao().upsertRecurrences(vBundle.recurrences.map { it.toEntity() })
+			inDb.planningDao().upsertLoans(vBundle.loans.map { it.toEntity() })
 		}
 	}
 

@@ -6,6 +6,7 @@ import fr.maubin.patrimoineplus.domain.calc.statementGap
 import fr.maubin.patrimoineplus.domain.calc.valuePortfolio
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.domain.rules.TransactionValidator
+import fr.maubin.patrimoineplus.domain.calc.remainingAt
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -41,8 +42,10 @@ class DemoDataTest
 	}
 
 	/*
-		Aucun compte ne finit à découvert ; une seule opération est à venir ; le
-		relevé du livret montre 38,20 € d'intérêts non saisis.
+		Aucun compte ne finit à découvert (sauf le crédit, dont le solde est le
+		capital restant dû, cohérent avec son tableau d'amortissement) ; une
+		seule opération est à venir ; le relevé du livret montre 38,20 €
+		d'intérêts non saisis.
 	*/
 	@Test
 	fun demoIsPlausible()
@@ -53,7 +56,8 @@ class DemoDataTest
 			vDemo.accounts.forEach { inAccount ->
 				val vValue = if (inAccount.type == AccountType.BROKERAGE) valuePortfolio(vLedger, inAccount.id, inToday, vDemo.prices).cashCents
 					else vLedger.balanceAt(inAccount.id, inToday)			// solde ou espèces
-				assertTrue("$inToday ${inAccount.name} : $vValue", vValue >= 0)
+				if (inAccount.type == AccountType.LOAN) assertEquals(-remainingAt(vDemo.loans.single(), inToday), vValue)
+				else assertTrue("$inToday ${inAccount.name} : $vValue", vValue >= 0)
 			}
 			assertEquals(1, vDemo.transactions.count { it.isUpcoming(inToday) })
 			assertEquals(3_820L, statementGap(vDemo.statements.single(), vLedger))

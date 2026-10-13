@@ -8,18 +8,25 @@ import fr.maubin.patrimoineplus.data.backup.scheduleBackups
 import fr.maubin.patrimoineplus.data.market.scheduleQuotes
 import fr.maubin.patrimoineplus.data.sync.Syncer
 import fr.maubin.patrimoineplus.ui.lock.AppLock
-import javax.inject.Inject
+import javax.inject.Inject
+import fr.maubin.patrimoineplus.data.repo.PlanningRepository
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 /*
 	Point d'entrée de l'application : initialise le graphe d'injection Hilt et
 	branche le verrou sur le cycle de vie du processus (premier plan,
-	arrière-plan) et planifie la sauvegarde et la mise à jour des cours.
+	arrière-plan), crée les échéances arrivées à chaque retour au premier
+	plan, et planifie la sauvegarde et la mise à jour des cours.
 */
 @HiltAndroidApp
 class PatrimoineApplication : Application(), Configuration.Provider
 {
 	@Inject lateinit var fAppLock: AppLock										// verrou de l'application
 	@Inject lateinit var fSyncer: Syncer										// synchronisation par fichier
+	@Inject lateinit var fPlanning: PlanningRepository						// échéances des récurrences et des crédits
 
 	// Configuration de WorkManager, initialisé à la première demande (et non au démarrage).
 	override val workManagerConfiguration: Configuration
@@ -36,6 +43,17 @@ class PatrimoineApplication : Application(), Configuration.Provider
 		ProcessLifecycleOwner.get().lifecycle.addObserver(fAppLock)
 		ProcessLifecycleOwner.get().lifecycle.addObserver(fSyncer)
 		fSyncer.start()
+		ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver
+		{
+			/*
+				Retour au premier plan : les échéances arrivées depuis sont créées.
+				inOwner : processus
+			*/
+			override fun onStart(inOwner: LifecycleOwner)
+			{
+				inOwner.lifecycleScope.launch { runCatching { fPlanning.applyDue() } }
+			}
+		})
 		scheduleBackups(this)
 		scheduleQuotes(this)
 	}

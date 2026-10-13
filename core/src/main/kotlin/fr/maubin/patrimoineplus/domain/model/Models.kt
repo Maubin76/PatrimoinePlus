@@ -15,7 +15,8 @@ enum class AccountType(val label: String)
 	SAVINGS("Épargne"),
 	BROKERAGE("Bourse"),
 	REAL_ESTATE("Immobilier"),												// biens immobiliers, comptés à leur prix d'achat
-	COLLECTIBLE("Collection");												// objets de collection, comptés à leur prix d'achat
+	COLLECTIBLE("Collection"),												// objets de collection, comptés à leur prix d'achat
+	LOAN("Crédit");															// crédit : solde négatif, capital restant dû (déduit du patrimoine)
 
 	// Vrai pour un compte de biens (immobilier, collection) : pas un vrai compte
 	// en banque, il ne reçoit que des achats et des ventes de biens et vaut le

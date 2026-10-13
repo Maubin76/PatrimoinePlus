@@ -92,7 +92,7 @@ class CategoryRepository @Inject constructor(
 	): SaveResult<SetupError> =
 		inDb.withTransaction {
 			val vFrom  = fDao.getById(inId)?.toDomain() ?: return@withTransaction SaveResult.Rejected(listOf(SetupError.NotFound))	// catégorie supprimée
-			val vUsed  = fDao.usage(inId) > 0									// catégorie utilisée
+			val vUsed  = usage(inId) > 0										// catégorie utilisée (opérations, récurrences, crédits)
 			if (vUsed)
 			{
 				val vTo     = inReplacementId?.let { fDao.getById(it)?.toDomain() }	// remplacement
@@ -103,6 +103,8 @@ class CategoryRepository @Inject constructor(
 					return@withTransaction SaveResult.Rejected(vErrors)
 				}
 				fDao.reassign(inId, vTo.id, inClock.millis())
+				inDb.planningDao().reassignRecurrences(inId, vTo.id)
+				inDb.planningDao().reassignLoans(inId, vTo.id)
 			}
 			fDao.deleteById(inId)
 			SaveResult.Saved(inId)
@@ -121,8 +123,9 @@ class CategoryRepository @Inject constructor(
 	}
 
 	/*
-		Nombre d'opérations qui utilisent une catégorie.
+		Nombre d'opérations, de récurrences et de crédits qui utilisent une
+		catégorie.
 		inId : catégorie
 	*/
-	suspend fun usage(inId: String): Int = fDao.usage(inId)
+	suspend fun usage(inId: String): Int = fDao.usage(inId) + inDb.planningDao().categoryUsage(inId)
 }

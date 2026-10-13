@@ -14,7 +14,11 @@ import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
-import javax.inject.Singleton
+import javax.inject.Singleton
+import fr.maubin.patrimoineplus.data.backup.toDto
+import fr.maubin.patrimoineplus.data.backup.toDomain
+import fr.maubin.patrimoineplus.data.db.toDomain
+import fr.maubin.patrimoineplus.data.db.toEntity
 
 /*
 	Export et import de toute la base, sous forme de fichier JSON versionné.
@@ -53,7 +57,9 @@ class BackupRepository @Inject constructor(
 					)
 				},
 				statements   = fDao.statements().map { StatementDto(it.id, it.accountId, it.date.toString(), it.balanceCents) },
-				prices       = fDao.prices().map { PriceDto(it.id, it.assetId, it.date.toString(), it.unitPrice) }
+				prices       = fDao.prices().map { PriceDto(it.id, it.assetId, it.date.toString(), it.unitPrice) },
+				recurrences  = inDb.planningDao().recurrences().map { it.toDomain().toDto() },
+				loans        = inDb.planningDao().loans().map { it.toDomain().toDto() }
 			)
 		}
 
@@ -73,6 +79,8 @@ class BackupRepository @Inject constructor(
 			inDb.transactionDao().insertTrades(inFile.transactions.flatMap { inTx -> inTx.trades.map { TradeEntity(it.id, inTx.id, it.assetId, it.side, it.quantity, it.unitPrice, it.feesCents) } })
 			fDao.insertStatements(inFile.statements.map { AccountStatementEntity(it.id, it.accountId, LocalDate.parse(it.date), it.balanceCents) })
 			fDao.insertPrices(inFile.prices.map { AssetPriceEntity(it.id, it.assetId, LocalDate.parse(it.date), it.unitPrice) })
+			inDb.planningDao().upsertRecurrences(inFile.recurrences.map { it.toDomain().toEntity() })
+			inDb.planningDao().upsertLoans(inFile.loans.map { it.toDomain().toEntity() })
 		}
 	}
 }

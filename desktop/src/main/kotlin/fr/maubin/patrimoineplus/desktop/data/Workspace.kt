@@ -30,6 +30,8 @@ import java.nio.file.StandardCopyOption
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
+import fr.maubin.patrimoineplus.data.backup.toDto
+import fr.maubin.patrimoineplus.data.edit.DataEditor
 
 private const val kPollMillis  = 2_000L											// intervalle de surveillance du fichier
 private const val kFlushMillis = 1_500L											// délai entre une modification et l'écriture
@@ -118,6 +120,7 @@ class Workspace(private val inClock: Clock)
 	private var fScope    : CoroutineScope? = null									// portée de la surveillance
 	private var fWatch    : Job? = null												// surveillance du fichier
 	private var fFlush    : Job? = null												// écriture programmée
+	private val fEditor   = DataEditor(inClock)										// création des échéances
 
 	// État courant.
 	val state: StateFlow<WorkspaceState> = fState
@@ -159,6 +162,7 @@ class Workspace(private val inClock: Clock)
 			{
 				fFile = demoFile(vToday)
 				fState.value = WorkspaceState(Source.Demo, fFile.toDataSet(), LoadStatus.Demo, vToday)
+				applyDue()
 			}
 			is Source.Folder ->
 			{
@@ -181,8 +185,8 @@ class Workspace(private val inClock: Clock)
 
 	/*
 		Applique une modification aux données du PC. Acceptée : affichée tout de
-		suite, écrite dans le fichier 1,5 s plus tard (dossier) ; refusée : rien
-		ne change.
+		suite, écrite dans le fichier 1,5 s plus tard (dossier), puis les
+		échéances arrivées sont créées ; refusée : rien ne change.
 		inChange : modification (voir DataEditor)
 	*/
 	fun edit(inChange: (BackupFile) -> EditResult): EditResult
@@ -206,6 +210,7 @@ class Workspace(private val inClock: Clock)
 					sync()
 				}
 			}
+			applyDue()																// échéances passées d'une récurrence ou d'un crédit qui vient d'être saisi
 		}
 		return vResult
 	}
@@ -316,7 +321,21 @@ class Workspace(private val inClock: Clock)
 		if (vToday != fState.value.today)
 		{
 			fState.value = fState.value.copy(today = vToday)
+			applyDue()
 		}
+	}
+
+	/*
+		Crée les opérations des échéances arrivées (opérations récurrentes,
+		mensualités des crédits) comme une modification du PC : affichées tout
+		de suite, écrites ensuite dans le fichier d'échange. Sans effet s'il n'y
+		a rien d'échu, hors données ou pendant un conflit.
+	*/
+	private fun applyDue()
+	{
+		if (fConflict != null || fState.value.source == Source.None) return
+		val vNext = fEditor.applyDue(fFile, fState.value.today) ?: return			// contenu avec les échéances
+		edit { EditResult.Done(vNext) }
 	}
 
 	/*
@@ -372,6 +391,7 @@ class Workspace(private val inClock: Clock)
 		fFile = inFile
 		fState.value = fState.value.copy(data = inFile.toDataSet(), today = LocalDate.now(inClock))
 		record(inFingerprint)
+		applyDue()
 	}
 
 	/*
@@ -464,7 +484,9 @@ class Workspace(private val inClock: Clock)
 					inTx.trades.map { fr.maubin.patrimoineplus.data.backup.TradeDto(it.id, it.assetId, it.side.name, it.quantity, it.unitPrice, it.feesCents) }, inTx.linkedId)
 			},
 			statements   = vDemo.statements.map { fr.maubin.patrimoineplus.data.backup.StatementDto(it.id, it.accountId, it.date.toString(), it.balanceCents) },
-			prices       = vDemo.prices.map { fr.maubin.patrimoineplus.data.backup.PriceDto(it.id, it.assetId, it.date.toString(), it.unitPrice) }
+			prices       = vDemo.prices.map { fr.maubin.patrimoineplus.data.backup.PriceDto(it.id, it.assetId, it.date.toString(), it.unitPrice) },
+			recurrences  = vDemo.recurrences.map { it.toDto() },
+			loans        = vDemo.loans.map { it.toDto() }
 		)
 	}
 }

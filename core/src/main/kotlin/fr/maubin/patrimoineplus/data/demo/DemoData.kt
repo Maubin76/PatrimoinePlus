@@ -16,6 +16,13 @@ import fr.maubin.patrimoineplus.domain.model.Trade
 import fr.maubin.patrimoineplus.domain.model.TradeSide
 import fr.maubin.patrimoineplus.domain.model.Transaction
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
+import fr.maubin.patrimoineplus.domain.model.Loan
+import fr.maubin.patrimoineplus.domain.model.Recurrence
+import fr.maubin.patrimoineplus.domain.model.Frequency
+import fr.maubin.patrimoineplus.domain.model.CategoryKind
+import fr.maubin.patrimoineplus.domain.calc.amortization
+import fr.maubin.patrimoineplus.domain.calc.remainingAt
+import fr.maubin.patrimoineplus.domain.calc.dueOperations
 import java.time.LocalDate
 import java.util.UUID
 
@@ -39,7 +46,9 @@ fun buildDemoData(inToday: LocalDate): DataSet
 	val vPea     = Account(stableId("compte:pea"), "PEA", AccountType.BROKERAGE, "Courtier démo", 100, 4)			// PEA
 	val vHome    = Account(stableId("compte:residence-principale"), "Résidence principale", AccountType.REAL_ESTATE, null, 50, 5)	// immobilier, détenu à moitié
 	val vObjects = Account(stableId("compte:collection"), "Collection", AccountType.COLLECTIBLE, null, 100, 6)			// objets de collection
-	val vCats    = DefaultCatalog.categories().map { it.copy(id = stableId("categorie:${it.kind}:${it.name}")) }	// catégories, identifiants stables
+	val vCar     = Account(stableId("compte:credit-auto"), "Crédit auto", AccountType.LOAN, "Banque démo", 100, 7)		// crédit amortissable
+	val vCats    = DefaultCatalog.categories().map { it.copy(id = stableId("categorie:${it.kind}:${it.name}")) } +
+		Category(stableId("categorie:EXPENSE:Crédit"), "Crédit", "bank", CategoryKind.EXPENSE, 99)	// catégories, identifiants stables, et intérêts d'emprunt
 	val vWorld   = Asset(stableId("actif:etf-monde"), "ETF Monde (démo)")							// premier actif
 	val vUs      = Asset(stableId("actif:etf-etats-unis"), "ETF États-Unis (démo)")						// second actif
 	val vStart   = inToday.minusMonths(kMonths - 1L).withDayOfMonth(1)		// début de l'historique
@@ -174,7 +183,19 @@ fun buildDemoData(inToday: LocalDate): DataSet
 
 	val vStatement = AccountStatement(newId(), vLivretA.id, inToday.withDayOfMonth(1).minusDays(1),
 		1_200_000 + 30_000L * (kMonths - 1) + 3_820)							// relevé avec 38,20 € d'intérêts non saisis
-	return DataSet(listOf(vCourant, vJoint, vLivretA, vLdds, vPea, vHome, vObjects), vCats, listOf(vWorld, vUs), vOps, vPrices, listOf(vStatement))
+	val vLoan    = Loan(stableId("credit:auto"), vCar.id, 1_500_000, 450, 48, vStart.minusMonths(11).plusDays(4), 1_200, vCourant.id, cat("Crédit"))	// crédit commencé il y a un an
+	val vPaid    = vLoan.copy(last = amortization(vLoan).last { it.date.isBefore(vStart) }.date)	// mensualités payées avant la démonstration
+	vOps += opening(vStart, vCar, -remainingAt(vPaid, vStart.minusDays(1)))
+	val vRecs    = listOf(
+		Recurrence(stableId("recurrence:salaire"), "Salaire", vCourant.id, null, cat("Salaire"), 320_000, Frequency.MONTHLY, inToday.withDayOfMonth(1).plusMonths(1)),
+		Recurrence(stableId("recurrence:musique"), "Abonnement musique", vCourant.id, null, cat("Abonnements"), -1_599, Frequency.MONTHLY, inToday.withDayOfMonth(10).plusMonths(1)),
+		Recurrence(stableId("recurrence:livret"), "Épargne du mois", vCourant.id, vLivretA.id, null, 30_000, Frequency.MONTHLY, inToday.withDayOfMonth(27).plusMonths(1)),
+		Recurrence(stableId("recurrence:assurance"), "Assurance auto", vCourant.id, null, cat("Transport"), -48_000, Frequency.YEARLY, inToday.plusMonths(3).withDayOfMonth(15))
+	)																		// opérations récurrentes (prochaines échéances à venir)
+	val vAccounts = listOf(vCourant, vJoint, vLivretA, vLdds, vPea, vHome, vObjects, vCar)	// comptes
+	val vDue     = dueOperations(vAccounts, vOps, emptyList(), listOf(vPaid), inToday)		// mensualités du crédit depuis le début de la démonstration
+	vOps += vDue.transactions
+	return DataSet(vAccounts, vCats, listOf(vWorld, vUs), vOps, vPrices, listOf(vStatement), vRecs, vDue.loans.ifEmpty { listOf(vPaid) })
 }
 
 /*

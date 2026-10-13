@@ -34,6 +34,7 @@ class Converters
 	migration, pour ne jamais perdre de données.
 	Version 2 : symbole de cotation des actifs (colonne ajoutée, migration automatique).
 	Version 3 : opération liée (vente d'un bien → son achat ; colonne ajoutée, migration automatique).
+	Version 4 : opérations récurrentes et crédits (tables ajoutées, migration automatique).
 */
 @Database(
 	entities     = [
@@ -44,11 +45,13 @@ class Converters
 		PostingEntity::class,
 		TradeEntity::class,
 		AccountStatementEntity::class,
-		AssetPriceEntity::class
+		AssetPriceEntity::class,
+		RecurrenceEntity::class,
+		LoanEntity::class
 	],
-	version       = 3,
+	version       = 4,
 	exportSchema  = true,
-	autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3)]
+	autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4)]
 )
 @TypeConverters(Converters::class)
 abstract class PatrimoineDatabase : RoomDatabase()
@@ -67,6 +70,9 @@ abstract class PatrimoineDatabase : RoomDatabase()
 
 	// Accès aux relevés.
 	abstract fun statementDao(): StatementDao
+
+	// Accès aux opérations récurrentes et aux crédits.
+	abstract fun planningDao(): PlanningDao
 
 	// Accès en bloc pour l'export et l'import.
 	abstract fun backupDao(): BackupDao

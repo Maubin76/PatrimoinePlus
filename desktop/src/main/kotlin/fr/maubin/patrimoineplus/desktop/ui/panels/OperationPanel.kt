@@ -40,6 +40,9 @@ import fr.maubin.patrimoineplus.ui.entry.buildEntry
 import fr.maubin.patrimoineplus.ui.entry.checkEntry
 import fr.maubin.patrimoineplus.ui.entry.kNewAsset
 import fr.maubin.patrimoineplus.ui.entry.proposedLabel
+import fr.maubin.patrimoineplus.domain.model.Frequency
+import fr.maubin.patrimoineplus.ui.planning.recurrenceFromEntry
+import fr.maubin.patrimoineplus.domain.format.formatFrenchDate
 
 /*
 	Saisie ou modification d'une opération dans le panneau latéral : dépense
@@ -62,6 +65,7 @@ fun OperationPanel(
 	var vErrors by remember(inInitial) { mutableStateOf(EntryErrors()) }		// erreurs affichées
 	var vBadDay by remember(inInitial) { mutableStateOf(false) }				// date illisible
 	var vDelete by remember(inInitial) { mutableStateOf(false) }				// suppression demandée
+	var vRepeat by remember(inInitial) { mutableStateOf<Frequency?>(null) }	// répétition demandée (nouvelle opération)
 	val vEntry  = EntryData(vData.accounts.filterNot { it.archived || it.type.isProperty }, vData.categories.filterNot { it.archived }.sortedBy { it.sortOrder }, vData.assets, vData.prices, vData.transactions)
 		.withReferences(vForm, vData.accounts, vData.categories)				// données de saisie (comptes archivés de l'opération compris)
 
@@ -88,7 +92,10 @@ fun OperationPanel(
 			}
 			else
 			{
-				inController.editor.saveTransaction(inFile, buildEntry(vForm, vEntry))
+				val vTx    = buildEntry(vForm, vEntry)										// opération construite
+				val vSaved = inController.editor.saveTransaction(inFile, vTx)				// opération enregistrée
+				val vRec   = vRepeat?.takeIf { vForm.id == null }?.let { recurrenceFromEntry(vForm, vTx.label, it) }	// récurrence demandée
+				if (vSaved is EditResult.Done && vRec != null) inController.editor.saveRecurrence(vSaved.file, vRec).let { if (it is EditResult.Done) it.copy(id = vSaved.id) else it } else vSaved
 			}
 		}																			// résultat
 		when (vResult)
@@ -170,6 +177,11 @@ fun OperationPanel(
 		}
 		DateField(vForm.date, { inDate -> vBadDay = inDate == null; inDate?.let { vForm = vForm.copy(date = it) } }, "Date")
 		FormField(vForm.notes, { vForm = vForm.copy(notes = it) }, "Notes (facultatif)")
+		if (vForm.id == null && vForm.mode != EntryMode.TRADE)
+		{
+			Picker("Répéter", listOf<Pair<Frequency?, String>>(null to "Non") + Frequency.entries.map { it to it.label }, vRepeat, { vRepeat = it })
+			vRepeat?.let { Text("Créée automatiquement ${it.label.lowercase()}, à partir du ${formatFrenchDate(vForm.date.plusMonths(it.months.toLong()))}. Modifiable dans Récurrences.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+		}
 	}
 
 	if (vDelete && vForm.id != null)

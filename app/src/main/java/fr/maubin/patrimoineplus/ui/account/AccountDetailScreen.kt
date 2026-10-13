@@ -98,6 +98,8 @@ import fr.maubin.patrimoineplus.ui.property.editSaleForm
 import fr.maubin.patrimoineplus.ui.property.newPurchaseForm
 import fr.maubin.patrimoineplus.ui.property.newSaleForm
 import fr.maubin.patrimoineplus.ui.property.propertyNoun
+import fr.maubin.patrimoineplus.ui.planning.LoanSection
+import fr.maubin.patrimoineplus.domain.model.Frequency
 
 private val kMonthTitle = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.FRANCE)	// en-tête d'un mois
 private val kShortDay   = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)	// date en tête du sous-titre
@@ -295,11 +297,13 @@ fun AccountDetailScreen(
 	}
 
 	vEntry?.let { inForm ->
+		var vRepeat by remember(inForm) { mutableStateOf<Frequency?>(null) }		// répétition demandée
 		TransactionSheet(
 			inInitial     = inForm,
 			inData        = vEntryData.let { inEntry.dataFor(inForm) },	// relu à chaque changement des données
 			inSuggestions = inEntry::suggestions,
-			inOnSave      = { inSaved, inOnErrors -> inEntry.save(inSaved) { if (it.isEmpty) vEntry = null else inOnErrors(it) } },
+			inOnSave      = { inSaved, inOnErrors -> inEntry.save(inSaved, { if (it.isEmpty) vEntry = null else inOnErrors(it) }, vRepeat) },
+			inOnRepeat    = { vRepeat = it },
 			inOnDelete    = {
 				inForm.id?.let { inEntry.delete(listOf(it), vNotify) }
 				vEntry = null
@@ -578,7 +582,12 @@ private fun LazyListScope.globalContent(
 {
 	val vPortfolio = inExtras.portfolio											// portefeuille (Bourse)
 	val vAccount   = inState.account												// compte affiché
-	if (vAccount != null && vAccount.type.isProperty)
+	if (vAccount != null && vAccount.type == AccountType.LOAN)
+	{
+		item { LoanSection(inExtras.loan, inExtras.schedule, -(inState.totals?.balanceCents ?: 0L), inExtras.asOf ?: inState.month.atEndOfMonth()) }
+		chartSection("Évolution du capital restant dû", inState.series.map { it.copy(valueCents = -it.valueCents) })
+	}
+	else if (vAccount != null && vAccount.type.isProperty)
 	{
 		item { PropertyHeader(inExtras.properties, inExtras.asOf ?: inState.month.atEndOfMonth(), vAccount.sharePercent) }
 		chartSection("Évolution de la valeur", inState.series)
