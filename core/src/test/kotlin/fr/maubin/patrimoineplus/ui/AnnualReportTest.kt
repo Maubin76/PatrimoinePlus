@@ -27,6 +27,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+import fr.maubin.patrimoineplus.domain.calc.amortization
+import fr.maubin.patrimoineplus.domain.calc.remainingAt
+import fr.maubin.patrimoineplus.domain.model.Account
+import fr.maubin.patrimoineplus.domain.model.AccountType
+import fr.maubin.patrimoineplus.domain.model.Posting
+import fr.maubin.patrimoineplus.domain.model.Transaction
+import fr.maubin.patrimoineplus.domain.model.TransactionKind
 
 /*
 	Bilan annuel (appli PC) : chiffres de l'année et document PDF.
@@ -35,6 +42,7 @@ class AnnualReportTest
 {
 	private val kInterest = Category("interets", "Intérêts", "percent", CategoryKind.INCOME)	// intérêts
 	private val kDividend = Category("dividendes", "Dividendes", "chart", CategoryKind.INCOME)	// dividendes
+	private val kHouse    = Account("maison", "Maison", AccountType.REAL_ESTATE)					// compte Immobilier
 
 	// Deux années : achat puis vente avec plus-value, intérêts, dividende, salaire, dépenses.
 	private val kData = DataSet(
@@ -94,10 +102,42 @@ class AnnualReportTest
 	}
 
 	/*
-		Document PDF : en-tête et fin de fichier, table des objets cohérente
-		(chaque position pointe sur son objet), textes accentués et euro
-		encodés, saut de page quand le contenu déborde ; bilan de démonstration
-		déposé dans build/ pour être ouvert à la main.
+		Biens et crédits de l'année : achats et ventes de biens (plus-value),
+		crédit (capital restant dû à la fin, capital remboursé et intérêts
+		d'après le tableau d'amortissement), avoirs = patrimoine + crédits ;
+		un bien déjà possédé acheté il y a longtemps n'ouvre pas de bilans
+		vides.
+	*/
+	@Test
+	fun assetsAndLoans()
+	{
+		val vToday  = d("2026-10-09")														// date du jour
+		val vDemo   = buildDemoData(vToday)												// démonstration
+		val vReport = buildAnnualReport(vDemo, 2026, vToday)								// bilan de l'année en cours
+		assertTrue(vReport.bought.any { it.name == "Montre de collection" && it.cost == 420_000L && it.paid })
+		assertTrue(vReport.bought.single { it.name == "Lithographie" }.paid.not())				// déjà possédée
+		val vSold   = vReport.sold.single()													// vinyles vendus
+		assertEquals("Vinyles des années 70", vSold.name)
+		assertEquals(85_000L, vSold.salePrice)
+		assertEquals(25_000L, vReport.propertyGains)
+		val vLoan   = vDemo.loans.single()													// crédit auto
+		val vYear   = amortization(vLoan).filter { it.date.year == 2026 && !it.date.isAfter(vToday) }	// mensualités de 2026
+		val vCar    = vReport.loans.single()													// crédit du bilan
+		assertEquals(remainingAt(vLoan, vToday), vCar.end)
+		assertEquals(vYear.sumOf { it.capital }, vCar.repaid)
+		assertEquals(vYear.sumOf { it.interest + it.insurance }, vCar.interest)
+		assertEquals(vCar.end, vReport.debtEnd)
+		assertEquals(vReport.wealthEnd + vReport.debtEnd, vReport.grossEnd)
+		val vOld    = kData.copy(accounts = kData.accounts + kHouse, transactions = kData.transactions + Transaction("maison", d("2012-06-01"), TransactionKind.ACQUISITION, "Maison",
+			postings = listOf(Posting("maison-p", kHouse.id, eur(200_000.0)))))			// bien déjà possédé, acheté en 2012
+		assertEquals(listOf(2026, 2025), reportYears(vOld, vToday))							// pas de bilans vides depuis 2012
+		assertEquals(eur(200_000.0), buildAnnualReport(vOld, 2025, vToday).accounts.single { it.account.id == kHouse.id }.end)
+	}
+
+	/*
+		Document PDF bien formé (en-tête, table des objets, fin), titre et
+		texte accentué encodés, biens et crédits de la démonstration ; le
+		fichier est aussi déposé dans build/ pour être ouvert à la main.
 	*/
 	@Test
 	fun pdfIsWellFormed()
@@ -115,6 +155,8 @@ class AnnualReportTest
 		vRows.forEachIndexed { inIndex, inRow -> assertTrue(vText.startsWith("${inIndex + 1} 0 obj", inRow.take(10).toInt())) }
 		assertTrue(vText.contains("(Bilan 2026) Tj"))
 		assertTrue(vText.contains("D\\351penses"))										// « Dépenses » en WinAnsi
+		assertTrue(vText.contains("(Biens) Tj"))											// achats et ventes de la démonstration
+		assertTrue(vText.contains("(Cr\\351dits) Tj"))										// crédit auto de la démonstration
 		val vDoc = PdfDocument()															// document de plusieurs pages
 		repeat(3) { vDoc.newPage().text(56f, 100f, "Page ${it + 1} €") }
 		assertTrue(String(vDoc.toBytes("Essai"), Charsets.ISO_8859_1).contains("/Count 3"))

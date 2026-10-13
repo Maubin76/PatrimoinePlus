@@ -2,6 +2,7 @@ package fr.maubin.patrimoineplus.ui.report
 
 import fr.maubin.patrimoineplus.data.report.Align
 import fr.maubin.patrimoineplus.data.report.PdfDocument
+import fr.maubin.patrimoineplus.data.report.textWidth
 import fr.maubin.patrimoineplus.data.report.PdfPage
 import fr.maubin.patrimoineplus.domain.format.formatEuros
 import fr.maubin.patrimoineplus.domain.format.formatPermille
@@ -11,6 +12,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 private val kLongDay  = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)	// date en toutes lettres
+private val kShortDay = DateTimeFormatter.ofPattern("dd/MM/yyyy")						// date d'un achat ou d'une vente
 private val kMonth    = DateTimeFormatter.ofPattern("MMMM", Locale.FRANCE)			// nom du mois
 private const val kLeft   = 56f														// marge gauche
 private const val kRight  = 539f														// marge droite
@@ -80,7 +82,9 @@ private class ReportLayout(
 	)
 	{
 		room(kLine)
-		fPage.text(kLeft, fY, inLabel, inBold = inBold, inGrey = inGrey)
+		val vFirst = inValues.firstOrNull()?.takeIf { it.isNotEmpty() }			// première valeur
+		val vRoom  = (vFirst?.let { inColumns[0] - textWidth(it, 10f, inBold) - 12f } ?: kRight) - kLeft	// place du libellé, jusqu'à la première valeur
+		fPage.text(kLeft, fY, fit(inLabel, vRoom, inBold), inBold = inBold, inGrey = inGrey)
 		inValues.forEachIndexed { inIndex, inValue -> fPage.text(inColumns[inIndex], fY, inValue, inBold = inBold, inGrey = inGrey, inAlign = Align.RIGHT) }
 		fY += kLine
 	}
@@ -102,14 +106,40 @@ private class ReportLayout(
 	}
 
 	/*
-		Paragraphe court en gris.
+		Paragraphe en gris, coupé aux mots sur la largeur de la page.
 		inText : texte
 	*/
 	fun note(inText: String)
 	{
-		room(kLine)
-		fPage.text(kLeft, fY, inText, inSize = 9f, inGrey = 0.45f)
-		fY += kLine
+		val vLines = mutableListOf<String>()											// lignes coupées aux mots
+		inText.split(' ').forEach { inWord ->
+			val vLast = vLines.lastOrNull()												// ligne en cours
+			if (vLast != null && textWidth("$vLast $inWord", 9f) <= kRight - kLeft) vLines[vLines.lastIndex] = "$vLast $inWord" else vLines += inWord
+		}
+		vLines.forEach { inLine ->
+			room(kLine - 4f)
+			fPage.text(kLeft, fY, inLine, inSize = 9f, inGrey = 0.45f)
+			fY += kLine - 4f
+		}
+		fY += 4f
+	}
+
+	/*
+		Texte raccourci (« … ») pour tenir dans une largeur, en corps 10.
+		inText  : texte
+		inWidth : largeur disponible
+		inBold  : gras
+	*/
+	fun fit(
+		inText  : String,
+		inWidth : Float,
+		inBold  : Boolean
+	): String
+	{
+		if (textWidth(inText, 10f, inBold) <= inWidth) return inText
+		var vText = inText																// texte raccourci
+		while (vText.isNotEmpty() && textWidth("$vText…", 10f, inBold) > inWidth) vText = vText.dropLast(1)
+		return vText.trimEnd() + "…"
 	}
 
 	/*
@@ -128,8 +158,10 @@ private class ReportLayout(
 
 /*
 	Bilan annuel au format PDF (A4), prêt à imprimer : patrimoine au début et à
-	la fin, comptes, revenus et dépenses par catégorie, placements (intérêts,
-	dividendes, plus-values réalisées par titre), patrimoine fin de mois.
+	la fin (avoirs et crédits), comptes, revenus et dépenses par catégorie,
+	placements (intérêts, dividendes, plus-values réalisées par titre), biens
+	achetés et vendus, crédits (capital remboursé, intérêts), patrimoine fin
+	de mois.
 	inReport : bilan calculé
 	inToday  : date d'établissement
 */
@@ -152,7 +184,12 @@ fun annualReportPdf(
 		row("Au ${inReport.from.minusDays(1).format(kLongDay)}", listOf(vEuros(inReport.wealthStart)), vOne)
 		row("Au ${inReport.to.format(kLongDay)}", listOf(vEuros(inReport.wealthEnd)), vOne)
 		row("Variation", listOf(vSigned(inReport.wealthChange)), vOne, inBold = true)
-		note("Comptes joints comptés pour la part détenue ; compte Bourse valorisé au dernier cours connu.")
+		if (inReport.debtEnd > 0)
+		{
+			row("    dont avoirs (fin de période)", listOf(vEuros(inReport.grossEnd)), vOne, inGrey = 0.3f)
+			row("    dont crédits restant dus", listOf(vEuros(-inReport.debtEnd)), vOne, inGrey = 0.3f)
+		}
+		note("Comptes joints comptés pour la part détenue ; compte Bourse au dernier cours connu ; biens au prix d’achat ; crédits déduits.")
 
 		section("Comptes")
 		val vAccCols = listOf(330f, 435f, kRight)									// début, fin, variation
@@ -192,6 +229,39 @@ fun annualReportPdf(
 		row("Plus-values réalisées", listOf(vSigned(inReport.totalRealized)), vOne, inBold = true)
 		inReport.realized.forEach { row("    ${it.assetName}", listOf(vSigned(it.cents)), vOne, inGrey = 0.3f) }
 		if (inReport.realized.isEmpty()) note("Aucune vente de titre sur la période.")
+
+		if (inReport.bought.isNotEmpty() || inReport.sold.isNotEmpty())
+		{
+			section("Biens")
+			val vBuyCols = listOf(330f, kRight)												// date, prix
+			if (inReport.bought.isNotEmpty())
+			{
+				head("Achats et ajouts", listOf("Date", "Prix d’achat"), vBuyCols)
+				inReport.bought.forEach { row("${it.name} (${it.account}${if (it.paid) "" else ", déjà possédé"})", listOf(it.date.format(kShortDay), vEuros(it.cost)), vBuyCols) }
+				fY += 8f
+			}
+			if (inReport.sold.isNotEmpty())
+			{
+				val vSaleCols = listOf(300f, 380f, 460f, kRight)								// date, achat, vente, plus-value
+				head("Ventes", listOf("Date", "Achat", "Vente", "Plus-value"), vSaleCols)
+				inReport.sold.forEach { row("${it.name} (${it.account})", listOf(it.date.format(kShortDay), vEuros(it.cost), vEuros(it.salePrice ?: 0L), vSigned(it.gain ?: 0L)), vSaleCols) }
+				row("Plus-values des ventes", listOf("", "", "", vSigned(inReport.propertyGains)), vSaleCols, inBold = true)
+			}
+			note("Biens comptés à leur prix d’achat ; la plus-value d’une vente entre dans le patrimoine à sa date.")
+		}
+
+		if (inReport.loans.isNotEmpty())
+		{
+			section("Crédits")
+			val vLoanCols = listOf(300f, 380f, 460f, kRight)									// début, fin, remboursé, intérêts
+			head("Crédit", listOf("Début", "Fin", "Remboursé", "Intérêts"), vLoanCols)
+			inReport.loans.forEach { row(it.account.name, listOf(if (it.start == 0L) "—" else vEuros(it.start), vEuros(it.end), vEuros(it.repaid), it.interest?.let(vEuros) ?: "—"), vLoanCols) }
+			if (inReport.loans.size > 1)
+			{
+				row("Total", listOf(vEuros(inReport.loans.sumOf { it.start }), vEuros(inReport.loans.sumOf { it.end }), vEuros(inReport.loans.sumOf { it.repaid }), vEuros(inReport.loans.sumOf { it.interest ?: 0L })), vLoanCols, inBold = true)
+			}
+			note("Capital restant dû au début (« — » : crédit suivi depuis la période) et à la fin ; capital, intérêts et assurance des mensualités d’après le tableau d’amortissement.")
+		}
 
 		section("Patrimoine en fin de mois")
 		val vMax = inReport.months.maxOfOrNull { it.valueCents }?.coerceAtLeast(1L) ?: 1L	// plus grande valeur

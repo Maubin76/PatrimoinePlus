@@ -41,6 +41,7 @@ import fr.maubin.patrimoineplus.ui.report.buildAnnualReport
 import fr.maubin.patrimoineplus.ui.report.reportYears
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import fr.maubin.patrimoineplus.domain.format.formatEuros
 
 private val kLongDay = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)	// date en toutes lettres
 
@@ -80,7 +81,22 @@ fun ReportScreen(
 		vError?.let { Text("Export impossible : $it", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
 		TileRow(
 			Cell(1f) { inMod -> Tile(inModifier = inMod) { TileFigure("Patrimoine au 1er janvier") { AmountText(inCents = vReport.wealthStart, inStyle = MaterialTheme.typography.headlineSmall) } } },
-			Cell(1f) { inMod -> Tile(inModifier = inMod) { TileFigure("Patrimoine au ${vReport.to.format(kLongDay)}") { AmountText(inCents = vReport.wealthEnd, inStyle = MaterialTheme.typography.headlineSmall) } } },
+			Cell(1f) { inMod ->
+				Tile(inModifier = inMod) {
+					TileFigure("Patrimoine au ${vReport.to.format(kLongDay)}") { AmountText(inCents = vReport.wealthEnd, inStyle = MaterialTheme.typography.headlineSmall) }
+					if (vReport.debtEnd > 0)
+					{
+						Row(verticalAlignment = Alignment.CenterVertically) {
+							Text("Avoirs ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+							AmountText(inCents = vReport.grossEnd, inStyle = MaterialTheme.typography.bodyMedium, inColor = MaterialTheme.colorScheme.onSurfaceVariant)
+						}
+						Row(verticalAlignment = Alignment.CenterVertically) {
+							Text("Crédits ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+							AmountText(inCents = -vReport.debtEnd, inStyle = MaterialTheme.typography.bodyMedium, inColor = MaterialTheme.colorScheme.onSurfaceVariant)
+						}
+					}
+				}
+			},
 			Cell(1f) { inMod -> Tile(inModifier = inMod) { TileFigure("Variation") { AmountText(inCents = vReport.wealthChange, inStyle = MaterialTheme.typography.headlineSmall, inShowPlusSign = true, inTrend = true) } } },
 			Cell(1f) { inMod ->
 				Tile(inModifier = inMod) {
@@ -122,11 +138,40 @@ fun ReportScreen(
 				}
 			}
 		}
+		if (vReport.bought.isNotEmpty() || vReport.sold.isNotEmpty() || vReport.loans.isNotEmpty())
+		{
+			TileRow(
+				Cell(1f) { inMod ->
+					Tile(inModifier = inMod, inTitle = "Biens") {
+						if (vReport.bought.isEmpty() && vReport.sold.isEmpty()) Hint("Aucun achat ni vente de bien sur la période.")
+						vReport.bought.forEach { Line(if (it.paid) "Achat · ${it.name}" else "Ajouté (déjà possédé) · ${it.name}", it.cost) }
+						vReport.sold.forEach { Line("Vente · ${it.name} (achat ${formatEuros(it.cost)})", it.salePrice ?: 0L) }
+						if (vReport.sold.isNotEmpty())
+						{
+							HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+							Line("Plus-values des ventes", vReport.propertyGains, inSigned = true)
+						}
+					}
+				},
+				Cell(1f) { inMod ->
+					Tile(inModifier = inMod, inTitle = "Crédits") {
+						if (vReport.loans.isEmpty()) Hint("Aucun crédit sur la période.")
+						vReport.loans.forEach { inLoan ->
+							Text(inLoan.account.name, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
+							if (inLoan.start > 0) Line("Capital restant dû au 1er janvier", inLoan.start, inMuted = true)
+							Line("Capital restant dû à la fin", inLoan.end, inMuted = true)
+							Line("Capital remboursé", inLoan.repaid)
+							inLoan.interest?.let { Line("Intérêts et assurance", it) }
+						}
+					}
+				}
+			)
+		}
 		TileRow(
 			Cell(1f) { inMod -> CategoriesTile("Dépenses par catégorie", vReport.expenses, vReport.totalExpenses, inMod) },
 			Cell(1f) { inMod -> CategoriesTile("Revenus par catégorie", vReport.incomes, vReport.totalIncomes, inMod) }
 		)
-		Hint("Le PDF reprend ces chiffres et le patrimoine de fin de chaque mois, sur des pages A4 prêtes à imprimer.")
+		Hint("Le PDF reprend ces chiffres (biens et crédits compris) et le patrimoine de fin de chaque mois, sur des pages A4 prêtes à imprimer.")
 	}
 }
 

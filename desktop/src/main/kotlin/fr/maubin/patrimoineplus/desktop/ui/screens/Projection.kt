@@ -51,6 +51,7 @@ import fr.maubin.patrimoineplus.ui.projection.kProjectionSpreadBrokerage
 import fr.maubin.patrimoineplus.ui.projection.kProjectionSpreadSavings
 import fr.maubin.patrimoineplus.ui.projection.projectWealth
 import fr.maubin.patrimoineplus.ui.components.smoothPath
+import fr.maubin.patrimoineplus.domain.format.formatEuros
 
 private val kHorizons = listOf(5, 10, 20, 30)											// horizons proposés, en années
 
@@ -78,7 +79,7 @@ fun ProjectionScreen(
 	) {
 		Column {
 			Text("Projection", style = MaterialTheme.typography.headlineMedium)
-			Text("Estimation du patrimoine selon vos hypothèses : comptes courants stables, épargne et bourse capitalisées chaque mois, versements réguliers. Rendements constants, sans impôts ni inflation : un ordre de grandeur, pas une prévision.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+			Text("Estimation du patrimoine selon vos hypothèses : comptes courants et biens (au prix d’achat) stables, crédits remboursés selon leur tableau d’amortissement (le capital de chaque mensualité est pris sur l’épargne mensuelle), épargne et bourse capitalisées chaque mois. Rendements constants, sans impôts ni inflation : un ordre de grandeur, pas une prévision.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		}
 		Inputs(vInput, vDefault) { inController.setProjection(it) }
 		TileRow(
@@ -91,6 +92,12 @@ fun ProjectionScreen(
 					TileFigure("Dont versements") { AmountText(inCents = vResult.last.contributed - vResult.start, inStyle = MaterialTheme.typography.headlineSmall) }
 					Spacer(Modifier.height(10.dp))
 					TileFigure("Gain des rendements") { AmountText(inCents = vResult.last.central - vResult.last.contributed, inStyle = MaterialTheme.typography.titleMedium, inShowPlusSign = true) }
+					if (vResult.points.first().debt > 0)
+					{
+						Spacer(Modifier.height(10.dp))
+						TileFigure("Crédits restant dus") { AmountText(inCents = vResult.last.debt, inStyle = MaterialTheme.typography.titleMedium) }
+						Hint("${formatEuros(vResult.points.first().debt)} aujourd’hui")
+					}
 				}
 			},
 			inMinWidth = 1000.dp

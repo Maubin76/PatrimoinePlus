@@ -8,6 +8,7 @@ import fr.maubin.patrimoineplus.ui.analysis.buildExpenseAnalysis
 import java.time.LocalDate
 import kotlin.math.pow
 import kotlin.math.roundToLong
+import fr.maubin.patrimoineplus.domain.calc.amortization
 
 const val kProjectionSpreadSavings   = 1.0											// écart des scénarios, épargne (points par an)
 const val kProjectionSpreadBrokerage = 3.0											// écart des scénarios, bourse (points par an)
@@ -35,13 +36,15 @@ data class ProjectionInput(
 	central     : patrimoine du scénario central
 	optimistic  : patrimoine du scénario favorable (rendements augmentés)
 	contributed : patrimoine sans rendement (départ + versements)
+	debt        : crédits restant dus (comptés, positifs), d'après leur tableau d'amortissement
 */
 data class ProjectionPoint(
 	val year        : Int,
 	val prudent     : Long,
 	val central     : Long,
 	val optimistic  : Long,
-	val contributed : Long
+	val contributed : Long,
+	val debt        : Long = 0
 )
 
 /*
@@ -88,8 +91,12 @@ fun defaultProjectionInput(
 
 /*
 	Projette le patrimoine mois par mois : les comptes Courant et les biens
-	(immobilier, collection, à leur prix d'achat) restent stables, l'épargne et la bourse capitalisent à leur rendement, l'épargne
-	mensuelle est versée chaque mois selon la part en bourse. Trois
+	(immobilier, collection, à leur prix d'achat) restent stables ; les
+	crédits se remboursent selon leur tableau d'amortissement, le capital de
+	chaque mensualité étant pris sur l'épargne mensuelle (sans tableau : le
+	crédit reste stable) ; l'épargne et la bourse capitalisent à leur
+	rendement, l'épargne mensuelle restante est versée chaque mois selon la
+	part en bourse. Trois
 	scénarios : rendements diminués, tels quels, augmentés. Ce n'est qu'une
 	estimation : rendements constants, sans impôts ni inflation.
 	inData  : données (patrimoine de départ, part détenue appliquée)
@@ -104,7 +111,16 @@ fun projectWealth(
 {
 	val vWealth = wealthAt(inData.accounts, Ledger(inData.transactions), inToday, inData.prices)	// patrimoine actuel
 	val vTypes  = vWealth.byType														// par type
-	val vCash   = (vWealth.totalCents - (vTypes[AccountType.SAVINGS] ?: 0L) - (vTypes[AccountType.BROKERAGE] ?: 0L)).toDouble()	// comptes Courant et biens (immobilier, collection), stables
+	val vDebt0  = (vTypes[AccountType.LOAN] ?: 0L).toDouble()						// crédits comptés (négatifs)
+	val vCash   = (vWealth.totalCents - (vTypes[AccountType.SAVINGS] ?: 0L) - (vTypes[AccountType.BROKERAGE] ?: 0L) - (vTypes[AccountType.LOAN] ?: 0L)).toDouble()	// comptes Courant et biens (immobilier, collection), stables
+	val vShares = inData.accounts.associate { it.id to it.sharePercent / 100.0 }	// part détenue de chaque compte
+	val vRepaid = DoubleArray(inInput.years * 12) { inMonth ->
+		val vFromDay = inToday.plusMonths(inMonth.toLong())							// début du mois simulé (exclu)
+		val vToDay   = inToday.plusMonths(inMonth + 1L)								// fin du mois simulé
+		inData.loans.sumOf { inLoan ->
+			amortization(inLoan).filter { it.date.isAfter(vFromDay) && !it.date.isAfter(vToDay) }.sumOf { it.capital } * (vShares[inLoan.accountId] ?: 1.0)
+		}
+	}																					// capital remboursé chaque mois (compté)
 	val vSaved  = (vTypes[AccountType.SAVINGS] ?: 0L).toDouble()						// épargne
 	val vStock  = (vTypes[AccountType.BROKERAGE] ?: 0L).toDouble()					// bourse
 	val vShare  = inInput.stockShare.coerceIn(0, 100) / 100.0							// part versée en bourse
@@ -124,11 +140,14 @@ fun projectWealth(
 		val vRateB = (1 + inBrokerage.coerceAtLeast(-99.0) / 100).pow(1.0 / 12) - 1	// rendement mensuel de la bourse
 		var vS     = vSaved																// épargne simulée
 		var vB     = vStock																// bourse simulée
-		val vYears = mutableListOf((vCash + vS + vB).roundToLong())					// valeur de départ
+		var vD     = vDebt0																// crédits simulés (négatifs)
+		val vYears = mutableListOf((vCash + vS + vB + vD).roundToLong())				// valeur de départ
 		repeat(inInput.years * 12) { inMonth ->
-			vS = vS * (1 + vRateS) + vMonthly * (1 - vShare)
-			vB = vB * (1 + vRateB) + vMonthly * vShare
-			if ((inMonth + 1) % 12 == 0) vYears += (vCash + vS + vB).roundToLong()
+			val vPaid = minOf(vRepaid[inMonth], -vD)										// capital remboursé ce mois
+			vD += vPaid
+			vS = vS * (1 + vRateS) + (vMonthly - vPaid) * (1 - vShare)
+			vB = vB * (1 + vRateB) + (vMonthly - vPaid) * vShare
+			if ((inMonth + 1) % 12 == 0) vYears += (vCash + vS + vB + vD).roundToLong()
 		}
 		return vYears
 	}
@@ -140,6 +159,9 @@ fun projectWealth(
 	return Projection(
 		input  = inInput,
 		start  = vWealth.totalCents,
-		points = (0..inInput.years).map { ProjectionPoint(it, vPrudent[it], vCentral[it], vOptimist[it], vFlat[it]) }
+		points = (0..inInput.years).map { inYear ->
+			val vLeft = (-vDebt0 - vRepaid.take(inYear * 12).sum()).coerceAtLeast(0.0)	// crédits restant dus
+			ProjectionPoint(inYear, vPrudent[inYear], vCentral[inYear], vOptimist[inYear], vFlat[inYear], vLeft.roundToLong())
+		}
 	)
 }

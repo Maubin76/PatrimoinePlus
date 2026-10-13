@@ -25,6 +25,10 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.abs
+import fr.maubin.patrimoineplus.domain.model.Account
+import fr.maubin.patrimoineplus.domain.model.AccountType
+import fr.maubin.patrimoineplus.domain.model.Loan
+import fr.maubin.patrimoineplus.domain.calc.remainingAt
 
 /*
 	Saisie en grille (appli PC) et projection du patrimoine.
@@ -87,5 +91,17 @@ class BatchAndProjectionTest
 		assertEquals(10, vDefault.years)
 		assertEquals(0, vDefault.stockShare)
 		assertTrue(vDefault.monthlySavings >= 0)
+		val vCar     = Account("auto", "Crédit auto", AccountType.LOAN, sharePercent = 50)	// crédit à moitié
+		val vLoan    = Loan("pret", vCar.id, eur(12_000.0), 400, 24, d("2026-11-05"), 0, kChecking.id, kGroceries.id)	// 12 000 € sur 2 ans
+		val vWith    = vData.copy(accounts = vData.accounts + vCar, transactions = vData.transactions + opening("2026-10-12", vCar, eur(-12_000.0)), loans = listOf(vLoan))	// avec le crédit
+		val vPlan    = projectWealth(vWith, vToday, ProjectionInput(3, eur(1_000.0), 0.0, 0.0, 0))	// rendements nuls
+		assertEquals(eur(6_000.0), vPlan.points[0].debt)										// moitié du capital restant dû
+		assertEquals(Math.round(remainingAt(vLoan, d("2027-10-12")) * 0.5), vPlan.points[1].debt)
+		assertEquals(0L, vPlan.points[3].debt)													// remboursé
+		vPlan.points.forEachIndexed { inYear, inPoint -> assertTrue(abs(inPoint.central - (vPlan.start + eur(12_000.0) * inYear)) <= 2) }	// sans rendement : le patrimoine net monte de l'épargne, crédit compris
+		val vYield   = projectWealth(vWith, vToday, ProjectionInput(3, eur(1_000.0), 3.0, 3.0, 0))	// avec rendement
+		val vIgnored = projectWealth(vWith.copy(loans = emptyList()), vToday, ProjectionInput(3, eur(1_000.0), 3.0, 3.0, 0))	// crédit sans tableau : stable
+		assertTrue(vYield.last.central < vIgnored.last.central)								// le capital remboursé ne rapporte pas d'intérêts
+		assertEquals(eur(6_000.0), vIgnored.last.debt)
 	}
 }

@@ -13,6 +13,8 @@ import fr.maubin.patrimoineplus.domain.model.CategoryKind
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
 import java.time.LocalDate
 import java.time.YearMonth
+import fr.maubin.patrimoineplus.domain.calc.propertyItems
+import fr.maubin.patrimoineplus.domain.calc.amortization
 
 /*
 	Valeur d'un compte au début et à la fin de l'année.
@@ -49,6 +51,46 @@ data class RealizedYear(
 )
 
 /*
+	Achat ou vente d'un bien pendant l'année.
+	name      : nom du bien
+	account   : compte de biens
+	date      : date de l'achat ou de la vente
+	cost      : prix d'achat
+	salePrice : prix de vente ; null pour un achat
+	gain      : plus-value (négative = moins-value) ; null pour un achat
+	paid      : achat payé depuis un compte (sinon bien déjà possédé, ajouté)
+*/
+data class PropertyYear(
+	val name      : String,
+	val account   : String,
+	val date      : LocalDate,
+	val cost      : Long,
+	val salePrice : Long?,
+	val gain      : Long?,
+	val paid      : Boolean = true
+)
+
+/*
+	Crédit pendant l'année (montants entiers, sans la part détenue).
+	account   : compte Crédit
+	start     : capital restant dû au 31 décembre de l'année précédente
+	            (0 pour un crédit suivi dans l'appli depuis la période)
+	end       : capital restant dû à la fin de la période
+	repaid    : capital remboursé sur la période : mensualités de la période
+	            d'après le tableau d'amortissement ; sans tableau, virements
+	            reçus par le compte
+	interest  : intérêts et assurance des mensualités de la période (tableau
+	            d'amortissement) ; null sans tableau
+*/
+data class LoanYear(
+	val account  : Account,
+	val start    : Long,
+	val end      : Long,
+	val repaid   : Long,
+	val interest : Long?
+)
+
+/*
 	Bilan d'une année : patrimoine au début et à la fin, comptes, dépenses et
 	revenus par catégorie, intérêts, dividendes et plus-values réalisées.
 	year        : année
@@ -64,6 +106,10 @@ data class RealizedYear(
 	dividends   : revenus reçus sur les comptes Bourse
 	realized    : plus-values réalisées, par titre
 	months      : patrimoine à la fin de chaque mois de la période
+	debtEnd     : crédits comptés à la fin de la période (capital restant dû, positif)
+	bought      : biens achetés sur la période
+	sold        : biens vendus sur la période
+	loans       : crédits (capital restant dû au début et à la fin, intérêts)
 */
 data class AnnualReport(
 	val year        : Int,
@@ -78,9 +124,19 @@ data class AnnualReport(
 	val interest    : Long,
 	val dividends   : Long,
 	val realized    : List<RealizedYear>,
-	val months      : List<SeriesPoint>
+	val months      : List<SeriesPoint>,
+	val debtEnd     : Long               = 0,
+	val bought      : List<PropertyYear> = emptyList(),
+	val sold        : List<PropertyYear> = emptyList(),
+	val loans       : List<LoanYear>     = emptyList()
 )
 {
+	// Patrimoine brut à la fin (avant déduction des crédits).
+	val grossEnd: Long get() = wealthEnd + debtEnd
+
+	// Plus-values des biens vendus.
+	val propertyGains: Long get() = sold.sumOf { it.gain ?: 0L }
+
 	// Total des dépenses nettes.
 	val totalExpenses: Long get() = expenses.sumOf { it.cents }
 
@@ -98,8 +154,9 @@ data class AnnualReport(
 }
 
 /*
-	Années pour lesquelles un bilan a un sens : de la première opération à
-	l'année en cours, la plus récente d'abord.
+	Années pour lesquelles un bilan a un sens : de la première opération
+	(hors achat d'un bien déjà possédé) à l'année en cours, la plus récente
+	d'abord.
 	inData  : données
 	inToday : date du jour
 */
@@ -108,7 +165,9 @@ fun reportYears(
 	inToday : LocalDate
 ): List<Int>
 {
-	val vFirst = inData.transactions.minOfOrNull { it.date.year }?.coerceAtMost(inToday.year) ?: inToday.year	// première année
+	val vFirst = inData.transactions
+		.filterNot { it.kind == TransactionKind.ACQUISITION && it.postings.size == 1 }	// bien déjà possédé : sa date d'achat, souvent ancienne, n'ouvre pas de bilan
+		.minOfOrNull { it.date.year }?.coerceAtMost(inToday.year) ?: inToday.year	// première année
 	return (inToday.year downTo vFirst).toList()
 }
 
@@ -147,6 +206,8 @@ fun buildAnnualReport(
 			.sumOf { inTx -> inTx.postings.filter { vTypes[it.accountId] == inType }.sumOf { it.amountCents } }
 	}																				// revenus reçus sur un type de compte
 	val vNames   = inData.assets.associate { it.id to it.name }					// noms des titres
+	val vItems   = propertyItems(inData.transactions, inData.accounts)			// biens
+	val vAccNames = inData.accounts.associate { it.id to it.name }				// noms des comptes
 	val vGains   = inData.accounts.filter { it.type == AccountType.BROKERAGE }
 		.flatMap { inAccount -> valuePortfolio(vLedger, inAccount.id, vTo, inData.prices).realized }
 		.filter { !it.date.isBefore(vFrom) && !it.date.isAfter(vTo) }
@@ -171,6 +232,19 @@ fun buildAnnualReport(
 		interest    = vIncome(AccountType.SAVINGS),
 		dividends   = vIncome(AccountType.BROKERAGE),
 		realized    = vGains,
+		debtEnd     = -vEnd.accounts.filter { it.account.type == AccountType.LOAN }.sumOf { it.countedCents },
+		bought      = vItems.filter { !it.acquisition.date.isBefore(vFrom) && !it.acquisition.date.isAfter(vTo) }
+			.map { PropertyYear(it.name, vAccNames[it.accountId].orEmpty(), it.acquisition.date, it.cost, null, null, it.paidFrom != null) }.sortedBy { it.date },
+		sold        = vItems.filter { inItem -> inItem.disposal?.date?.let { !it.isBefore(vFrom) && !it.isAfter(vTo) } == true }
+			.map { PropertyYear(it.name, vAccNames[it.accountId].orEmpty(), it.disposal!!.date, it.cost, it.salePrice, it.gain) }.sortedBy { it.date },
+		loans       = vEnd.accounts.filter { it.account.type == AccountType.LOAN }.mapNotNull { inValue ->
+			val vBegin = -vStart.accounts.first { it.account.id == inValue.account.id }.valueCents	// capital restant dû au début
+			val vLoan  = inData.loans.firstOrNull { it.accountId == inValue.account.id }			// tableau d'amortissement
+			val vRows  = vLoan?.let { inLoan -> amortization(inLoan).filter { !it.date.isBefore(vFrom) && !it.date.isAfter(vTo) && (inLoan.last == null || !it.date.isAfter(inLoan.last)) } }	// mensualités de la période
+			val vIn    = vYearTxs.filter { it.kind == TransactionKind.TRANSFER }.sumOf { inTx -> inTx.postings.filter { it.accountId == inValue.account.id && it.amountCents > 0 }.sumOf { it.amountCents } }	// virements reçus
+			if (vBegin == 0L && inValue.valueCents == 0L) null
+			else LoanYear(inValue.account, vBegin, -inValue.valueCents, vRows?.sumOf { it.capital } ?: vIn, vRows?.sumOf { it.interest + it.insurance })
+		},
 		months      = (1..YearMonth.from(vTo).monthValue).map { inMonth ->
 			val vMonth = YearMonth.of(inYear, inMonth)								// mois
 			val vDay   = if (vMonth == YearMonth.from(vTo)) vTo else vMonth.atEndOfMonth()	// fin du mois (ou aujourd'hui)

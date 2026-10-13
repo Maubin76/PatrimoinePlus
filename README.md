@@ -337,14 +337,20 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   enregistrer) ; catégorie proposée d'après le libellé ; montant sans signe =
   dépense, « + » = entrée ; tout est contrôlé puis enregistré en une fois.
 - **Bilan annuel** (barre latérale) : patrimoine au début et à la fin de
-  l'année, comptes, revenus et dépenses par catégorie, taux d'épargne,
-  intérêts, dividendes, plus-values réalisées par titre ; **export PDF** A4
+  l'année (avoirs et crédits restant dus), comptes, revenus et dépenses par
+  catégorie, taux d'épargne, intérêts, dividendes, plus-values réalisées par
+  titre ; **biens** achetés, ajoutés (déjà possédés) et vendus (plus-values) ;
+  **crédits** (capital restant dû, capital remboursé, intérêts et assurance
+  d'après le tableau d'amortissement) ; **export PDF** A4
   prêt à imprimer (générateur PDF minimal écrit pour l'appli, polices
   standard, sans bibliothèque).
 - **Projection** (barre latérale) : patrimoine estimé à 5, 10, 20 ou 30 ans ;
   épargne mensuelle (par défaut la moyenne des douze derniers mois),
   rendements de l'épargne et de la bourse, part versée en bourse ; trois
-  scénarios et courbe année par année ; une estimation, sans impôts ni
+  scénarios et courbe année par année. Comptes courants et biens (au prix
+  d'achat) stables ; crédits remboursés selon leur tableau d'amortissement,
+  le capital de chaque mensualité étant pris sur l'épargne mensuelle (crédits
+  restant dus à l'horizon affichés). Une estimation, sans impôts ni
   inflation.
 - **Budget** (barre latérale) : budget prévisionnel d'un mois type, en
   lignes libres d'entrées, de dépenses et d'investissements ; une entrée
