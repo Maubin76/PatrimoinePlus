@@ -144,10 +144,10 @@ fun Recurrence.toEntity(): RecurrenceEntity =
 	Crédit de la base vers le domaine.
 */
 fun LoanEntity.toDomain(): Loan =
-	Loan(id, accountId, principal, rateBp, months, firstDue, insurance, payFrom, categoryId, last)
+	Loan(id, accountId, principal, rateBp, months, firstDue, insurance, payFrom, categoryId, last, propertyId)
 
 /*
 	Crédit du domaine vers la base.
 */
 fun Loan.toEntity(): LoanEntity =
-	LoanEntity(id, accountId, principal, rateBp, months, firstDue, insurance, payFrom, categoryId, last)
+	LoanEntity(id, accountId, principal, rateBp, months, firstDue, insurance, payFrom, categoryId, last, propertyId)

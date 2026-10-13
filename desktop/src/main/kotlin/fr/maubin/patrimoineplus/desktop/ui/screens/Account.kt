@@ -76,7 +76,15 @@ import fr.maubin.patrimoineplus.ui.property.newSaleForm
 import fr.maubin.patrimoineplus.ui.property.propertyNoun
 import fr.maubin.patrimoineplus.domain.calc.amortization
 import fr.maubin.patrimoineplus.domain.format.formatEuros
-import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
+import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
+import fr.maubin.patrimoineplus.domain.calc.propertyNets
+import fr.maubin.patrimoineplus.domain.calc.Ledger
+import fr.maubin.patrimoineplus.domain.model.Loan
+import fr.maubin.patrimoineplus.data.edit.EditResult
+import fr.maubin.patrimoineplus.desktop.ui.panels.Picker
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 private val kDayTitle = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANCE)	// en-tête d'un jour
 private val kShortDay = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date d'une opération
@@ -104,7 +112,7 @@ fun AccountScreen(
 		buildAccountDetail(inAccountId, vData.accounts, vData.categories, vData.transactions, inMonth ?: YearMonth.from(inSpace.today), inSpace.today)
 	}																				// état de la vue
 	val vExtras = remember(vData, inAccountId, inSpace.today) {
-		buildAccountExtras(inAccountId, vData.accounts, vData.transactions, vData.statements, vData.prices, vData.assets, inSpace.today)
+		buildAccountExtras(inAccountId, vData.accounts, vData.transactions, vData.statements, vData.prices, vData.assets, inSpace.today, vData.loans)
 	}																				// relevés ou portefeuille
 	val vAccount = vState.account
 	if (vAccount == null)
@@ -282,8 +290,10 @@ private fun PropertyView(
 	val vNames = inSpace.data.accounts.associate { it.id to it.name }						// noms des comptes
 	val vMuted = MaterialTheme.colorScheme.onSurfaceVariant								// texte secondaire
 	val vValue = vHeld.filter { it.heldAt(vToday) }.sumOf { it.cost }						// valeur au prix d'achat
+	val vNets  = remember(inSpace.data, inAccount.id, vToday) { propertyNets(vItems, inSpace.data.loans, Ledger(inSpace.data.transactions), vToday) }	// biens financés par un crédit
 	TileRow(
 		Cell(1.3f) { inMod -> Figure("Valeur au prix d’achat", vValue, inMod, inSigned = false, inStrong = true, inNote = if (inAccount.sharePercent < 100) "Comptée pour ${inAccount.sharePercent} % dans le patrimoine" else null) },
+		*(if (vNets.isEmpty()) emptyArray() else arrayOf(Cell(1f) { inMod -> Figure("Valeur nette", vValue - vNets.values.sumOf { it.debt }, inMod, inSigned = false, inNote = "Crédits restant dus déduits") })),
 		Cell(1f) { inMod -> Tile(inModifier = inMod) { TileFigure(if (vNoun == "bien") "Biens détenus" else "Objets détenus") { Text(vHeld.size.toString(), style = MaterialTheme.typography.titleLarge) } } },
 		Cell(1f) { inMod -> Figure("Plus-values des ventes", vSold.sumOf { it.gain ?: 0L }, inMod, inTrend = true) },
 		inMinWidth = 900.dp
@@ -301,9 +311,19 @@ private fun PropertyView(
 			) {
 				Icon(CategoryIcons.of(if (inAccount.type == AccountType.REAL_ESTATE) "home" else "gem"), contentDescription = null, modifier = Modifier.size(20.dp))
 				Spacer(Modifier.width(14.dp))
+				val vNet = vNets[inItem.acquisition.id]												// crédit du bien
 				Column(Modifier.weight(1f)) {
 					Text(inItem.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
 					Text("Acheté le ${inItem.acquisition.date.format(kFullDay)} · " + (inItem.paidFrom?.let { "payé depuis ${vNames[it] ?: "un compte supprimé"}" } ?: "déjà possédé"), style = MaterialTheme.typography.bodyMedium, color = vMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+					if (vNet != null)
+					{
+						Row(verticalAlignment = Alignment.CenterVertically) {
+							Text("${vNet.loans.joinToString { vNames[it.accountId] ?: "Crédit" }} : reste dû ", style = MaterialTheme.typography.bodyMedium, color = vMuted)
+							AmountText(inCents = vNet.debt, inStyle = MaterialTheme.typography.bodyMedium, inColor = vMuted)
+							Text(" · valeur nette ", style = MaterialTheme.typography.bodyMedium, color = vMuted)
+							AmountText(inCents = vNet.net, inStyle = MaterialTheme.typography.bodyMedium, inColor = vMuted)
+						}
+					}
 				}
 				AmountText(inCents = inItem.cost, inStyle = MaterialTheme.typography.bodyLarge)
 				Spacer(Modifier.width(16.dp))
@@ -370,6 +390,10 @@ private fun LoanView(
 		inMinWidth = 900.dp
 	)
 	ChartTile("Évolution du capital restant dû", inState.series.map { it.copy(valueCents = -it.valueCents) }, inState.series.lastOrNull()?.month, Modifier.fillMaxWidth())
+	if (vLoan != null)
+	{
+		FinancedTile(inSpace, inController, vLoan)
+	}
 	if (vLoan == null)
 	{
 		Tile(inTitle = "Tableau d’amortissement") { Hint("Ce compte n’a pas de tableau d’amortissement : ses remboursements se saisissent comme des virements.") }
@@ -401,10 +425,50 @@ private fun LoanView(
 				}
 			}
 			Spacer(Modifier.height(8.dp))
-			Hint("Chaque mensualité crée à sa date un virement du capital depuis ${inSpace.data.accounts.firstOrNull { it.id == vLoan.payFrom }?.name ?: "le compte payeur"} et une dépense des intérêts et de l’assurance.")
+			Hint("Chaque mensualité crée à sa date une seule opération : ${inSpace.data.accounts.firstOrNull { it.id == vLoan.payFrom }?.name ?: "le compte payeur"} débité du total, le capital remboursé ici (il fait baisser le capital dû), les intérêts et l’assurance comptés en dépense.")
 		}
 	}
 	OperationsTile(inState, inOnOpen)
+}
+
+/*
+	Tuile du bien financé par un crédit : choix du bien (ou aucun), puis prix
+	d'achat, capital restant dû des crédits du bien et valeur nette.
+	inSpace      : données
+	inController : contrôleur
+	inLoan       : crédit
+*/
+@Composable
+private fun FinancedTile(
+	inSpace      : WorkspaceState,
+	inController : DesktopController,
+	inLoan       : Loan
+)
+{
+	val vExtras = remember(inSpace.data, inLoan, inSpace.today) {
+		buildAccountExtras(inLoan.accountId, inSpace.data.accounts, inSpace.data.transactions, inSpace.data.statements, inSpace.data.prices, inSpace.data.assets, inSpace.today, inSpace.data.loans)
+	}																				// bien financé et biens possibles
+	var vError by remember(inLoan) { mutableStateOf<String?>(null) }				// refus
+	Tile(inTitle = "Bien financé") {
+		Picker(
+			"Bien",
+			listOf<Pair<String?, String>>(null to "Aucun (auto, prêt personnel…)") + vExtras.candidates.map { it.acquisition.id to it.name },
+			inLoan.propertyId,
+			{ inId -> (inController.edit { inController.editor.setLoanProperty(it, inLoan.id, inId) } as? EditResult.Refused)?.let { vError = it.messages.joinToString(" ") } },
+			vError
+		)
+		val vNet = vExtras.financedNet													// valeur nette du bien
+		when
+		{
+			vNet != null                -> Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+				TileFigure("Prix d’achat") { AmountText(inCents = vNet.item.cost, inStyle = MaterialTheme.typography.titleLarge) }
+				TileFigure(if (vNet.loans.size > 1) "Crédits restant dus" else "Restant dû") { AmountText(inCents = -vNet.debt, inStyle = MaterialTheme.typography.titleLarge) }
+				TileFigure("Valeur nette") { AmountText(inCents = vNet.net, inStyle = MaterialTheme.typography.titleLarge) }
+			}
+			vExtras.financed != null    -> Hint("Bien vendu : il ne compte plus dans le patrimoine.")
+			else                        -> Hint("Liez le crédit au bien qu’il finance pour voir sa valeur nette (prix d’achat moins capital restant dû).")
+		}
+	}
 }
 
 /*

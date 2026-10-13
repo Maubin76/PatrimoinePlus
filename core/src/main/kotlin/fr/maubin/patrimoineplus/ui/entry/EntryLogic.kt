@@ -18,7 +18,13 @@ import fr.maubin.patrimoineplus.domain.model.Transaction
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
 import java.time.LocalDate
 import java.util.UUID
-import kotlin.math.abs
+import kotlin.math.abs
+import fr.maubin.patrimoineplus.domain.model.Loan
+import fr.maubin.patrimoineplus.domain.model.Posting
+import fr.maubin.patrimoineplus.domain.calc.amortization
+import fr.maubin.patrimoineplus.ui.budget.ExpenseTheme
+import fr.maubin.patrimoineplus.ui.budget.themeOfCategory
+import java.time.YearMonth
 
 
 const val kNewAsset = "__nouvel_actif__"										// choix « Nouvel actif… » dans la liste des actifs
@@ -32,7 +38,8 @@ enum class EntryMode(val label: String)
 	EXPENSE("Dépense"),
 	INCOME("Revenu"),
 	TRANSFER("Virement"),
-	TRADE("Ordre")
+	TRADE("Ordre"),
+	LOAN("Crédit")
 }
 
 /*
@@ -43,6 +50,7 @@ enum class EntryMode(val label: String)
 	prices        : cours relevés
 	transactions  : opérations connues (suggestions, quantités détenues)
 	lastAccountId : compte de la dernière saisie
+	loans         : crédits (mensualité proposée d'après le tableau d'amortissement)
 */
 data class EntryData(
 	val accounts      : List<Account>     = emptyList(),
@@ -50,19 +58,33 @@ data class EntryData(
 	val assets        : List<Asset>       = emptyList(),
 	val prices        : List<AssetPrice>  = emptyList(),
 	val transactions  : List<Transaction> = emptyList(),
-	val lastAccountId : String?           = null
+	val lastAccountId : String?           = null,
+	val loans         : List<Loan>        = emptyList()
 )
+
+/*
+	Modes de saisie proposés : « Crédit » seulement s'il existe un compte
+	Crédit, ou si la saisie est déjà une mensualité.
+	inData : données de saisie
+	inForm : saisie en cours
+*/
+fun entryModes(
+	inData : EntryData,
+	inForm : EntryForm
+): List<EntryMode> =
+	EntryMode.entries.filter { it != EntryMode.LOAN || inForm.mode == EntryMode.LOAN || inData.accounts.any { inAccount -> inAccount.type == AccountType.LOAN } }
 
 /*
 	Saisie d'une opération, telle que tapée.
 	id          : opération modifiée ; null pour une création
 	postingIds  : jambes existantes (conservées en modification)
 	tradeId     : ordre existant
-	mode        : dépense, revenu, virement ou ordre
-	amount      : montant (texte, sans signe) ; pas pour un ordre
-	accountId   : compte (de départ pour un virement)
-	toAccountId : compte d'arrivée d'un virement
-	categoryId  : catégorie (dépense, revenu)
+	mode        : dépense, revenu, virement, ordre ou mensualité de crédit
+	amount      : montant (texte, sans signe) ; pas pour un ordre ; total payé pour une mensualité
+	accountId   : compte (de départ pour un virement, payeur pour une mensualité)
+	toAccountId : compte d'arrivée d'un virement ; compte Crédit d'une mensualité
+	categoryId  : catégorie (dépense, revenu ; intérêts et assurance d'une mensualité)
+	capital     : capital remboursé d'une mensualité (texte) ; le reste du total est la dépense
 	assetId     : actif de l'ordre, ou du dividende ; kNewAsset pour en créer un
 	newAsset    : nom de l'actif à créer
 	newIsin     : ISIN de l'actif à créer (facultatif, pour les cours automatiques)
@@ -84,6 +106,7 @@ data class EntryForm(
 	val accountId   : String?      = null,
 	val toAccountId : String?      = null,
 	val categoryId  : String?      = null,
+	val capital     : String       = "",
 	val assetId     : String?      = null,
 	val newAsset    : String       = "",
 	val newIsin     : String       = "",
@@ -108,6 +131,7 @@ data class EntryForm(
 	price    : cours
 	fees     : frais
 	label    : libellé
+	capital  : capital d'une mensualité
 	general  : autre règle violée
 */
 data class EntryErrors(
@@ -120,11 +144,12 @@ data class EntryErrors(
 	val price    : String? = null,
 	val fees     : String? = null,
 	val label    : String? = null,
+	val capital  : String? = null,
 	val general  : String? = null
 )
 {
 	// Vrai sans aucune erreur.
-	val isEmpty: Boolean get() = listOf(amount, account, target, category, asset, quantity, price, fees, label, general).all { it == null }
+	val isEmpty: Boolean get() = listOf(amount, account, target, category, asset, quantity, price, fees, label, capital, general).all { it == null }
 }
 
 /*
@@ -144,6 +169,7 @@ fun proposedLabel(
 			val vAsset = if (inForm.assetId == kNewAsset) inForm.newAsset.trim() else inData.assets.firstOrNull { it.id == inForm.assetId }?.name.orEmpty()	// nom de l'actif
 			"${if (inForm.side == TradeSide.BUY) "Achat" else "Vente"} ${vAsset.ifEmpty { "…" }}"
 		}
+		EntryMode.LOAN     -> "Mensualité ${inData.accounts.firstOrNull { it.id == inForm.toAccountId }?.name ?: "…"}"
 		else               -> ""
 	}
 
@@ -192,6 +218,15 @@ fun switchEntryMode(
 	val vKeepCat = inData.categories.firstOrNull { it.id == inForm.categoryId }?.kind == vKind && inMode in listOf(EntryMode.EXPENSE, EntryMode.INCOME)	// catégorie encore valable
 	val vAccount = if (inMode == EntryMode.TRADE && inData.accounts.none { it.id == inForm.accountId && it.type == AccountType.BROKERAGE })
 		inData.accounts.firstOrNull { it.type == AccountType.BROKERAGE }?.id else inForm.accountId	// compte retenu
+	if (inMode == EntryMode.LOAN)
+	{
+		val vLoan  = inData.accounts.firstOrNull { it.id == inForm.accountId && it.type == AccountType.LOAN }?.id
+			?: inData.accounts.firstOrNull { it.type == AccountType.LOAN }?.id							// compte Crédit (celui affiché s'il en est un)
+		val vPayer = inData.loans.firstOrNull { it.accountId == vLoan }?.payFrom?.takeIf { inId -> inData.accounts.any { it.id == inId } }
+			?: inForm.accountId.takeIf { inId -> inData.accounts.any { it.id == inId && it.type != AccountType.LOAN && !it.type.isProperty } }
+			?: inData.accounts.firstOrNull { it.type == AccountType.CHECKING }?.id									// compte payeur
+		return suggestLoanPayment(inForm.copy(mode = inMode, accountId = vPayer, toAccountId = vLoan, categoryId = null, assetId = null, newAsset = "", newIsin = "", refund = false), inData)
+	}
 	return inForm.copy(
 		mode       = inMode,
 		categoryId = if (vKeepCat) inForm.categoryId else null,
@@ -220,7 +255,30 @@ fun newEntryForm(
 	val vIds  = inData.accounts.map { it.id }									// comptes actifs
 	val vPick = listOf(inAccountId, inData.lastAccountId).firstOrNull { it in vIds } ?: vIds.firstOrNull()	// compte retenu
 	val vType = inData.accounts.firstOrNull { it.id == vPick }?.type			// type du compte retenu
-	return EntryForm(accountId = vPick, date = inToday, mode = if (vType == AccountType.BROKERAGE) EntryMode.TRADE else EntryMode.EXPENSE)
+	val vForm = EntryForm(accountId = vPick, date = inToday, mode = if (vType == AccountType.BROKERAGE) EntryMode.TRADE else EntryMode.EXPENSE)	// saisie vide
+	return if (vType == AccountType.LOAN) switchEntryMode(vForm, EntryMode.LOAN, inData) else vForm
+}
+
+/*
+	Mensualité proposée pour le compte Crédit et la date de la saisie : total,
+	capital et catégorie de la mensualité du tableau d'amortissement tombant
+	le même mois ; sans tableau ou hors échéance, seule la catégorie est
+	reprise (et le montant reste à taper).
+	inForm : saisie en mode Crédit
+	inData : données (crédits)
+*/
+fun suggestLoanPayment(
+	inForm : EntryForm,
+	inData : EntryData
+): EntryForm
+{
+	val vLoan = inData.loans.firstOrNull { it.accountId == inForm.toAccountId }	// crédit du compte
+	val vPart = vLoan?.let { inLoan -> amortization(inLoan).firstOrNull { YearMonth.from(it.date) == YearMonth.from(inForm.date) } }	// mensualité du mois
+	val vCategory = vLoan?.categoryId?.takeIf { inId -> inData.categories.any { it.id == inId } }
+		?: inForm.categoryId
+		?: inData.categories.firstOrNull { it.kind == CategoryKind.EXPENSE && themeOfCategory(it.name) == ExpenseTheme.CREDIT }?.id	// catégorie des intérêts
+	return if (vPart == null) inForm.copy(categoryId = vCategory)
+		else inForm.copy(categoryId = vCategory, amount = editableEuros(vPart.total), capital = editableEuros(vPart.capital))
 }
 
 /*
@@ -241,6 +299,13 @@ fun editEntryForm(
 			val vOut = inTx.postings.first { it.amountCents < 0 }				// jambe de départ
 			val vIn  = inTx.postings.first { it.amountCents > 0 }				// jambe d'arrivée
 			vBase.copy(mode = EntryMode.TRANSFER, postingIds = listOf(vOut.id, vIn.id), amount = editableEuros(vIn.amountCents), accountId = vOut.accountId, toAccountId = vIn.accountId)
+		}
+		TransactionKind.LOAN_PAYMENT ->
+		{
+			val vPayer = inTx.postings[0]										// jambe du payeur
+			val vLoan  = inTx.postings[1]										// jambe du crédit
+			vBase.copy(mode = EntryMode.LOAN, amount = editableEuros(-vPayer.amountCents), capital = editableEuros(vLoan.amountCents),
+				accountId = vPayer.accountId, toAccountId = vLoan.accountId, categoryId = inTx.categoryId)
 		}
 		TransactionKind.TRADE    ->
 		{
@@ -313,7 +378,37 @@ fun checkEntry(
 			price    = parseScaled(inForm.price).let { if (it == null || it == 0L) "Cours illisible ou nul (ex. 144,91)." else null },
 			fees     = if (inForm.fees.isNotBlank() && (parseEuros(inForm.fees) ?: -1L) < 0L) "Frais illisibles (ex. 1,99)." else null
 		)
+		EntryMode.LOAN                      ->
+		{
+			val vTotal   = parseEuros(inForm.amount)							// total lu
+			val vCapital = if (inForm.capital.isBlank()) vTotal else parseEuros(inForm.capital)	// capital lu (vide : tout en capital)
+			val vPayer   = inData.accounts.firstOrNull { it.id == inForm.accountId }?.type		// type du payeur
+			EntryErrors(
+				amount   = amountError(inForm.amount) ?: if (vTotal != null && vTotal < 0) "Le montant doit être positif." else null,
+				account  = if (vPayer == null || vPayer == AccountType.LOAN || vPayer.isProperty) "Choisissez le compte qui paie." else null,
+				target   = if (inData.accounts.none { it.id == inForm.toAccountId && it.type == AccountType.LOAN }) "Choisissez le compte Crédit." else null,
+				capital  = when
+				{
+					vCapital == null || vCapital < 0                  -> "Capital illisible (ex. 612,40)."
+					vTotal != null && vCapital > vTotal               -> "Le capital ne peut pas dépasser le total."
+					else                                              -> null
+				},
+				category = if (vTotal != null && vCapital != null && vCapital < vTotal && inData.categories.none { it.id == inForm.categoryId && it.kind == CategoryKind.EXPENSE }) "Choisissez la catégorie des intérêts." else null
+			)
+		}
 	}
+
+/*
+	Intérêts et assurance d'une mensualité saisie (total moins capital) ;
+	null si l'un des montants est illisible.
+	inForm : saisie en mode Crédit
+*/
+fun loanCharge(inForm: EntryForm): Long?
+{
+	val vTotal   = parseEuros(inForm.amount) ?: return null						// total
+	val vCapital = if (inForm.capital.isBlank()) vTotal else parseEuros(inForm.capital) ?: return null	// capital
+	return vTotal - vCapital
+}
 
 /*
 	Construit l'opération d'une saisie vérifiée. Un nouvel actif doit avoir été
@@ -351,6 +446,14 @@ fun buildEntry(
 			inNotes      = inForm.notes
 		).copy(assetId = inForm.assetId.takeIf { inForm.mode == EntryMode.INCOME && it != kNewAsset })
 		EntryMode.TRANSFER                  -> buildTransfer(vId, postingId(0), postingId(1), inForm.date, inForm.accountId!!, inForm.toAccountId!!, parseEuros(inForm.amount)!!, vLabel, inForm.notes)
+		EntryMode.LOAN                      ->
+		{
+			val vTotal   = parseEuros(inForm.amount)!!								// total payé
+			val vCapital = if (inForm.capital.isBlank()) vTotal else parseEuros(inForm.capital)!!	// capital remboursé
+			Transaction(vId, inForm.date, TransactionKind.LOAN_PAYMENT, vLabel, inForm.categoryId.takeIf { vCapital < vTotal || it != null },
+				notes = inForm.notes.trim().ifEmpty { null },
+				postings = listOf(Posting(postingId(0), inForm.accountId!!, -vTotal), Posting(postingId(1), inForm.toAccountId!!, vCapital)))
+		}
 		EntryMode.TRADE                     -> buildTrade(
 			inId        = vId,
 			inPostingId = postingId(0),

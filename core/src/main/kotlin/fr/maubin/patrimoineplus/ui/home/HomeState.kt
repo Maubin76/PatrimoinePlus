@@ -60,8 +60,14 @@ data class HomeUiState(
 	val monthChange : Long?             = null
 )
 {
-	// Patrimoine total, en centimes : somme des valeurs comptées.
+	// Patrimoine total (net), en centimes : somme des valeurs comptées.
 	val totalCents: Long get() = groups.sumOf { it.subtotalCents }
+
+	// Patrimoine brut : valeurs comptées hors comptes Crédit.
+	val grossCents: Long get() = groups.filter { it.type != AccountType.LOAN }.sumOf { it.subtotalCents }
+
+	// Crédits : capital restant dû compté (négatif ou nul).
+	val debtCents: Long get() = groups.filter { it.type == AccountType.LOAN }.sumOf { it.subtotalCents }
 
 	// Vrai tant qu'aucun compte n'existe.
 	val isEmpty: Boolean get() = groups.isEmpty()

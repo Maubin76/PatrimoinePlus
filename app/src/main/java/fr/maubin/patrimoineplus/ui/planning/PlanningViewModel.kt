@@ -20,7 +20,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Clock
 import java.time.LocalDate
-import javax.inject.Inject
+import javax.inject.Inject
+import fr.maubin.patrimoineplus.domain.calc.PropertyItem
+import fr.maubin.patrimoineplus.domain.calc.propertyItems
+import fr.maubin.patrimoineplus.data.repo.TransactionRepository
 
 /*
 	État des opérations récurrentes et des crédits.
@@ -28,12 +31,14 @@ import javax.inject.Inject
 	loans       : crédits
 	accounts    : comptes (tous)
 	categories  : catégories (toutes)
+	properties  : biens détenus (qu'un nouveau crédit peut financer)
 */
 data class PlanningState(
-	val recurrences : List<Recurrence> = emptyList(),
-	val loans       : List<Loan>       = emptyList(),
-	val accounts    : List<Account>    = emptyList(),
-	val categories  : List<Category>   = emptyList()
+	val recurrences : List<Recurrence>   = emptyList(),
+	val loans       : List<Loan>         = emptyList(),
+	val accounts    : List<Account>      = emptyList(),
+	val categories  : List<Category>     = emptyList(),
+	val properties  : List<PropertyItem> = emptyList()
 )
 
 /*
@@ -42,21 +47,23 @@ data class PlanningState(
 	inAccounts   : comptes
 	inCategories : catégories
 	inClock      : horloge
+	inTransactions : opérations (biens détenus)
 */
 @HiltViewModel
 class PlanningViewModel @Inject constructor(
 	private val inPlanning : PlanningRepository,
 	inAccounts             : AccountRepository,
 	inCategories           : CategoryRepository,
-	private val inClock    : Clock
+	private val inClock    : Clock,
+	inTransactions         : TransactionRepository
 ) : ViewModel()
 {
 	private var fSaving = false															// enregistrement en cours (un second appui est ignoré)
 
 	// État à afficher.
 	val state: StateFlow<PlanningState> =
-		combine(inPlanning.observeRecurrences(), inPlanning.observeLoans(), inAccounts.observeAccounts(), inCategories.observeCategories()) { inRecs, inLoans, inList, inCats ->
-			PlanningState(inRecs, inLoans, inList, inCats.sortedBy { it.sortOrder })
+		combine(inPlanning.observeRecurrences(), inPlanning.observeLoans(), inAccounts.observeAccounts(), inCategories.observeCategories(), inTransactions.observeTransactions()) { inRecs, inLoans, inList, inCats, inTxs ->
+			PlanningState(inRecs, inLoans, inList, inCats.sortedBy { it.sortOrder }, propertyItems(inTxs, inList).filter { it.heldAt(LocalDate.now(inClock)) })
 		}.stateIn(viewModelScope, SharingStarted.Eagerly, PlanningState())
 
 	// Date du jour.

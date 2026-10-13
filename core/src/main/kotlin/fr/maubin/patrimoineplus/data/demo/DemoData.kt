@@ -47,6 +47,7 @@ fun buildDemoData(inToday: LocalDate): DataSet
 	val vHome    = Account(stableId("compte:residence-principale"), "Résidence principale", AccountType.REAL_ESTATE, null, 50, 5)	// immobilier, détenu à moitié
 	val vObjects = Account(stableId("compte:collection"), "Collection", AccountType.COLLECTIBLE, null, 100, 6)			// objets de collection
 	val vCar     = Account(stableId("compte:credit-auto"), "Crédit auto", AccountType.LOAN, "Banque démo", 100, 7)		// crédit amortissable
+	val vMortgage = Account(stableId("compte:pret-immobilier"), "Prêt immobilier", AccountType.LOAN, "Banque démo", 50, 8)	// crédit de la résidence principale, à moitié
 	val vCats    = DefaultCatalog.categories().map { it.copy(id = stableId("categorie:${it.kind}:${it.name}")) } +
 		Category(stableId("categorie:EXPENSE:Crédit"), "Crédit", "bank", CategoryKind.EXPENSE, 99)	// catégories, identifiants stables, et intérêts d'emprunt
 	val vWorld   = Asset(stableId("actif:etf-monde"), "ETF Monde (démo)")							// premier actif
@@ -125,7 +126,6 @@ fun buildDemoData(inToday: LocalDate): DataSet
 		val vUsPrice    = (450 + inMonth * 6.0).toPrice()						// cours du mois, second actif
 		std(vFirst, vCourant, 320_000, "Salaire", "Salaire")
 		xfer(vFirst.plusDays(1), vCourant, vJoint, 50_000, "Participation compte joint")
-		std(vFirst.plusDays(3), vCourant, -95_000, "Loyer", "Logement")
 		std(vFirst.plusDays(5), vCourant, -8_640, "Pass transport", "Transport")
 		std(vFirst.plusDays(9), vCourant, -1_599, "Abonnement musique", "Abonnements")
 		std(vFirst.plusDays(13), vCourant, -4_200, "Restaurant", "Loisirs")
@@ -158,16 +158,17 @@ fun buildDemoData(inToday: LocalDate): DataSet
 		inName    : nom du bien
 		inCents   : prix d'achat
 		inPayer   : compte payeur ; null pour un bien déjà possédé
+		inId      : identifiant de l'achat
 		Retour : l'achat ; null s'il est futur
 	*/
-	fun acquire(inDate: LocalDate, inAccount: Account, inName: String, inCents: Long, inPayer: Account?): Transaction?
+	fun acquire(inDate: LocalDate, inAccount: Account, inName: String, inCents: Long, inPayer: Account?, inId: String = newId()): Transaction?
 	{
 		if (inDate.isAfter(inToday)) return null
-		return Transaction(newId(), inDate, TransactionKind.ACQUISITION, inName,
+		return Transaction(inId, inDate, TransactionKind.ACQUISITION, inName,
 			postings = listOfNotNull(inPayer?.let { Posting(newId(), it.id, -inCents) }, Posting(newId(), inAccount.id, inCents))).also { vOps += it }
 	}
 
-	acquire(vStart, vHome, "Appartement (démo)", 24_000_000, null)
+	val vFlat    = acquire(vStart.minusYears(7), vHome, "Appartement (démo)", 24_000_000, null, stableId("bien:appartement"))	// résidence principale, achetée avec le prêt il y a sept ans
 	acquire(vStart, vObjects, "Lithographie", 180_000, null)
 	acquire(vStart.plusMonths(3).plusDays(7), vObjects, "Montre de collection", 420_000, vCourant)
 	acquire(vStart, vObjects, "Vinyles des années 70", 60_000, null)?.let { inVinyls ->
@@ -178,7 +179,7 @@ fun buildDemoData(inToday: LocalDate): DataSet
 				postings = listOf(Posting(newId(), vCourant.id, 85_000), Posting(newId(), vObjects.id, -60_000)), linkedId = inVinyls.id)
 		}
 	}
-	vOps += Transaction(newId(), inToday.plusDays(5), TransactionKind.STANDARD, "Loyer (à venir)", cat("Logement"),
+	vOps += Transaction(newId(), inToday.plusDays(5), TransactionKind.STANDARD, "Taxe foncière (à venir)", cat("Logement"),
 		postings = listOf(Posting(newId(), vCourant.id, -95_000)))
 
 	val vStatement = AccountStatement(newId(), vLivretA.id, inToday.withDayOfMonth(1).minusDays(1),
@@ -186,16 +187,20 @@ fun buildDemoData(inToday: LocalDate): DataSet
 	val vLoan    = Loan(stableId("credit:auto"), vCar.id, 1_500_000, 450, 48, vStart.minusMonths(11).plusDays(4), 1_200, vCourant.id, cat("Crédit"))	// crédit commencé il y a un an
 	val vPaid    = vLoan.copy(last = amortization(vLoan).last { it.date.isBefore(vStart) }.date)	// mensualités payées avant la démonstration
 	vOps += opening(vStart, vCar, -remainingAt(vPaid, vStart.minusDays(1)))
+	val vHomeLoan = Loan(stableId("credit:immobilier"), vMortgage.id, 22_000_000, 150, 300, vStart.minusYears(7).plusDays(4), 3_000, vCourant.id, cat("Crédit"), propertyId = vFlat?.id)	// prêt de l'appartement, commencé il y a sept ans
+	val vHomePaid = vHomeLoan.copy(last = amortization(vHomeLoan).last { it.date.isBefore(vStart) }.date)	// mensualités payées avant la démonstration
+	vOps += opening(vStart, vMortgage, -remainingAt(vHomePaid, vStart.minusDays(1)))
 	val vRecs    = listOf(
 		Recurrence(stableId("recurrence:salaire"), "Salaire", vCourant.id, null, cat("Salaire"), 320_000, Frequency.MONTHLY, inToday.withDayOfMonth(1).plusMonths(1)),
 		Recurrence(stableId("recurrence:musique"), "Abonnement musique", vCourant.id, null, cat("Abonnements"), -1_599, Frequency.MONTHLY, inToday.withDayOfMonth(10).plusMonths(1)),
 		Recurrence(stableId("recurrence:livret"), "Épargne du mois", vCourant.id, vLivretA.id, null, 30_000, Frequency.MONTHLY, inToday.withDayOfMonth(27).plusMonths(1)),
 		Recurrence(stableId("recurrence:assurance"), "Assurance auto", vCourant.id, null, cat("Transport"), -48_000, Frequency.YEARLY, inToday.plusMonths(3).withDayOfMonth(15))
 	)																		// opérations récurrentes (prochaines échéances à venir)
-	val vAccounts = listOf(vCourant, vJoint, vLivretA, vLdds, vPea, vHome, vObjects, vCar)	// comptes
-	val vDue     = dueOperations(vAccounts, vOps, emptyList(), listOf(vPaid), inToday)		// mensualités du crédit depuis le début de la démonstration
+	val vAccounts = listOf(vCourant, vJoint, vLivretA, vLdds, vPea, vHome, vObjects, vCar, vMortgage)	// comptes
+	val vDue     = dueOperations(vAccounts, vOps, emptyList(), listOf(vPaid, vHomePaid), inToday)	// mensualités des crédits depuis le début de la démonstration
 	vOps += vDue.transactions
-	return DataSet(vAccounts, vCats, listOf(vWorld, vUs), vOps, vPrices, listOf(vStatement), vRecs, vDue.loans.ifEmpty { listOf(vPaid) })
+	val vMoved   = vDue.loans.associateBy { it.id }									// crédits avancés
+	return DataSet(vAccounts, vCats, listOf(vWorld, vUs), vOps, vPrices, listOf(vStatement), vRecs, listOf(vPaid, vHomePaid).map { vMoved[it.id] ?: it })
 }
 
 /*

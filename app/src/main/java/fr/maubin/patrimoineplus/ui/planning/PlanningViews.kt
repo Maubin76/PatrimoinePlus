@@ -48,7 +48,9 @@ import java.util.Locale
 import fr.maubin.patrimoineplus.domain.format.formatFrenchDate
 import fr.maubin.patrimoineplus.domain.format.parseFrenchDate
 import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
-import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
+import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
+import fr.maubin.patrimoineplus.domain.calc.PropertyItem
+import fr.maubin.patrimoineplus.ui.account.AccountExtras
 
 private val kDay = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)			// date d'une échéance
 
@@ -180,6 +182,7 @@ fun RecurrenceSheet(
 	inErrors     : erreurs par champ
 	inAccounts   : comptes (payeur)
 	inCategories : catégories (intérêts)
+	inProperties : biens détenus qu'il peut financer
 	inOnChange   : saisie modifiée
 */
 @Composable
@@ -188,6 +191,7 @@ fun LoanFields(
 	inErrors     : LoanErrors,
 	inAccounts   : List<Account>,
 	inCategories : List<Category>,
+	inProperties : List<PropertyItem>,
 	inOnChange   : (LoanForm) -> Unit
 )
 {
@@ -198,9 +202,10 @@ fun LoanFields(
 	AmountInput(inForm.insurance, { inOnChange(inForm.copy(insurance = it)) }, "Assurance mensuelle (facultatif)", inErrors.insurance)
 	Picker("Payé depuis", inAccounts.filter { !it.archived && !it.type.isProperty && it.type != AccountType.LOAN }.map { it.id as String? to it.name }, inForm.payFrom, inErrors.payFrom) { inOnChange(inForm.copy(payFrom = it)) }
 	Picker("Catégorie des intérêts", listOf<Pair<String?, String>>(null to "Crédit (créée si besoin)") + inCategories.filter { it.kind == CategoryKind.EXPENSE && !it.archived }.map { it.id to it.name }, inForm.categoryId, null) { inOnChange(inForm.copy(categoryId = it)) }
+	Picker("Bien financé", listOf<Pair<String?, String>>(null to "Aucun (auto, prêt personnel…)") + inProperties.map { it.acquisition.id to it.name }, inForm.propertyId, null) { inOnChange(inForm.copy(propertyId = it)) }
 	Text(
 		(loanPreview(inForm)?.let { "Mensualité : ${formatEuros(it)} (assurance comprise). " } ?: "") +
-			"Les mensualités déjà passées sont tenues pour payées ; chaque mensualité suivante créera un virement du capital et une dépense des intérêts.",
+			"Les mensualités déjà passées sont tenues pour payées ; chaque mensualité suivante créera une opération : le compte payeur débité du total, le capital remboursé, les intérêts et l’assurance en dépense.",
 		style = MaterialTheme.typography.bodySmall,
 		color = MaterialTheme.colorScheme.onSurfaceVariant
 	)
@@ -213,13 +218,17 @@ fun LoanFields(
 	inSchedule : tableau d'amortissement
 	inLeft     : capital restant dû (positif)
 	inToday    : date du jour
+	inExtras   : bien financé, sa valeur nette et biens possibles
+	inOnLink   : lie le crédit à un bien (null : aucun)
 */
 @Composable
 fun LoanSection(
 	inLoan     : Loan?,
 	inSchedule : List<Installment>,
 	inLeft     : Long,
-	inToday    : LocalDate
+	inToday    : LocalDate,
+	inExtras   : AccountExtras        = AccountExtras(),
+	inOnLink   : (String?) -> Unit    = {}
 )
 {
 	val vColors = MaterialTheme.colorScheme												// palette courante
@@ -235,6 +244,26 @@ fun LoanSection(
 		BorderedCard { EmptyState(inTitle = "Sans tableau d’amortissement", inBody = "Les remboursements de ce compte se saisissent comme des virements.") }
 		return
 	}
+	SectionHeader(inTitle = "Bien financé")
+	Spacer(Modifier.height(8.dp))
+	BorderedCard {
+		Column(Modifier.padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+			Picker("Bien", listOf<Pair<String?, String>>(null to "Aucun (auto, prêt personnel…)") + inExtras.candidates.map { it.acquisition.id to it.name }, inLoan.propertyId, null, inOnLink)
+			val vNet = inExtras.financedNet													// valeur nette du bien
+			when
+			{
+				vNet != null               ->
+				{
+					NetLine("Prix d’achat", vNet.item.cost)
+					NetLine(if (vNet.loans.size > 1) "Crédits restant dus" else "Restant dû", -vNet.debt)
+					NetLine("Valeur nette", vNet.net, true)
+				}
+				inExtras.financed != null -> Text("Bien vendu : il ne compte plus dans le patrimoine.", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+				else                      -> Text("Liez le crédit au bien qu’il finance pour voir sa valeur nette.", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+			}
+		}
+	}
+	Spacer(Modifier.height(20.dp))
 	SectionHeader(inTitle = "Prochaines mensualités")
 	Spacer(Modifier.height(8.dp))
 	BorderedCard {
@@ -262,4 +291,24 @@ fun LoanSection(
 		color    = vColors.onSurfaceVariant,
 		modifier = Modifier.padding(start = 4.dp)
 	)
+}
+
+/*
+	Ligne libellé et montant de la valeur nette d'un bien.
+	inLabel  : libellé
+	inCents  : montant
+	inStrong : ligne mise en avant
+*/
+@Composable
+private fun NetLine(
+	inLabel  : String,
+	inCents  : Long,
+	inStrong : Boolean = false
+)
+{
+	val vStyle = if (inStrong) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge	// style de la ligne
+	Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+		Text(inLabel, style = vStyle, modifier = Modifier.weight(1f))
+		AmountText(inCents = inCents, inStyle = vStyle)
+	}
 }

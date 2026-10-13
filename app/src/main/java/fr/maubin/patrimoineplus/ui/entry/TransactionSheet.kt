@@ -65,11 +65,14 @@ import kotlin.math.abs
 
 import fr.maubin.patrimoineplus.ui.components.Picker
 
-import fr.maubin.patrimoineplus.domain.model.Frequency
+import fr.maubin.patrimoineplus.domain.model.Frequency
+import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
+import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
 
 /*
 	Feuille de saisie d'une opération : dépense, revenu, virement entre deux
-	de mes comptes, ou ordre de bourse (si un compte Bourse existe) ; en
+	de mes comptes, ordre de bourse (si un compte Bourse existe), ou
+	mensualité de crédit (si un compte Crédit existe) ; en
 	modification, suppression après confirmation.
 	inInitial      : saisie de départ
 	inData         : comptes, catégories, actifs, cours, opérations
@@ -95,7 +98,7 @@ fun TransactionSheet(
 	var vErrors  by remember { mutableStateOf(EntryErrors()) }				// erreurs affichées
 	var vConfirm by remember { mutableStateOf(false) }						// suppression à confirmer
 	val vHasBourse = inData.accounts.any { it.type == AccountType.BROKERAGE }	// un compte Bourse existe
-	val vModes     = EntryMode.entries.filter { it != EntryMode.TRADE || vHasBourse || vForm.mode == EntryMode.TRADE }	// modes proposés
+	val vModes     = entryModes(inData, vForm).filter { it != EntryMode.TRADE || vHasBourse || vForm.mode == EntryMode.TRADE }	// modes proposés
 
 	FormSheet(inTitle = if (vForm.id == null) "Nouvelle opération" else "Modifier l’opération", inOnDismiss = inOnDismiss) {
 		SegmentedChoice(
@@ -110,10 +113,11 @@ fun TransactionSheet(
 			EntryMode.EXPENSE, EntryMode.INCOME -> StandardFields(vForm, vErrors, inData, inSuggestions) { vForm = it }
 			EntryMode.TRANSFER                  -> TransferFields(vForm, vErrors, inData) { vForm = it }
 			EntryMode.TRADE                     -> TradeFields(vForm, vErrors, inData) { vForm = it }
+			EntryMode.LOAN                      -> LoanPaymentFields(vForm, vErrors, inData) { vForm = it }
 		}
-		DateInput(vForm.date, { vForm = vForm.copy(date = it) }, "Date")
+		DateInput(vForm.date, { vForm = if (vForm.mode == EntryMode.LOAN && vForm.id == null && vForm.date.month != it.month) suggestLoanPayment(vForm.copy(date = it), inData) else vForm.copy(date = it) }, "Date")
 		TextInput(vForm.notes, { vForm = vForm.copy(notes = it) }, "Notes (facultatif)")
-		if (inOnRepeat != null && vForm.id == null && vForm.mode != EntryMode.TRADE)
+		if (inOnRepeat != null && vForm.id == null && vForm.mode != EntryMode.TRADE && vForm.mode != EntryMode.LOAN)
 		{
 			Picker("Répéter", listOf<Pair<String?, String>>(null to "Non") + Frequency.entries.map { it.name to it.label }, vRepeat?.name, null) { inName ->
 				vRepeat = inName?.let(Frequency::valueOf)
@@ -140,7 +144,7 @@ fun TransactionSheet(
 	{
 		ConfirmDialog(
 			inTitle     = "Supprimer l’opération ?",
-			inText      = if (vForm.mode == EntryMode.TRANSFER) "Le virement sera supprimé sur les deux comptes ; leurs soldes seront recalculés."
+			inText      = if (vForm.mode == EntryMode.TRANSFER || vForm.mode == EntryMode.LOAN) "L’opération sera supprimée sur les deux comptes ; leurs soldes seront recalculés."
 				else "« ${vForm.label.ifBlank { proposedLabel(vForm, inData) }} » sera supprimée ; le solde sera recalculé.",
 			inAction    = "Supprimer",
 			inOnConfirm = {
@@ -256,6 +260,40 @@ private fun TransferFields(
 	AmountInput(inForm.amount, { inOnChange(inForm.copy(amount = it.replace("-", ""))) }, "Montant", inErrors.amount)
 	AccountPicker("De", inData.accounts, inForm.accountId, inErrors.account) { inOnChange(inForm.copy(accountId = it)) }
 	AccountPicker("Vers", inData.accounts.filter { it.id != inForm.accountId }, inForm.toAccountId, inErrors.target) { inOnChange(inForm.copy(toAccountId = it)) }
+	TextInput(inForm.label, { inOnChange(inForm.copy(label = it)) }, "Libellé", inErrors.label, inSupport = "Vide : « ${proposedLabel(inForm, inData)} »")
+}
+
+/*
+	Champs d'une mensualité de crédit : crédit remboursé (la mensualité du
+	mois est proposée), compte payeur, total payé, capital remboursé (le
+	reste, intérêts et assurance, est une dépense), catégorie des intérêts,
+	libellé (proposé s'il est laissé vide).
+	inForm     : saisie
+	inErrors   : erreurs
+	inData     : données
+	inOnChange : saisie modifiée
+*/
+@Composable
+private fun LoanPaymentFields(
+	inForm     : EntryForm,
+	inErrors   : EntryErrors,
+	inData     : EntryData,
+	inOnChange : (EntryForm) -> Unit
+)
+{
+	val vCharge = loanCharge(inForm)														// intérêts et assurance
+	AccountPicker("Crédit remboursé", inData.accounts.filter { it.type == AccountType.LOAN }, inForm.toAccountId, inErrors.target) { inOnChange(suggestLoanPayment(inForm.copy(toAccountId = it), inData)) }
+	AccountPicker("Payé depuis", inData.accounts.filter { it.type != AccountType.LOAN }, inForm.accountId, inErrors.account) { inOnChange(inForm.copy(accountId = it)) }
+	AmountInput(inForm.amount, { inOnChange(inForm.copy(amount = it.replace("-", ""))) }, "Montant payé", inErrors.amount, inSupport = "Mensualité complète : capital, intérêts et assurance.")
+	AmountInput(inForm.capital, { inOnChange(inForm.copy(capital = it.replace("-", ""))) }, "Dont capital remboursé", inErrors.capital,
+		inSupport = when
+		{
+			inForm.capital.isBlank()       -> "Vide : tout en capital (remboursement anticipé)."
+			vCharge == null || vCharge < 0 -> "Le reste du montant est compté en intérêts et assurance."
+			LocalAmountsHidden.current     -> "Intérêts et assurance : $kMaskedAmount"
+			else                           -> "Intérêts et assurance : ${formatEuros(vCharge)}"
+		})
+	Picker("Catégorie des intérêts", inData.categories.filter { it.kind == CategoryKind.EXPENSE }.map { it.id as String? to it.name }, inForm.categoryId, inErrors.category) { inOnChange(inForm.copy(categoryId = it)) }
 	TextInput(inForm.label, { inOnChange(inForm.copy(label = it)) }, "Libellé", inErrors.label, inSupport = "Vide : « ${proposedLabel(inForm, inData)} »")
 }
 

@@ -166,6 +166,16 @@ private fun TotalBlock(inState: HomeUiState)
 				AmountText(inCents = inState.totalCents, inStyle = vStyle, inRolling = true)
 			}
 		}
+		if (!inState.isEmpty && inState.debtCents != 0L)
+		{
+			Spacer(Modifier.height(4.dp))
+			Row(verticalAlignment = Alignment.CenterVertically) {
+				Text("Brut ", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+				AmountText(inCents = inState.grossCents, inStyle = MaterialTheme.typography.bodyMedium, inColor = vColors.onSurfaceVariant)
+				Text(" · crédits ", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+				AmountText(inCents = inState.debtCents, inStyle = MaterialTheme.typography.bodyMedium, inColor = vColors.onSurfaceVariant)
+			}
+		}
 		Spacer(Modifier.height(16.dp))
 		val vChange = inState.monthChange											// variation du mois ; null le premier mois
 		if (!inState.isEmpty && vChange != null)

@@ -65,7 +65,8 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
-import fr.maubin.patrimoineplus.domain.calc.PropertyItem
+import fr.maubin.patrimoineplus.domain.calc.PropertyItem
+import fr.maubin.patrimoineplus.domain.calc.PropertyNet
 
 private val kShortDate = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)	// date courte
 
@@ -565,12 +566,14 @@ fun AssetSheet(
 	inItems  : biens du compte
 	inToday  : date du jour
 	inShare  : part détenue, en %
+	inNets   : valeur nette des biens financés par un crédit, par achat
 */
 @Composable
 fun PropertyHeader(
 	inItems : List<PropertyItem>,
 	inToday : LocalDate,
-	inShare : Int
+	inShare : Int,
+	inNets  : Map<String, PropertyNet> = emptyMap()
 )
 {
 	val vColors = MaterialTheme.colorScheme											// palette courante
@@ -580,6 +583,15 @@ fun PropertyHeader(
 		AmountText(inCents = vHeld.sumOf { it.cost }, inStyle = MaterialTheme.typography.displaySmall)
 		Spacer(Modifier.height(8.dp))
 		Text(if (inShare < 100) "Valeur au prix d’achat · comptée pour $inShare %" else "Valeur au prix d’achat", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+		if (inNets.isNotEmpty())
+		{
+			Spacer(Modifier.height(4.dp))
+			Row(verticalAlignment = Alignment.CenterVertically) {
+				Text("Valeur nette ", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+				AmountText(inCents = vHeld.sumOf { it.cost } - inNets.values.sumOf { it.debt }, inStyle = MaterialTheme.typography.bodyMedium, inColor = vColors.onSurfaceVariant)
+				Text(" · crédits déduits", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+			}
+		}
 	}
 	if (vSold.isNotEmpty())
 	{
@@ -604,6 +616,7 @@ fun PropertyHeader(
 	inOnAdd   : ajout d'un bien
 	inOnOpen  : ouvre l'achat d'un bien
 	inOnSell  : ouvre la vente d'un bien (nouvelle ou existante)
+	inNets    : valeur nette des biens financés par un crédit, par achat
 */
 @Composable
 fun PropertySection(
@@ -613,7 +626,8 @@ fun PropertySection(
 	inNames  : Map<String, String>,
 	inOnAdd  : () -> Unit,
 	inOnOpen : (PropertyItem) -> Unit,
-	inOnSell : (PropertyItem) -> Unit
+	inOnSell : (PropertyItem) -> Unit,
+	inNets   : Map<String, PropertyNet> = emptyMap()
 )
 {
 	val vColors = MaterialTheme.colorScheme											// palette courante
@@ -642,6 +656,14 @@ fun PropertySection(
 						overflow = TextOverflow.Ellipsis
 					)
 					AmountText(inCents = inItem.cost, inStyle = MaterialTheme.typography.bodyMedium)
+					inNets[inItem.acquisition.id]?.let { inNet ->
+						Row(verticalAlignment = Alignment.CenterVertically) {
+							Text("reste dû ", style = MaterialTheme.typography.bodySmall, color = vColors.onSurfaceVariant)
+							AmountText(inCents = inNet.debt, inStyle = MaterialTheme.typography.bodySmall, inColor = vColors.onSurfaceVariant)
+							Text(" · net ", style = MaterialTheme.typography.bodySmall, color = vColors.onSurfaceVariant)
+							AmountText(inCents = inNet.net, inStyle = MaterialTheme.typography.bodySmall, inColor = vColors.onSurfaceVariant)
+						}
+					}
 				}
 				OutlinedButton(onClick = { inOnSell(inItem) }) { Text(if (inItem.disposal != null) "Vente prévue" else "Vendre") }
 			}

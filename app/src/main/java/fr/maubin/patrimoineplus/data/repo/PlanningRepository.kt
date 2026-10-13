@@ -137,7 +137,8 @@ class PlanningRepository @Inject constructor(
 			val vAccount  = Account(UUID.randomUUID().toString(), inName.trim(), AccountType.LOAN, inInstitution?.trim()?.ifEmpty { null }, inShare, inDb.accountDao().maxSortOrder() + 1)	// compte Crédit
 			inDb.accountDao().insert(vAccount.toEntity(vNow, vNow))
 			val vLoan     = inLoan.copy(id = UUID.randomUUID().toString(), accountId = vAccount.id, categoryId = vCategory, last = amortization(inLoan).lastOrNull { !it.date.isAfter(vToday) }?.date)	// crédit
-			loanError(vLoan, accounts().associateBy { it.id }, categories().associateBy { it.id })?.let { inError ->
+			val vPurchases = inDb.transactionDao().getAll().map { it.toDomain() }.filter { it.kind == TransactionKind.ACQUISITION }.map { it.id }.toSet()	// achats de biens
+			loanError(vLoan, accounts().associateBy { it.id }, categories().associateBy { it.id }, vPurchases)?.let { inError ->
 				throw IllegalArgumentException(inError.replaceFirstChar { it.uppercase() })
 			}
 			val vOpening  = Transaction(UUID.randomUUID().toString(), vToday, TransactionKind.OPENING, "Solde initial",
@@ -155,10 +156,27 @@ class PlanningRepository @Inject constructor(
 	suspend fun deleteLoan(inId: String) = fDao.deleteLoan(inId)
 
 	/*
+		Lie un crédit au bien qu'il finance, ou le délie.
+		inId         : crédit
+		inPropertyId : achat du bien ; null pour délier
+		Retour : null si fait ; sinon le motif du refus
+	*/
+	suspend fun setLoanProperty(
+		inId         : String,
+		inPropertyId : String?
+	): String? =
+		inDb.withTransaction {
+			if (inPropertyId != null && inDb.transactionDao().getById(inPropertyId)?.kind != TransactionKind.ACQUISITION.name) return@withTransaction "Bien introuvable."
+			fDao.setLoanProperty(inId, inPropertyId)
+			null
+		}
+
+	/*
 		Crée les opérations des échéances arrivées jusqu'à aujourd'hui
 		(récurrences, mensualités de crédit) et avance récurrences et crédits ;
-		une opération refusée par les règles n'est pas créée, mais son
-		échéance est passée. Horodatages tirés de la date de l'échéance : le
+		les mensualités d'avant le format 5 (deux opérations) sont fusionnées en
+		une seule ; une opération refusée par les règles n'est pas créée, mais
+		son échéance est passée. Horodatages tirés de la date de l'échéance : le
 		téléphone et le PC écrivent exactement la même opération.
 		Retour : nombre d'opérations créées
 	*/
@@ -171,6 +189,8 @@ class PlanningRepository @Inject constructor(
 			val vRules    = TransactionValidator(vAccounts.associateBy { it.id }, categories().associateBy { it.id }, inDb.assetDao().observeAll().first().associate { it.id to it.toDomain() })	// règles
 			val vLedger   = Ledger(vAll)																	// opérations existantes
 			val vAdded    = vDue.transactions.filter { vRules.validate(it, vLedger).isEmpty() }			// opérations valables
+			val vRemoved  = vAdded.flatMap { vDue.replaced[it.id].orEmpty() }								// anciennes mensualités fusionnées
+			if (vRemoved.isNotEmpty()) inDb.transactionDao().deleteByIds(vRemoved)
 			vAdded.forEach { inTx ->
 				val vStamp = inTx.date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()			// horodatage tiré de la date
 				inDb.transactionDao().save(inTx.toHeaderEntity(vStamp, vStamp), inTx.toPostingEntities(), inTx.toTradeEntities())

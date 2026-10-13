@@ -25,7 +25,8 @@ import fr.maubin.patrimoineplus.ui.planning.checkLoan
 import fr.maubin.patrimoineplus.ui.planning.buildLoan
 import fr.maubin.patrimoineplus.ui.planning.loanPreview
 import fr.maubin.patrimoineplus.domain.format.formatEuros
-import fr.maubin.patrimoineplus.domain.model.CategoryKind
+import fr.maubin.patrimoineplus.domain.model.CategoryKind
+import fr.maubin.patrimoineplus.domain.calc.propertyItems
 
 /*
 	Création ou modification d'un compte dans le panneau latéral : nom, type
@@ -145,9 +146,10 @@ fun AccountPanel(
 			FormField(vLoan.insurance, { vLoan = vLoan.copy(insurance = it) }, "Assurance mensuelle (€, facultatif)", vLoanErr.insurance, inNumeric = true)
 			Picker("Payé depuis", vSpace.data.accounts.filter { !it.archived && !it.type.isProperty && it.type != AccountType.LOAN }.map { it.id to it.name }, vLoan.payFrom, { vLoan = vLoan.copy(payFrom = it) }, vLoanErr.payFrom)
 			Picker("Catégorie des intérêts", listOf<Pair<String?, String>>(null to "Crédit (créée si besoin)") + vSpace.data.categories.filter { it.kind == CategoryKind.EXPENSE && !it.archived }.map { it.id to it.name }, vLoan.categoryId, { vLoan = vLoan.copy(categoryId = it) })
+			Picker("Bien financé", listOf<Pair<String?, String>>(null to "Aucun (auto, prêt personnel…)") + propertyItems(vSpace.data.transactions, vSpace.data.accounts).filter { it.heldAt(inController.today()) }.map { it.acquisition.id to it.name }, vLoan.propertyId, { vLoan = vLoan.copy(propertyId = it) })
 			Text(
 				(loanPreview(vLoan)?.let { "Mensualité : ${formatEuros(it)} (assurance comprise). " } ?: "") +
-					"Les mensualités déjà passées sont tenues pour payées : le compte part du capital restant dû aujourd’hui. Chaque mensualité suivante créera à sa date un virement du capital et une dépense des intérêts.",
+					"Les mensualités déjà passées sont tenues pour payées : le compte part du capital restant dû aujourd’hui. Chaque mensualité suivante créera à sa date une opération : le compte payeur débité du total, le capital remboursé ici, les intérêts et l’assurance en dépense.",
 				style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant
 			)
 		}

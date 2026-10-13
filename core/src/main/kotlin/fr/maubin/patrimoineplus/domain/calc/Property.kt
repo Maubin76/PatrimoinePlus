@@ -3,7 +3,8 @@ package fr.maubin.patrimoineplus.domain.calc
 import fr.maubin.patrimoineplus.domain.model.Account
 import fr.maubin.patrimoineplus.domain.model.Transaction
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
-import java.time.LocalDate
+import java.time.LocalDate
+import fr.maubin.patrimoineplus.domain.model.Loan
 
 // Biens d'un compte Immobilier ou Collection : chaque bien est son achat
 // (ACQUISITION), éventuellement suivi de sa vente (DISPOSAL, liée à l'achat).
@@ -44,6 +45,44 @@ data class PropertyItem(
 	*/
 	fun heldAt(inDate: LocalDate): Boolean = !acquisition.date.isAfter(inDate) && (disposal == null || disposal.date.isAfter(inDate))
 }
+
+/*
+	Valeur nette d'un bien : son prix d'achat moins le capital restant dû des
+	crédits qui le financent (à 100 %, sans les parts détenues).
+	item  : bien
+	loans : crédits liés
+	debt  : capital restant dû (positif ou nul)
+*/
+data class PropertyNet(
+	val item  : PropertyItem,
+	val loans : List<Loan>,
+	val debt  : Long
+)
+{
+	// Valeur nette.
+	val net: Long get() = item.cost - debt
+}
+
+/*
+	Valeur nette de chaque bien détenu à une date qui a au moins un crédit lié,
+	par identifiant d'achat. Le capital restant dû est le solde du compte
+	Crédit (remboursements anticipés compris).
+	inItems  : biens
+	inLoans  : crédits
+	inLedger : grand livre
+	inDate   : date
+*/
+fun propertyNets(
+	inItems  : List<PropertyItem>,
+	inLoans  : List<Loan>,
+	inLedger : Ledger,
+	inDate   : LocalDate
+): Map<String, PropertyNet> =
+	inItems.filter { it.heldAt(inDate) }.mapNotNull { inItem ->
+		val vLoans = inLoans.filter { it.propertyId == inItem.acquisition.id }		// crédits liés
+		if (vLoans.isEmpty()) null
+		else inItem.acquisition.id to PropertyNet(inItem, vLoans, vLoans.sumOf { (-inLedger.balanceAt(it.accountId, inDate)).coerceAtLeast(0L) })
+	}.toMap()
 
 /*
 	Jambe d'une opération de bien sur un compte de biens.

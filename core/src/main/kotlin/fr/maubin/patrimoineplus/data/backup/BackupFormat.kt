@@ -23,7 +23,7 @@ import fr.maubin.patrimoineplus.domain.model.Recurrence
 import fr.maubin.patrimoineplus.domain.calc.kMaxTradeCents
 
 const val kBackupFormat  = "patrimoineplus"										// signature du fichier
-const val kBackupVersion = 4													// version du format (2 : symbole de cotation des actifs ; 3 : comptes de biens ; 4 : opérations récurrentes et crédits)
+const val kBackupVersion = 5													// version du format (2 : symbole de cotation des actifs ; 3 : comptes de biens ; 4 : opérations récurrentes et crédits ; 5 : mensualités en une opération, bien financé)
 
 private val kJson = Json { prettyPrint = true; ignoreUnknownKeys = false }		// lecteur et écrivain JSON
 
@@ -168,7 +168,8 @@ data class LoanDto(
 	val insurance  : Long,
 	val payFrom    : String,
 	val categoryId : String,
-	val last       : String? = null
+	val last       : String? = null,
+	val propertyId : String? = null
 )
 
 /*
@@ -295,8 +296,9 @@ fun validateBackup(inFile: BackupFile): BackupRead
 	vDomain.recurrences.firstOrNull { recurrenceError(it, vAccounts, vCategories) != null }?.let {
 		return BackupRead.Invalid("Opération récurrente « ${it.label} » invalide : ${recurrenceError(it, vAccounts, vCategories)}")
 	}
-	vDomain.loans.firstOrNull { loanError(it, vAccounts, vCategories) != null }?.let {
-		return BackupRead.Invalid("Crédit invalide : ${loanError(it, vAccounts, vCategories)}")
+	val vPurchases  = vDomain.transactions.filter { it.kind == TransactionKind.ACQUISITION }.map { it.id }.toSet()	// achats de biens
+	vDomain.loans.firstOrNull { loanError(it, vAccounts, vCategories, vPurchases) != null }?.let {
+		return BackupRead.Invalid("Crédit invalide : ${loanError(it, vAccounts, vCategories, vPurchases)}")
 	}
 	if ((vFile.recurrences.map { it.id } + vFile.loans.map { it.id }).let { it.size != it.toSet().size }) return BackupRead.Invalid("Identifiants en double dans le fichier.")
 	if (vFile.prices.any { it.assetId !in vAssets }) return BackupRead.Invalid("Cours d’un actif inconnu.")
@@ -379,13 +381,13 @@ fun Recurrence.toDto(): RecurrenceDto =
 	Crédit du domaine ; lève une exception sur une date illisible.
 */
 fun LoanDto.toDomain(): Loan =
-	Loan(id, accountId, principal, rateBp, months, LocalDate.parse(firstDue), insurance, payFrom, categoryId, last?.let(LocalDate::parse))
+	Loan(id, accountId, principal, rateBp, months, LocalDate.parse(firstDue), insurance, payFrom, categoryId, last?.let(LocalDate::parse), propertyId)
 
 /*
 	Crédit exporté.
 */
 fun Loan.toDto(): LoanDto =
-	LoanDto(id, accountId, principal, rateBp, months, firstDue.toString(), insurance, payFrom, categoryId, last?.toString())
+	LoanDto(id, accountId, principal, rateBp, months, firstDue.toString(), insurance, payFrom, categoryId, last?.toString(), propertyId)
 
 /*
 	Défaut d'une opération récurrente ; null si elle est valable : libellé,
@@ -417,15 +419,17 @@ fun recurrenceError(
 /*
 	Défaut d'un crédit ; null s'il est valable : compte de type Crédit,
 	compte payeur ordinaire, catégorie de dépense, montant, taux et durée
-	plausibles.
+	plausibles, bien financé connu.
 	inLoan       : crédit
 	inAccounts   : comptes par identifiant
 	inCategories : catégories par identifiant
+	inPurchases  : achats de biens connus (identifiants) ; null : bien non vérifié
 */
 fun loanError(
 	inLoan       : Loan,
 	inAccounts   : Map<String, Account>,
-	inCategories : Map<String, Category>
+	inCategories : Map<String, Category>,
+	inPurchases  : Set<String>?          = null
 ): String? =
 	when
 	{
@@ -436,5 +440,6 @@ fun loanError(
 		inLoan.rateBp !in 0..3_000                                                   -> "taux hors de 0 à 30 %."
 		inLoan.months !in 1..600                                                     -> "durée hors de 1 à 600 mois."
 		inLoan.insurance < 0                                                         -> "assurance négative."
+		inLoan.propertyId != null && inPurchases != null && inLoan.propertyId !in inPurchases -> "bien financé introuvable."
 		else                                                                         -> null
 	}

@@ -120,15 +120,18 @@ class AnnualReportTest
 		assertEquals("Vinyles des années 70", vSold.name)
 		assertEquals(85_000L, vSold.salePrice)
 		assertEquals(25_000L, vReport.propertyGains)
-		val vLoan   = vDemo.loans.single()													// crédit auto
+		val vLoan   = vDemo.loans.single { it.propertyId == null }									// crédit auto
 		val vSince  = vDemo.transactions.single { inTx -> inTx.kind == TransactionKind.OPENING && inTx.postings.any { it.accountId == vLoan.accountId } }.date	// début du suivi
 		val vYear   = amortization(vLoan).filter { it.date.year == 2026 && !it.date.isAfter(vToday) && it.date.isAfter(vSince) }	// mensualités de 2026 suivies dans l'appli
 		assertTrue(amortization(vLoan).any { it.date.year == 2026 && !it.date.isAfter(vSince) })	// des mensualités antérieures au suivi sont bien écartées
-		val vCar    = vReport.loans.single()													// crédit du bilan
+		val vCar    = vReport.loans.single { it.account.id == vLoan.accountId }					// crédit du bilan
 		assertEquals(remainingAt(vLoan, vToday), vCar.end)
 		assertEquals(vYear.sumOf { it.capital }, vCar.repaid)
 		assertEquals(vYear.sumOf { it.interest + it.insurance }, vCar.interest)
-		assertEquals(vCar.end, vReport.debtEnd)
+		val vWealth = fr.maubin.patrimoineplus.domain.calc.wealthAt(vDemo.accounts, fr.maubin.patrimoineplus.domain.calc.Ledger(vDemo.transactions), vToday, vDemo.prices)	// patrimoine du jour
+		assertEquals(-vWealth.debtCents, vReport.debtEnd)										// crédits comptés à leur part (prêt immobilier à moitié)
+		assertEquals(vWealth.grossCents, vReport.grossEnd)
+		assertEquals(vWealth.totalCents, vWealth.grossCents + vWealth.debtCents)
 		assertEquals(vReport.wealthEnd + vReport.debtEnd, vReport.grossEnd)
 		val vOld    = kData.copy(accounts = kData.accounts + kHouse, transactions = kData.transactions + Transaction("maison", d("2012-06-01"), TransactionKind.ACQUISITION, "Maison",
 			postings = listOf(Posting("maison-p", kHouse.id, eur(200_000.0)))))			// bien déjà possédé, acheté en 2012

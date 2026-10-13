@@ -83,11 +83,11 @@ fun buildExpenseAnalysis(
 	val vByCat  = inData.categories.associateBy { it.id }								// catégories par identifiant
 	val vFirst  = inData.transactions.filterNot { it.kind == TransactionKind.ACQUISITION || it.kind == TransactionKind.DISPOSAL }.minOfOrNull { YearMonth.from(it.date) }?.let { inStart -> vIndex[inStart] ?: if (inStart.isBefore(vMonths.first())) 0 else vMonths.lastIndex } ?: vMonths.lastIndex	// premier mois suivi
 	inData.transactions
-		.filter { it.kind == TransactionKind.STANDARD && !it.date.isAfter(inToday) && it.categoryId in vByCat }
+		.filter { it.hasCategory && !it.date.isAfter(inToday) && it.categoryId in vByCat }
 		.forEach { inTx ->
 			val vColumn = vIndex[YearMonth.from(inTx.date)] ?: return@forEach			// mois hors tableau
 			val vSign   = if (vByCat.getValue(inTx.categoryId!!).kind == CategoryKind.EXPENSE) -1L else 1L	// une dépense compte en positif
-			vNet.getOrPut(inTx.categoryId) { LongArray(vMonths.size) }[vColumn] += vSign * inTx.postings.sumOf { it.amountCents }
+			vNet.getOrPut(inTx.categoryId) { LongArray(vMonths.size) }[vColumn] += vSign * inTx.categoryAmount()
 		}
 	val vRows = vNet.map { (inId, inValues) -> row(vByCat.getValue(inId), inValues.toList(), vFirst) }	// lignes non vides
 	val vExpenses = vRows.filter { it.category.kind == CategoryKind.EXPENSE }.sortedByDescending { it.total }	// dépenses

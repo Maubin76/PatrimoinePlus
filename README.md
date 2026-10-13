@@ -183,7 +183,7 @@ dans `app/build/outputs/roborazzi/`.
 Détail complet : [`doc/SPEC.md` § 2](doc/SPEC.md#2-modèle-de-données).
 
 - **Base Room** (`data/db`), seule source de données, schéma exporté dans
-  `app/schemas` (version 4 ; migrations automatiques 1 → 2 → 3 → 4). Tables : `account`, `category`, `asset`, `txn`
+  `app/schemas` (version 5 ; migrations automatiques 1 → 2 → 3 → 4 → 5). Tables : `account`, `category`, `asset`, `txn`
   (opérations), `posting` (jambes), `trade` (ordres), `account_statement`
   (relevés), `asset_price` (cours), `recurrence` (opérations récurrentes),
   `loan` (crédits). Aucun solde ni total stocké.
@@ -211,12 +211,23 @@ Détail complet : [`doc/SPEC.md` § 2](doc/SPEC.md#2-modèle-de-données).
   mensualité constante, intérêts sur le capital restant, dernière mensualité
   qui solde. Les mensualités déjà passées sont tenues pour payées : le compte
   part du capital restant dû du jour. Chaque mensualité suivante crée à sa
-  date un virement du capital (compte payeur → compte Crédit) et une dépense
-  des intérêts et de l'assurance. Page du compte : capital restant dû,
-  mensualité, intérêts restants, tableau d'amortissement (PC) ou prochaines
-  mensualités (téléphone). Dans le budget, le thème Crédit compte le capital
-  remboursé et les intérêts. Un remboursement anticipé se saisit comme un
-  virement vers le compte Crédit (le tableau, lui, ne change pas).
+  date **une seule opération** (format 5) : le compte payeur est débité du
+  total, le compte Crédit crédité du capital, et l'écart (intérêts et
+  assurance) est une dépense de la catégorie du crédit. Les mensualités
+  créées avant, en deux opérations (virement du capital, dépense des
+  intérêts), sont fusionnées automatiquement, avec les mêmes montants, sur
+  le téléphone comme sur le PC. Saisie à la main : mode **« Crédit »** de la
+  saisie d'une opération (crédit, compte payeur, montant payé, dont capital
+  ; la mensualité du mois est proposée ; capital vide : remboursement
+  anticipé, tout en capital). Un crédit peut être lié au **bien qu'il
+  finance** (achat d'un compte Immobilier ou Collection) : la page du crédit
+  et celle du bien montrent sa **valeur nette** (prix d'achat moins capital
+  restant dû des crédits liés, à 100 %) ; le lien disparaît si l'achat est
+  supprimé. Tableau de bord et accueil : **patrimoine net**, avec le
+  **brut** (hors crédits) et les crédits comptés. Page du compte : capital
+  restant dû, mensualité, intérêts restants, bien financé, tableau
+  d'amortissement (PC) ou prochaines mensualités (téléphone). Dans le
+  budget, le thème Crédit compte le capital remboursé et les intérêts.
 - **Opérations à jambes** : dépense ou revenu (1 jambe), virement (2 jambes de
   somme nulle), ordre de bourse (1 jambe + 1 ordre), solde initial, **achat
   d'un bien** (jambe du compte de biens, et du compte payeur s'il a été payé
@@ -259,7 +270,8 @@ direct entre téléphones reste possible.
   (Courant, Épargne, Bourse, Immobilier, Collection, Crédit : une ligne par
   mouvement sur un compte, ordres
   de bourse détaillés), puis Comptes, Catégories, Actifs, Cours, Relevés,
-  Récurrences, Crédits et Fichier (signature, version ; format 4). Un
+  Récurrences, Crédits (avec le bien financé) et Fichier (signature,
+  version ; format 5 : nature « Mensualité »). Un
   classeur plus ancien, sans les derniers onglets, reste lisible. En-têtes figés et filtrables, dates et
   montants en vrais nombres, négatifs en rouge. Les identifiants sont dans des
   colonnes techniques repliées : ils rendent la restauration exacte. Un

@@ -507,6 +507,21 @@ interface PlanningDao
 	suspend fun deleteLoansOf(inId: String)
 
 	/*
+		Délie les crédits dont le bien financé n'existe plus (achat supprimé ou
+		changé en autre chose) ; le crédit reste.
+	*/
+	@Query("UPDATE loan SET propertyId = NULL WHERE propertyId IS NOT NULL AND propertyId NOT IN (SELECT id FROM txn WHERE kind = 'ACQUISITION')")
+	suspend fun unlinkLostProperties()
+
+	/*
+		Lie un crédit à un bien, ou le délie.
+		inId         : crédit
+		inPropertyId : achat du bien ; null pour délier
+	*/
+	@Query("UPDATE loan SET propertyId = :inPropertyId WHERE id = :inId")
+	suspend fun setLoanProperty(inId: String, inPropertyId: String?)
+
+	/*
 		Réaffecte la catégorie des récurrences.
 		inFrom : catégorie supprimée
 		inTo   : catégorie de remplacement

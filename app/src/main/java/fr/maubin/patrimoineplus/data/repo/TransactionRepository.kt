@@ -68,6 +68,7 @@ class TransactionRepository @Inject constructor(
 			inNewAsset?.let { inDb.assetDao().insertAll(listOf(it.toEntity(vNow, vNow))) }
 			val vCreated = fDao.getById(inTx.id)?.createdAt ?: vNow				// création conservée
 			fDao.save(inTx.toHeaderEntity(vCreated, vNow), inTx.toPostingEntities(), inTx.toTradeEntities())
+			inDb.planningDao().unlinkLostProperties()
 			SaveResult.Saved(inTx.id)
 		}
 
@@ -91,6 +92,7 @@ class TransactionRepository @Inject constructor(
 				return@withTransaction ValidationError.SaleWithoutPurchase(inOrphan.label).message
 			}
 			fDao.deleteByIds(inIds)
+			inDb.planningDao().unlinkLostProperties()
 			null
 		}
 }

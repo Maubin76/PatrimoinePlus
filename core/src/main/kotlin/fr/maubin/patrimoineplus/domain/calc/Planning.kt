@@ -110,11 +110,15 @@ fun occurrences(
 	transactions : opérations à ajouter
 	recurrences  : récurrences modifiées
 	loans        : crédits modifiés
+	replaced     : opérations remplacées par une opération ajoutée (identifiant
+	               de l'ajoutée → identifiants retirés) : anciennes mensualités
+	               en deux opérations, fusionnées
 */
 data class DueOperations(
 	val transactions : List<Transaction>,
 	val recurrences  : List<Recurrence>,
-	val loans        : List<Loan>
+	val loans        : List<Loan>,
+	val replaced     : Map<String, List<String>> = emptyMap()
 )
 {
 	// Vrai s'il n'y a rien à faire.
@@ -132,11 +136,13 @@ fun dueId(inKey: String): String = UUID.nameUUIDFromBytes("patrimoineplus-echean
 /*
 	Crée les opérations des échéances arrivées jusqu'à aujourd'hui compris :
 	pour chaque récurrence, une dépense, un revenu ou un virement par
-	échéance ; pour chaque crédit, par mensualité, le virement du capital
-	(compte payeur → compte Crédit) et la dépense des intérêts et de
-	l'assurance. Une récurrence ou un crédit dont un compte manque ou est
-	archivé est laissé de côté. Une opération déjà présente (même
-	identifiant) n'est pas recréée. Fonction pure.
+	échéance ; pour chaque crédit, une mensualité (payeur débité du total,
+	compte Crédit crédité du capital, intérêts et assurance en dépense). Une
+	récurrence ou un crédit dont un compte manque ou est archivé est laissé de
+	côté. Une opération déjà présente (même identifiant) n'est pas recréée.
+	Les mensualités d'avant le format 5, en deux opérations (virement du
+	capital, dépense des intérêts), sont fusionnées en une seule, de mêmes
+	montants. Fonction pure.
 	inAccounts     : comptes
 	inTransactions : opérations existantes
 	inRecurrences  : opérations récurrentes
@@ -170,6 +176,17 @@ fun dueOperations(
 		}
 		inRec.copy(last = vDates.last())
 	}																						// récurrences avancées
+	val vById     = inTransactions.associateBy { it.id }									// opérations par identifiant
+	val vReplaced = mutableMapOf<String, List<String>>()									// fusions
+	inLoans.forEach { inLoan ->
+		val vName = inAccounts.firstOrNull { it.id == inLoan.accountId }?.name ?: return@forEach	// nom du compte Crédit
+		amortization(inLoan).forEach { inPart ->
+			mergedPayment(inLoan, vName, inPart.index, vById)?.let { (inTx, inOld) ->
+				vNew += inTx
+				vReplaced[inTx.id] = inOld
+			}
+		}
+	}
 	val vLoans  = inLoans.mapNotNull { inLoan ->
 		val vAccount = vActive[inLoan.accountId]											// compte Crédit
 		if (vAccount == null || inLoan.payFrom !in vActive) return@mapNotNull null
@@ -177,18 +194,86 @@ fun dueOperations(
 		if (vDue.isEmpty()) return@mapNotNull null
 		vDue.forEach { inPart ->
 			val vKey = "${inLoan.id}:${inPart.index}"										// clé de la mensualité
-			if (inPart.capital > 0 && dueId("$vKey:capital") !in vKnown)
-			{
-				vNew += Transaction(dueId("$vKey:capital"), inPart.date, TransactionKind.TRANSFER, "Mensualité ${vAccount.name} (${inPart.index}/${inLoan.months})",
-					postings = listOf(Posting(dueId("$vKey:capital:out"), inLoan.payFrom, -inPart.capital), Posting(dueId("$vKey:capital:in"), inLoan.accountId, inPart.capital)))
-			}
-			if (inPart.interest + inPart.insurance > 0 && dueId("$vKey:frais") !in vKnown)
-			{
-				vNew += Transaction(dueId("$vKey:frais"), inPart.date, TransactionKind.STANDARD, "Intérêts et assurance ${vAccount.name} (${inPart.index}/${inLoan.months})", inLoan.categoryId,
-					postings = listOf(Posting(dueId("$vKey:frais:p"), inLoan.payFrom, -(inPart.interest + inPart.insurance))))
-			}
+			if (listOf("mensualite", "capital", "frais").any { dueId("$vKey:$it") in vKnown }) return@forEach
+			vNew += loanPayment(dueId("$vKey:mensualite"), inPart.date, paymentLabel(vAccount.name, inPart.index, inLoan.months), inLoan.payFrom, inLoan.accountId,
+				inPart.capital, inPart.interest + inPart.insurance, inLoan.categoryId)
 		}
 		inLoan.copy(last = vDue.last().date)
 	}																						// crédits avancés
-	return DueOperations(vNew, vRecs, vLoans)
+	return DueOperations(vNew, vRecs, vLoans, vReplaced)
+}
+
+/*
+	Libellé d'une mensualité créée par le tableau d'amortissement.
+	inName   : nom du compte Crédit
+	inIndex  : rang de la mensualité
+	inMonths : nombre de mensualités
+*/
+fun paymentLabel(
+	inName   : String,
+	inIndex  : Int,
+	inMonths : Int
+): String = "Mensualité $inName ($inIndex/$inMonths)"
+
+/*
+	Mensualité de crédit : le payeur est débité du total (capital, intérêts et
+	assurance), le compte Crédit crédité du capital ; l'écart est la dépense
+	de la catégorie. Jambes dans cet ordre : payeur, puis compte Crédit.
+	inId        : identifiant
+	inDate      : date
+	inLabel     : libellé
+	inPayer     : compte payeur
+	inLoan      : compte Crédit
+	inCapital   : capital remboursé (positif ou nul)
+	inCharge    : intérêts et assurance (positifs ou nuls)
+	inCategory  : catégorie des intérêts et de l'assurance
+	inNotes     : notes
+*/
+fun loanPayment(
+	inId       : String,
+	inDate     : LocalDate,
+	inLabel    : String,
+	inPayer    : String,
+	inLoan     : String,
+	inCapital  : Long,
+	inCharge   : Long,
+	inCategory : String?,
+	inNotes    : String? = null
+): Transaction =
+	Transaction(inId, inDate, TransactionKind.LOAN_PAYMENT, inLabel, inCategory, notes = inNotes,
+		postings = listOf(Posting(dueId("$inId:out"), inPayer, -(inCapital + inCharge)), Posting(dueId("$inId:in"), inLoan, inCapital)))
+
+/*
+	Mensualité fusionnée à partir des deux opérations créées avant le format 5
+	pour une échéance (virement du capital, dépense des intérêts et de
+	l'assurance), avec ses montants tels qu'ils sont enregistrés ; null s'il
+	n'y a rien à fusionner ou si les deux opérations ne vont pas ensemble
+	(comptes différents, modifiées en autre chose). Même résultat sur chaque
+	appareil : identifiant et contenu ne dépendent que des opérations lues.
+	inLoan  : crédit
+	inName  : nom du compte Crédit
+	inIndex : rang de la mensualité
+	inById  : opérations par identifiant
+*/
+private fun mergedPayment(
+	inLoan  : Loan,
+	inName  : String,
+	inIndex : Int,
+	inById  : Map<String, Transaction>
+): Pair<Transaction, List<String>>?
+{
+	val vKey     = "${inLoan.id}:$inIndex"													// clé de la mensualité
+	val vCapital = inById[dueId("$vKey:capital")]											// ancien virement du capital
+	val vCharge  = inById[dueId("$vKey:frais")]												// ancienne dépense des intérêts
+	if ((vCapital == null && vCharge == null) || dueId("$vKey:mensualite") in inById) return null
+	val vOut     = vCapital?.postings?.firstOrNull { it.amountCents < 0 }					// sortie du capital
+	val vIn      = vCapital?.postings?.firstOrNull { it.amountCents > 0 }					// entrée sur le crédit
+	if (vCapital != null && (vCapital.kind != TransactionKind.TRANSFER || vOut == null || vIn?.accountId != inLoan.accountId)) return null
+	val vFee     = vCharge?.postings?.singleOrNull()										// jambe des intérêts
+	if (vCharge != null && (vCharge.kind != TransactionKind.STANDARD || vFee == null || vFee.amountCents > 0)) return null
+	val vPayer   = vOut?.accountId ?: vFee!!.accountId										// compte payeur
+	if (vFee != null && vFee.accountId != vPayer) return null
+	val vNotes   = listOfNotNull(vCapital?.notes, vCharge?.notes).joinToString("\n").ifEmpty { null }	// notes gardées
+	return loanPayment(dueId("$vKey:mensualite"), (vCapital ?: vCharge)!!.date, vCapital?.label?.takeIf { it.isNotBlank() } ?: paymentLabel(inName, inIndex, inLoan.months),
+		vPayer, inLoan.accountId, vIn?.amountCents ?: 0L, -(vFee?.amountCents ?: 0L), vCharge?.categoryId ?: inLoan.categoryId, vNotes) to listOfNotNull(vCapital?.id, vCharge?.id)
 }

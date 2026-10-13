@@ -154,6 +154,7 @@ fun buildAccountDetail(
 					vOther != null -> "Vente, prix versé sur $vOther"
 					else           -> "Vente"
 				}
+				TransactionKind.LOAN_PAYMENT -> if (vAmt < 0) "Mensualité · ${vOther ?: "crédit supprimé"}" else "Remboursement depuis ${vOther ?: "un compte supprimé"}"
 			},
 			icon        = when (inTx.kind)
 			{
@@ -162,6 +163,7 @@ fun buildAccountDetail(
 				TransactionKind.TRADE    -> "chart"
 				TransactionKind.OPENING  -> "plus"
 				TransactionKind.ACQUISITION, TransactionKind.DISPOSAL -> propertyIcon(inTx, vByAccount)
+				TransactionKind.LOAN_PAYMENT -> vCat?.icon ?: "bank"
 			},
 			upcoming    = inTx.isUpcoming(inToday),
 			editable    = inTx.kind != TransactionKind.OPENING

@@ -44,7 +44,8 @@ import java.util.Locale
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.foundation.layout.PaddingValues
 
 private val kDateFormat = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)	// date affichée dans les champs
 
@@ -211,6 +212,7 @@ fun <T> SegmentedChoice(
 				enabled  = inEnabled,
 				shape    = SegmentedButtonDefaults.itemShape(index = inIndex, count = inOptions.size),
 				icon     = {},
+				contentPadding = if (inOptions.size > 4) PaddingValues(horizontal = 4.dp) else SegmentedButtonDefaults.ContentPadding,	// cinq choix : marges réduites pour garder les libellés entiers
 				colors   = SegmentedButtonDefaults.colors(
 					activeContainerColor           = vColors.primary,
 					activeContentColor             = vColors.onPrimary,

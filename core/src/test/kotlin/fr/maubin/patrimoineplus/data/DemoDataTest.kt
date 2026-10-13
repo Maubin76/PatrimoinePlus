@@ -56,7 +56,7 @@ class DemoDataTest
 			vDemo.accounts.forEach { inAccount ->
 				val vValue = if (inAccount.type == AccountType.BROKERAGE) valuePortfolio(vLedger, inAccount.id, inToday, vDemo.prices).cashCents
 					else vLedger.balanceAt(inAccount.id, inToday)			// solde ou espèces
-				if (inAccount.type == AccountType.LOAN) assertEquals(-remainingAt(vDemo.loans.single(), inToday), vValue)
+				if (inAccount.type == AccountType.LOAN) assertEquals(-remainingAt(vDemo.loans.single { it.accountId == inAccount.id }, inToday), vValue)
 				else assertTrue("$inToday ${inAccount.name} : $vValue", vValue >= 0)
 			}
 			assertEquals(1, vDemo.transactions.count { it.isUpcoming(inToday) })

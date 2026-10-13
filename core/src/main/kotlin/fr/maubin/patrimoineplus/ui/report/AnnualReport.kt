@@ -192,12 +192,12 @@ fun buildAnnualReport(
 	val vByCat   = inData.categories.associateBy { it.id }						// catégories par identifiant
 	val vYearTxs = inData.transactions.filter { !it.date.isBefore(vFrom) && !it.date.isAfter(vTo) }	// opérations de la période
 	val vNet     = vYearTxs
-		.filter { it.kind == TransactionKind.STANDARD && it.categoryId in vByCat }
+		.filter { it.hasCategory && it.categoryId in vByCat }
 		.groupBy { it.categoryId!! }
 		.map { (inId, inTxs) ->
 			val vCategory = vByCat.getValue(inId)									// catégorie
 			val vSign     = if (vCategory.kind == CategoryKind.EXPENSE) -1L else 1L	// une dépense compte en positif
-			CategoryYear(vCategory, vSign * inTxs.sumOf { inTx -> inTx.postings.sumOf { it.amountCents } })
+			CategoryYear(vCategory, vSign * inTxs.sumOf { it.categoryAmount() })
 		}
 		.filter { it.cents != 0L }													// montants par catégorie
 	val vTypes   = inData.accounts.associate { it.id to it.type }					// type de chaque compte
@@ -242,7 +242,7 @@ fun buildAnnualReport(
 			val vLoan  = inData.loans.firstOrNull { it.accountId == inValue.account.id }			// tableau d'amortissement
 			val vSince = inData.transactions.firstOrNull { inTx -> inTx.kind == TransactionKind.OPENING && inTx.postings.any { it.accountId == inValue.account.id } }?.date	// début du suivi dans l'appli
 			val vRows  = vLoan?.let { inLoan -> amortization(inLoan).filter { !it.date.isBefore(vFrom) && !it.date.isAfter(vTo) && (vSince == null || it.date.isAfter(vSince)) && (inLoan.last == null || !it.date.isAfter(inLoan.last)) } }	// mensualités de la période, suivies dans l'appli
-			val vIn    = vYearTxs.filter { it.kind == TransactionKind.TRANSFER }.sumOf { inTx -> inTx.postings.filter { it.accountId == inValue.account.id && it.amountCents > 0 }.sumOf { it.amountCents } }	// virements reçus
+			val vIn    = vYearTxs.filter { it.kind == TransactionKind.TRANSFER || it.kind == TransactionKind.LOAN_PAYMENT }.sumOf { inTx -> inTx.postings.filter { it.accountId == inValue.account.id && it.amountCents > 0 }.sumOf { it.amountCents } }	// virements reçus
 			if (vBegin == 0L && inValue.valueCents == 0L) null
 			else LoanYear(inValue.account, vBegin, -inValue.valueCents, vRows?.sumOf { it.capital } ?: vIn, vRows?.sumOf { it.interest + it.insurance })
 		},

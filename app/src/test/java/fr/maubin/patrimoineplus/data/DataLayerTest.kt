@@ -53,6 +53,12 @@ import fr.maubin.patrimoineplus.domain.model.Loan
 import fr.maubin.patrimoineplus.domain.model.Frequency
 import fr.maubin.patrimoineplus.domain.calc.remainingAt
 import fr.maubin.patrimoineplus.domain.calc.dueOperations
+import fr.maubin.patrimoineplus.domain.calc.dueId
+import fr.maubin.patrimoineplus.domain.calc.loanPayment
+import fr.maubin.patrimoineplus.domain.calc.amortization
+import fr.maubin.patrimoineplus.data.db.toHeaderEntity
+import fr.maubin.patrimoineplus.data.db.toPostingEntities
+import fr.maubin.patrimoineplus.data.db.toTradeEntities
 
 /*
 	Tests de la couche données sur une base Room en mémoire (Robolectric) :
@@ -171,6 +177,47 @@ class DataLayerTest
 	}
 
 	/*
+		Mensualités en une opération sur le téléphone : les anciennes paires
+		(virement du capital, dépense des intérêts) sont fusionnées par
+		applyDue, sans changer les soldes ; une mensualité saisie à la main
+		passe les règles ; crédit lié à un bien, lien refusé vers un bien
+		inconnu, retiré quand l'achat est supprimé.
+	*/
+	@Test
+	fun loanPaymentsAndProperty() = runTest {
+		val vChecking = account("Courant", AccountType.CHECKING)					// compte payeur
+		val vObjects  = account("Collection", AccountType.COLLECTIBLE)				// compte de biens
+		val vStart    = Loan("", "", 1_000_000, 300, 12, LocalDate.parse("2026-09-10"), 500, vChecking.id, "")	// crédit commencé le mois dernier
+		assertEquals(null, fPlanning.createLoan("Crédit auto", null, 100, vStart))
+		val vLoan     = fPlanning.observeLoans().first().single()					// crédit enregistré
+		val vPart     = amortization(vLoan).first()									// mensualité de septembre (tenue pour payée)
+		val vKey      = "${vLoan.id}:1"												// clé de l'échéance
+		listOf(
+			Transaction(dueId("$vKey:capital"), vPart.date, TransactionKind.TRANSFER, "Mensualité Crédit auto (1/12)",
+				postings = listOf(Posting(dueId("$vKey:capital:out"), vChecking.id, -vPart.capital), Posting(dueId("$vKey:capital:in"), vLoan.accountId, vPart.capital))),
+			Transaction(dueId("$vKey:frais"), vPart.date, TransactionKind.STANDARD, "Intérêts et assurance Crédit auto (1/12)", vLoan.categoryId,
+				postings = listOf(Posting(dueId("$vKey:frais:p"), vChecking.id, -(vPart.interest + vPart.insurance))))
+		).forEach { fDb.transactionDao().save(it.toHeaderEntity(1, 1), it.toPostingEntities(), it.toTradeEntities()) }	// paire écrite par une ancienne version
+		val vBefore   = Ledger(fTransactions.observeTransactions().first())			// soldes avant fusion
+		assertEquals(1, fPlanning.applyDue())
+		val vAll      = fTransactions.observeTransactions().first()					// opérations après fusion
+		assertTrue(vAll.none { it.id == dueId("$vKey:capital") || it.id == dueId("$vKey:frais") })
+		assertEquals(listOf(-vPart.total, vPart.capital), vAll.single { it.kind == TransactionKind.LOAN_PAYMENT }.postings.map { it.amountCents })
+		listOf(vChecking.id, vLoan.accountId).forEach { assertEquals(vBefore.balanceAt(it, LocalDate.parse("2026-10-07")), Ledger(vAll).balanceAt(it, LocalDate.parse("2026-10-07"))) }
+		assertEquals(0, fPlanning.applyDue())
+		val vEarly    = loanPayment("anticipe", LocalDate.parse("2026-10-06"), "Remboursement anticipé", vChecking.id, vLoan.accountId, 200_000, 0, null)	// remboursement anticipé
+		assertTrue(fTransactions.save(vEarly) is SaveResult.Saved)
+		val vWatch    = Transaction("montre", LocalDate.parse("2026-09-01"), TransactionKind.ACQUISITION, "Montre",
+			postings = listOf(Posting("mp", vObjects.id, 420_000)))					// bien déjà possédé
+		assertTrue(fTransactions.save(vWatch) is SaveResult.Saved)
+		assertEquals("Bien introuvable.", fPlanning.setLoanProperty(vLoan.id, "inconnu"))
+		assertEquals(null, fPlanning.setLoanProperty(vLoan.id, vWatch.id))
+		assertEquals(vWatch.id, fPlanning.observeLoans().first().single().propertyId)
+		assertEquals(null, fTransactions.delete(listOf(vWatch.id)))
+		assertEquals(null, fPlanning.observeLoans().first().single().propertyId)
+	}
+
+	/*
 		Récurrences et crédits : récurrence commencée dans le passé, ses
 		échéances créées dès l'enregistrement et une seule fois ; récurrence
 		invalide refusée ; crédit créé (compte Crédit, catégorie « Crédit »,
@@ -195,7 +242,7 @@ class DataLayerTest
 		assertEquals(LocalDate.parse("2026-10-05"), vSaved.last)
 		assertEquals(-remainingAt(vSaved, LocalDate.parse("2026-10-07")), Ledger(fTransactions.observeTransactions().first()).balanceAt(vSaved.accountId, LocalDate.parse("2026-10-07")))
 		val vLater = PlanningRepository(fDb, Clock.fixed(Instant.parse("2026-11-07T10:00:00Z"), ZoneId.of("Europe/Paris")))	// un mois plus tard
-		assertEquals(2 + 1, vLater.applyDue())											// mensualité (capital, intérêts) et cantine
+		assertEquals(1 + 1, vLater.applyDue())											// mensualité (une seule opération) et cantine
 		val vPc = dueOperations(fAccounts.observeAccounts().first(), emptyList(), emptyList(), listOf(vSaved), LocalDate.parse("2026-11-07")).transactions.map { it.id }.toSet()	// calcul du PC
 		assertTrue(fTransactions.observeTransactions().first().map { it.id }.containsAll(vPc))
 		val vBackup = BackupRepository(fDb, kClock)											// sauvegarde
@@ -441,7 +488,7 @@ class DataLayerTest
 	fun demoLoadsAndClears() = runTest {
 		val vDemo = DemoRepository(fDb, kClock)									// démonstration
 		vDemo.loadDemo()
-		assertEquals(8, fAccounts.observeAccounts().first().size)
+		assertEquals(9, fAccounts.observeAccounts().first().size)
 		assertTrue(fTransactions.observeTransactions().first().size > 100)
 		vDemo.clearAll()
 		assertTrue(fAccounts.observeAccounts().first().isEmpty())
@@ -558,9 +605,9 @@ class DataLayerTest
 		val vShape   = vBackup.snapshot().copy(exportedAt = "")				// contenu sauvegardé
 		account("Ajouté après la sauvegarde", AccountType.CHECKING)
 		assertTrue(decodeBackup("{}") is BackupRead.Invalid)
-		assertEquals(9, fAccounts.observeAccounts().first().size)
+		assertEquals(10, fAccounts.observeAccounts().first().size)
 		vBackup.replaceAll((readBackupXlsx(java.io.ByteArrayInputStream(vBytes)) as BackupRead.Valid).file)
-		assertEquals(8, fAccounts.observeAccounts().first().size)
+		assertEquals(9, fAccounts.observeAccounts().first().size)
 		assertEquals(vBefore, fTransactions.observeTransactions().first().sortedBy { it.id })
 		assertEquals(sorted(vShape), sorted(vBackup.snapshot().copy(exportedAt = "")))
 	}

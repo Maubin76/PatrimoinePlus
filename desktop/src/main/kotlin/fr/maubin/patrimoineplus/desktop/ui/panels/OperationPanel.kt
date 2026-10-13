@@ -42,11 +42,18 @@ import fr.maubin.patrimoineplus.ui.entry.kNewAsset
 import fr.maubin.patrimoineplus.ui.entry.proposedLabel
 import fr.maubin.patrimoineplus.domain.model.Frequency
 import fr.maubin.patrimoineplus.ui.planning.recurrenceFromEntry
-import fr.maubin.patrimoineplus.domain.format.formatFrenchDate
+import fr.maubin.patrimoineplus.domain.format.formatFrenchDate
+import fr.maubin.patrimoineplus.ui.entry.entryModes
+import fr.maubin.patrimoineplus.ui.entry.loanCharge
+import fr.maubin.patrimoineplus.ui.entry.suggestLoanPayment
+import fr.maubin.patrimoineplus.domain.format.formatEuros
+import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
+import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
 
 /*
 	Saisie ou modification d'une opération dans le panneau latéral : dépense
-	(ou remboursement), revenu, virement, ordre de bourse. Mêmes contrôles et
+	(ou remboursement), revenu, virement, ordre de bourse, mensualité de
+	crédit (capital et intérêts en une opération). Mêmes contrôles et
 	même construction que sur le téléphone (checkEntry, buildEntry) ; un nouvel
 	actif est créé avec l'ordre, en une seule modification.
 	inController : contrôleur
@@ -66,7 +73,7 @@ fun OperationPanel(
 	var vBadDay by remember(inInitial) { mutableStateOf(false) }				// date illisible
 	var vDelete by remember(inInitial) { mutableStateOf(false) }				// suppression demandée
 	var vRepeat by remember(inInitial) { mutableStateOf<Frequency?>(null) }	// répétition demandée (nouvelle opération)
-	val vEntry  = EntryData(vData.accounts.filterNot { it.archived || it.type.isProperty }, vData.categories.filterNot { it.archived }.sortedBy { it.sortOrder }, vData.assets, vData.prices, vData.transactions)
+	val vEntry  = EntryData(vData.accounts.filterNot { it.archived || it.type.isProperty }, vData.categories.filterNot { it.archived }.sortedBy { it.sortOrder }, vData.assets, vData.prices, vData.transactions, loans = vData.loans)
 		.withReferences(vForm, vData.accounts, vData.categories)				// données de saisie (comptes archivés de l'opération compris)
 
 	/*
@@ -119,7 +126,7 @@ fun OperationPanel(
 		}
 	) {
 		FormError(vErrors.general)
-		Choice(EntryMode.entries.map { it to it.label }, vForm.mode, { vForm = switchEntryMode(vForm, it, vEntry) }, inEnabled = vForm.id == null)
+		Choice(entryModes(vEntry, vForm).map { it to it.label }, vForm.mode, { vForm = switchEntryMode(vForm, it, vEntry) }, inEnabled = vForm.id == null)
 		when (vForm.mode)
 		{
 			EntryMode.EXPENSE, EntryMode.INCOME ->
@@ -175,10 +182,27 @@ fun OperationPanel(
 				FormField(vForm.fees, { vForm = vForm.copy(fees = it) }, "Frais (€, facultatif)", vErrors.fees, inNumeric = true)
 				FormField(vForm.label, { vForm = vForm.copy(label = it) }, "Libellé (facultatif)", inSupport = "Vide : « ${proposedLabel(vForm, vEntry)} »")
 			}
+			EntryMode.LOAN                      ->
+			{
+				val vCharge = loanCharge(vForm)																// intérêts et assurance
+				Picker("Crédit remboursé", vEntry.accounts.filter { it.type == AccountType.LOAN }.map { it.id to it.name }, vForm.toAccountId, { vForm = suggestLoanPayment(vForm.copy(toAccountId = it), vEntry) }, vErrors.target)
+				Picker("Payé depuis", vEntry.accounts.filter { it.type != AccountType.LOAN }.map { it.id to it.name }, vForm.accountId, { vForm = vForm.copy(accountId = it) }, vErrors.account)
+				FormField(vForm.amount, { vForm = vForm.copy(amount = it.replace("-", "")) }, "Montant payé (€)", vErrors.amount, inNumeric = true, inSupport = "Mensualité complète : capital, intérêts et assurance.")
+				FormField(vForm.capital, { vForm = vForm.copy(capital = it.replace("-", "")) }, "Dont capital remboursé (€)", vErrors.capital, inNumeric = true,
+					inSupport = when
+					{
+						vForm.capital.isBlank()      -> "Vide : tout en capital (remboursement anticipé)."
+						vCharge == null || vCharge < 0 -> "Le reste du montant est compté en intérêts et assurance."
+						LocalAmountsHidden.current   -> "Intérêts et assurance : $kMaskedAmount (dépense, le reste fait baisser le capital dû)."
+						else                         -> "Intérêts et assurance : ${formatEuros(vCharge)} (dépense, le reste fait baisser le capital dû)."
+					})
+				Picker("Catégorie des intérêts", vEntry.categories.filter { it.kind == CategoryKind.EXPENSE }.map { it.id to it.name }, vForm.categoryId, { vForm = vForm.copy(categoryId = it) }, vErrors.category)
+				FormField(vForm.label, { vForm = vForm.copy(label = it) }, "Libellé (facultatif)", inSupport = "Vide : « ${proposedLabel(vForm, vEntry)} »")
+			}
 		}
-		DateField(vForm.date, { inDate -> vBadDay = inDate == null; inDate?.let { vForm = vForm.copy(date = it) } }, "Date")
+		DateField(vForm.date, { inDate -> vBadDay = inDate == null; inDate?.let { vForm = if (vForm.mode == EntryMode.LOAN && vForm.id == null && vForm.date.month != it.month) suggestLoanPayment(vForm.copy(date = it), vEntry) else vForm.copy(date = it) } }, "Date")
 		FormField(vForm.notes, { vForm = vForm.copy(notes = it) }, "Notes (facultatif)")
-		if (vForm.id == null && vForm.mode != EntryMode.TRADE)
+		if (vForm.id == null && vForm.mode != EntryMode.TRADE && vForm.mode != EntryMode.LOAN)
 		{
 			Picker("Répéter", listOf<Pair<Frequency?, String>>(null to "Non") + Frequency.entries.map { it to it.label }, vRepeat, { vRepeat = it })
 			vRepeat?.let { Text("Créée automatiquement ${it.label.lowercase()}, à partir du ${formatFrenchDate(vForm.date.plusMonths(it.months.toLong()))}. Modifiable dans Récurrences.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }

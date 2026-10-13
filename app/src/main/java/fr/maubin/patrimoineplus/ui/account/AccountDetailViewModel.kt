@@ -51,7 +51,7 @@ class AccountDetailViewModel @Inject constructor(
 	private val inQuotes   : QuoteRefresher,
 	private val inSource   : QuoteSource,
 	private val inClock    : Clock,
-	inPlanning             : PlanningRepository
+	private val inPlanning : PlanningRepository
 ) : ViewModel()
 {
 	// Identifiant du compte affiché.
@@ -190,6 +190,16 @@ class AccountDetailViewModel @Inject constructor(
 	fun deleteStatement(inId: String)
 	{
 		viewModelScope.launch { inMarket.deleteStatement(inId) }
+	}
+
+	/*
+		Lie le crédit du compte au bien qu'il finance, ou le délie.
+		inPropertyId : achat du bien ; null pour délier
+	*/
+	fun linkProperty(inPropertyId: String?)
+	{
+		val vLoan = extras.value.loan ?: return									// crédit du compte
+		viewModelScope.launch { inPlanning.setLoanProperty(vLoan.id, inPropertyId) }
 	}
 
 	/*

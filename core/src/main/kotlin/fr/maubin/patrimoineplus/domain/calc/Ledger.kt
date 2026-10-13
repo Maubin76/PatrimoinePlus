@@ -128,6 +128,12 @@ class Ledger(inTransactions: List<Transaction>)
 						TransactionKind.TRADE    -> vTrades += vAmount
 						TransactionKind.OPENING  -> vOpenings += vAmount
 						TransactionKind.ACQUISITION, TransactionKind.DISPOSAL -> vTransfers += vAmount
+						TransactionKind.LOAN_PAYMENT ->
+						{
+							val vCharge = if (vAmount < 0) inTx.categoryAmount() else 0L		// intérêts et assurance, portés par le payeur
+							vExpenses  += vCharge
+							vTransfers += vAmount - vCharge
+						}
 						TransactionKind.TRANSFER ->
 						{
 							val vOther = inTx.postings.firstOrNull { it.accountId != inAccount.id }	// jambe opposée
@@ -171,11 +177,11 @@ class Ledger(inTransactions: List<Transaction>)
 		val vSign   = if (inKind == CategoryKind.EXPENSE) -1L else 1L		// une dépense compte en positif
 		val vByCat  = inCategories.filter { it.kind == inKind }.associateBy { it.id }	// catégories de la nature voulue
 		val vTotals = fTransactions
-			.filter { it.kind == TransactionKind.STANDARD && !it.date.isBefore(inFrom) && !it.date.isAfter(inTo) }
+			.filter { it.hasCategory && !it.date.isBefore(inFrom) && !it.date.isAfter(inTo) }
 			.filter { it.categoryId in vByCat }
 			.groupBy { it.categoryId!! }
 			.mapValues { (_, inTxs) ->
-				vSign * inTxs.flatMap { it.postings }.filter { it.accountId == inAccountId }.sumOf { it.amountCents }
+				vSign * inTxs.sumOf { it.categoryAmount(inAccountId) }
 			}
 			.filterValues { it != 0L }											// sommes nettes par catégorie
 		val vBase = vTotals.values.filter { it > 0 }.sum()						// base des pourcentages

@@ -62,13 +62,14 @@ class EntryViewModel @Inject constructor(
 		combine(inAccounts.observeAccounts(), inCategories.observeCategories(), ::Pair)
 			.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList<Account>() to emptyList())
 
-	// Comptes, catégories, actifs, cours, opérations et dernier compte, à jour.
+	// Comptes, catégories, actifs, cours, opérations, dernier compte et crédits, à jour.
 	val data: StateFlow<EntryData> =
 		combine(
 			combine(inAccounts.observeAccounts(), inCategories.observeCategories(), inMarket.observeAssets(), ::Triple),
-			combine(inMarket.observePrices(), inTransactions.observeTransactions(), inSettings.lastAccountId, ::Triple)
-		) { (inList, inCats, inAssets), (inPrices, inTxs, inLast) ->
-			EntryData(inList.filterNot { it.archived || it.type.isProperty }, inCats.filterNot { it.archived }.sortedBy { it.sortOrder }, inAssets, inPrices, inTxs, inLast)
+			combine(inMarket.observePrices(), inTransactions.observeTransactions(), inSettings.lastAccountId, ::Triple),
+			inPlanning.observeLoans()
+		) { (inList, inCats, inAssets), (inPrices, inTxs, inLast), inLoans ->
+			EntryData(inList.filterNot { it.archived || it.type.isProperty }, inCats.filterNot { it.archived }.sortedBy { it.sortOrder }, inAssets, inPrices, inTxs, inLast, inLoans)
 		}.stateIn(viewModelScope, SharingStarted.Eagerly, EntryData())
 
 	/*

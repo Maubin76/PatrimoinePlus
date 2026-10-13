@@ -146,7 +146,8 @@ data class AccountDetailActions(
 	val onRefresh      : () -> Unit                    = {},
 	val onAsset        : (String) -> Unit              = {},
 	val onProperty     : (PropertyItem) -> Unit        = {},
-	val onSell         : (PropertyItem) -> Unit        = {}
+	val onSell         : (PropertyItem) -> Unit        = {},
+	val onLinkProperty : (String?) -> Unit             = {}
 )
 
 /*
@@ -261,7 +262,8 @@ fun AccountDetailScreen(
 			onRefresh      = { inViewModel.refreshQuotes(inForce = true, inOnMessage = vNotify) },
 			onAsset        = { vAsset = it },
 			onProperty     = { vPurchase = editPurchaseForm(it) },
-			onSell         = { inItem -> vSale = if (inItem.disposal != null) editSaleForm(inItem) else newSaleForm(inItem, inViewModel.today()) }
+			onSell         = { inItem -> vSale = if (inItem.disposal != null) editSaleForm(inItem) else newSaleForm(inItem, inViewModel.today()) },
+			onLinkProperty = inViewModel::linkProperty
 		)
 	)
 
@@ -377,10 +379,10 @@ fun AccountDetailScreen(
 	if (vConfirm)
 	{
 		val vPicked = vState.allItems.filter { it.transaction.id in vSelection }	// opérations choisies
-		val vLinked = vPicked.count { it.transaction.kind == TransactionKind.TRANSFER }	// virements
+		val vLinked = vPicked.count { it.transaction.kind == TransactionKind.TRANSFER || it.transaction.kind == TransactionKind.LOAN_PAYMENT }	// virements et mensualités (deux comptes)
 		ConfirmDialog(
 			inTitle     = "Supprimer ${vPicked.size} opération(s) ?",
-			inText      = if (vLinked > 0) "Dont $vLinked virement(s) : ils seront supprimés sur les deux comptes, ce qui modifiera aussi l’autre compte." else "Les soldes seront recalculés.",
+			inText      = if (vLinked > 0) "Dont $vLinked virement(s) ou mensualité(s) : supprimés sur les deux comptes, ce qui modifiera aussi l’autre compte." else "Les soldes seront recalculés.",
 			inAction    = "Supprimer",
 			inOnConfirm = {
 				inEntry.delete(vSelection.toList(), vNotify)
@@ -584,15 +586,15 @@ private fun LazyListScope.globalContent(
 	val vAccount   = inState.account												// compte affiché
 	if (vAccount != null && vAccount.type == AccountType.LOAN)
 	{
-		item { LoanSection(inExtras.loan, inExtras.schedule, -(inState.totals?.balanceCents ?: 0L), inExtras.asOf ?: inState.month.atEndOfMonth()) }
+		item { LoanSection(inExtras.loan, inExtras.schedule, -(inState.totals?.balanceCents ?: 0L), inExtras.asOf ?: inState.month.atEndOfMonth(), inExtras, inActions.onLinkProperty) }
 		chartSection("Évolution du capital restant dû", inState.series.map { it.copy(valueCents = -it.valueCents) })
 	}
 	else if (vAccount != null && vAccount.type.isProperty)
 	{
-		item { PropertyHeader(inExtras.properties, inExtras.asOf ?: inState.month.atEndOfMonth(), vAccount.sharePercent) }
+		item { PropertyHeader(inExtras.properties, inExtras.asOf ?: inState.month.atEndOfMonth(), vAccount.sharePercent, inExtras.nets) }
 		chartSection("Évolution de la valeur", inState.series)
 		item { Spacer(Modifier.height(28.dp)) }
-		item { PropertySection(inExtras.properties, inExtras.asOf ?: inState.month.atEndOfMonth(), propertyNoun(vAccount.type), inExtras.accountNames, inActions.onAdd, inActions.onProperty, inActions.onSell) }
+		item { PropertySection(inExtras.properties, inExtras.asOf ?: inState.month.atEndOfMonth(), propertyNoun(vAccount.type), inExtras.accountNames, inActions.onAdd, inActions.onProperty, inActions.onSell, inExtras.nets) }
 	}
 	else if (vPortfolio != null)
 	{

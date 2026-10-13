@@ -30,6 +30,7 @@ import kotlin.math.roundToLong
 	insurance  : assurance mensuelle (texte, vide : aucune)
 	payFrom    : compte payeur
 	categoryId : catégorie des intérêts ; null : « Crédit », créée si besoin
+	propertyId : bien financé (achat) ; null sans bien
 */
 data class LoanForm(
 	val principal  : String  = "",
@@ -38,7 +39,8 @@ data class LoanForm(
 	val firstDue   : LocalDate,
 	val insurance  : String  = "",
 	val payFrom    : String? = null,
-	val categoryId : String? = null
+	val categoryId : String? = null,
+	val propertyId : String? = null
 )
 
 /*
@@ -104,7 +106,8 @@ fun buildLoan(inForm: LoanForm): Loan =
 		firstDue   = inForm.firstDue,
 		insurance  = if (inForm.insurance.isBlank()) 0L else parseEuros(inForm.insurance)!!,
 		payFrom    = inForm.payFrom!!,
-		categoryId = inForm.categoryId.orEmpty()
+		categoryId = inForm.categoryId.orEmpty(),
+		propertyId = inForm.propertyId
 	)
 
 /*
@@ -259,7 +262,7 @@ fun recurrenceFromEntry(
 	inFrequency : Frequency
 ): Recurrence?
 {
-	if (inForm.mode == EntryMode.TRADE) return null
+	if (inForm.mode == EntryMode.TRADE || inForm.mode == EntryMode.LOAN) return null
 	val vCents = parseEuros(inForm.amount)?.let(::abs) ?: return null						// montant lu
 	return Recurrence(
 		id          = UUID.randomUUID().toString(),

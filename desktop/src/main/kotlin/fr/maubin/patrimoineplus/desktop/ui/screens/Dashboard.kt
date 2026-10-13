@@ -139,10 +139,20 @@ private fun Figures(inState: DashboardState)
 	TileRow(
 		Cell(1.6f) { inMod ->
 			Tile(inModifier = inMod) {
-				Text("Patrimoine", style = MaterialTheme.typography.titleMedium, color = vMuted)
+				Text(if (inState.home.debtCents != 0L) "Patrimoine net" else "Patrimoine", style = MaterialTheme.typography.titleMedium, color = vMuted)
 				Spacer(Modifier.height(4.dp))
 				AmountText(inCents = inState.home.totalCents, inStyle = MaterialTheme.typography.displayMedium, inRolling = true)
 				Spacer(Modifier.height(8.dp))
+				if (inState.home.debtCents != 0L)
+				{
+					Row(verticalAlignment = Alignment.CenterVertically) {
+						Text("Brut ", style = MaterialTheme.typography.bodyLarge, color = vMuted)
+						AmountText(inCents = inState.home.grossCents, inStyle = MaterialTheme.typography.bodyLarge)
+						Text("  ·  Crédits ", style = MaterialTheme.typography.bodyLarge, color = vMuted)
+						AmountText(inCents = inState.home.debtCents, inStyle = MaterialTheme.typography.bodyLarge)
+					}
+					Spacer(Modifier.height(8.dp))
+				}
 				inState.home.monthChange?.let { inChange ->
 					Row(verticalAlignment = Alignment.CenterVertically) {
 						AmountText(inCents = inChange, inStyle = MaterialTheme.typography.titleMedium, inShowPlusSign = true, inTrend = true)

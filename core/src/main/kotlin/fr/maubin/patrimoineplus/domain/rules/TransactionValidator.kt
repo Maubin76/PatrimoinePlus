@@ -14,7 +14,8 @@ import fr.maubin.patrimoineplus.domain.model.TradeSide
 import fr.maubin.patrimoineplus.domain.model.Transaction
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeFormatter
+import fr.maubin.patrimoineplus.domain.model.CategoryKind
 
 private val kShortDate = DateTimeFormatter.ofPattern("dd/MM/yyyy")			// date dans les messages
 
@@ -117,6 +118,9 @@ sealed class ValidationError(val message: String)
 	data object SaleBeforePurchase : ValidationError("La vente ne peut pas précéder l'achat.")
 
 	// Vente qui ne sort pas le bien de son compte pour son prix d'achat, ou prix de vente négatif.
+	data object InvalidLoanPayment : ValidationError("Une mensualité débite un compte payeur du total et rembourse le capital sur un compte Crédit ; le capital ne dépasse pas le total.")
+
+	// Vente d'un bien mal formée.
 	data object InvalidSale : ValidationError("La vente sort le bien de son compte pour son prix d'achat ; le prix de vente est positif.")
 
 	/*
@@ -177,6 +181,7 @@ class TransactionValidator(
 			TransactionKind.OPENING  -> checkOpening(inTx, vErrors)
 			TransactionKind.ACQUISITION -> checkAcquisition(inTx, inOtherLedger, vErrors)
 			TransactionKind.DISPOSAL    -> checkDisposal(inTx, inOtherLedger, vErrors)
+			TransactionKind.LOAN_PAYMENT -> checkLoanPayment(inTx, vErrors)
 		}
 		if (inTx.kind != TransactionKind.ACQUISITION && inTx.kind != TransactionKind.DISPOSAL && inTx.postings.any { isProperty(it.accountId) })
 		{
@@ -215,6 +220,44 @@ class TransactionValidator(
 		if (inTx.trades.isNotEmpty())
 		{
 			inErrors += ValidationError.UnexpectedTrade
+		}
+	}
+
+	/*
+		Mensualité de crédit : deux jambes, le compte payeur (ni Crédit ni
+		bien) débité du total, puis le compte Crédit crédité du capital (positif
+		ou nul, pas plus que le total) ; l'écart (intérêts et assurance) va
+		dans une catégorie de dépense connue, obligatoire s'il n'est pas nul ;
+		pas d'ordre.
+		inTx     : opération
+		inErrors : violations, complétées
+	*/
+	private fun checkLoanPayment(
+		inTx     : Transaction,
+		inErrors : MutableList<ValidationError>
+	)
+	{
+		checkCount(inTx, 2, inErrors)
+		if (inTx.trades.isNotEmpty())
+		{
+			inErrors += ValidationError.UnexpectedTrade
+		}
+		if (inTx.postings.size != 2)
+		{
+			return
+		}
+		val vPayer = inTx.postings[0]												// jambe du payeur
+		val vLoan  = inTx.postings[1]												// jambe du crédit
+		val vPayerType = inAccounts[vPayer.accountId]?.type						// type du payeur
+		if (vPayer.amountCents >= 0 || vLoan.amountCents < 0 || vLoan.amountCents > -vPayer.amountCents
+			|| inAccounts[vLoan.accountId]?.type != AccountType.LOAN || vPayerType == AccountType.LOAN || vPayerType?.isProperty == true)
+		{
+			inErrors += ValidationError.InvalidLoanPayment
+		}
+		val vCharge = -(vPayer.amountCents + vLoan.amountCents)					// intérêts et assurance
+		if ((vCharge != 0L || inTx.categoryId != null) && inCategories[inTx.categoryId]?.kind != CategoryKind.EXPENSE)
+		{
+			inErrors += ValidationError.MissingCategory
 		}
 	}
 

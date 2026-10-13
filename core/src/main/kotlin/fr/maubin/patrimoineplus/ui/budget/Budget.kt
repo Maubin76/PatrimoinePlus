@@ -206,7 +206,7 @@ fun compareBudget(
 			inLine.section == BudgetSection.INCOME && inLine.categoryId != null ->
 			{
 				val vSign = if (vKinds[inLine.categoryId] == CategoryKind.EXPENSE) -1L else 1L	// une dépense compte en positif
-				vSign * vMonthTxs.filter { it.kind == TransactionKind.STANDARD && it.categoryId == inLine.categoryId }.sumOf { inTx -> inTx.postings.sumOf { it.amountCents } }
+				vSign * vMonthTxs.filter { it.hasCategory && it.categoryId == inLine.categoryId }.sumOf { it.categoryAmount() }
 			}
 			inLine.section == BudgetSection.INVESTMENT && inLine.accountId != null ->
 				vMonthTxs.filter { it.kind == TransactionKind.TRANSFER || it.kind == TransactionKind.ACQUISITION }.sumOf { inTx -> inTx.postings.filter { it.accountId == inLine.accountId }.sumOf { it.amountCents } }
@@ -215,13 +215,13 @@ fun compareBudget(
 	}																				// réel d'une ligne
 	val vViews  = inBudget.lines.map { BudgetLineView(it, vActual(it), if (it.section == BudgetSection.EXPENSE) vThemeOf(it) else null) }	// lignes comparées
 	val vSpent  = vMonthTxs
-		.filter { it.kind == TransactionKind.STANDARD && vKinds[it.categoryId] == CategoryKind.EXPENSE }
+		.filter { it.hasCategory && vKinds[it.categoryId] == CategoryKind.EXPENSE }
 		.groupBy { themeOfCategory(vNames.getValue(it.categoryId!!)) }
-		.mapValues { (_, inTxs) -> -inTxs.sumOf { inTx -> inTx.postings.sumOf { it.amountCents } } }
+		.mapValues { (_, inTxs) -> -inTxs.sumOf { it.categoryAmount() } }
 		.toMutableMap()																// dépenses nettes du mois par thème
 	val vLoans  = inData.accounts.filter { it.type == AccountType.LOAN }.map { it.id }.toSet()	// comptes Crédit
 	val vTracked = inBudget.lines.filter { it.section == BudgetSection.INVESTMENT }.mapNotNull { it.accountId }.toSet()	// comptes suivis en investissement (comptés là, pas ici)
-	val vRepaid = vMonthTxs.filter { it.kind == TransactionKind.TRANSFER }.sumOf { inTx -> inTx.postings.filter { it.accountId in vLoans && it.accountId !in vTracked && it.amountCents > 0 }.sumOf { it.amountCents } }	// capital remboursé dans le mois
+	val vRepaid = vMonthTxs.filter { it.kind == TransactionKind.TRANSFER || it.kind == TransactionKind.LOAN_PAYMENT }.sumOf { inTx -> inTx.postings.filter { it.accountId in vLoans && it.accountId !in vTracked && it.amountCents > 0 }.sumOf { it.amountCents } }	// capital remboursé dans le mois
 	if (vRepaid != 0L) vSpent[ExpenseTheme.CREDIT] = (vSpent[ExpenseTheme.CREDIT] ?: 0L) + vRepaid
 	val vThemes = ExpenseTheme.entries.mapNotNull { inTheme ->
 		vViews.filter { it.theme == inTheme }.takeIf { it.isNotEmpty() }?.let { ThemeView(inTheme, it, vSpent[inTheme] ?: 0L) }

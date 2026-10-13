@@ -336,11 +336,11 @@ private fun SelectionBar(
 	inMessage?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
 	if (vConfirm)
 	{
-		val vTransfers = inChosen.count { it.transaction.kind == TransactionKind.TRANSFER }	// virements choisis
+		val vTransfers = inChosen.count { it.transaction.kind == TransactionKind.TRANSFER || it.transaction.kind == TransactionKind.LOAN_PAYMENT }	// virements et mensualités choisis (deux comptes)
 		AlertDialog(
 			onDismissRequest = { vConfirm = false },
 			title            = { Text("Supprimer ${inChosen.size} opération(s) ?") },
-			text             = { Text(if (vTransfers > 0) "Dont $vTransfers virement(s) : ils seront supprimés sur les deux comptes." else "Les soldes seront recalculés.") },
+			text             = { Text(if (vTransfers > 0) "Dont $vTransfers virement(s) ou mensualité(s) : supprimés sur les deux comptes." else "Les soldes seront recalculés.") },
 			confirmButton    = {
 				TextButton(onClick = {
 					vConfirm = false

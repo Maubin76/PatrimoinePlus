@@ -447,7 +447,7 @@ class DesktopController(
 	fun newOperation()
 	{
 		val vData = workspace.value.data											// données
-		val vForm = newEntryForm(EntryData(vData.accounts.filterNot { it.archived || it.type.isProperty }, vData.categories, vData.assets, vData.prices, vData.transactions), fNavigation.value.accountId, today())	// formulaire
+		val vForm = newEntryForm(EntryData(vData.accounts.filterNot { it.archived || it.type.isProperty }, vData.categories, vData.assets, vData.prices, vData.transactions, loans = vData.loans), fNavigation.value.accountId, today())	// formulaire
 		openPanel(Panel.Operation(vForm))
 	}
 
@@ -567,7 +567,7 @@ class DesktopController(
 	fun saveBatch(): Map<Long, String>
 	{
 		val vData   = workspace.value.data											// données
-		val vEntry  = EntryData(vData.accounts.filterNot { it.archived || it.type.isProperty }, vData.categories.filterNot { it.archived }, vData.assets, vData.prices, vData.transactions)	// données de saisie
+		val vEntry  = EntryData(vData.accounts.filterNot { it.archived || it.type.isProperty }, vData.categories.filterNot { it.archived }, vData.assets, vData.prices, vData.transactions, loans = vData.loans)	// données de saisie
 		val vRows   = fBatch.value.filterNot { it.isBlank }							// lignes remplies
 		val vChecks = vRows.associate { it.key to checkBatchRow(it, vEntry) }			// contrôles
 		val vErrors = vChecks.filterValues { it.error != null }.mapValues { it.value.error!! }	// lignes refusées
@@ -680,7 +680,7 @@ class DesktopController(
 	fun createFromBank(inForms: List<EntryForm>): String?
 	{
 		val vData  = workspace.value.data											// données
-		val vEntry = EntryData(vData.accounts.filterNot { it.archived || it.type.isProperty }, vData.categories, vData.assets, vData.prices, vData.transactions)	// données de saisie
+		val vEntry = EntryData(vData.accounts.filterNot { it.archived || it.type.isProperty }, vData.categories, vData.assets, vData.prices, vData.transactions, loans = vData.loans)	// données de saisie
 		inForms.firstNotNullOfOrNull { inForm -> checkEntry(inForm, vEntry.withReferences(inForm, vData.accounts, vData.categories)).let { if (it.isEmpty) null else "« ${inForm.label} » : ${listOfNotNull(it.general, it.amount, it.account, it.category, it.label).joinToString(" ")}" } }
 			?.let { return it }
 		val vResult = edit { inFile ->

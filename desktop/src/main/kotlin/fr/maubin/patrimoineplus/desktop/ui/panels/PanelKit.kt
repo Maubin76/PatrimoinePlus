@@ -250,7 +250,7 @@ fun <T> Choice(
 					inactiveContentColor   = vColors.onSurface,
 					inactiveBorderColor    = vColors.outlineVariant
 				),
-				label    = { Text(inText) }
+				label    = { Text(inText, style = if (inOptions.size > 4) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge, maxLines = 1, softWrap = false) }	// cinq choix : texte plus petit, sur une ligne
 			)
 		}
 	}

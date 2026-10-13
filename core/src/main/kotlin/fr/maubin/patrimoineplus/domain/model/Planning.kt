@@ -51,9 +51,9 @@ data class Recurrence(
 
 /*
 	Crédit amortissable, à mensualités constantes, rattaché à un compte de
-	type Crédit (solde négatif : capital restant dû). Chaque échéance crée un
-	virement du capital remboursé, du compte payeur vers le compte Crédit, et
-	une dépense des intérêts et de l'assurance sur le compte payeur.
+	type Crédit (solde négatif : capital restant dû). Chaque échéance crée une
+	mensualité (LOAN_PAYMENT) : le compte payeur est débité du total, le
+	compte Crédit crédité du capital ; intérêts et assurance sont une dépense.
 	id          : identifiant (UUID)
 	accountId   : compte Crédit
 	principal   : montant emprunté, en centimes
@@ -65,6 +65,8 @@ data class Recurrence(
 	categoryId  : catégorie de dépense des intérêts et de l'assurance
 	last        : dernière mensualité déjà créée (ou payée avant le suivi dans
 	              l'appli) ; null avant la première
+	propertyId  : bien financé (achat d'un compte Immobilier ou Collection) ;
+	              null pour un crédit sans bien (auto, prêt personnel)
 */
 data class Loan(
 	val id         : String,
@@ -76,5 +78,6 @@ data class Loan(
 	val insurance  : Long,
 	val payFrom    : String,
 	val categoryId : String,
-	val last       : LocalDate? = null
+	val last       : LocalDate? = null,
+	val propertyId : String?    = null
 )

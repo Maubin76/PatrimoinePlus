@@ -29,8 +29,14 @@ data class Wealth(
 	val accounts : List<AccountValue>
 )
 {
-	// Patrimoine total : somme des valeurs comptées.
+	// Patrimoine total (net) : somme des valeurs comptées.
 	val totalCents: Long get() = accounts.sumOf { it.countedCents }
+
+	// Patrimoine brut : valeurs comptées hors comptes Crédit.
+	val grossCents: Long get() = accounts.filter { it.account.type != AccountType.LOAN }.sumOf { it.countedCents }
+
+	// Dettes : capital restant dû compté des comptes Crédit (négatif ou nul).
+	val debtCents: Long get() = accounts.filter { it.account.type == AccountType.LOAN }.sumOf { it.countedCents }
 
 	// Répartition par type de compte (valeurs comptées), types vides exclus.
 	val byType: Map<AccountType, Long>

@@ -81,7 +81,8 @@ enum class TransactionKind
 	TRADE,																	// ordre de bourse, une jambe et un ordre
 	OPENING,																// solde initial d'un compte
 	ACQUISITION,															// achat d'un bien : jambe du compte de biens, et du compte payeur s'il y en a un
-	DISPOSAL																// vente d'un bien : sortie au prix d'achat, et prix de vente versé sur un compte s'il y en a un
+	DISPOSAL,																// vente d'un bien : sortie au prix d'achat, et prix de vente versé sur un compte s'il y en a un
+	LOAN_PAYMENT															// mensualité de crédit : payeur débité du total, compte Crédit crédité du capital ; l'écart (intérêts et assurance) est une dépense de la catégorie
 }
 
 /*
@@ -129,7 +130,7 @@ data class Trade(
 	date       : date de l'opération
 	kind       : nature
 	label      : libellé
-	categoryId : catégorie (STANDARD seulement)
+	categoryId : catégorie (STANDARD ; LOAN_PAYMENT : catégorie des intérêts et de l'assurance)
 	assetId    : actif rattaché (dividende), facultatif
 	notes      : notes libres
 	postings   : jambes
@@ -154,6 +155,23 @@ data class Transaction(
 		inToday : date du jour
 	*/
 	fun isUpcoming(inToday: LocalDate): Boolean = date.isAfter(inToday)
+
+	// Vrai si l'opération compte dans sa catégorie (dépense, revenu, intérêts d'une mensualité).
+	val hasCategory: Boolean get() = kind == TransactionKind.STANDARD || kind == TransactionKind.LOAN_PAYMENT
+
+	/*
+		Montant compté dans la catégorie : la somme des jambes (vues d'un
+		compte s'il est donné) pour une dépense ou un revenu ; pour une
+		mensualité, l'écart des jambes (intérêts et assurance, négatif), porté
+		par le compte payeur seulement.
+		inAccountId : compte ; null pour toute l'opération
+	*/
+	fun categoryAmount(inAccountId: String? = null): Long =
+		when (kind)
+		{
+			TransactionKind.LOAN_PAYMENT -> if (inAccountId == null || postings.any { it.accountId == inAccountId && it.amountCents < 0 }) postings.sumOf { it.amountCents } else 0L
+			else                         -> postings.filter { inAccountId == null || it.accountId == inAccountId }.sumOf { it.amountCents }
+		}
 }
 
 /*

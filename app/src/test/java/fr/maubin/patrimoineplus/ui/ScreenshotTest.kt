@@ -64,7 +64,8 @@ import fr.maubin.patrimoineplus.ui.planning.RecurrencesSection
 import fr.maubin.patrimoineplus.ui.accounts.buildAccountsState
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.Modifier
+import fr.maubin.patrimoineplus.ui.entry.newEntryForm
 
 private const val kOutDir = "build/outputs/roborazzi"						// dossier des captures
 
@@ -443,6 +444,47 @@ class ScreenshotTest
 		}
 		fCompose.waitForIdle()
 		captureScreenRoboImage("$kOutDir/entry-ordre.png")
+	}
+
+	/*
+		Feuille de saisie en mode « Crédit » depuis le crédit auto : mensualité
+		du mois proposée (total, capital, intérêts et assurance).
+	*/
+	@Test
+	@Config(qualifiers = "w360dp-h1400dp-xxhdpi")
+	fun loanPaymentSheet()
+	{
+		val vData = EntryData(kDemo.accounts.filterNot { it.type.isProperty }, kDemo.categories, kDemo.assets, kDemo.prices, kDemo.transactions, loans = kDemo.loans)	// données de saisie
+		fCompose.setContent {
+			PatrimoineTheme(inDarkTheme = false) {
+				TransactionSheet(newEntryForm(vData, kDemo.accounts[7].id, kToday), vData, { emptyList() }, { _, _ -> }, {}, {})
+			}
+		}
+		fCompose.waitForIdle()
+		captureScreenRoboImage("$kOutDir/entry-credit.png")
+	}
+
+	/*
+		Prêt immobilier de la démonstration : bien financé (appartement),
+		valeur nette ; et la résidence principale avec sa valeur nette.
+	*/
+	@Test
+	@Config(qualifiers = "w360dp-h2000dp-xxhdpi")
+	fun mortgageDetail() = captureRoboImage("$kOutDir/account-pret-immobilier.png") {
+		PatrimoineTheme(inDarkTheme = false) {
+			AccountDetailContent(demoDetail(8), demoExtras(8), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
+		}
+	}
+
+	/*
+		Résidence principale financée par le prêt immobilier : valeur nette.
+	*/
+	@Test
+	@Config(qualifiers = "w360dp-h1400dp-xxhdpi")
+	fun financedHome() = captureRoboImage("$kOutDir/account-residence.png") {
+		PatrimoineTheme(inDarkTheme = false) {
+			AccountDetailContent(demoDetail(5), demoExtras(5), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
+		}
 	}
 
 	/*

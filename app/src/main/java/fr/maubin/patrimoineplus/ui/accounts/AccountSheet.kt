@@ -30,7 +30,8 @@ import fr.maubin.patrimoineplus.domain.model.Category
 import fr.maubin.patrimoineplus.ui.planning.LoanForm
 import fr.maubin.patrimoineplus.ui.planning.LoanErrors
 import fr.maubin.patrimoineplus.ui.planning.LoanFields
-import fr.maubin.patrimoineplus.ui.planning.checkLoan
+import fr.maubin.patrimoineplus.ui.planning.checkLoan
+import fr.maubin.patrimoineplus.domain.calc.PropertyItem
 
 /*
 	Feuille de création ou de modification d'un compte : nom, type,
@@ -58,7 +59,8 @@ fun AccountSheet(
 	inOnDismiss  : () -> Unit,
 	inAccounts   : List<Account>  = emptyList(),
 	inCategories : List<Category> = emptyList(),
-	inOnSaveLoan : ((AccountForm, LoanForm, (String?) -> Unit) -> Unit)? = null
+	inOnSaveLoan : ((AccountForm, LoanForm, (String?) -> Unit) -> Unit)? = null,
+	inProperties : List<PropertyItem> = emptyList()
 )
 {
 	var vForm    by remember { mutableStateOf(inInitial) }						// saisie en cours
@@ -98,7 +100,7 @@ fun AccountSheet(
 		)
 		if (vNewLoan)
 		{
-			LoanFields(vLoan, vLoanErr, inAccounts, inCategories) { vLoan = it }
+			LoanFields(vLoan, vLoanErr, inAccounts, inCategories, inProperties) { vLoan = it }
 		}
 		else if (vForm.type.isProperty)
 		{

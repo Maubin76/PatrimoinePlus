@@ -71,7 +71,7 @@ data class AssetEntity(
 data class TransactionEntity(
 	@PrimaryKey val id   : String,											// UUID
 	val date             : LocalDate,										// date (texte ISO)
-	val kind             : String,											// STANDARD, TRANSFER, TRADE, OPENING, ACQUISITION, DISPOSAL
+	val kind             : String,											// STANDARD, TRANSFER, TRADE, OPENING, ACQUISITION, DISPOSAL, LOAN_PAYMENT
 	val label            : String,											// libellé
 	val categoryId       : String?,											// catégorie
 	val assetId          : String?,											// actif rattaché (dividende)
@@ -182,7 +182,7 @@ data class RecurrenceEntity(
 )
 
 /*
-	Table des crédits amortissables (version 4).
+	Table des crédits amortissables (version 4 ; bien financé : version 5).
 */
 @Entity(tableName = "loan")
 data class LoanEntity(
@@ -195,5 +195,6 @@ data class LoanEntity(
 	val insurance        : Long,											// assurance mensuelle
 	val payFrom          : String,											// compte payeur
 	val categoryId       : String,											// catégorie des intérêts
-	val last             : LocalDate?										// dernière mensualité créée
+	val last             : LocalDate?,										// dernière mensualité créée
+	val propertyId       : String?    = null								// bien financé (achat) ; null sans bien
 )

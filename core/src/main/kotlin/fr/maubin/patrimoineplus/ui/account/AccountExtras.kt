@@ -19,7 +19,9 @@ import fr.maubin.patrimoineplus.domain.calc.PropertyItem
 import fr.maubin.patrimoineplus.domain.calc.propertyItems
 import fr.maubin.patrimoineplus.domain.model.Loan
 import fr.maubin.patrimoineplus.domain.calc.Installment
-import fr.maubin.patrimoineplus.domain.calc.amortization
+import fr.maubin.patrimoineplus.domain.calc.amortization
+import fr.maubin.patrimoineplus.domain.calc.PropertyNet
+import fr.maubin.patrimoineplus.domain.calc.propertyNets
 
 /*
 	Relevé de la banque, avec l'écart au solde calculé.
@@ -73,6 +75,10 @@ data class PortfolioView(
 	asOf             : date de calcul (biens détenus ou vendus, mensualités passées) ; null hors compte de biens ou crédit
 	loan             : crédit du compte Crédit ; null sinon (ou sans tableau d'amortissement)
 	schedule         : tableau d'amortissement du crédit
+	nets             : valeur nette des biens détenus financés par un crédit, par achat
+	financed         : bien financé par le crédit ; null sans lien
+	financedNet      : sa valeur nette s'il est détenu ; null sinon
+	candidates       : biens détenus qu'un crédit peut financer (tous les comptes de biens)
 */
 data class AccountExtras(
 	val statements       : List<StatementItem>       = emptyList(),
@@ -83,7 +89,11 @@ data class AccountExtras(
 	val accountNames     : Map<String, String>       = emptyMap(),
 	val asOf             : LocalDate?                = null,
 	val loan             : Loan?                     = null,
-	val schedule         : List<Installment>         = emptyList()
+	val schedule         : List<Installment>         = emptyList(),
+	val nets             : Map<String, PropertyNet>  = emptyMap(),
+	val financed         : PropertyItem?             = null,
+	val financedNet      : PropertyNet?              = null,
+	val candidates       : List<PropertyItem>        = emptyList()
 )
 
 /*
@@ -113,12 +123,17 @@ fun buildAccountExtras(
 	val vNames   = inAssets.associate { it.id to it.name }						// noms des actifs
 	if (vAccount.type == AccountType.LOAN)
 	{
-		val vLoan = inLoans.firstOrNull { it.accountId == inAccountId }						// crédit du compte
-		return AccountExtras(loan = vLoan, schedule = vLoan?.let(::amortization).orEmpty(), asOf = inToday, accountNames = inAccounts.associate { it.id to it.name })
+		val vLoan  = inLoans.firstOrNull { it.accountId == inAccountId }						// crédit du compte
+		val vItems = propertyItems(inTransactions, inAccounts)									// biens de tous les comptes
+		val vItem  = vItems.firstOrNull { it.acquisition.id == vLoan?.propertyId }				// bien financé
+		return AccountExtras(loan = vLoan, schedule = vLoan?.let(::amortization).orEmpty(), asOf = inToday, accountNames = inAccounts.associate { it.id to it.name },
+			financed = vItem, financedNet = vItem?.let { propertyNets(listOf(it), inLoans, vLedger, inToday)[it.acquisition.id] },
+			candidates = vItems.filter { it.heldAt(inToday) || it.acquisition.id == vLoan?.propertyId })
 	}
 	if (vAccount.type.isProperty)
 	{
-		return AccountExtras(properties = propertyItems(inTransactions, inAccounts, inAccountId), accountNames = inAccounts.associate { it.id to it.name }, asOf = inToday)
+		val vItems = propertyItems(inTransactions, inAccounts, inAccountId)						// biens du compte
+		return AccountExtras(properties = vItems, accountNames = inAccounts.associate { it.id to it.name }, asOf = inToday, nets = propertyNets(vItems, inLoans, vLedger, inToday))
 	}
 	if (vAccount.type != AccountType.BROKERAGE)
 	{

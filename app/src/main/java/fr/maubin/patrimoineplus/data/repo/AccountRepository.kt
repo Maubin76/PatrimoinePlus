@@ -320,6 +320,7 @@ class AccountRepository @Inject constructor(
 			}
 			inDb.planningDao().deleteRecurrencesOf(inId)
 			inDb.planningDao().deleteLoansOf(inId)
+			inDb.planningDao().unlinkLostProperties()
 			fDao.deleteById(inId)
 			vTxIds.size
 		}

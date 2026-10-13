@@ -99,7 +99,7 @@ class PlanningTest
 
 	/*
 		Échéances arrivées : une dépense par mois, un virement par trimestre,
-		deux opérations par mensualité de crédit ; dernière échéance retenue ;
+		une opération par mensualité de crédit ; dernière échéance retenue ;
 		rien à refaire ensuite, même si une opération a été supprimée ; mêmes
 		identifiants d'un calcul à l'autre (deux appareils) ; compte archivé :
 		rien.
@@ -109,14 +109,18 @@ class PlanningTest
 	{
 		val vAccounts = listOf(kChecking, kLivret, kCar)												// comptes
 		val vFirst    = dueOperations(vAccounts, emptyList(), listOf(kRent, kSave), listOf(kLoan), kToday)	// premier passage
-		assertEquals(3 + 3 + 3 * 2, vFirst.transactions.size)
+		assertEquals(3 + 3 + 3, vFirst.transactions.size)
 		assertEquals(d("2026-10-05"), vFirst.recurrences.single { it.id == "loyer" }.last)
 		assertEquals(d("2026-07-31"), vFirst.recurrences.single { it.id == "epargne" }.last)
 		assertEquals(d("2026-10-10"), vFirst.loans.single().last)
 		val vTransfer = vFirst.transactions.first { it.kind == TransactionKind.TRANSFER && it.label == "Épargne" }	// virement créé
 		assertEquals(listOf(eur(-300.0), eur(300.0)), vTransfer.postings.map { it.amountCents })
-		val vFees     = vFirst.transactions.first { it.label.startsWith("Intérêts") }				// intérêts de la première mensualité
-		assertEquals(eur(-30.0), vFees.postings.single().amountCents)								// 25 € d'intérêts + 5 € d'assurance
+		val vPayment  = vFirst.transactions.first { it.kind == TransactionKind.LOAN_PAYMENT }		// première mensualité, en une opération
+		val vPart     = amortization(kLoan).first()												// sa ligne du tableau
+		assertEquals(listOf(kChecking.id, kCar.id), vPayment.postings.map { it.accountId })			// payeur, puis compte Crédit
+		assertEquals(listOf(-(vPart.capital + eur(30.0)), vPart.capital), vPayment.postings.map { it.amountCents })
+		assertEquals(eur(-30.0), vPayment.categoryAmount())										// 25 € d'intérêts + 5 € d'assurance
+		assertEquals(kGroceries.id, vPayment.categoryId)
 		assertEquals(vFirst.transactions.map { it.id }, dueOperations(vAccounts, emptyList(), listOf(kRent, kSave), listOf(kLoan), kToday).transactions.map { it.id })	// autre appareil : mêmes identifiants
 		val vKept     = vFirst.transactions.drop(1)													// une opération supprimée ensuite
 		assertTrue(dueOperations(vAccounts, vKept, vFirst.recurrences, vFirst.loans, kToday).isEmpty)
@@ -153,7 +157,7 @@ class PlanningTest
 		assertNull(vEditor.applyDue(vWith, kToday))													// rien d'échu depuis
 		val vLater   = vEditor.applyDue(vWith, d("2026-11-12"))!!									// un mois plus tard
 		val vAdded   = vLater.transactions.filter { inTx -> vWith.transactions.none { it.id == inTx.id } }	// opérations créées
-		assertEquals(2, vAdded.size)
+		assertEquals(1, vAdded.size)													// une seule opération par mensualité
 		assertTrue(vAdded.all { it.createdAt == Instant.parse("2026-11-10T00:00:00Z").toEpochMilli() })
 		assertEquals(vLater, vEditor.applyDue(vWith, d("2026-11-12")))								// même résultat sur un autre appareil
 		assertNull(vEditor.applyDue(vLater, d("2026-11-12")))

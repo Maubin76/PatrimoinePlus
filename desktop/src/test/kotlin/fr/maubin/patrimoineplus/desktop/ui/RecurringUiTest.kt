@@ -38,13 +38,18 @@ import java.io.File
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
+import java.time.ZoneId
+import fr.maubin.patrimoineplus.domain.calc.amortization
+import fr.maubin.patrimoineplus.domain.model.TransactionKind
+import androidx.compose.ui.test.performScrollTo
 
 /*
 	Récurrences et crédits dans l'interface du PC (sans écran) : écran des
 	récurrences et page d'un crédit (captures), récurrence créée par le
 	panneau, échéances passées créées dès l'enregistrement, « Répéter » à la
-	saisie d'une opération, crédit créé par le panneau du compte.
+	saisie d'une opération, crédit créé par le panneau du compte (avec son
+	bien financé), mensualité saisie en mode « Crédit », valeur nette d'un
+	bien financé.
 */
 class RecurringUiTest
 {
@@ -94,6 +99,8 @@ class RecurringUiTest
 	*/
 	private fun pick(inLabel: String, inChoice: String)
 	{
+		runCatching { fCompose.onAllNodesWithText(inLabel).onLast().performScrollTo() }	// liste hors de la partie visible (panneau ou page défilants)
+		fCompose.waitForIdle()
 		fCompose.onAllNodesWithText(inLabel).onLast().performClick()
 		fCompose.waitForIdle()
 		fCompose.onAllNodesWithText(inChoice).onLast().performClick()
@@ -112,7 +119,7 @@ class RecurringUiTest
 		val vApp = demo()																	// démonstration
 		vApp.show(Screen.RECURRING)
 		capture(vApp, "20-recurrences")
-		vApp.openAccount(vApp.workspace.value.data.accounts.single { it.type == AccountType.LOAN }.id)
+		vApp.openAccount(vApp.workspace.value.data.accounts.single { it.name == "Crédit auto" }.id)
 		capture(vApp, "20-credit")
 		vApp.show(Screen.RECURRING)
 		fCompose.setContent { App(vApp) { null } }
@@ -163,21 +170,70 @@ class RecurringUiTest
 		assertEquals(-4_500L, vBox.amountCents)
 		vApp.openPanel(Panel.AccountSheet(null))
 		fCompose.waitForIdle()
-		type("Nom", "Prêt immobilier")
+		type("Nom", "Prêt travaux")
 		pick("Type", "Crédit (prêt immobilier, auto…)")
 		type("Montant emprunté", "200000")
 		type("Taux annuel", "3,2")
 		type("Durée (mois)", "240")
 		fCompose.onAllNodes(hasSetTextAction() and hasText("Date de la première mensualité", substring = true)).onFirst().performTextClearance()
 		type("Date de la première mensualité", "05/01/2024")
+		pick("Bien financé", "Montre de collection")
 		File("build/captures-desktop/20-nouveau-credit.png").writeBytes(Image.makeFromBitmap(fCompose.onRoot().captureToImage().asSkiaBitmap()).encodeToData(EncodedImageFormat.PNG)!!.bytes)
 		fCompose.onAllNodesWithText("Enregistrer").onLast().performClick()
 		fCompose.waitForIdle()
 		val vData   = vApp.workspace.value.data													// données
-		val vLoan   = vData.loans.single { inLoan -> vData.accounts.single { it.id == inLoan.accountId }.name == "Prêt immobilier" }	// crédit créé
+		val vLoan   = vData.loans.single { inLoan -> vData.accounts.single { it.id == inLoan.accountId }.name == "Prêt travaux" }	// crédit créé
+		assertEquals("Montre de collection", vData.transactions.single { it.id == vLoan.propertyId }.label)
 		assertEquals(20_000_000L, vLoan.principal)
 		assertEquals(320, vLoan.rateBp)
 		assertEquals(LocalDate.of(2026, 10, 5), vLoan.last)										// 34 mensualités déjà payées
 		assertEquals(-remainingAt(vLoan, kToday), Ledger(vData.transactions).balanceAt(vLoan.accountId, kToday))
+	}
+
+	/*
+		Mensualité en une opération : depuis la page du crédit auto, le panneau
+		s'ouvre en mode « Crédit » avec la mensualité du mois proposée ; une
+		seule opération enregistrée (payeur débité du total, crédit du
+		capital, intérêts en dépense). Prêt immobilier de la démonstration :
+		bien financé et valeur nette, lien retiré depuis la page du crédit ;
+		tableau de bord : patrimoine net, brut et crédits.
+	*/
+	@Test
+	fun loanPaymentAndProperty()
+	{
+		val vApp  = demo()																	// démonstration
+		val vData = vApp.workspace.value.data												// données
+		val vCar  = vData.accounts.single { it.name == "Crédit auto" }						// compte du crédit auto
+		val vLoan = vData.loans.single { it.accountId == vCar.id }							// son tableau
+		capture(vApp, "21-tableau-de-bord-net")
+		vApp.openAccount(vCar.id)
+		fCompose.setContent { App(vApp) { null } }
+		vApp.newOperation()
+		fCompose.waitForIdle()
+		fCompose.onNodeWithText("Crédit remboursé").assertExists()
+		File("build/captures-desktop/21-mensualite.png").writeBytes(Image.makeFromBitmap(fCompose.onRoot().captureToImage().asSkiaBitmap()).encodeToData(EncodedImageFormat.PNG)!!.bytes)
+		val vBefore = vApp.workspace.value.data.transactions.size							// opérations avant
+		fCompose.onAllNodesWithText("Enregistrer").onLast().performClick()
+		fCompose.waitForIdle()
+		val vAfter  = vApp.workspace.value.data											// données après
+		assertEquals(vBefore + 1, vAfter.transactions.size)
+		val vPay    = vAfter.transactions.single { it.label == "Mensualité Crédit auto" && it.date == kToday }	// mensualité saisie
+		val vPart   = amortization(vLoan).single { it.date.year == kToday.year && it.date.month == kToday.month }	// mensualité du mois
+		assertEquals(TransactionKind.LOAN_PAYMENT, vPay.kind)
+		assertEquals(listOf(vLoan.payFrom to -vPart.total, vCar.id to vPart.capital), vPay.postings.map { it.accountId to it.amountCents })
+		val vHome   = vAfter.accounts.single { it.name == "Prêt immobilier" }					// prêt de l'appartement
+		vApp.openAccount(vHome.id)
+		fCompose.waitForIdle()
+		fCompose.onNodeWithText("Bien financé").assertExists()
+		fCompose.onNodeWithText("Valeur nette").assertExists()
+		capture(vApp, "21-pret-immobilier")
+		vApp.openAccount(vAfter.accounts.single { it.name == "Résidence principale" }.id)
+		fCompose.waitForIdle()
+		fCompose.onNodeWithText("Valeur nette").assertExists()
+		capture(vApp, "21-residence-principale")
+		vApp.openAccount(vHome.id)
+		fCompose.waitForIdle()
+		pick("Bien", "Aucun (auto, prêt personnel…)")
+		assertEquals(null, vApp.workspace.value.data.loans.single { it.accountId == vHome.id }.propertyId)
 	}
 }

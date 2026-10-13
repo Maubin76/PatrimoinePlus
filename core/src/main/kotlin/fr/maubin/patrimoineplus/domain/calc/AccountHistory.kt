@@ -55,6 +55,12 @@ fun accountTotals(
 				TransactionKind.TRANSFER, TransactionKind.ACQUISITION, TransactionKind.DISPOSAL -> vTransfers += vAmount
 				TransactionKind.TRADE    -> vTrades    += vAmount
 				TransactionKind.STANDARD -> if (vAmount >= 0) vIncome += vAmount else vExpenses += vAmount
+				TransactionKind.LOAN_PAYMENT ->
+				{
+					val vCharge = if (vAmount < 0) inTx.categoryAmount() else 0L		// intérêts et assurance, portés par le payeur
+					vExpenses  += vCharge
+					vTransfers += vAmount - vCharge
+				}
 			}
 		}
 	return AccountTotals(vOpening, vTransfers, vIncome, vExpenses, vTrades)

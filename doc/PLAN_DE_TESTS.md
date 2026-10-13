@@ -3,7 +3,7 @@
 Campagne complète à mener sur le téléphone (Android 16) et le PC (Windows),
 après le développement de l'appli PC (branche `desktop`, 2026-10-12), mis à
 jour après la revue de code et la refonte du PC en tableau de bord. Les tests
-automatiques (250, voir [`TESTS.md`](TESTS.md)) couvrent les calculs, les
+automatiques (261, voir [`TESTS.md`](TESTS.md)) couvrent les calculs, les
 règles, les formats, la synchronisation et les interfaces sans écran ; ce plan
 couvre ce qu'ils ne peuvent pas voir : le vrai téléphone, la vraie fenêtre,
 Syncthing, le ressenti.
@@ -41,7 +41,7 @@ identifiant (A-03, C-12…) pour le retour.
 | A-13 | Supprimer un compte sans opération, puis un compte avec opérations (définitif). | Suppression simple ; définitive après double confirmation, virements supprimés des deux côtés. |
 | A-14 | Catégories : créer, renommer, réordonner, supprimer une catégorie utilisée en la réaffectant. | Opérations passées dans la catégorie de remplacement. |
 | A-15 | Créer un compte « Biens immobiliers » à 50 % et un compte « Objets de collection » ; ajouter un bien déjà possédé et un objet payé depuis le compte courant ; vendre un objet (prix versé sur le compte courant) ; annuler la vente ; supprimer un objet vendu. | Pas de champ « Solde initial » ; valeur au prix d'achat (bien compté pour moitié) ; l'achat débite le compte payeur sans changer le patrimoine ; la vente fait apparaître la plus-value ; annuler la vente rend l'objet détenu ; supprimer l'objet supprime aussi sa vente. Après synchronisation, mêmes biens sur le PC. |
-| A-16 | Comptes › « Opérations récurrentes » : créer une dépense mensuelle commencée le mois dernier, un virement trimestriel ; saisir une opération avec « Répéter : Chaque mois » ; créer un compte « Crédit » (prêt commencé il y a un an) ; quitter puis rouvrir l'appli le lendemain d'une échéance ; supprimer une opération créée par une récurrence ; synchroniser avec le PC. | Échéances passées créées dès l'enregistrement, une seule fois ; récurrence de « Répéter » partant de la date de l'opération saisie, première échéance suivante le mois d'après (pas de doublon) ; crédit : capital restant dû juste, prochaines mensualités, virement du capital et dépense des intérêts créés à chaque échéance ; opération supprimée non recréée ; après synchronisation, aucune opération en double sur le téléphone ni sur le PC. |
+| A-16 | Comptes › « Opérations récurrentes » : créer une dépense mensuelle commencée le mois dernier, un virement trimestriel ; saisir une opération avec « Répéter : Chaque mois » ; créer un compte « Crédit » (prêt commencé il y a un an) ; quitter puis rouvrir l'appli le lendemain d'une échéance ; supprimer une opération créée par une récurrence ; synchroniser avec le PC. | Échéances passées créées dès l'enregistrement, une seule fois ; récurrence de « Répéter » partant de la date de l'opération saisie, première échéance suivante le mois d'après (pas de doublon) ; crédit : capital restant dû juste, prochaines mensualités, **une seule opération « Mensualité »** créée à chaque échéance ; opération supprimée non recréée ; après synchronisation, aucune opération en double sur le téléphone ni sur le PC. |
 
 ### Saisie et vues
 
@@ -160,7 +160,30 @@ identifiant (A-03, C-12…) pour le retour.
 | D-14 | Supprimer une catégorie de dépense alors qu'une catégorie archivée existe. | L'archivée n'est pas proposée en remplacement ; un nouveau crédit ne la réutilise pas. |
 | D-15 | Modifier une donnée sur le téléphone pendant qu'il importe le fichier du PC (difficile à provoquer : synchroniser juste après une saisie). | Au pire « Données modifiées pendant la synchronisation… » ; la saisie n'est jamais perdue, la synchronisation suivante règle l'écart. |
 
-## E. Limites connues (pas des anomalies)
+## E. Crédits : mensualité unique et bien financé (format 5)
+
+À faire avec les **deux applis mises à jour ensemble** : une ancienne version
+refuse un fichier au format 5.
+
+| # | Étape | Résultat attendu |
+|---|---|---|
+| E-01 | Avant la mise à jour, noter les soldes du compte courant et des comptes Crédit ; mettre à jour le téléphone puis le PC ; ouvrir les deux. | Les anciennes mensualités (virement du capital + « Intérêts et assurance ») sont devenues une seule opération « Mensualité … » chacune ; soldes et patrimoine identiques à avant ; aucun conflit de synchronisation. |
+| E-02 | Vue du compte courant : une mensualité du mois. | Ligne « Mensualité · <crédit> » au montant total ; synthèse du mois : intérêts et assurance dans les dépenses (catégorie Crédit), le capital dans les virements. |
+| E-03 | Vue du compte Crédit : la même opération. | « Remboursement depuis Compte courant » au montant du capital ; le capital restant dû baisse du capital seulement. |
+| E-04 | Ouvrir une mensualité pour la modifier (téléphone et PC). | Mode « Crédit » : crédit, payeur, montant payé, dont capital, intérêts et assurance calculés ; enregistrer sans changement ne modifie rien. |
+| E-05 | Depuis la page d'un crédit, « Nouvelle opération » (PC : Ctrl+N ; téléphone : « + »). | Mode « Crédit » déjà choisi, mensualité du mois proposée ; changer la date d'un mois propose la mensualité de ce mois. |
+| E-06 | Remboursement anticipé : mode « Crédit », montant 2 000 €, « Dont capital » vide. | Accepté sans catégorie ; tout le montant fait baisser le capital restant dû ; aucune dépense. |
+| E-07 | Capital supérieur au montant, compte payeur = un compte Crédit. | Refusés avec un message sous le champ. |
+| E-08 | Créer un crédit en choisissant « Bien financé » (bien détenu d'un compte Immobilier ou Collection). | Page du crédit : tuile « Bien financé » avec prix d'achat, restant dû et valeur nette ; page du bien : « reste dû … · valeur nette … » et valeur nette du compte. |
+| E-09 | Sur la page d'un crédit existant, changer le bien financé, puis « Aucun ». | Lien enregistré et retrouvé sur l'autre appareil après synchronisation ; « Aucun » retire la valeur nette. |
+| E-10 | Supprimer l'achat d'un bien financé. | Le crédit reste, sans bien financé. |
+| E-11 | Tableau de bord (PC) et accueil (téléphone) avec au moins un crédit. | « Patrimoine net » en grand ; dessous « Brut … · Crédits … » ; net = brut + crédits. Sans crédit : affichage inchangé. |
+| E-12 | Mode discret. | Montants masqués partout, y compris brut, crédits, valeur nette et « Intérêts et assurance » de la saisie. |
+| E-13 | Budget et Analyse sur un mois avec mensualité. | Thème Crédit = capital + intérêts et assurance ; Analyse : la catégorie Crédit ne compte que les intérêts et l'assurance. |
+| E-14 | Ouvrir le classeur dans Excel. | Nature « Mensualité » sur les onglets Courant et Crédit ; onglet Crédits : colonne « Bien financé ». |
+| E-15 | Téléphone : saisie d'une opération sur un petit écran. | Les cinq modes (Dépense, Revenu, Virement, Ordre, Crédit) lisibles en entier. |
+
+## F. Limites connues (pas des anomalies)
 
 - Les cours automatiques ne sont récupérés que par le téléphone.
 - Titres cotés uniquement hors zone euro : pas de conversion de devise.
@@ -179,4 +202,9 @@ identifiant (A-03, C-12…) pour le retour.
   les montants dans les champs de saisie (budget, épargne de la projection)
   restent visibles.
 - Désarchiver un compte crée les échéances manquées pendant l'archivage.
+- Valeur nette d'un bien : à 100 % (prix d'achat et crédits entiers), sans
+  les parts détenues ; le patrimoine, lui, applique les parts.
+- Un remboursement anticipé ne recalcule pas le tableau d'amortissement : les
+  mensualités suivantes gardent leur montant ; la dernière peut alors être
+  à ajuster à la main.
 - Un objectif sur un compte Crédit (solde négatif) ne peut pas s'exprimer.

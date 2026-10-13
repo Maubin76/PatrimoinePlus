@@ -116,4 +116,25 @@ class MigrationTest
 		assertEquals(0, vDb.planningDao().loans().size)
 		vDb.close()
 	}
+
+	/*
+		Version 4 → 5 : la colonne du bien financé est ajoutée aux crédits,
+		vide ; le crédit existant est conservé.
+	*/
+	@Test
+	fun version4To5AddsFinancedProperty() = runTest {
+		val vContext = ApplicationProvider.getApplicationContext<Context>()		// contexte
+		oldDatabase(
+			4, "migration-test-5.db",
+			"INSERT INTO account (id, name, type, institution, sharePercent, sortOrder, archived, createdAt, updatedAt) VALUES ('c1', 'Courant', 'CHECKING', NULL, 100, 0, 0, 1, 2)",
+			"INSERT INTO account (id, name, type, institution, sharePercent, sortOrder, archived, createdAt, updatedAt) VALUES ('l1', 'Crédit auto', 'LOAN', NULL, 100, 1, 0, 1, 2)",
+			"INSERT INTO category (id, name, icon, kind, sortOrder, archived, createdAt, updatedAt) VALUES ('k1', 'Crédit', 'bank', 'EXPENSE', 0, 0, 1, 2)",
+			"INSERT INTO loan (id, accountId, principal, rateBp, months, firstDue, insurance, payFrom, categoryId, last) VALUES ('p1', 'l1', 1000000, 300, 12, '2026-08-10', 500, 'c1', 'k1', '2026-09-10')"
+		)
+		val vDb = Room.databaseBuilder(vContext, PatrimoineDatabase::class.java, "migration-test-5.db").allowMainThreadQueries().build()	// version actuelle
+		val vLoan = vDb.planningDao().loans().single()							// crédit relu
+		assertEquals("2026-09-10", vLoan.last.toString())
+		assertEquals(null, vLoan.propertyId)
+		vDb.close()
+	}
 }

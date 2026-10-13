@@ -330,7 +330,7 @@ class DataEditor(
 				statements   = inFile.statements.filterNot { it.accountId == inId },
 				recurrences  = inFile.recurrences.filterNot { it.accountId == inId || it.toAccountId == inId },
 				loans        = inFile.loans.filterNot { it.accountId == inId || it.payFrom == inId }
-			),
+			).withoutLostProperties(),
 			inId
 		)
 	}
@@ -495,7 +495,7 @@ class DataEditor(
 			trades     = inTx.trades.map { TradeDto(it.id, it.assetId, it.side.name, it.quantity, it.unitPrice, it.feesCents) },
 			linkedId   = inTx.linkedId
 		)																			// opération enregistrée
-		return EditResult.Done(inFile.copy(transactions = inFile.transactions.filterNot { it.id == inTx.id } + vDto), inTx.id)
+		return EditResult.Done(inFile.copy(transactions = inFile.transactions.filterNot { it.id == inTx.id } + vDto).withoutLostProperties(), inTx.id)
 	}
 
 	/*
@@ -518,7 +518,7 @@ class DataEditor(
 		orphanedSale(vFile.toDataSet().transactions)?.let { inSale ->
 			return EditResult.Refused(listOf(ValidationError.SaleWithoutPurchase(inSale.label).message))
 		}
-		return EditResult.Done(vFile)
+		return EditResult.Done(vFile.withoutLostProperties())
 	}
 
 	/*
@@ -714,7 +714,7 @@ class DataEditor(
 		vFile = vAccount.file
 		val vLoan  = inLoan.copy(id = inNewId(), accountId = vAccount.id!!, categoryId = vCategory, last = amortization(inLoan).lastOrNull { !it.date.isAfter(inToday) }?.date)	// crédit
 		val vData  = vFile.toDataSet()													// modèles du domaine
-		loanError(vLoan, vData.accounts.associateBy { it.id }, vData.categories.associateBy { it.id })?.let { return EditResult.Refused(listOf(it.replaceFirstChar { c -> c.uppercase() })) }
+		loanError(vLoan, vData.accounts.associateBy { it.id }, vData.categories.associateBy { it.id }, vData.transactions.filter { it.kind == TransactionKind.ACQUISITION }.map { it.id }.toSet())?.let { return EditResult.Refused(listOf(it.replaceFirstChar { c -> c.uppercase() })) }
 		val vOpen  = OpeningBalance(-remainingAt(vLoan, inToday), inToday)				// capital restant dû aujourd'hui
 		val vNow   = now()																// horodatage
 		return EditResult.Done(vFile.copy(transactions = vFile.transactions + newOpening(vLoan.accountId, vOpen, vNow), loans = vFile.loans + vLoan.toDto()), vLoan.accountId)
@@ -730,6 +730,26 @@ class DataEditor(
 		inFile : BackupFile,
 		inId   : String
 	): EditResult = EditResult.Done(inFile.copy(loans = inFile.loans.filterNot { it.id == inId }))
+
+	/*
+		Lie un crédit au bien qu'il finance, ou le délie.
+		inFile       : contenu
+		inLoanId     : crédit
+		inPropertyId : achat du bien ; null pour délier
+	*/
+	fun setLoanProperty(
+		inFile       : BackupFile,
+		inLoanId     : String,
+		inPropertyId : String?
+	): EditResult
+	{
+		if (inFile.loans.none { it.id == inLoanId }) return refused(SetupError.NotFound)
+		if (inPropertyId != null && inFile.transactions.none { it.id == inPropertyId && it.kind == TransactionKind.ACQUISITION.name })
+		{
+			return EditResult.Refused(listOf("Bien introuvable."))
+		}
+		return EditResult.Done(inFile.copy(loans = inFile.loans.map { if (it.id == inLoanId) it.copy(propertyId = inPropertyId) else it }), inLoanId)
+	}
 
 	/*
 		Crée les opérations des échéances arrivées (voir dueOperations) et
@@ -752,7 +772,9 @@ class DataEditor(
 		if (vDue.isEmpty) return null
 		val vValidator = TransactionValidator(vData.accounts.associateBy { it.id }, vData.categories.associateBy { it.id }, vData.assets.associateBy { it.id })	// règles
 		val vLedger    = Ledger(vData.transactions)										// opérations existantes
-		val vAdded     = vDue.transactions.filter { vValidator.validate(it, vLedger).isEmpty() }.map { inTx ->
+		val vValid     = vDue.transactions.filter { vValidator.validate(it, vLedger).isEmpty() }	// opérations valables
+		val vRemoved   = vValid.flatMap { vDue.replaced[it.id].orEmpty() }.toSet()		// anciennes mensualités fusionnées
+		val vAdded     = vValid.map { inTx ->
 			val vStamp = inTx.date.atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()	// horodatage tiré de la date
 			TransactionDto(inTx.id, inTx.date.toString(), inTx.kind.name, inTx.label, inTx.categoryId, inTx.assetId, inTx.notes, vStamp, vStamp,
 				inTx.postings.map { PostingDto(it.id, it.accountId, it.amountCents) })
@@ -760,13 +782,24 @@ class DataEditor(
 		val vRecs  = vDue.recurrences.associateBy { it.id }								// récurrences avancées
 		val vLoans = vDue.loans.associateBy { it.id }									// crédits avancés
 		return inFile.copy(
-			transactions = inFile.transactions + vAdded,
+			transactions = inFile.transactions.filterNot { it.id in vRemoved } + vAdded,
 			recurrences  = inFile.recurrences.map { inRec -> vRecs[inRec.id]?.toDto() ?: inRec },
 			loans        = inFile.loans.map { inLoan -> vLoans[inLoan.id]?.toDto() ?: inLoan }
 		)
 	}
 
 	// ---------- Outils ----------
+
+	/*
+		Contenu dont les crédits ne visent plus un bien disparu (achat supprimé
+		ou devenu autre chose) : le lien est retiré, le crédit reste.
+	*/
+	private fun BackupFile.withoutLostProperties(): BackupFile
+	{
+		val vPurchases = transactions.filter { it.kind == TransactionKind.ACQUISITION.name }.map { it.id }.toSet()	// achats restants
+		return if (loans.none { it.propertyId != null && it.propertyId !in vPurchases }) this
+			else copy(loans = loans.map { if (it.propertyId != null && it.propertyId !in vPurchases) it.copy(propertyId = null) else it })
+	}
 
 	/*
 		Refus si le contenu modifié rend une vente du compte impossible (titres

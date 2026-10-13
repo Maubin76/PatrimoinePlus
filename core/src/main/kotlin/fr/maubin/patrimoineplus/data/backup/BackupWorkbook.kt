@@ -69,6 +69,8 @@ private const val kSheetStatements = "Relevés"									// onglet des relevés
 private const val kSheetFile       = "Fichier"									// onglet de signature
 private const val kSheetRecurring  = "Récurrences"								// onglet des opérations récurrentes (format 4)
 private const val kSheetLoans      = "Crédits"									// onglet des crédits (format 4)
+private const val kProperty        = "Bien financé"								// bien financé par un crédit (format 5)
+private const val kPropertyId      = "ID bien"									// identifiant de l'achat du bien financé (format 5)
 private const val kTo           = "Vers"											// compte d'arrivée d'un virement
 private const val kFrequency    = "Fréquence"									// fréquence d'une récurrence
 private const val kStart        = "Début"										// première échéance
@@ -238,14 +240,15 @@ internal fun backupSheets(inFile: BackupFile): List<Sheet>
 		Sheet(
 			kSheetLoans,
 			listOf(Column(kAccount, 26.0), Column(kPrincipal, 16.0), Column(kRate, 10.0), Column(kMonths, 12.0), Column(kFirstDue, 14.0), Column(kInsurance, 14.0),
-				Column(kPayFrom, 22.0), Column(kCategory, 20.0), Column(kLast, 14.0)) + tech(kLoanId, kAccountId, kPayFromId, kCategoryId),
+				Column(kPayFrom, 22.0), Column(kCategory, 20.0), Column(kLast, 14.0), Column(kProperty, 26.0)) + tech(kLoanId, kAccountId, kPayFromId, kCategoryId, kPropertyId),
 			inFile.loans.sortedBy { vAccounts[it.accountId]?.name }.map { inLoan ->
 				listOf(
 					text(vAccounts[inLoan.accountId]?.name.orEmpty()), euros(inLoan.principal), Cell.Number(BigDecimal.valueOf(inLoan.rateBp.toLong(), 2), CellStyle.NUMBER),
 					Cell.Number(BigDecimal(inLoan.months), CellStyle.NUMBER), Cell.Date(LocalDate.parse(inLoan.firstDue)), euros(inLoan.insurance),
 					text(vAccounts[inLoan.payFrom]?.name.orEmpty()), text(vCategories[inLoan.categoryId]?.name.orEmpty()),
 					inLoan.last?.let { Cell.Date(LocalDate.parse(it)) } ?: Cell.Empty,
-					techText(inLoan.id), techText(inLoan.accountId), techText(inLoan.payFrom), techText(inLoan.categoryId)
+					text(inLoan.propertyId?.let { inId -> inFile.transactions.firstOrNull { it.id == inId }?.label }.orEmpty()),
+					techText(inLoan.id), techText(inLoan.accountId), techText(inLoan.payFrom), techText(inLoan.categoryId), techText(inLoan.propertyId.orEmpty())
 				)
 			}
 		),
@@ -303,6 +306,7 @@ private fun operationRow(
 		TransactionKind.OPENING  -> "Solde initial"
 		TransactionKind.ACQUISITION -> "Achat de bien"
 		TransactionKind.DISPOSAL    -> "Vente de bien"
+		TransactionKind.LOAN_PAYMENT -> "Mensualité"
 	}																			// nature lisible
 	val vCells = mutableListOf<Cell>(
 		Cell.Date(LocalDate.parse(inTx.date)),
@@ -465,7 +469,8 @@ internal fun backupFromSheets(inSheets: List<ReadSheet>): BackupFile
 				insurance  = inRow.opt(kInsurance)?.let { cents(it) } ?: 0L,
 				payFrom    = inRow.req(kPayFromId),
 				categoryId = inRow.req(kCategoryId),
-				last       = inRow.opt(kLast)?.let { date(it).toString() }
+				last       = inRow.opt(kLast)?.let { date(it).toString() },
+				propertyId = inRow.opt(kPropertyId)
 			)
 		}
 	)
@@ -566,6 +571,7 @@ private fun natureKind(inText: String): String =
 		"solde initial", "opening"      -> TransactionKind.OPENING.name
 		"achat de bien", "acquisition"  -> TransactionKind.ACQUISITION.name
 		"vente de bien", "disposal"     -> TransactionKind.DISPOSAL.name
+		"mensualité", "loan_payment"    -> TransactionKind.LOAN_PAYMENT.name
 		else                            -> throw WorkbookException("Nature d’opération inconnue : « $inText ».")
 	}
 

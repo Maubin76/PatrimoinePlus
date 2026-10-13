@@ -117,6 +117,7 @@ private fun hit(
 			SearchHit(inTx, if (inAccountId != null) vMain.amountCents else vTo.amountCents, "${vName(vFrom.accountId)} → ${vName(vTo.accountId)} · Virement", "repeat")
 		}
 		TransactionKind.TRADE    -> SearchHit(inTx, vMain.amountCents, "${vName(vMain.accountId)} · Ordre de bourse", "chart")
+		TransactionKind.LOAN_PAYMENT -> SearchHit(inTx, vMain.amountCents, "${vName(inTx.postings.first().accountId)} → ${inTx.postings.getOrNull(1)?.let { vName(it.accountId) } ?: "Crédit"} · Mensualité", inTx.categoryId?.let { inCategories[it]?.second } ?: "bank")
 		TransactionKind.ACQUISITION, TransactionKind.DISPOSAL -> SearchHit(inTx, vMain.amountCents, "${vName(vMain.accountId)} · ${propertyNature(inTx)}", "home")
 		else                     ->
 		{

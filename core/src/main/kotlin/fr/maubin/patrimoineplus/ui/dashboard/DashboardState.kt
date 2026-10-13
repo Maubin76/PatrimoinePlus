@@ -355,6 +355,7 @@ private fun recentOperation(
 			RecentOperation(inTx, vTo.amountCents, inTx.label, "${vName(vFrom.accountId)} → ${vName(vTo.accountId)}", "repeat")
 		}
 		TransactionKind.TRADE    -> RecentOperation(inTx, vFirst.amountCents, inTx.label, "${vName(vFirst.accountId)} · Ordre de bourse", "chart")
+		TransactionKind.LOAN_PAYMENT -> RecentOperation(inTx, vFirst.amountCents, inTx.label, "${vName(vFirst.accountId)} → ${inTx.postings.getOrNull(1)?.let { vName(it.accountId) } ?: "Crédit"} · Mensualité", vCategory?.icon ?: "bank")
 		TransactionKind.ACQUISITION, TransactionKind.DISPOSAL -> RecentOperation(inTx, vFirst.amountCents, inTx.label, "${vName(vFirst.accountId)} · ${propertyNature(inTx)}", propertyIcon(inTx, inById))
 		else                     -> RecentOperation(inTx, vFirst.amountCents, inTx.label, "${vName(vFirst.accountId)} · ${vCategory?.name ?: "Sans catégorie"}", vCategory?.icon ?: "dots")
 	}

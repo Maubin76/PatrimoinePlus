@@ -107,9 +107,9 @@ class AnalysisSearchUiTest
 		fCompose.onRoot().performKeyInput { withKeyDown(Key.CtrlLeft) { pressKey(Key.F) } }
 		fCompose.waitForIdle()
 		assertEquals(Screen.OPERATIONS, vApp.navigation.value.screen)
-		fCompose.onNode(hasSetTextAction() and hasText("Rechercher", substring = true)).performTextInput("loyer")
+		fCompose.onNode(hasSetTextAction() and hasText("Rechercher", substring = true)).performTextInput("electricite")
 		fCompose.waitForIdle()
-		val vRents = vApp.workspace.value.data.transactions.filter { it.label.contains("Loyer", ignoreCase = true) && !it.date.isAfter(vApp.today().plusYears(1)) }	// loyers
+		val vRents = vApp.workspace.value.data.transactions.filter { it.label.contains("Électricité", ignoreCase = true) && !it.date.isAfter(vApp.today().plusYears(1)) }	// factures d'électricité (sans accent dans la recherche)
 		assertTrue(vRents.size >= 2)
 		capture(vApp, "13-operations")
 		fCompose.onNodeWithText("Tout sélectionner").performClick()

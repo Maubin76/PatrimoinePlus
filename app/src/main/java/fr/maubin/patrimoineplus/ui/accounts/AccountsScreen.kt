@@ -112,7 +112,8 @@ fun AccountsScreen(
 			inOnDismiss  = { vCreating = null },
 			inAccounts   = vPlan.accounts,
 			inCategories = vPlan.categories,
-			inOnSaveLoan = { inAccount, inLoan, inOnRefus -> inPlanning.createLoan(inAccount, inLoan) { inRefusal -> if (inRefusal == null) vCreating = null else inOnRefus(inRefusal) } }
+			inOnSaveLoan = { inAccount, inLoan, inOnRefus -> inPlanning.createLoan(inAccount, inLoan) { inRefusal -> if (inRefusal == null) vCreating = null else inOnRefus(inRefusal) } },
+			inProperties = vPlan.properties
 		)
 	}
 }
