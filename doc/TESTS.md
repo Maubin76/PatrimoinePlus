@@ -1,11 +1,11 @@
 # Tests
 
-Tous les tests tournent sur la JVM, sans émulateur (233 tests au total) :
+Tous les tests tournent sur la JVM, sans émulateur (234 tests au total) :
 
 ```sh
 ./gradlew :core:test                    # module commun : 139 tests, Kotlin pur (core/src/test)
 ./gradlew :app:testDebugUnitTest        # appli Android : 53 tests, Robolectric (app/src/test)
-./gradlew :desktop:test                 # appli PC : 41 tests (desktop/src/test)
+./gradlew :desktop:test                 # appli PC : 42 tests (desktop/src/test)
 ./gradlew :app:recordRoborazziDebug     # régénère les captures d'écran
 ```
 
@@ -43,7 +43,7 @@ communes (fausse source de cours, réponses Yahoo enregistrées) sont dans
 | `DesktopEditingTest` (8) | `:desktop` interface de saisie (sans écran) | dépense saisie par le panneau (signe, date) ; erreurs affichées sans rien enregistrer ; modification d'une opération depuis la vue du compte ; compte créé avec solde initial ; suppression définitive confirmée ; catégorie créée ; **Ctrl+N** ; fenêtre de conflit |
 | `DesktopConfigTest` (2) | `:desktop` `data/DesktopConfig` | réglages du PC : aller-retour (dossier avec espace et accent, démonstration, aucune source ; apparence ; mode discret ; couleurs des hausses et baisses), dossier créé s'il manque ; fichier absent ou abîmé, **chemin impossible** → valeurs par défaut sans plantage ; écriture sans fichier provisoire restant |
 | `WorkspaceTest` (3) | `:desktop` `data/Workspace` | démonstration sans fichier ; dossier sans fichier → en attente, puis fichier arrivé → lu ; fichier modifié → relu, inchangé → pas relu ; **fichier corrompu refusé, dernières données valides conservées** |
-| `DesktopControllerTest` (4) | `:desktop` `DesktopController` | source mémorisée et **rouverte au lancement suivant** (démonstration, dossier, fermeture) ; apparence et mode discret mémorisés ; navigation (écran, compte, mois, retour, retour au tableau de bord au changement de source) |
+| `DesktopControllerTest` (5) | `:desktop` `DesktopController` | source mémorisée et **rouverte au lancement suivant** (démonstration, dossier, fermeture) ; apparence et mode discret mémorisés ; navigation (écran, compte, mois, retour, retour au tableau de bord au changement de source) ; **budget et objectifs propres à chaque source** (démonstration à part, retrouvés en changeant de source et au lancement suivant, ancien fichier commun repris par la démonstration) |
 | `DesktopRobustnessTest` (6) | `:desktop` `DesktopController`, `data/Workspace` | **« Ce PC » relit le fichier** : un changement survenu pendant le choix est présenté à nouveau, rien n'est écrasé ; **modifications non écrites** : fermeture et changement de source retenus, copie de secours lisible, annuler ou continuer ; fermeture immédiate sans attente ; **panneau d'un élément supprimé ailleurs fermé** avec un message ; saisie neuve à chaque ouverture, panneau fermé en changeant d'écran ; date du jour qui suit minuit |
 | `DashboardStateTest` (4) | `:core` `ui/dashboard` (tableau de bord du PC) | une tuile par compte actif dans l'ordre, parts qui font 100, petite courbe arrêtée à la valeur du jour, aperçu du bon type ; aperçus cohérents (catégories triées, parts des positions qui font 100, dernier relevé) ; entrées et dépenses du mois égales aux synthèses des comptes Courant, dépenses par catégorie qui redonnent les dépenses du mois ; opérations récentes triées, sans opération à venir |
 | `PositionRulesTest` (7) | `:core` `domain/calc`, `domain/rules`, `data/edit` | **achat et vente le même jour** : fichier valide et PRU / plus-value justes quel que soit l'ordre (avant : fichier refusé une fois sur deux, plus-value de 440 € au lieu de 40 €) ; **vente saisie avant une vente existante** qui la rendrait impossible : refusée, la vente ultérieure est désignée ; PC : supprimer l'achat, réduire sa quantité, retirer la position initiale ou déplacer le solde initial après la vente : refusés ; **positions initiales qui verrouillent le type Bourse** ; ordre démesuré refusé sans plantage ; valeurs nulles et actif inconnu refusés ; rangs uniques après réordonnancement (archivés à la fin) |

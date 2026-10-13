@@ -6,6 +6,13 @@ import fr.maubin.patrimoineplus.desktop.data.DesktopSettings
 import fr.maubin.patrimoineplus.desktop.data.LoadStatus
 import fr.maubin.patrimoineplus.desktop.data.Source
 import fr.maubin.patrimoineplus.desktop.data.Workspace
+import fr.maubin.patrimoineplus.ui.budget.Budget
+import fr.maubin.patrimoineplus.ui.budget.BudgetLine
+import fr.maubin.patrimoineplus.ui.budget.BudgetSection
+import fr.maubin.patrimoineplus.ui.goals.Goal
+import fr.maubin.patrimoineplus.ui.goals.GoalKind
+import fr.maubin.patrimoineplus.ui.goals.Goals
+import fr.maubin.patrimoineplus.ui.goals.encodeGoals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -64,6 +71,36 @@ class DesktopControllerTest
 		val vNext = controller()												// lancement suivant
 		assertEquals(Source.Folder(vFolder), vNext.workspace.value.source)
 		assertEquals(LoadStatus.Waiting, vNext.workspace.value.status)
+	}
+
+	/*
+		Budget et objectifs propres à chaque source : ceux de la démonstration
+		ne se mêlent pas à ceux de vos données, chacun est retrouvé en
+		changeant de source et au lancement suivant ; la première fois, la
+		démonstration reprend le fichier commun d'avant la séparation.
+	*/
+	@Test
+	fun budgetAndGoalsPerSource()
+	{
+		val vDir    = fTemp.root.toPath()														// dossier des réglages
+		java.nio.file.Files.writeString(vDir.resolve("goals.json"), encodeGoals(Goals(listOf(Goal("ancien", GoalKind.TASK, "Objectif d'avant")))))	// fichier commun d'avant
+		val vApp    = controller()																	// premier lancement
+		vApp.openDemo()
+		assertEquals(listOf("ancien"), vApp.goals.value.goals.map { it.id })					// repris par la démonstration
+		vApp.setGoals(Goals(listOf(Goal("demo", GoalKind.TASK, "Objectif de démo"))))
+		vApp.setBudget(Budget(listOf(BudgetLine("d1", BudgetSection.INCOME, "Salaire démo", 100))))
+		val vFolder = fTemp.newFolder("Synchro").toPath()											// dossier synchronisé
+		vApp.openFolder(vFolder)
+		assertEquals(listOf("ancien"), vApp.goals.value.goals.map { it.id })					// vos données : fichier commun intact
+		assertTrue(vApp.budget.value.lines.isEmpty())
+		vApp.setGoals(Goals(listOf(Goal("reel", GoalKind.TASK, "Objectif réel"))))
+		vApp.openDemo()
+		assertEquals(listOf("demo"), vApp.goals.value.goals.map { it.id })
+		assertEquals(listOf("d1"), vApp.budget.value.lines.map { it.id })
+		val vNext   = controller()																	// lancement suivant (démonstration)
+		assertEquals(listOf("demo"), vNext.goals.value.goals.map { it.id })
+		vNext.openFolder(vFolder)
+		assertEquals(listOf("reel"), vNext.goals.value.goals.map { it.id })
 	}
 
 	/*

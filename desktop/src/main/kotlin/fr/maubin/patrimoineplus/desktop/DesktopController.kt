@@ -211,8 +211,8 @@ class DesktopController(
 	private val fFocus      = MutableStateFlow(0)								// demandes de focus du champ de recherche (Ctrl+F)
 	private val fBatch      = MutableStateFlow<List<BatchRow>>(emptyList())	// lignes de la saisie en grille
 	private val fProjection = MutableStateFlow<ProjectionInput?>(null)			// hypothèses de la projection ; null : par défaut
-	private val fBudget     = MutableStateFlow(inConfig.loadBudget())			// budget prévisionnel
-	private val fGoals      = MutableStateFlow(inConfig.loadGoals())			// objectifs
+	private val fBudget     = MutableStateFlow(inConfig.loadBudget(fSettings.value.source))	// budget prévisionnel de la source
+	private val fGoals      = MutableStateFlow(inConfig.loadGoals(fSettings.value.source))		// objectifs de la source
 	private var fRowKeys    = 0L												// identifiants des lignes de la grille
 	private var fTokens     = 0L												// numéros d'ouverture des panneaux
 
@@ -589,7 +589,7 @@ class DesktopController(
 	fun setBudget(inBudget: Budget)
 	{
 		fBudget.value = inBudget
-		runCatching { inConfig.saveBudget(inBudget) }.onFailure { fNotice.value = "Budget non enregistré : ${it.message}" }
+		runCatching { inConfig.saveBudget(fSettings.value.source, inBudget) }.onFailure { fNotice.value = "Budget non enregistré : ${it.message}" }
 	}
 
 	/*
@@ -599,7 +599,7 @@ class DesktopController(
 	fun setGoals(inGoals: Goals)
 	{
 		fGoals.value = inGoals
-		runCatching { inConfig.saveGoals(inGoals) }.onFailure { fNotice.value = "Objectifs non enregistrés : ${it.message}" }
+		runCatching { inConfig.saveGoals(fSettings.value.source, inGoals) }.onFailure { fNotice.value = "Objectifs non enregistrés : ${it.message}" }
 	}
 
 	/*
@@ -750,13 +750,16 @@ class DesktopController(
 		}
 
 	/*
-		Ouvre une source, la mémorise et revient au tableau de bord.
+		Ouvre une source, la mémorise et revient au tableau de bord ; le budget
+		et les objectifs sont ceux de la source (la démonstration a les siens).
 		inSource : source
 	*/
 	private fun openSource(inSource: Source)
 	{
 		fBank.value = null
 		update(fSettings.value.copy(source = inSource))
+		fBudget.value = inConfig.loadBudget(inSource)
+		fGoals.value  = inConfig.loadGoals(inSource)
 		inWorkspace.open(inSource, inScope)
 		fNavigation.value = Navigation()
 		fPanel.value      = null

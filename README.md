@@ -331,7 +331,7 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   thèmes de dépenses (du plus fort au plus faible), puis reste →
   détail de chaque groupe ; rubans en courbes douces, teintes pastel par thème,
   étiquettes « Nom : montant » ; déficit visible. Enregistré sur le PC
-  (`%APPDATA%\PatrimoinePlus\budget.json`), pas dans le fichier
+  (`%APPDATA%\PatrimoinePlus\budget.json` ; `budget-demo.json` pour la démonstration), pas dans le fichier
   synchronisé.
 - **Objectifs** (barre latérale) : objectifs chiffrés suivis sur les
   données (patrimoine total, un compte, un type de placement, épargne
@@ -340,7 +340,7 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   douze derniers mois (soldes initiaux exclus), date d'atteinte estimée,
   effort mensuel pour tenir l'échéance, état (en bonne voie, en retard,
   échéance dépassée, atteint). Idées proposées quand la page est vide.
-  Enregistré sur le PC (`%APPDATA%\PatrimoinePlus\goals.json`).
+  Enregistré sur le PC (`%APPDATA%\PatrimoinePlus\goals.json` ; `goals-demo.json` pour la démonstration : budget et objectifs de la démo ne se mêlent pas à ceux de vos données).
 - **Synchronisation côté PC** : le fichier d'échange est lu, puis surveillé
   (2 s) ; une modification du PC est écrite 1,5 s plus tard (fichier
   temporaire ignoré par Syncthing, puis remplacement atomique), une

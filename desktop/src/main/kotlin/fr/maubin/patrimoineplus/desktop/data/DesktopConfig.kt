@@ -106,54 +106,85 @@ class DesktopConfig(private val inFile: Path)
 	}
 
 	/*
-		Lit le budget prévisionnel (fichier budget.json à côté des réglages) ;
-		vide s'il est absent ou illisible.
+		Lit le budget prévisionnel d'une source (budget.json pour vos données,
+		budget-demo.json pour la démonstration, à côté des réglages) ; vide
+		s'il est absent ou illisible.
+		inSource : source des données
 	*/
-	fun loadBudget(): Budget =
-		budgetFile().takeIf { Files.isRegularFile(it) }?.let { inPath -> runCatching { decodeBudget(Files.readString(inPath)) }.getOrNull() } ?: Budget()
+	fun loadBudget(inSource: Source): Budget =
+		readFor(inSource, "budget")?.let { runCatching { decodeBudget(it) }.getOrNull() } ?: Budget()
 
 	/*
-		Enregistre le budget prévisionnel (fichier temporaire puis remplacement).
+		Enregistre le budget prévisionnel d'une source.
+		inSource : source des données
 		inBudget : budget
 	*/
-	fun saveBudget(inBudget: Budget)
+	fun saveBudget(
+		inSource : Source,
+		inBudget : Budget
+	) = write(fileFor(inSource, "budget"), encodeBudget(inBudget))
+
+	/*
+		Lit les objectifs d'une source (goals.json pour vos données,
+		goals-demo.json pour la démonstration) ; aucun s'il est absent ou
+		illisible.
+		inSource : source des données
+	*/
+	fun loadGoals(inSource: Source): Goals =
+		readFor(inSource, "goals")?.let { runCatching { decodeGoals(it) }.getOrNull() } ?: Goals()
+
+	/*
+		Enregistre les objectifs d'une source.
+		inSource : source des données
+		inGoals  : objectifs
+	*/
+	fun saveGoals(
+		inSource : Source,
+		inGoals  : Goals
+	) = write(fileFor(inSource, "goals"), encodeGoals(inGoals))
+
+	/*
+		Fichier propre à une source, à côté des réglages : la démonstration a
+		le sien (« -demo »), pour que ses comptes ne se mêlent pas à ceux de vos
+		données.
+		inSource : source des données
+		inBase   : nom de base (« budget », « goals »)
+	*/
+	private fun fileFor(
+		inSource : Source,
+		inBase   : String
+	): Path = inFile.resolveSibling(if (inSource == Source.Demo) "$inBase-demo.json" else "$inBase.json")
+
+	/*
+		Contenu du fichier d'une source ; null s'il est absent. La
+		démonstration sans fichier à elle reprend le fichier commun d'avant la
+		séparation (même contenu au départ ; chacun évolue ensuite à part).
+		inSource : source des données
+		inBase   : nom de base
+	*/
+	private fun readFor(
+		inSource : Source,
+		inBase   : String
+	): String? =
+		listOfNotNull(fileFor(inSource, inBase), inFile.resolveSibling("$inBase.json").takeIf { inSource == Source.Demo })
+			.firstOrNull { Files.isRegularFile(it) }
+			?.let { runCatching { Files.readString(it) }.getOrNull() }
+
+	/*
+		Écrit un fichier (fichier temporaire puis remplacement).
+		inPath : fichier
+		inText : contenu
+	*/
+	private fun write(
+		inPath : Path,
+		inText : String
+	)
 	{
-		val vFile = budgetFile()														// fichier du budget
-		vFile.parent?.let { Files.createDirectories(it) }
-		val vTemp = vFile.resolveSibling("budget.json.tmp")								// écriture provisoire
-		Files.writeString(vTemp, encodeBudget(inBudget))
-		Files.move(vTemp, vFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+		inPath.parent?.let { Files.createDirectories(it) }
+		val vTemp = inPath.resolveSibling("${inPath.fileName}.tmp")						// écriture provisoire
+		Files.writeString(vTemp, inText)
+		Files.move(vTemp, inPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
 	}
-
-	/*
-		Fichier du budget, à côté de celui des réglages.
-	*/
-	private fun budgetFile(): Path = inFile.resolveSibling("budget.json")
-
-	/*
-		Lit les objectifs (fichier goals.json à côté des réglages) ; aucun s'il
-		est absent ou illisible.
-	*/
-	fun loadGoals(): Goals =
-		goalsFile().takeIf { Files.isRegularFile(it) }?.let { inPath -> runCatching { decodeGoals(Files.readString(inPath)) }.getOrNull() } ?: Goals()
-
-	/*
-		Enregistre les objectifs (fichier temporaire puis remplacement).
-		inGoals : objectifs
-	*/
-	fun saveGoals(inGoals: Goals)
-	{
-		val vFile = goalsFile()															// fichier des objectifs
-		vFile.parent?.let { Files.createDirectories(it) }
-		val vTemp = vFile.resolveSibling("goals.json.tmp")								// écriture provisoire
-		Files.writeString(vTemp, encodeGoals(inGoals))
-		Files.move(vTemp, vFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
-	}
-
-	/*
-		Fichier des objectifs, à côté de celui des réglages.
-	*/
-	private fun goalsFile(): Path = inFile.resolveSibling("goals.json")
 
 	companion object
 	{
