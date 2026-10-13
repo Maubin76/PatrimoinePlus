@@ -57,7 +57,7 @@ import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import java.time.YearMonth
 import java.util.UUID
 
-private const val kUntracked = "__aucun__"											// choix « Non suivie »
+private const val kUntracked = "__aucun__"											// choix « Sans catégorie » ou « Aucun compte »
 
 /*
 	Budget prévisionnel mensuel : lignes libres d'entrées, de dépenses et
@@ -147,8 +147,8 @@ private fun Figures(inView: BudgetView)
 }
 
 /*
-	Tuile d'une rubrique : ses lignes (nom, thème des sorties, suivi, montant
-	prévu, réel, écart) et l'ajout d'une ligne.
+	Tuile d'une rubrique : ses lignes (nom, catégorie ou compte suivi,
+	montant prévu, réel, écart) et l'ajout d'une ligne.
 	inSection : rubrique
 	inView    : budget comparé
 	inSpace   : données (catégories, comptes)
@@ -186,7 +186,7 @@ private fun SectionTile(
 		else
 		{
 			Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-				val vHeads = listOfNotNull("Nom" to 2f, ("Thème" to 1.4f).takeIf { inSection != BudgetSection.INCOME }, "Suivi" to 1.6f, "Prévu" to 1f, "Réel du mois" to 1f, "Écart" to 1f)	// en-têtes (les entrées n'ont pas de thème)
+				val vHeads = listOf("Nom" to 2f, (if (inSection == BudgetSection.INVESTMENT) "Compte" else "Catégorie") to 1.6f, "Prévu" to 1f, "Réel du mois" to 1f, "Écart" to 1f)	// en-têtes
 			vHeads.forEach { (inHead, inWeight) ->
 					Text(inHead, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(inWeight).padding(end = 12.dp))
 				}
@@ -205,8 +205,9 @@ private fun SectionTile(
 }
 
 /*
-	Ligne de budget modifiable ; une sortie (dépense, investissement) porte
-	un thème qui la regroupe avec d'autres dans le schéma.
+	Ligne de budget modifiable ; la catégorie d'une dépense la compare au
+	réel et la regroupe avec les autres dépenses de la catégorie dans le
+	schéma.
 	inView     : ligne et son réel
 	inSpace    : données (catégories, comptes)
 	inOnChange : nouvelle ligne ; null pour la retirer
@@ -227,15 +228,12 @@ private fun LineRow(
 		BudgetSection.INVESTMENT -> inSpace.data.accounts.filter { it.type != AccountType.CHECKING && !it.archived }.map { it.id to it.name }
 	}																						// suivis possibles
 	val vTracked = vLine.categoryId ?: vLine.accountId										// suivi actuel
+	val vNone    = if (vLine.section == BudgetSection.INVESTMENT) "Aucun compte" else "Sans catégorie"	// ligne non suivie
 	Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
 		CellField(vLine.name, { inOnChange(vLine.copy(name = it)) }, Modifier.weight(2f).padding(end = 12.dp), inPlaceholder = "Nom")
-		if (vLine.section != BudgetSection.INCOME)
-		{
-			CellField(vLine.group, { inOnChange(vLine.copy(group = it)) }, Modifier.weight(1.4f).padding(end = 12.dp), inPlaceholder = if (vLine.section == BudgetSection.INVESTMENT) "Investissements" else "Thème (facultatif)")
-		}
 		MenuCell(
-			inText     = vTracks.firstOrNull { it.first == vTracked }?.second ?: "Non suivie",
-			inOptions  = listOf(kUntracked to "Non suivie") + vTracks,
+			inText     = vTracks.firstOrNull { it.first == vTracked }?.second ?: vNone,
+			inOptions  = listOf(kUntracked to vNone) + vTracks,
 			inOnSelect = { inId ->
 				val vId = inId.takeIf { it != kUntracked }											// suivi choisi
 				inOnChange(if (vLine.section == BudgetSection.INVESTMENT) vLine.copy(accountId = vId, categoryId = null) else vLine.copy(categoryId = vId, accountId = null))

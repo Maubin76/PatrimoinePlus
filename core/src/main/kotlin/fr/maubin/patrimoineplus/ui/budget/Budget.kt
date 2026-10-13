@@ -28,9 +28,6 @@ enum class BudgetSection(val label: String)
 	amount     : montant mensuel prévu, en centimes (positif)
 	categoryId : catégorie suivie (entrées, dépenses) pour comparer au réel ; null sinon
 	accountId  : compte suivi (investissements : versements reçus) ; null sinon
-	group      : thème qui regroupe des lignes dans le schéma (« Logement »,
-	             « Vie quotidienne ») ; vide : la ligne forme son propre thème
-	             (investissements : « Investissements »)
 */
 @Serializable
 data class BudgetLine(
@@ -39,8 +36,7 @@ data class BudgetLine(
 	val name       : String,
 	val amount     : Long,
 	val categoryId : String? = null,
-	val accountId  : String? = null,
-	val group      : String  = ""
+	val accountId  : String? = null
 )
 
 /*
@@ -74,12 +70,15 @@ fun decodeBudget(inText: String): Budget = runCatching { kJson.decodeFromString(
 
 /*
 	Ligne du budget comparée au réel d'un mois.
-	line    : ligne
-	actual  : réel du mois ; null pour une ligne non suivie
+	line     : ligne
+	actual   : réel du mois ; null pour une ligne non suivie
+	category : nom de la catégorie suivie ; null sans catégorie (ou
+	           catégorie disparue)
 */
 data class BudgetLineView(
-	val line   : BudgetLine,
-	val actual : Long?
+	val line     : BudgetLine,
+	val actual   : Long?,
+	val category : String? = null
 )
 {
 	// Écart réel − prévu ; null pour une ligne non suivie.
@@ -131,6 +130,7 @@ fun compareBudget(
 {
 	val vMonthTxs = inData.transactions.filter { YearMonth.from(it.date) == inMonth }	// opérations du mois
 	val vKinds    = inData.categories.associate { it.id to it.kind }					// nature des catégories
+	val vNames    = inData.categories.associate { it.id to it.name }					// nom des catégories
 	val vActual   = { inLine: BudgetLine ->
 		when
 		{
@@ -144,7 +144,7 @@ fun compareBudget(
 			else -> null
 		}
 	}																				// réel d'une ligne
-	return BudgetView(inMonth, inBudget.lines.map { BudgetLineView(it, vActual(it)) }, inBudget)
+	return BudgetView(inMonth, inBudget.lines.map { BudgetLineView(it, vActual(it), it.categoryId?.let(vNames::get).takeIf { _ -> it.section != BudgetSection.INVESTMENT }) }, inBudget)
 }
 
 /*
@@ -198,9 +198,9 @@ data class CashFlowDiagram(
 /*
 	Construit le diagramme de cashflow : prévu (inActual faux) ou réel du
 	mois (lignes suivies seulement). Lignes nulles ignorées. Les
-	investissements forment le premier thème (« Investissements » si leurs
-	lignes n'en précisent pas) ; les dépenses sont regroupées par thème, une
-	ligne sans thème formant le sien ; le reste ferme la marche.
+	investissements forment le premier thème (« Investissements ») ; les
+	dépenses sont regroupées par catégorie, une ligne sans catégorie formant
+	son propre thème ; le reste ferme la marche.
 	inView   : budget comparé
 	inActual : vrai pour le réel du mois
 */
@@ -214,7 +214,7 @@ fun cashFlow(
 	val vFlow   = { inLine: BudgetLineView -> CashFlow(inLine.line.name.ifBlank { inLine.line.section.label }, vAmount(inLine), inLine.line.section) }	// flux d'une ligne
 	val vGroups = { inSection: BudgetSection, inDefault: String? ->
 		vLines(inSection)
-			.groupBy { inLine -> inLine.line.group.trim().ifEmpty { inDefault ?: "\u0000${inLine.line.id}" } }
+			.groupBy { inLine -> inDefault ?: inLine.category ?: "\u0000${inLine.line.id}" }
 			.map { (inKey, inMembers) ->
 				val vItems = inMembers.map(vFlow).sortedByDescending { it.amount }			// lignes du thème
 				val vName  = if (inKey.startsWith("\u0000")) vItems.single().name else inKey	// nom du thème

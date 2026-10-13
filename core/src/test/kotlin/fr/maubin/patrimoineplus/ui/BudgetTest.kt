@@ -4,10 +4,13 @@ import fr.maubin.patrimoineplus.data.DataSet
 import fr.maubin.patrimoineplus.domain.eur
 import fr.maubin.patrimoineplus.domain.kChecking
 import fr.maubin.patrimoineplus.domain.kGroceries
+import fr.maubin.patrimoineplus.domain.kLeisure
 import fr.maubin.patrimoineplus.domain.kLivret
 import fr.maubin.patrimoineplus.domain.kSalary
 import fr.maubin.patrimoineplus.domain.standard
 import fr.maubin.patrimoineplus.domain.transfer
+import fr.maubin.patrimoineplus.domain.model.Category
+import fr.maubin.patrimoineplus.domain.model.CategoryKind
 import fr.maubin.patrimoineplus.ui.budget.Budget
 import fr.maubin.patrimoineplus.ui.budget.BudgetLine
 import fr.maubin.patrimoineplus.ui.budget.BudgetSection
@@ -104,30 +107,34 @@ class BudgetTest
 	}
 
 	/*
-		Thèmes : investissements en premier (thème « Investissements » par
-		défaut), puis dépenses regroupées par thème de la plus forte à la plus
-		faible (détail trié), ligne sans thème seule et sans détail, reste en
-		dernier.
+		Regroupement : investissements en premier (thème « Investissements »),
+		puis dépenses regroupées par catégorie de la plus forte à la plus
+		faible (détail trié), ligne sans catégorie seule et sans détail, reste
+		en dernier.
 	*/
 	@Test
-	fun groupsByTheme()
+	fun groupsByCategory()
 	{
-		val vBudget = Budget(listOf(
+		val vHousing = Category("logement", "Logement", "home", CategoryKind.EXPENSE)		// catégorie Logement
+		val vData    = DataSet(emptyList(), listOf(vHousing, kGroceries, kLeisure), emptyList(), emptyList(), emptyList(), emptyList())	// catégories
+		val vBudget  = Budget(listOf(
 			BudgetLine("1", BudgetSection.INCOME, "Salaire", eur(3_000.0)),
-			BudgetLine("2", BudgetSection.EXPENSE, "Loyer", eur(850.0), group = "Logement"),
-			BudgetLine("3", BudgetSection.EXPENSE, "Électricité", eur(50.0), group = "Logement"),
-			BudgetLine("4", BudgetSection.EXPENSE, "Courses", eur(150.0), group = "Vie quotidienne"),
-			BudgetLine("5", BudgetSection.EXPENSE, "Restaurants", eur(300.0), group = "Vie quotidienne"),
+			BudgetLine("2", BudgetSection.EXPENSE, "Loyer", eur(850.0), categoryId = vHousing.id),
+			BudgetLine("3", BudgetSection.EXPENSE, "Électricité", eur(50.0), categoryId = vHousing.id),
+			BudgetLine("4", BudgetSection.EXPENSE, "Courses", eur(150.0), categoryId = kGroceries.id),
+			BudgetLine("5", BudgetSection.EXPENSE, "Marché", eur(300.0), categoryId = kGroceries.id),
 			BudgetLine("6", BudgetSection.EXPENSE, "Transports", eur(160.0)),
-			BudgetLine("7", BudgetSection.INVESTMENT, "Actions", eur(500.0)),
-			BudgetLine("8", BudgetSection.INVESTMENT, "Crypto", eur(50.0))
-		))																					// budget à thèmes
-		val vDiagram = cashFlow(compareBudget(vBudget, DataSet.kEmpty, YearMonth.of(2026, 10)), inActual = false)	// diagramme
-		assertEquals(listOf("Investissements", "Logement", "Vie quotidienne", "Transports", "Reste"), vDiagram.groups.map { it.name })
+			BudgetLine("7", BudgetSection.EXPENSE, "Loisirs", eur(100.0), categoryId = kLeisure.id),
+			BudgetLine("8", BudgetSection.INVESTMENT, "Actions", eur(500.0)),
+			BudgetLine("9", BudgetSection.INVESTMENT, "Crypto", eur(50.0))
+		))																					// budget
+		val vDiagram = cashFlow(compareBudget(vBudget, vData, YearMonth.of(2026, 10)), inActual = false)	// diagramme
+		assertEquals(listOf("Investissements", "Logement", "Alimentation", "Transports", "Loisirs", "Reste"), vDiagram.groups.map { it.name })
 		assertEquals(listOf("Actions", "Crypto"), vDiagram.groups[0].items.map { it.name })
-		assertEquals(listOf("Restaurants", "Courses"), vDiagram.groups[2].items.map { it.name })
-		assertTrue(vDiagram.groups[3].items.isEmpty())
-		assertEquals(eur(940.0), vDiagram.groups.last().amount)
+		assertEquals(listOf("Marché", "Courses"), vDiagram.groups[2].items.map { it.name })
+		assertTrue(vDiagram.groups[3].items.isEmpty())										// sans catégorie : seule
+		assertTrue(vDiagram.groups[4].items.isEmpty())										// seule ligne, du nom de la catégorie
+		assertEquals(eur(840.0), vDiagram.groups.last().amount)
 		assertEquals(vDiagram.total, vDiagram.groups.sumOf { it.amount })
 		assertEquals(vDiagram.groups.sumOf { it.amount }, vDiagram.outputs.sumOf { it.amount })
 	}

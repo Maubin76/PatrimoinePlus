@@ -308,12 +308,12 @@ bord** de pilotage plutôt qu'une suite d'écrans.
 - **Budget** (barre latérale) : budget prévisionnel d'un mois type, en
   lignes libres d'entrées, de dépenses et d'investissements ; chaque ligne
   peut suivre une catégorie (ou un compte d'épargne ou de bourse) pour
-  afficher son réel du mois et l'écart ; une dépense ou un investissement
-  peut porter un **thème** (« Logement », « Vie quotidienne »…) ;
+  afficher son réel du mois et l'écart ; la **catégorie** d'une dépense
+  sert aussi à la regrouper dans le schéma ;
   **diagramme de cashflow (Sankey)** du prévu ou du réel d'un mois sur
-  quatre colonnes : entrées → budget → thèmes (investissements en haut,
-  puis dépenses de la plus forte à la plus faible, puis reste) → détail de
-  chaque thème ; rubans en courbes douces, teintes pastel par thème,
+  quatre colonnes : entrées → budget → investissements (en haut) puis
+  catégories de dépenses (de la plus forte à la plus faible), puis reste →
+  détail de chaque groupe ; rubans en courbes douces, teintes pastel par thème,
   étiquettes « Nom : montant » ; déficit visible. Enregistré sur le PC
   (`%APPDATA%\PatrimoinePlus\budget.json`), pas dans le fichier
   synchronisé.
