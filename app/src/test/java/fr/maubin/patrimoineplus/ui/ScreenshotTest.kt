@@ -66,7 +66,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
 import fr.maubin.patrimoineplus.ui.entry.newEntryForm
-import fr.maubin.patrimoineplus.ui.home.buildHomeState
+import fr.maubin.patrimoineplus.ui.home.buildHomeState
+import fr.maubin.patrimoineplus.ui.components.LocalProportionStyle
+import fr.maubin.patrimoineplus.ui.components.ProportionStyle
 
 private const val kOutDir = "build/outputs/roborazzi"						// dossier des captures
 
@@ -327,6 +329,22 @@ class ScreenshotTest
 		val vState = buildHomeState(vDemo.accounts, vDemo.transactions, vDemo.prices, vToday, vDemo.loans)	// état calculé, en net
 		captureRoboImage("$kOutDir/home-demo.png", content = shell(false, false, TopLevelDestination.Home) {
 			HomeContent(vState, {}, {})
+		})
+	}
+
+	/*
+		Accueil de démonstration avec les répartitions en cercle (réglage
+		basculé par l'icône) : anneau dans l'ordre et les teintes de la légende.
+	*/
+	@Test
+	@Config(qualifiers = "w360dp-h1500dp-xxhdpi")
+	fun homePie()
+	{
+		val vToday = LocalDate.parse("2026-10-07")								// date de calcul
+		val vDemo  = buildDemoData(vToday)										// démonstration
+		val vState = buildHomeState(vDemo.accounts, vDemo.transactions, vDemo.prices, vToday, vDemo.loans)	// état calculé, en net
+		captureRoboImage("$kOutDir/home-pie.png", content = shell(false, false, TopLevelDestination.Home) {
+			CompositionLocalProvider(LocalProportionStyle provides ProportionStyle(true)) { HomeContent(vState, {}, {}) }
 		})
 	}
 

@@ -56,7 +56,9 @@ import fr.maubin.patrimoineplus.ui.settings.SyncConflictDialog
 import fr.maubin.patrimoineplus.ui.shell.AppFrame
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
-import fr.maubin.patrimoineplus.domain.model.Frequency
+import fr.maubin.patrimoineplus.domain.model.Frequency
+import fr.maubin.patrimoineplus.ui.components.LocalProportionStyle
+import fr.maubin.patrimoineplus.ui.components.ProportionStyle
 
 private const val kSlideMillis = 260									// entrée et sortie de la vue d'un compte
 
@@ -75,8 +77,9 @@ fun PatrimoineApp(inAppViewModel: AppViewModel = hiltViewModel())
 {
 	val vNavController = rememberNavController()							// contrôleur de navigation
 	val vHidden        by inAppViewModel.amountsHidden.collectAsStateWithLifecycle()	// mode discret
+	val vPie           by inAppViewModel.pieCharts.collectAsStateWithLifecycle()		// répartitions en cercle
 
-	CompositionLocalProvider(LocalAmountsHidden provides vHidden) {
+	CompositionLocalProvider(LocalAmountsHidden provides vHidden, LocalProportionStyle provides ProportionStyle(vPie, inAppViewModel::setPieCharts)) {
 		NavHost(
 			navController      = vNavController,
 			startDestination   = MainRoute,

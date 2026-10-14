@@ -4,6 +4,8 @@ import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
 import fr.maubin.patrimoineplus.desktop.DesktopController
@@ -15,6 +17,7 @@ import fr.maubin.patrimoineplus.ui.search.SearchQuery
 import fr.maubin.patrimoineplus.ui.theme.ThemeMode
 import org.jetbrains.skia.EncodedImageFormat
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -92,5 +95,37 @@ class NavigationUiTest
 		fCompose.onNodeWithText("Catégories").assertExists()
 		fCompose.onNodeWithText("Ajouter une catégorie de dépense").assertExists()
 		capture(vApp, "22-reglages")
+	}
+
+	/*
+		Bascule barre ↔ cercle des répartitions : une icône dans la tuile, le
+		choix vaut pour toutes les répartitions et est mémorisé ; la tuile
+		garde sa taille (le titre « Comptes » sous elle ne bouge pas) ;
+		légende présente une seule fois dans chaque forme. Captures
+		`23-*.png` en cercle.
+	*/
+	@Test
+	fun proportionToggle()
+	{
+		val vApp = demo()																	// démonstration
+		fCompose.setContent { App(vApp) { null } }
+		fCompose.waitForIdle()
+		fCompose.onNodeWithContentDescription("Afficher en diagramme circulaire").performScrollTo()
+		val vBefore = fCompose.onNodeWithText("Comptes").fetchSemanticsNode().positionInRoot	// position sous les tuiles
+		fCompose.onNodeWithContentDescription("Afficher en diagramme circulaire").performScrollTo().performClick()	// tuile sous la partie visible de la fenêtre de test
+		fCompose.waitForIdle()
+		assertTrue(vApp.settings.value.pie)
+		assertEquals(vBefore, fCompose.onNodeWithText("Comptes").fetchSemanticsNode().positionInRoot)
+		fCompose.onNodeWithText("Immobilier").assertExists()									// légende unique (la forme cachée n'est pas lue)
+		fCompose.onNodeWithContentDescription("Afficher en barre").assertExists()
+		capture(vApp, "23-tableau-de-bord-cercle")
+		vApp.openAccount(vApp.workspace.value.data.accounts.single { it.name == "PEA" }.id)
+		fCompose.waitForIdle()
+		fCompose.onNodeWithContentDescription("Afficher en barre").assertExists()				// même choix sur la page du PEA
+		capture(vApp, "23-pea-cercle")
+		fCompose.onNodeWithContentDescription("Afficher en barre").performScrollTo().performClick()
+		fCompose.waitForIdle()
+		assertTrue(!vApp.settings.value.pie)
+		assertTrue(!DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")).load().pie)
 	}
 }

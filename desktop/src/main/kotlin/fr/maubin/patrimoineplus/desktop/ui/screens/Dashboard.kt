@@ -63,6 +63,8 @@ import java.util.Locale
 import fr.maubin.patrimoineplus.ui.components.monthTitle
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.ui.components.rankColor
+import fr.maubin.patrimoineplus.ui.components.ProportionChart
+import fr.maubin.patrimoineplus.ui.home.HomeGroup
 
 private val kShortDay   = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date courte
 private val kAccountMin = 300.dp													// largeur minimale d'une tuile de compte
@@ -231,20 +233,31 @@ private fun RepartitionTile(
 {
 	val vGroups = inState.home.assetGroups.sortedByDescending { it.subtotalCents }			// de la plus grande part à la plus petite
 	Tile(inModifier = inModifier, inTitle = "Répartition") {
-		ProportionBar(
+		ProportionChart(
 			inSegments    = vGroups.mapIndexed { inRank, inGroup -> BarSegment(inGroup.subtotalCents, rankColor(inRank, vGroups.size)) },
 			inDescription = "Répartition par type de compte, nette des crédits, de la plus grande part à la plus petite"
-		)
-		Spacer(Modifier.height(16.dp))
-		vGroups.forEachIndexed { inRank, inGroup ->
-			Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
-				SeriesDot(rankColor(inRank, vGroups.size))
-				Spacer(Modifier.width(12.dp))
-				Text(inGroup.type.label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-				Text("${inGroup.percent} %", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-				Spacer(Modifier.width(16.dp))
-				AmountText(inCents = inGroup.subtotalCents, inStyle = MaterialTheme.typography.bodyLarge)
-			}
+		) {
+			Column { RepartitionLegend(vGroups) }
+		}
+	}
+}
+
+/*
+	Légende de la répartition : un type par ligne, dans l'ordre du
+	diagramme, avec sa teinte, sa part et son montant.
+	inGroups : types, de la plus grande part à la plus petite
+*/
+@Composable
+private fun RepartitionLegend(inGroups: List<HomeGroup>)
+{
+	inGroups.forEachIndexed { inRank, inGroup ->
+		Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
+			SeriesDot(rankColor(inRank, inGroups.size))
+			Spacer(Modifier.width(12.dp))
+			Text(inGroup.type.label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+			Text("${inGroup.percent} %", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+			Spacer(Modifier.width(16.dp))
+			AmountText(inCents = inGroup.subtotalCents, inStyle = MaterialTheme.typography.bodyLarge)
 		}
 	}
 }

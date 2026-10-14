@@ -38,6 +38,15 @@ interface SettingsRepository
 	*/
 	suspend fun setTrendColors(inEnabled: Boolean)
 
+	// Vrai pour les diagrammes de répartition en cercle (barre par défaut).
+	val pieCharts: Flow<Boolean>
+
+	/*
+		Choisit la forme des diagrammes de répartition.
+		inPie : vrai pour le cercle
+	*/
+	suspend fun setPieCharts(inPie: Boolean)
+
 	// Vrai une fois l'assistant du premier lancement terminé ou passé.
 	val onboardingDone: Flow<Boolean>
 
@@ -102,6 +111,7 @@ class DataStoreSettingsRepository @Inject constructor(
 	private val kAmountsHiddenKey = booleanPreferencesKey("amounts_hidden")	// clé du mode discret
 	private val kThemeModeKey     = stringPreferencesKey("theme_mode")		// clé de l'apparence
 	private val kTrendColorsKey   = booleanPreferencesKey("trend_colors")	// clé des couleurs de hausse et de baisse
+	private val kPieChartsKey     = booleanPreferencesKey("pie_charts")		// clé de la forme des répartitions
 	private val kOnboardingKey    = booleanPreferencesKey("onboarding_done")	// clé du premier lancement
 	private val kLastAccountKey   = stringPreferencesKey("last_account")	// clé du dernier compte utilisé
 	private val kLockKey          = booleanPreferencesKey("lock_enabled")	// clé du verrou biométrique
@@ -130,6 +140,18 @@ class DataStoreSettingsRepository @Inject constructor(
 	override suspend fun setTrendColors(inEnabled: Boolean)
 	{
 		inDataStore.edit { inPreferences -> inPreferences[kTrendColorsKey] = inEnabled }
+	}
+
+	override val pieCharts: Flow<Boolean> =
+		inDataStore.data.map { inPreferences -> inPreferences[kPieChartsKey] ?: false }
+
+	/*
+		Enregistre la forme des diagrammes de répartition.
+		inPie : vrai pour le cercle
+	*/
+	override suspend fun setPieCharts(inPie: Boolean)
+	{
+		inDataStore.edit { inPreferences -> inPreferences[kPieChartsKey] = inPie }
 	}
 
 	override val themeMode: Flow<ThemeMode> =

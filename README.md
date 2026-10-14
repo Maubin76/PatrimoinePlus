@@ -332,6 +332,11 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   Recherche, Opérations (saisie rapide puis récurrences et mensualités),
   Budget, Projection, Bilan (onglets « Mois par mois » et « Bilan annuel »),
   Réglages (avec la section Catégories).
+- **Répartitions en barre ou en cercle** (PC et téléphone) : une icône sur
+  chaque diagramme de répartition bascule entre la barre et l'anneau, mêmes
+  parts dans le même ordre et les mêmes teintes que la légende ; le choix
+  vaut pour toute l'appli et est mémorisé. Sur le PC, la tuile garde sa
+  taille quand on bascule.
 - **Rapprochement avec le relevé de la banque** (vue d'un compte, tuile
   Relevés › « Rapprocher un relevé… ») : le fichier CSV exporté par le site de
   la banque est lu sans réglage (encodage, séparateur, lignes d'informations,

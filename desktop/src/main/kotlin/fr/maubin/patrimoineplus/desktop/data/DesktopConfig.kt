@@ -37,12 +37,14 @@ sealed interface Source
 	appearance : apparence
 	hidden     : mode discret (montants masqués)
 	trend      : hausses en vert, baisses en rouge (noir et blanc par défaut)
+	pie        : diagrammes de répartition en cercle (barre par défaut)
 */
 data class DesktopSettings(
 	val source     : Source    = Source.None,
 	val appearance : ThemeMode = ThemeMode.SYSTEM,
 	val hidden     : Boolean   = false,
-	val trend      : Boolean   = false
+	val trend      : Boolean   = false,
+	val pie        : Boolean   = false
 )
 
 /*
@@ -74,7 +76,8 @@ class DesktopConfig(private val inFile: Path)
 			source     = vSource,
 			appearance = ThemeMode.entries.firstOrNull { it.name == vProps.getProperty("appearance") } ?: ThemeMode.SYSTEM,
 			hidden     = vProps.getProperty("hidden") == "true",
-			trend      = vProps.getProperty("trend") == "true"
+			trend      = vProps.getProperty("trend") == "true",
+			pie        = vProps.getProperty("pie") == "true"
 		)
 	}
 
@@ -99,6 +102,7 @@ class DesktopConfig(private val inFile: Path)
 		vProps.setProperty("appearance", inSettings.appearance.name)
 		vProps.setProperty("hidden", inSettings.hidden.toString())
 		vProps.setProperty("trend", inSettings.trend.toString())
+		vProps.setProperty("pie", inSettings.pie.toString())
 		inFile.parent?.let { Files.createDirectories(it) }
 		val vTemp = inFile.resolveSibling("${inFile.fileName}.tmp")				// écriture provisoire
 		Files.newBufferedWriter(vTemp, Charsets.UTF_8).use { vProps.store(it, "Réglages de PatrimoinePlus (PC)") }

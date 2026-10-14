@@ -361,6 +361,12 @@ class DesktopController(
 	fun setTrend(inEnabled: Boolean) = update(fSettings.value.copy(trend = inEnabled))
 
 	/*
+		Choisit la forme des diagrammes de répartition (mémorisée).
+		inPie : vrai pour le cercle, faux pour la barre
+	*/
+	fun setPie(inPie: Boolean) = update(fSettings.value.copy(pie = inPie))
+
+	/*
 		Bascule le mode discret.
 	*/
 	fun toggleHidden() = update(fSettings.value.copy(hidden = !fSettings.value.hidden))

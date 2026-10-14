@@ -49,7 +49,8 @@ import fr.maubin.patrimoineplus.ui.components.SeriesDot
 import fr.maubin.patrimoineplus.ui.shell.PrivacyAction
 import fr.maubin.patrimoineplus.ui.shell.ScreenScaffold
 import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
-import fr.maubin.patrimoineplus.ui.theme.PatrimoineTheme
+import fr.maubin.patrimoineplus.ui.theme.PatrimoineTheme
+import fr.maubin.patrimoineplus.ui.components.ProportionChart
 
 private const val kClearedDisplay = "– – –,– – €"						// afficheur vide : aucun compte
 
@@ -231,9 +232,10 @@ private fun RepartitionBlock(
 {
 	val vHidden = LocalAmountsHidden.current								// mode discret actif
 	Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-		ProportionBar(
+		ProportionChart(
 			inSegments    = inState.assetGroups.map { BarSegment(it.subtotalCents, typeColor(it.type)) },
-			inDescription = repartitionDescription(inState, vHidden)
+			inDescription = repartitionDescription(inState, vHidden),
+			inStable      = false
 		)
 		Spacer(Modifier.height(12.dp))
 		inState.assetGroups.forEach { inGroup ->

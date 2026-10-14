@@ -85,6 +85,7 @@ import fr.maubin.patrimoineplus.desktop.ui.panels.Picker
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import fr.maubin.patrimoineplus.ui.components.ProportionChart
 
 private val kDayTitle = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANCE)	// en-tête d'un jour
 private val kShortDay = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date d'une opération
@@ -605,20 +606,22 @@ private fun AllocationTile(
 			Hint("Aucune position.")
 			return@Tile
 		}
-		ProportionBar(
+		ProportionChart(
 			inSegments    = vLines.withIndex().groupBy { it.index.coerceAtMost(kAllocationSlots - 1) }.toSortedMap()
 				.map { (inRank, inGroup) -> BarSegment(inGroup.sumOf { it.value.position.valueCents }, allocationColor(inRank)) },
 			inDescription = "Répartition des titres"
-		)
-		Spacer(Modifier.height(12.dp))
-		vLines.forEachIndexed { inIndex, inLine ->
-			Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
-				SeriesDot(allocationColor(inIndex))
-				Spacer(Modifier.width(12.dp))
-				TextButton(onClick = { inController.openPanel(Panel.AssetSheet(inLine.position.assetId)) }, modifier = Modifier.weight(1f)) {
-					Text(inPortfolio.names[inLine.position.assetId] ?: "Actif supprimé", maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
+		) {
+			Column {
+				vLines.forEachIndexed { inIndex, inLine ->
+					Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
+						SeriesDot(allocationColor(inIndex))
+						Spacer(Modifier.width(12.dp))
+						TextButton(onClick = { inController.openPanel(Panel.AssetSheet(inLine.position.assetId)) }, modifier = Modifier.weight(1f)) {
+							Text(inPortfolio.names[inLine.position.assetId] ?: "Actif supprimé", maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
+						}
+						Text("${inLine.percent} %", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+					}
 				}
-				Text("${inLine.percent} %", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			}
 		}
 	}

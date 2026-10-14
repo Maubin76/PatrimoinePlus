@@ -98,7 +98,9 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import fr.maubin.patrimoineplus.desktop.ui.panels.PurchasePanel
 import fr.maubin.patrimoineplus.desktop.ui.panels.SalePanel
-import fr.maubin.patrimoineplus.desktop.ui.panels.RecurrencePanel
+import fr.maubin.patrimoineplus.desktop.ui.panels.RecurrencePanel
+import fr.maubin.patrimoineplus.ui.components.LocalProportionStyle
+import fr.maubin.patrimoineplus.ui.components.ProportionStyle
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -134,7 +136,7 @@ fun App(
 	val vSpace    by inController.workspace.collectAsState()				// données
 	val vPending  by inController.pending.collectAsState()					// action retenue
 	PatrimoineTheme(inDarkTheme = vSettings.appearance.isDark(), inTrendColors = vSettings.trend) {
-		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave) {
+		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pie, inController::setPie)) {
 			Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
 				if (vSpace.source == Source.None)
 				{

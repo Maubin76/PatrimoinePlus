@@ -57,6 +57,7 @@ import fr.maubin.patrimoineplus.ui.planning.RecurrencesSection
 import fr.maubin.patrimoineplus.ui.planning.RecurrenceSheet
 import fr.maubin.patrimoineplus.ui.planning.editRecurrenceForm
 import fr.maubin.patrimoineplus.domain.model.AccountType
+import fr.maubin.patrimoineplus.ui.components.ProportionChart
 
 /*
 	Onglet des comptes : liste réordonnable avec la valeur de chaque compte,
@@ -222,11 +223,12 @@ fun AccountsContent(
 			{
 				SectionHeader(inTitle = "Répartition")
 				Spacer(Modifier.height(8.dp))
-				ProportionBar(
+				ProportionChart(
 					inSegments    = vWeighted.groupBy { it.weight!!.rank.coerceAtMost(kAllocationSlots - 1) }.toSortedMap()
 						.map { (inRank, inGroup) -> BarSegment(inGroup.sumOf { it.weight!!.counted }, allocationColor(inRank)) },
 					inDescription = "Part de chaque compte dans le patrimoine : " +
-						vWeighted.sortedBy { it.weight!!.rank }.joinToString(", ") { "${it.account.name} ${it.weight!!.percent}\u202F%" }
+						vWeighted.sortedBy { it.weight!!.rank }.joinToString(", ") { "${it.account.name} ${it.weight!!.percent}\u202F%" },
+					inStable      = false
 				)
 				Spacer(Modifier.height(24.dp))
 			}

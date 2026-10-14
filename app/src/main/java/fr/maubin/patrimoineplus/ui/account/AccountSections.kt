@@ -67,6 +67,7 @@ import java.util.Locale
 import kotlin.math.abs
 import fr.maubin.patrimoineplus.domain.calc.PropertyItem
 import fr.maubin.patrimoineplus.domain.calc.PropertyNet
+import fr.maubin.patrimoineplus.ui.components.ProportionChart
 
 private val kShortDate = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)	// date courte
 
@@ -155,9 +156,10 @@ fun PositionsSection(
 	Spacer(Modifier.height(8.dp))
 	if (vLines.size > 1)
 	{
-		ProportionBar(
+		ProportionChart(
 			inSegments    = vLines.groupBy { slotOf(it, vLines) }.toSortedMap().map { (inSlot, inGroup) -> BarSegment(inGroup.sumOf { it.position.valueCents }, allocationColor(inSlot)) },
-			inDescription = "Répartition des titres : " + vLines.joinToString(", ") { "${inPortfolio.names[it.position.assetId] ?: "Actif supprimé"} ${it.percent}\u202F%" }
+			inDescription = "Répartition des titres : " + vLines.joinToString(", ") { "${inPortfolio.names[it.position.assetId] ?: "Actif supprimé"} ${it.percent}\u202F%" },
+			inStable      = false
 		)
 		Spacer(Modifier.height(16.dp))
 	}
