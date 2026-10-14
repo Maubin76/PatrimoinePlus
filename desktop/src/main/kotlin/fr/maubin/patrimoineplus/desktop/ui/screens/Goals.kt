@@ -682,9 +682,11 @@ private fun MonthSection(
 }
 
 /*
-	Tuile d'un objectif du mois : thème (ou épargne), état, réel sur cible,
-	barre, puis ce qu'il reste à dépenser (ou de combien la cible est
-	dépassée), ou ce qu'il reste à mettre de côté.
+	Tuile d'un objectif du mois : thème (ou épargne) et état. Dépenses : ce
+	qu'il reste à dépenser dans le thème (ou le dépassement), barre de la part
+	restante qui se vide au fil des dépenses, puis le montant dépensé.
+	Épargne : mis de côté sur la cible, barre, puis ce qu'il reste à mettre
+	de côté.
 	inView : objectif évalué
 	inMod  : place de la tuile
 */
@@ -700,20 +702,32 @@ private fun MonthGoalTile(
 	val vMoney  = { inCents: Long -> if (vHidden) kMaskedAmount else formatEuros(inCents) }	// montant en texte
 	val vAccent = flowAccent(if (vSpend) FlowAccent.OUTFLOW else FlowAccent.INVEST)		// couleur (thème Coloré)
 	Tile(inModifier = inMod, inTitle = vGoal.label, inAccent = vAccent, inAction = { MonthPill(inView.status) }) {
+		val vLeft = vGoal.target - inView.actual												// reste à dépenser (négatif : dépassement)
 		Row(verticalAlignment = Alignment.Bottom) {
-			AmountText(inCents = inView.actual, inStyle = MaterialTheme.typography.headlineSmall)
-			Text(if (vSpend) "  sur ${vMoney(vGoal.target)} au plus" else "  sur ${vMoney(vGoal.target)} au moins", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+			AmountText(inCents = if (vSpend) vLeft else inView.actual, inStyle = MaterialTheme.typography.headlineSmall, inColor = if (vSpend && vLeft < 0) MaterialTheme.colorScheme.error else Color.Unspecified)
+			Text(
+				text  = when
+				{
+					vSpend && vLeft >= 0 -> "  restants sur ${vMoney(vGoal.target)}"
+					vSpend               -> "  au-delà des ${vMoney(vGoal.target)} prévus"
+					else                 -> "  sur ${vMoney(vGoal.target)} au moins"
+				},
+				style = MaterialTheme.typography.bodyMedium,
+				color = MaterialTheme.colorScheme.onSurfaceVariant
+			)
 		}
 		Spacer(Modifier.height(10.dp))
-		ProgressBar(inView.percent.coerceAtMost(100), if (inView.status == MonthGoalStatus.EXCEEDED || inView.status == MonthGoalStatus.MISSED) MaterialTheme.colorScheme.error else vAccent)
+		ProgressBar(
+			if (vSpend) (100 - inView.percent).coerceIn(0, 100) else inView.percent.coerceAtMost(100),
+			if (inView.status == MonthGoalStatus.EXCEEDED || inView.status == MonthGoalStatus.MISSED) MaterialTheme.colorScheme.error else vAccent
+		)																					// dépenses : part restante ; épargne : part atteinte
 		Spacer(Modifier.height(6.dp))
 		Hint(
 			when
 			{
-				vSpend && inView.actual > vGoal.target -> "Dépassé de ${vMoney(inView.actual - vGoal.target)}."
-				vSpend                                 -> "Reste ${vMoney(vGoal.target - inView.actual)} à dépenser."
-				inView.actual >= vGoal.target          -> "Objectif atteint."
-				else                                   -> "Encore ${vMoney(vGoal.target - inView.actual)} à mettre de côté."
+				vSpend                        -> "Dépensé : ${vMoney(inView.actual)}."
+				inView.actual >= vGoal.target -> "Objectif atteint."
+				else                          -> "Encore ${vMoney(vGoal.target - inView.actual)} à mettre de côté."
 			}
 		)
 	}
