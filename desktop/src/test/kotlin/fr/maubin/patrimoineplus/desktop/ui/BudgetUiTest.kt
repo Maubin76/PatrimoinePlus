@@ -31,9 +31,10 @@ import java.time.Instant
 import java.time.ZoneId
 
 /*
-	Budget prévisionnel dans l'interface du PC (sans écran) : diagramme de
-	cashflow prévu et réel regroupé par catégorie, ajout d'une ligne, budget enregistré et relu au
-	lancement suivant ; captures pour relecture.
+	Budget prévisionnel dans l'interface du PC (sans écran), page de
+	planification : diagramme de cashflow regroupé par thème, montants sans
+	réel ni écart, ajout d'une ligne, budget enregistré et relu au lancement
+	suivant ; captures pour relecture.
 */
 class BudgetUiTest
 {
@@ -93,7 +94,9 @@ class BudgetUiTest
 		vApp.setAppearance(ThemeMode.LIGHT)
 		fCompose.setContent { App(vApp) { null } }
 		fCompose.onNodeWithText("Budget prévisionnel").assertExists()
-		fCompose.onNodeWithText("Cashflow prévu").assertExists()
+		fCompose.onNodeWithText("Cashflow").assertExists()
+		listOf("Réel du mois", "Écart", "Prévu").forEach { assertTrue(it, fCompose.onAllNodesWithText(it).fetchSemanticsNodes().isEmpty()) }	// plus de suivi dans le budget
+		fCompose.onAllNodesWithText("Montant")[0].assertExists()
 		fCompose.onAllNodesWithText("Ajouter une ligne")[1].performScrollTo().performClick()		// rubrique Dépenses
 		fCompose.waitForIdle()
 		val vNew = vApp.budget.value.lines.single { it.name.isEmpty() }					// ligne ajoutée
@@ -109,9 +112,6 @@ class BudgetUiTest
 		fCompose.waitForIdle()
 		assertTrue(vApp.budget.value.lines.any { it.name == "Netflix" && it.amount == 3_000L && it.theme == ExpenseTheme.SUBSCRIPTIONS && it.categoryId == null })
 		fCompose.onAllNodesWithText("Abonnements")[0].assertExists()					// nouvel en-tête de thème (puis le menu de la ligne)
-		fCompose.onAllNodesWithText("Réel du mois")[0].performScrollTo().performClick()			// puce du schéma (avant les en-têtes de colonnes)
-		fCompose.waitForIdle()
-		fCompose.onNodeWithText("Cashflow réel de octobre 2026").assertExists()
 		val vNext = DesktopController(DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")), Workspace(kClock), null, kClock)	// lancement suivant
 		assertEquals(vApp.budget.value, vNext.budget.value)
 	}

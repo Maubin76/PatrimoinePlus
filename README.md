@@ -403,15 +403,15 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   le capital de chaque mensualité étant pris sur l'épargne mensuelle (crédits
   restant dus à l'horizon affichés). Une estimation, sans impôts ni
   inflation.
-- **Budget** (barre latérale) : budget prévisionnel d'un mois type, en
-  lignes libres d'entrées, de dépenses et d'investissements ; une entrée
-  peut suivre une catégorie, un investissement un compte d'épargne ou de
-  bourse, pour afficher son réel du mois et l'écart ; une dépense porte
-  l'un des cinq **thèmes** Vie quotidienne, Abonnements, Transports,
-  Logement, Crédit : il la regroupe dans le schéma et donne le réel du mois,
-  par thème (catégories du même nom ; Crédit : « Crédit », « Prêt »,
-  « Emprunt » ; toutes les autres catégories de dépense : Vie quotidienne) ;
-  **diagramme de cashflow (Sankey)** du prévu ou du réel d'un mois sur
+- **Budget** (barre latérale) : page de **planification** d'un mois type
+  (le suivi se fait dans Objectifs), en lignes libres d'entrées, de
+  dépenses et d'investissements (nom et montant) ; une dépense porte l'un
+  des cinq **thèmes** Vie quotidienne, Abonnements, Transports, Logement,
+  Crédit, qui la regroupe dans le schéma et dans les objectifs du mois (le
+  réel d'un thème vient des catégories du même nom ; Crédit : « Crédit »,
+  « Prêt », « Emprunt » ; toutes les autres catégories de dépense : Vie
+  quotidienne) ; bandeau « Objectifs du mois » (mois en cours ou suivant) ;
+  **diagramme de cashflow (Sankey)** du budget sur
   quatre colonnes : entrées → budget → investissements (en haut) puis
   thèmes de dépenses (du plus fort au plus faible), puis reste →
   détail de chaque groupe ; rubans en courbes douces, teintes pastel par thème,

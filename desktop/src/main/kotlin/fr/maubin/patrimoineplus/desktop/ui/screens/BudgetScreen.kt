@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -22,10 +21,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -39,8 +36,6 @@ import fr.maubin.patrimoineplus.desktop.ui.components.SankeyDiagram
 import fr.maubin.patrimoineplus.desktop.ui.components.TileRow
 import fr.maubin.patrimoineplus.domain.format.editableEuros
 import fr.maubin.patrimoineplus.domain.format.parseEuros
-import fr.maubin.patrimoineplus.domain.model.AccountType
-import fr.maubin.patrimoineplus.domain.model.CategoryKind
 import fr.maubin.patrimoineplus.ui.budget.Budget
 import fr.maubin.patrimoineplus.ui.budget.BudgetLine
 import fr.maubin.patrimoineplus.ui.budget.BudgetLineView
@@ -66,15 +61,16 @@ import fr.maubin.patrimoineplus.desktop.Screen
 import fr.maubin.patrimoineplus.domain.format.formatFrenchDate
 import java.time.LocalDate
 import androidx.compose.material3.Button
-import androidx.compose.material3.TextButton
-
-private const val kUntracked = "__aucun__"											// choix « Sans catégorie » ou « Aucun compte »
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 /*
-	Budget prévisionnel mensuel : lignes libres d'entrées, de dépenses et
-	d'investissements (chacune peut suivre une catégorie ou un compte pour la
-	comparer au réel), chiffres clés, et diagramme de cashflow du prévu ou du
-	réel d'un mois. Le budget est enregistré sur le PC à chaque modification.
+	Budget prévisionnel mensuel, page de planification : lignes libres
+	d'entrées, de dépenses (rangées par thème) et d'investissements, chiffres
+	clés et diagramme de cashflow ; le bandeau des objectifs fixe, pour le
+	mois choisi, les objectifs du mois suivis dans la page Objectifs. Le
+	budget est enregistré sur le PC à chaque modification.
 	inSpace      : données
 	inController : contrôleur
 */
@@ -85,11 +81,9 @@ fun BudgetScreen(
 )
 {
 	val vBudget  by inController.budget.collectAsState()								// budget
-	var vMonth   by remember { mutableStateOf(YearMonth.from(inSpace.today)) }		// mois comparé
-	var vActual  by remember { mutableStateOf(false) }									// schéma du réel
-	val vView    = remember(vBudget, inSpace.data, vMonth) { compareBudget(vBudget, inSpace.data, vMonth) }	// budget comparé
-	val vDiagram = remember(vView, vActual) { cashFlow(vView, vActual) }				// diagramme
-	val vFirst   = inSpace.data.transactions.minOfOrNull { YearMonth.from(it.date) } ?: vMonth	// premier mois avec des données
+	var vMonth   by remember { mutableStateOf(YearMonth.from(inSpace.today)) }		// mois dont on fixe les objectifs
+	val vView    = remember(vBudget, inSpace.data) { compareBudget(vBudget, inSpace.data, YearMonth.from(inSpace.today)) }	// budget rangé par thème
+	val vDiagram = remember(vView) { cashFlow(vView, false) }							// diagramme du budget
 	val vUpdate  = { inLines: List<BudgetLine> -> inController.setBudget(Budget(inLines)) }	// enregistre les lignes
 	Column(
 		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
@@ -97,61 +91,43 @@ fun BudgetScreen(
 	) {
 		Column {
 			Text("Budget prévisionnel", style = MaterialTheme.typography.headlineMedium)
-			Text("Un mois type : vos entrées, vos dépenses par type et vos investissements. Une ligne peut suivre une catégorie (ou un compte, pour un investissement) : son réel du mois s’affiche à côté. Enregistré sur ce PC.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+			Text("Un mois type : vos entrées, vos dépenses par thème et vos investissements. Fixez-en les objectifs du mois : leur suivi se fait dans la page Objectifs. Enregistré sur ce PC.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		}
-		Figures(vView)
-		MonthGoalsBar(vMonth, inSpace, inController, vBudget)
-		Tile(
-			inTitle  = "Cashflow ${if (vActual) "réel de ${monthTitle(vMonth).lowercase()}" else "prévu"}",
-			inAction = {
-				FilterChip(selected = !vActual, onClick = { vActual = false }, label = { Text("Prévu") }, modifier = Modifier.padding(end = 8.dp))
-				FilterChip(selected = vActual, onClick = { vActual = true }, label = { Text("Réel du mois") }, modifier = Modifier.padding(end = 16.dp))
-				Box(Modifier.width(300.dp)) { MonthSwitcher(vMonth, vFirst.coerceAtMost(vMonth), YearMonth.from(inSpace.today).plusMonths(1), { vMonth = it }) }
-			}
-		) {
+		Figures(vBudget)
+		MonthGoalsBar(vMonth, { vMonth = it }, inSpace, inController, vBudget)
+		Tile(inTitle = "Cashflow") {
 			if (vDiagram.total <= 0L)
 			{
-				Hint(if (vActual) "Aucun réel ce mois-ci sur les lignes suivies." else "Ajoutez des entrées et des dépenses ci-dessous pour voir le schéma.")
+				Hint("Ajoutez des entrées et des dépenses ci-dessous pour voir le schéma.")
 			}
 			else
 			{
 				SankeyDiagram(vDiagram, "Budget")
 				if (vDiagram.deficit) Hint("Les sorties dépassent les entrées : le déficit apparaît comme une entrée, à gauche.")
-				if (vActual) Hint("Réel des lignes suivies seulement ; les lignes non suivies n’y figurent pas.")
 			}
 		}
-		BudgetSection.entries.forEach { inSection -> SectionTile(inSection, vView, inSpace, vBudget, vUpdate) }
+		BudgetSection.entries.forEach { inSection -> SectionTile(inSection, vView, vBudget, vUpdate) }
 	}
 }
 
 /*
-	Chiffres clés : prévu de chaque rubrique et reste, avec le réel du mois.
-	inView : budget comparé
+	Chiffres clés du budget : entrées, dépenses, investissements, reste.
+	inBudget : budget
 */
 @Composable
-private fun Figures(inView: BudgetView)
+private fun Figures(inBudget: Budget)
 {
-	val vPlan   = { inSection: BudgetSection -> inView.budget.total(inSection) }		// prévu d'une rubrique
-	val vActual = { inSection: BudgetSection -> inView.actualTotal(inSection) }			// réel d'une rubrique
 	TileRow(
 		*BudgetSection.entries.map { inSection ->
 			Cell(1f) { inMod ->
 				Tile(inModifier = inMod, inAccent = sectionAccent(inSection)) {
-					TileFigure(if (inSection == BudgetSection.INVESTMENT) "Investissements prévus" else "${inSection.label} prévues") { AmountText(inCents = vPlan(inSection), inStyle = MaterialTheme.typography.headlineSmall) }
-					Row(verticalAlignment = Alignment.CenterVertically) {
-						Text("Réel ${monthTitle(inView.month).lowercase()} : ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-						AmountText(inCents = vActual(inSection), inStyle = MaterialTheme.typography.bodyMedium)
-					}
+					TileFigure(inSection.label) { AmountText(inCents = inBudget.total(inSection), inStyle = MaterialTheme.typography.headlineSmall) }
 				}
 			}
 		}.toTypedArray(),
 		Cell(1f) { inMod ->
 			Tile(inModifier = inMod, inFilled = isColorful()) {
-				TileFigure("Reste prévu") { AmountText(inCents = inView.budget.remaining, inStyle = MaterialTheme.typography.headlineSmall, inShowPlusSign = true, inTrend = true) }
-				Row(verticalAlignment = Alignment.CenterVertically) {
-					Text("Réel : ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-					AmountText(inCents = inView.actualRemaining, inStyle = MaterialTheme.typography.bodyMedium, inShowPlusSign = true)
-				}
+				TileFigure("Reste") { AmountText(inCents = inBudget.remaining, inStyle = MaterialTheme.typography.headlineSmall, inShowPlusSign = true, inTrend = true) }
 			}
 		},
 		inMinWidth = 1000.dp
@@ -159,13 +135,11 @@ private fun Figures(inView: BudgetView)
 }
 
 /*
-	Tuile d'une rubrique : ses lignes (nom, catégorie, thème ou compte suivi,
-	montant prévu, réel, écart) et l'ajout d'une ligne. Les dépenses sont
-	rangées par thème : le réel et l'écart se lisent sur la ligne du thème
-	(le réel d'un thème ne se répartit pas entre ses lignes).
+	Tuile d'une rubrique : ses lignes (nom, thème pour une dépense, montant)
+	et l'ajout d'une ligne. Les dépenses sont rangées par thème, avec le total
+	de chaque thème.
 	inSection : rubrique
-	inView    : budget comparé
-	inSpace   : données (catégories, comptes)
+	inView    : budget rangé par thème
 	inBudget  : budget
 	inUpdate  : enregistre les lignes
 */
@@ -173,7 +147,6 @@ private fun Figures(inView: BudgetView)
 private fun SectionTile(
 	inSection : BudgetSection,
 	inView    : BudgetView,
-	inSpace   : WorkspaceState,
 	inBudget  : Budget,
 	inUpdate  : (List<BudgetLine>) -> Unit
 )
@@ -201,7 +174,7 @@ private fun SectionTile(
 		else
 		{
 			Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-				val vHeads = listOf("Nom" to 2f, (when (inSection) { BudgetSection.INVESTMENT -> "Compte"; BudgetSection.EXPENSE -> "Thème"; else -> "Catégorie" }) to 1.6f, "Prévu" to 1f, "Réel du mois" to 1f, "Écart" to 1f)	// en-têtes
+				val vHeads = listOfNotNull("Nom" to 3f, ("Thème" to 1.6f).takeIf { inSection == BudgetSection.EXPENSE }, "Montant" to 1.2f)	// en-têtes
 			vHeads.forEach { (inHead, inWeight) ->
 					Text(inHead, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(inWeight).padding(end = 12.dp))
 				}
@@ -214,12 +187,12 @@ private fun SectionTile(
 		{
 			inView.themes.forEach { inTheme ->
 				ThemeRow(inTheme)
-				inTheme.lines.forEach { inLineView -> LineRow(inLineView, inSpace, vChange(inLineView)) }
+				inTheme.lines.forEach { inLineView -> LineRow(inLineView, vChange(inLineView)) }
 			}
 		}
 		else
 		{
-			vLines.forEach { inLineView -> LineRow(inLineView, inSpace, vChange(inLineView)) }
+			vLines.forEach { inLineView -> LineRow(inLineView, vChange(inLineView)) }
 		}
 		Spacer(Modifier.padding(top = 6.dp))
 		OutlinedButton(onClick = { inUpdate(inBudget.lines + BudgetLine(UUID.randomUUID().toString(), inSection, "", 0, theme = ExpenseTheme.DAILY.takeIf { inSection == BudgetSection.EXPENSE })) }) { Text("Ajouter une ligne") }
@@ -227,82 +200,54 @@ private fun SectionTile(
 }
 
 /*
-	Ligne d'un thème de dépenses : nom du thème, total prévu de ses lignes,
-	réel du mois de ses catégories et écart.
-	inTheme : thème comparé
+	Ligne d'un thème de dépenses : nom du thème et total de ses lignes.
+	inTheme : thème
 */
 @Composable
 private fun ThemeRow(inTheme: ThemeView)
 {
 	Row(Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-		Text(inTheme.theme.label, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(3.6f).padding(end = 12.dp))
-		Box(Modifier.weight(1f).padding(end = 12.dp), contentAlignment = Alignment.CenterEnd) { AmountText(inCents = inTheme.planned, inStyle = MaterialTheme.typography.titleSmall) }
-		Box(Modifier.weight(1f).padding(end = 12.dp), contentAlignment = Alignment.CenterEnd) { AmountText(inCents = inTheme.actual, inStyle = MaterialTheme.typography.titleSmall) }
-		Box(Modifier.weight(1f).padding(end = 12.dp), contentAlignment = Alignment.CenterEnd) { AmountText(inCents = inTheme.gap, inStyle = MaterialTheme.typography.titleSmall, inShowPlusSign = true) }
+		Text(inTheme.theme.label, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(4.6f).padding(end = 12.dp))
+		Box(Modifier.weight(1.2f).padding(end = 12.dp), contentAlignment = Alignment.CenterEnd) { AmountText(inCents = inTheme.planned, inStyle = MaterialTheme.typography.titleSmall) }
 		Spacer(Modifier.width(40.dp))
 	}
 	HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 }
 
 /*
-	Ligne de budget modifiable : une entrée suit une catégorie, un
-	investissement un compte ; une dépense porte un thème (Vie quotidienne,
-	Abonnements, Transports, Logement, Crédit) qui la regroupe dans le
-	schéma et donne son réel.
-	inView     : ligne et son réel
-	inSpace    : données (catégories, comptes)
+	Ligne de budget modifiable : nom et montant ; une dépense porte aussi un
+	thème (Vie quotidienne, Abonnements, Transports, Logement, Crédit) qui la
+	regroupe dans le schéma et dans les objectifs du mois.
+	inView     : ligne
 	inOnChange : nouvelle ligne ; null pour la retirer
 */
 @Composable
 private fun LineRow(
 	inView     : BudgetLineView,
-	inSpace    : WorkspaceState,
 	inOnChange : (BudgetLine?) -> Unit
 )
 {
 	val vLine   = inView.line																// ligne
 	var vAmount by remember(vLine.id) { mutableStateOf(if (vLine.amount == 0L) "" else editableEuros(vLine.amount)) }	// montant tapé
-	val vTracks = when (vLine.section)
-	{
-		BudgetSection.INCOME     -> inSpace.data.categories.filter { it.kind == CategoryKind.INCOME && !it.archived }.sortedBy { it.sortOrder }.map { it.id to it.name }
-		BudgetSection.EXPENSE    -> ExpenseTheme.entries.map { it.name to it.label }
-		BudgetSection.INVESTMENT -> inSpace.data.accounts.filter { (it.type == AccountType.SAVINGS || it.type == AccountType.BROKERAGE || it.type.isProperty) && !it.archived }.map { it.id to it.name }
-	}																						// suivis possibles
-	val vTracked = if (vLine.section == BudgetSection.EXPENSE) inView.theme?.name else vLine.categoryId ?: vLine.accountId	// suivi actuel
-	val vNone    = if (vLine.section == BudgetSection.INVESTMENT) "Aucun compte" else "Sans catégorie"	// ligne non suivie
 	Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-		CellField(vLine.name, { inOnChange(vLine.copy(name = it)) }, Modifier.weight(2f).padding(end = 12.dp), inPlaceholder = "Nom")
-		MenuCell(
-			inText     = vTracks.firstOrNull { it.first == vTracked }?.second ?: vNone,
-			inOptions  = if (vLine.section == BudgetSection.EXPENSE) vTracks else listOf(kUntracked to vNone) + vTracks,
-			inOnSelect = { inId ->
-				val vId = inId.takeIf { it != kUntracked }											// suivi choisi
-				inOnChange(
-					when (vLine.section)
-					{
-						BudgetSection.EXPENSE    -> vLine.copy(theme = ExpenseTheme.valueOf(inId), categoryId = null, accountId = null)
-						BudgetSection.INVESTMENT -> vLine.copy(accountId = vId, categoryId = null)
-						BudgetSection.INCOME     -> vLine.copy(categoryId = vId, accountId = null)
-					}
-				)
-			},
-			inModifier = Modifier.weight(1.6f).padding(end = 12.dp),
-			inMuted    = vTracked == null
-		)
+		CellField(vLine.name, { inOnChange(vLine.copy(name = it)) }, Modifier.weight(3f).padding(end = 12.dp), inPlaceholder = "Nom")
+		if (vLine.section == BudgetSection.EXPENSE)
+		{
+			MenuCell(
+				inText     = (inView.theme ?: ExpenseTheme.DAILY).label,
+				inOptions  = ExpenseTheme.entries.map { it.name to it.label },
+				inOnSelect = { inName -> inOnChange(vLine.copy(theme = ExpenseTheme.valueOf(inName), categoryId = null, accountId = null)) },
+				inModifier = Modifier.weight(1.6f).padding(end = 12.dp)
+			)
+		}
 		CellField(
 			inValue    = vAmount,
 			inOnChange = { inText -> vAmount = inText; (if (inText.isBlank()) 0L else parseEuros(inText)?.takeIf { it >= 0 })?.let { inOnChange(vLine.copy(amount = it)) } },
-			inModifier = Modifier.weight(1f).padding(end = 12.dp),
+			inModifier = Modifier.weight(1.2f).padding(end = 12.dp),
 			inPlaceholder = "0,00",
 			inEnd      = true,
 			inError    = vAmount.isNotBlank() && parseEuros(vAmount)?.let { it >= 0 } != true
 		)
-		Box(Modifier.weight(1f).padding(end = 12.dp), contentAlignment = Alignment.CenterEnd) {
-			if (vLine.section != BudgetSection.EXPENSE) inView.actual?.let { AmountText(inCents = it, inStyle = MaterialTheme.typography.bodyLarge) } ?: Text("—", color = MaterialTheme.colorScheme.onSurfaceVariant)
-		}
-		Box(Modifier.weight(1f).padding(end = 12.dp), contentAlignment = Alignment.CenterEnd) {
-			if (vLine.section != BudgetSection.EXPENSE) inView.gap?.let { AmountText(inCents = it, inStyle = MaterialTheme.typography.bodyLarge, inShowPlusSign = true) } ?: Text("—", color = MaterialTheme.colorScheme.onSurfaceVariant)
-		}
 		Box(Modifier.width(40.dp)) {
 			IconButton(onClick = { inOnChange(null) }) { Icon(LineIcons.Close, contentDescription = "Retirer la ligne", modifier = Modifier.size(16.dp)) }
 		}
@@ -326,11 +271,12 @@ private fun sectionAccent(inSection: BudgetSection): Color =
 	)
 
 /*
-	Bandeau des objectifs du mois affiché : « Fixer les objectifs » transforme
+	Bandeau des objectifs du mois choisi : « Fixer les objectifs » transforme
 	le cashflow prévu en objectifs du mois (dépenses par thème, épargne des
 	investissements prévus), suivis dans la page Objectifs ; un mois déjà fixé
 	peut être mis à jour ; un mois écoulé reste figé (historique).
-	inMonth      : mois affiché
+	inMonth      : mois choisi
+	inOnMonth    : change de mois (mois en cours ou suivant)
 	inSpace      : données
 	inController : contrôleur
 	inBudget     : budget
@@ -338,6 +284,7 @@ private fun sectionAccent(inSection: BudgetSection): Color =
 @Composable
 private fun MonthGoalsBar(
 	inMonth      : YearMonth,
+	inOnMonth    : (YearMonth) -> Unit,
 	inSpace      : WorkspaceState,
 	inController : DesktopController,
 	inBudget     : Budget
@@ -364,6 +311,8 @@ private fun MonthGoalsBar(
 				)
 			}
 			Spacer(Modifier.width(16.dp))
+			Box(Modifier.width(260.dp)) { MonthSwitcher(inMonth, YearMonth.from(inSpace.today), YearMonth.from(inSpace.today).plusMonths(1), inOnMonth) }
+			Spacer(Modifier.width(8.dp))
 			if (vPlan != null) TextButton(onClick = { inController.show(Screen.GOALS) }) { Text("Voir les objectifs") }
 			if (!vPast) Button(onClick = { inController.confirmMonthGoals(inMonth) }, enabled = !vEmpty) { Text(if (vPlan == null) "Fixer les objectifs du mois" else "Mettre à jour") }
 		}
