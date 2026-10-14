@@ -96,6 +96,9 @@ data class Budget(val lines: List<BudgetLine> = emptyList())
 
 	// Reste prévu : entrées − dépenses − investissements (négatif = déficit).
 	val remaining: Long get() = total(BudgetSection.INCOME) - total(BudgetSection.EXPENSE) - total(BudgetSection.INVESTMENT)
+
+	// Comptes suivis en investissement (leurs versements y sont comptés, pas dans le thème Crédit).
+	val trackedAccounts: Set<String> get() = lines.filter { it.section == BudgetSection.INVESTMENT }.mapNotNull { it.accountId }.toSet()
 }
 
 /*
@@ -214,19 +217,40 @@ fun compareBudget(
 		}
 	}																				// réel d'une ligne
 	val vViews  = inBudget.lines.map { BudgetLineView(it, vActual(it), if (it.section == BudgetSection.EXPENSE) vThemeOf(it) else null) }	// lignes comparées
-	val vSpent  = vMonthTxs
-		.filter { it.hasCategory && vKinds[it.categoryId] == CategoryKind.EXPENSE }
-		.groupBy { themeOfCategory(vNames.getValue(it.categoryId!!)) }
-		.mapValues { (_, inTxs) -> -inTxs.sumOf { it.categoryAmount() } }
-		.toMutableMap()																// dépenses nettes du mois par thème
-	val vLoans  = inData.accounts.filter { it.type == AccountType.LOAN }.map { it.id }.toSet()	// comptes Crédit
-	val vTracked = inBudget.lines.filter { it.section == BudgetSection.INVESTMENT }.mapNotNull { it.accountId }.toSet()	// comptes suivis en investissement (comptés là, pas ici)
-	val vRepaid = vMonthTxs.filter { it.kind == TransactionKind.TRANSFER || it.kind == TransactionKind.LOAN_PAYMENT }.sumOf { inTx -> inTx.postings.filter { it.accountId in vLoans && it.accountId !in vTracked && it.amountCents > 0 }.sumOf { it.amountCents } }	// capital remboursé dans le mois
-	if (vRepaid != 0L) vSpent[ExpenseTheme.CREDIT] = (vSpent[ExpenseTheme.CREDIT] ?: 0L) + vRepaid
+	val vSpent  = themeSpending(inData, inMonth, inBudget.trackedAccounts)			// dépenses nettes du mois par thème
 	val vThemes = ExpenseTheme.entries.mapNotNull { inTheme ->
 		vViews.filter { it.theme == inTheme }.takeIf { it.isNotEmpty() }?.let { ThemeView(inTheme, it, vSpent[inTheme] ?: 0L) }
 	}																				// thèmes du budget
 	return BudgetView(inMonth, vViews, inBudget, vThemes)
+}
+
+/*
+	Dépenses nettes d'un mois par thème (remboursements déduits) ; le thème
+	Crédit compte aussi le capital remboursé sur les comptes Crédit qui ne
+	sont pas suivis en investissement. Partagé par le budget et les objectifs
+	du mois.
+	inData    : données
+	inMonth   : mois
+	inTracked : comptes suivis en investissement (leurs versements n'y sont pas comptés)
+*/
+fun themeSpending(
+	inData    : DataSet,
+	inMonth   : YearMonth,
+	inTracked : Set<String> = emptySet()
+): Map<ExpenseTheme, Long>
+{
+	val vMonthTxs = inData.transactions.filter { YearMonth.from(it.date) == inMonth }	// opérations du mois
+	val vKinds    = inData.categories.associate { it.id to it.kind }					// nature des catégories
+	val vNames    = inData.categories.associate { it.id to it.name }					// nom des catégories
+	val vSpent    = vMonthTxs
+		.filter { it.hasCategory && vKinds[it.categoryId] == CategoryKind.EXPENSE }
+		.groupBy { themeOfCategory(vNames.getValue(it.categoryId!!)) }
+		.mapValues { (_, inTxs) -> -inTxs.sumOf { it.categoryAmount() } }
+		.toMutableMap()																// dépenses nettes par thème
+	val vLoans    = inData.accounts.filter { it.type == AccountType.LOAN }.map { it.id }.toSet()	// comptes Crédit
+	val vRepaid   = vMonthTxs.filter { it.kind == TransactionKind.TRANSFER || it.kind == TransactionKind.LOAN_PAYMENT }.sumOf { inTx -> inTx.postings.filter { it.accountId in vLoans && it.accountId !in inTracked && it.amountCents > 0 }.sumOf { it.amountCents } }	// capital remboursé dans le mois
+	if (vRepaid != 0L) vSpent[ExpenseTheme.CREDIT] = (vSpent[ExpenseTheme.CREDIT] ?: 0L) + vRepaid
+	return vSpent
 }
 
 /*

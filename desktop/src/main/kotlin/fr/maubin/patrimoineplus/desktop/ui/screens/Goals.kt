@@ -86,7 +86,17 @@ import kotlin.math.roundToLong
 import fr.maubin.patrimoineplus.ui.components.flowAccent
 import fr.maubin.patrimoineplus.ui.components.FlowAccent
 import fr.maubin.patrimoineplus.ui.components.accountAccent
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color
+import fr.maubin.patrimoineplus.ui.goals.MonthGoalKind
+import fr.maubin.patrimoineplus.ui.goals.MonthGoalStatus
+import fr.maubin.patrimoineplus.ui.goals.MonthGoalView
+import fr.maubin.patrimoineplus.ui.goals.evaluateMonth
+import fr.maubin.patrimoineplus.ui.analysis.buildExpenseAnalysis
+import fr.maubin.patrimoineplus.ui.components.SectionHeader
+import fr.maubin.patrimoineplus.ui.components.MonthSwitcher
+import fr.maubin.patrimoineplus.desktop.Screen
+import java.time.YearMonth
+import androidx.compose.foundation.layout.heightIn
 
 private const val kBarMillis = 420														// remplissage de la barre d'avancement
 
@@ -136,7 +146,7 @@ fun GoalsScreen(
 	var vDraft  by remember { mutableStateOf<Draft?>(null) }							// objectif en saisie ; null sans panneau
 	var vLast   by remember { mutableStateOf<Draft?>(null) }							// dernière saisie (fermeture animée)
 	val vOpen   = { inDraft: Draft -> vDraft = inDraft; vLast = inDraft }				// ouvre le panneau
-	val vUpdate = { inGoal: Goal -> inController.setGoals(Goals(vGoals.goals.map { if (it.id == inGoal.id) inGoal else it })) }	// modifie un objectif
+	val vUpdate = { inGoal: Goal -> inController.setGoals(vGoals.copy(goals = vGoals.goals.map { if (it.id == inGoal.id) inGoal else it })) }	// modifie un objectif
 	Row(Modifier.fillMaxSize()) {
 		Column(
 			modifier            = Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
@@ -145,11 +155,13 @@ fun GoalsScreen(
 			Row(verticalAlignment = Alignment.CenterVertically) {
 				Column(Modifier.weight(1f)) {
 					Text("Objectifs", style = MaterialTheme.typography.headlineMedium)
-					Text("Des cibles chiffrées suivies sur vos comptes, ou de simples étapes à cocher. Le rythme se lit sur les douze derniers mois. Enregistré sur ce PC.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+					Text("Vos grands objectifs, et ceux de chaque mois fixés depuis le budget. Tout est suivi sur vos opérations et enregistré sur ce PC.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 				}
 				Spacer(Modifier.width(24.dp))
 				Button(onClick = { vOpen(Draft(null, GoalKind.WEALTH)) }) { Text("Nouvel objectif") }
 			}
+			SectionHeader(inTitle = "Objectifs globaux")
+			Text("Matelas de sécurité, plafond d’un livret ou du PEA, apport pour un achat… : des cibles à moyen terme, suivies sur vos comptes. Le rythme se lit sur les douze derniers mois.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			if (vViews.isEmpty())
 			{
 				Suggestions(inSpace, vOpen)
@@ -159,6 +171,8 @@ fun GoalsScreen(
 				Figures(vViews)
 				TileGrid(vViews, 400.dp) { inView, inMod -> GoalTile(inView, inSpace, inMod, { vOpen(draftOf(inView.goal)) }, vUpdate) }
 			}
+			Spacer(Modifier.height(12.dp))
+			MonthSection(vGoals, inSpace, inController)
 		}
 		AnimatedVisibility(
 			visible = vDraft != null,
@@ -173,10 +187,10 @@ fun GoalsScreen(
 					inClose  = { vDraft = null },
 					inSave   = save@{ inGoal ->
 						if (vDraft == null) return@save								// panneau déjà fermé (double clic pendant sa disparition)
-						inController.setGoals(Goals(if (vGoals.goals.any { it.id == inGoal.id }) vGoals.goals.map { if (it.id == inGoal.id) inGoal else it } else vGoals.goals + inGoal))
+						inController.setGoals(vGoals.copy(goals = if (vGoals.goals.any { it.id == inGoal.id }) vGoals.goals.map { if (it.id == inGoal.id) inGoal else it } else vGoals.goals + inGoal))
 						vDraft = null
 					},
-					inDelete = { inId -> inController.setGoals(Goals(vGoals.goals.filter { it.id != inId })); vDraft = null }
+					inDelete = { inId -> inController.setGoals(vGoals.copy(goals = vGoals.goals.filter { it.id != inId })); vDraft = null }
 				)
 			}
 		}
@@ -217,7 +231,13 @@ private fun Suggestions(
 )
 {
 	val vLivret = inSpace.data.accounts.firstOrNull { !it.archived && it.type == AccountType.SAVINGS && it.name.contains("livret a", ignoreCase = true) }	// Livret A existant
+	val vPea    = inSpace.data.accounts.firstOrNull { !it.archived && it.type == AccountType.BROKERAGE && it.name.contains("pea", ignoreCase = true) }	// PEA existant
+	val vMonths = remember(inSpace.data, inSpace.today) { buildExpenseAnalysis(inSpace.data, inSpace.today).averageExpense }	// dépenses moyennes d'un mois
+	val vCushion = ((vMonths * 3 + 9_999) / 10_000 * 100).coerceAtLeast(300_000)		// trois mois de dépenses, arrondis à la centaine (au moins 3 000 €)
 	val vIdeas  = listOfNotNull(
+		Draft(null, GoalKind.TYPE, "Matelas de sécurité (3 mois de dépenses)", editableEuros(vCushion), accountType = AccountType.SAVINGS),
+		vPea?.let { Draft(null, GoalKind.ACCOUNT, "Remplir le ${it.name}", "150000", accountId = it.id) },
+		Draft(null, GoalKind.MANUAL, "Apport pour un achat immobilier", "40000"),
 		Draft(null, GoalKind.WEALTH, "Atteindre 100 000 € de patrimoine", "100000"),
 		vLivret?.let { Draft(null, GoalKind.ACCOUNT, "Remplir le ${it.name}", "22950", accountId = it.id) },
 		Draft(null, GoalKind.MONTHLY, "Mettre 500 € de côté chaque mois", "500"),
@@ -385,15 +405,17 @@ private fun details(
 	Barre d'avancement fine, remplie en douceur.
 	inPercent : avancement, de 0 à 100
 	inColor   : couleur de la part remplie ; non précisée : encre du thème
+	inModifier : place de la barre
 */
 @Composable
 private fun ProgressBar(
-	inPercent : Int,
-	inColor   : Color = Color.Unspecified
+	inPercent  : Int,
+	inColor    : Color    = Color.Unspecified,
+	inModifier : Modifier = Modifier
 )
 {
 	val vFill by animateFloatAsState(inPercent / 100f, tween(kBarMillis), label = "avancement")	// part remplie
-	Row(verticalAlignment = Alignment.CenterVertically) {
+	Row(inModifier, verticalAlignment = Alignment.CenterVertically) {
 		Box(
 			Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(4.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest)
 				.semantics { contentDescription = "Avancement $inPercent %" }
@@ -594,3 +616,128 @@ private fun goalAccent(
 		GoalKind.MANUAL  -> flowAccent(FlowAccent.OUTFLOW)
 		else             -> flowAccent(FlowAccent.MAIN)
 	}
+
+/*
+	Section des objectifs du mois : mois choisi (mois en cours par défaut,
+	navigation dans l'historique), ses objectifs fixés depuis le budget et
+	leur suivi sur les opérations, puis l'historique des mois précédents
+	(réussis sur fixés), un clic ouvrant un mois.
+	inGoals      : objectifs (mois fixés)
+	inSpace      : données
+	inController : contrôleur
+*/
+@Composable
+private fun MonthSection(
+	inGoals      : Goals,
+	inSpace      : WorkspaceState,
+	inController : DesktopController
+)
+{
+	val vBudget by inController.budget.collectAsState()									// budget (comptes suivis en investissement)
+	val vToday  = YearMonth.from(inSpace.today)											// mois en cours
+	var vMonth  by remember { mutableStateOf(vToday) }									// mois affiché
+	val vFirst  = inGoals.months.firstOrNull()?.yearMonth?.coerceAtMost(vToday) ?: vToday	// premier mois fixé
+	val vLast   = listOfNotNull(vToday, inGoals.months.lastOrNull()?.yearMonth).max()		// dernier mois (le suivant peut être fixé d'avance)
+	val vPlan   = inGoals.plan(vMonth)													// objectifs du mois affiché
+	val vViews  = remember(vPlan, inSpace.data, vBudget, inSpace.today) { vPlan?.let { evaluateMonth(it, inSpace.data, vBudget, inSpace.today) }.orEmpty() }	// objectifs évalués
+	Row(verticalAlignment = Alignment.CenterVertically) {
+		Box(Modifier.weight(1f)) { SectionHeader(inTitle = "Objectifs du mois") }
+		Box(Modifier.width(300.dp)) { MonthSwitcher(vMonth, vFirst, vLast, { vMonth = it }) }
+	}
+	Text("Fixés depuis le budget (« Fixer les objectifs du mois ») : une dépense maximale par thème et l’épargne prévue. Suivis automatiquement sur les opérations saisies.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+	if (vPlan == null)
+	{
+		Tile {
+			Hint(if (vMonth.isBefore(vToday)) "Aucun objectif n’avait été fixé pour ${monthTitle(vMonth).lowercase()}." else "Pas encore d’objectifs pour ${monthTitle(vMonth).lowercase()} : fixez-les depuis votre budget.")
+			if (!vMonth.isBefore(vToday))
+			{
+				Spacer(Modifier.height(8.dp))
+				Button(onClick = { inController.show(Screen.BUDGET) }) { Text("Aller au budget") }
+			}
+		}
+	}
+	else
+	{
+		Text("${vViews.count { it.success }} objectif(s) réussi(s) sur ${vViews.size}" + if (vMonth == vToday) " pour l’instant." else ".", style = MaterialTheme.typography.titleMedium)
+		TileGrid(vViews, 320.dp) { inView, inMod -> MonthGoalTile(inView, inMod) }
+	}
+	val vPast = inGoals.months.filter { it.yearMonth.isBefore(vToday) }.reversed()		// mois écoulés, du plus récent
+	if (vPast.isNotEmpty())
+	{
+		Tile(inTitle = "Historique") {
+			vPast.forEach { inPast ->
+				val vResult = remember(inPast, inSpace.data, vBudget, inSpace.today) { evaluateMonth(inPast, inSpace.data, vBudget, inSpace.today) }	// bilan du mois
+				Row(
+					modifier          = Modifier.fillMaxWidth().heightIn(min = 44.dp).clip(MaterialTheme.shapes.small).clickable(onClickLabel = "Voir le mois") { vMonth = inPast.yearMonth }.padding(horizontal = 8.dp),
+					verticalAlignment = Alignment.CenterVertically
+				) {
+					Text(monthTitle(inPast.yearMonth), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+					Text("${vResult.count { it.success }} / ${vResult.size} réussis", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+					Spacer(Modifier.width(16.dp))
+					ProgressBar(if (vResult.isEmpty()) 0 else vResult.count { it.success } * 100 / vResult.size, flowAccent(FlowAccent.INFLOW), Modifier.width(220.dp))
+				}
+			}
+		}
+	}
+}
+
+/*
+	Tuile d'un objectif du mois : thème (ou épargne), état, réel sur cible,
+	barre, puis ce qu'il reste à dépenser (ou de combien la cible est
+	dépassée), ou ce qu'il reste à mettre de côté.
+	inView : objectif évalué
+	inMod  : place de la tuile
+*/
+@Composable
+private fun MonthGoalTile(
+	inView : MonthGoalView,
+	inMod  : Modifier
+)
+{
+	val vGoal   = inView.goal																// objectif
+	val vSpend  = vGoal.kind == MonthGoalKind.SPENDING									// dépense maximale
+	val vHidden = LocalAmountsHidden.current												// mode discret
+	val vMoney  = { inCents: Long -> if (vHidden) kMaskedAmount else formatEuros(inCents) }	// montant en texte
+	val vAccent = flowAccent(if (vSpend) FlowAccent.OUTFLOW else FlowAccent.INVEST)		// couleur (thème Coloré)
+	Tile(inModifier = inMod, inTitle = vGoal.label, inAccent = vAccent, inAction = { MonthPill(inView.status) }) {
+		Row(verticalAlignment = Alignment.Bottom) {
+			AmountText(inCents = inView.actual, inStyle = MaterialTheme.typography.headlineSmall)
+			Text(if (vSpend) "  sur ${vMoney(vGoal.target)} au plus" else "  sur ${vMoney(vGoal.target)} au moins", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+		}
+		Spacer(Modifier.height(10.dp))
+		ProgressBar(inView.percent.coerceAtMost(100), if (inView.status == MonthGoalStatus.EXCEEDED || inView.status == MonthGoalStatus.MISSED) MaterialTheme.colorScheme.error else vAccent)
+		Spacer(Modifier.height(6.dp))
+		Hint(
+			when
+			{
+				vSpend && inView.actual > vGoal.target -> "Dépassé de ${vMoney(inView.actual - vGoal.target)}."
+				vSpend                                 -> "Reste ${vMoney(vGoal.target - inView.actual)} à dépenser."
+				inView.actual >= vGoal.target          -> "Objectif atteint."
+				else                                   -> "Encore ${vMoney(vGoal.target - inView.actual)} à mettre de côté."
+			}
+		)
+	}
+}
+
+/*
+	Pastille d'état d'un objectif du mois : pleine pour un objectif réussi,
+	couleur d'erreur pour un dépassement ou un manque, bordée sinon.
+	inStatus : état
+*/
+@Composable
+private fun MonthPill(inStatus: MonthGoalStatus)
+{
+	val vColors = MaterialTheme.colorScheme											// palette courante
+	val vGood   = inStatus == MonthGoalStatus.KEPT || inStatus == MonthGoalStatus.REACHED	// réussi
+	val vBad    = inStatus == MonthGoalStatus.EXCEEDED || inStatus == MonthGoalStatus.MISSED	// raté
+	Text(
+		text     = inStatus.label,
+		style    = MaterialTheme.typography.labelMedium,
+		color    = if (vGood) vColors.onPrimary else if (vBad) vColors.error else vColors.onSurfaceVariant,
+		modifier = Modifier
+			.clip(RoundedCornerShape(50))
+			.background(if (vGood) vColors.primary else vColors.surface)
+			.border(1.dp, if (vGood) vColors.primary else if (vBad) vColors.error else vColors.outlineVariant, RoundedCornerShape(50))
+			.padding(horizontal = 10.dp, vertical = 3.dp)
+	)
+}

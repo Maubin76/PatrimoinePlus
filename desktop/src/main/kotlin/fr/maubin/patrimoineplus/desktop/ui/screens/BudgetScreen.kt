@@ -61,7 +61,12 @@ import fr.maubin.patrimoineplus.ui.budget.ThemeView
 import fr.maubin.patrimoineplus.ui.components.flowAccent
 import fr.maubin.patrimoineplus.ui.components.FlowAccent
 import fr.maubin.patrimoineplus.ui.components.isColorful
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color
+import fr.maubin.patrimoineplus.desktop.Screen
+import fr.maubin.patrimoineplus.domain.format.formatFrenchDate
+import java.time.LocalDate
+import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
 
 private const val kUntracked = "__aucun__"											// choix « Sans catégorie » ou « Aucun compte »
 
@@ -95,6 +100,7 @@ fun BudgetScreen(
 			Text("Un mois type : vos entrées, vos dépenses par type et vos investissements. Une ligne peut suivre une catégorie (ou un compte, pour un investissement) : son réel du mois s’affiche à côté. Enregistré sur ce PC.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		}
 		Figures(vView)
+		MonthGoalsBar(vMonth, inSpace, inController, vBudget)
 		Tile(
 			inTitle  = "Cashflow ${if (vActual) "réel de ${monthTitle(vMonth).lowercase()}" else "prévu"}",
 			inAction = {
@@ -318,3 +324,48 @@ private fun sectionAccent(inSection: BudgetSection): Color =
 			BudgetSection.INVESTMENT -> FlowAccent.INVEST
 		}
 	)
+
+/*
+	Bandeau des objectifs du mois affiché : « Fixer les objectifs » transforme
+	le cashflow prévu en objectifs du mois (dépenses par thème, épargne des
+	investissements prévus), suivis dans la page Objectifs ; un mois déjà fixé
+	peut être mis à jour ; un mois écoulé reste figé (historique).
+	inMonth      : mois affiché
+	inSpace      : données
+	inController : contrôleur
+	inBudget     : budget
+*/
+@Composable
+private fun MonthGoalsBar(
+	inMonth      : YearMonth,
+	inSpace      : WorkspaceState,
+	inController : DesktopController,
+	inBudget     : Budget
+)
+{
+	val vGoals  by inController.goals.collectAsState()									// objectifs
+	val vPlan   = vGoals.plan(inMonth)													// objectifs déjà fixés
+	val vPast   = inMonth.isBefore(YearMonth.from(inSpace.today))						// mois écoulé
+	val vEmpty  = inBudget.total(BudgetSection.EXPENSE) <= 0L && inBudget.total(BudgetSection.INVESTMENT) <= 0L	// rien à transformer en objectifs
+	Tile(inAccent = flowAccent(FlowAccent.MAIN)) {
+		Row(verticalAlignment = Alignment.CenterVertically) {
+			Column(Modifier.weight(1f)) {
+				Text("Objectifs de ${monthTitle(inMonth).lowercase()}", style = MaterialTheme.typography.titleMedium)
+				Text(
+					text  = when
+					{
+						vPlan != null -> "Fixés le ${formatFrenchDate(LocalDate.parse(vPlan.confirmed))} : ${vPlan.goals.size} objectif(s), suivis dans la page Objectifs." + if (vPast) "" else " Mettez-les à jour si le budget a changé."
+						vPast         -> "Mois écoulé : aucun objectif n’avait été fixé."
+						vEmpty        -> "Ajoutez des dépenses ou des investissements au budget pour en faire les objectifs du mois."
+						else          -> "Le cashflow prévu devient les objectifs du mois : une dépense maximale par thème, et l’épargne des investissements prévus."
+					},
+					style = MaterialTheme.typography.bodyMedium,
+					color = MaterialTheme.colorScheme.onSurfaceVariant
+				)
+			}
+			Spacer(Modifier.width(16.dp))
+			if (vPlan != null) TextButton(onClick = { inController.show(Screen.GOALS) }) { Text("Voir les objectifs") }
+			if (!vPast) Button(onClick = { inController.confirmMonthGoals(inMonth) }, enabled = !vEmpty) { Text(if (vPlan == null) "Fixer les objectifs du mois" else "Mettre à jour") }
+		}
+	}
+}

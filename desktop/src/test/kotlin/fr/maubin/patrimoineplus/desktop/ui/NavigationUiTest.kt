@@ -17,6 +17,7 @@ import fr.maubin.patrimoineplus.ui.search.SearchQuery
 import fr.maubin.patrimoineplus.ui.theme.ThemeMode
 import org.jetbrains.skia.EncodedImageFormat
 import org.junit.Assert.assertEquals
+import fr.maubin.patrimoineplus.ui.goals.withPlan
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -200,5 +201,46 @@ class NavigationUiTest
 		capture(vApp, "25-operations")
 		vApp.show(Screen.SEARCH)
 		capture(vApp, "25-recherche")
+	}
+
+	/*
+		Objectifs du mois : « Fixer les objectifs du mois » dans le budget crée
+		un objectif par thème de dépenses prévu et l'épargne des investissements
+		prévus ; la page Objectifs les montre sous « Objectifs du mois », à côté
+		des objectifs globaux ; refixer remplace ; un mois écoulé apparaît dans
+		l'historique ; modifier un objectif global garde l'historique.
+		Captures `26-*.png`.
+	*/
+	@Test
+	fun monthGoals()
+	{
+		val vApp   = demo()																	// démonstration
+		val vData  = vApp.workspace.value.data												// données
+		val vMonth = java.time.YearMonth.from(vApp.today())									// mois en cours
+		vApp.setBudget(fr.maubin.patrimoineplus.ui.budget.Budget(listOf(
+			fr.maubin.patrimoineplus.ui.budget.BudgetLine("1", fr.maubin.patrimoineplus.ui.budget.BudgetSection.INCOME, "Salaire", 320_000),
+			fr.maubin.patrimoineplus.ui.budget.BudgetLine("2", fr.maubin.patrimoineplus.ui.budget.BudgetSection.EXPENSE, "Courses", 60_000, theme = fr.maubin.patrimoineplus.ui.budget.ExpenseTheme.DAILY),
+			fr.maubin.patrimoineplus.ui.budget.BudgetLine("3", fr.maubin.patrimoineplus.ui.budget.BudgetSection.EXPENSE, "Transports", 10_000, theme = fr.maubin.patrimoineplus.ui.budget.ExpenseTheme.TRANSPORT),
+			fr.maubin.patrimoineplus.ui.budget.BudgetLine("4", fr.maubin.patrimoineplus.ui.budget.BudgetSection.INVESTMENT, "Livret A", 30_000, accountId = vData.accounts.first { it.name == "Livret A" }.id)
+		)))
+		vApp.setGoals(vApp.goals.value.withPlan(fr.maubin.patrimoineplus.ui.goals.planMonth(vApp.budget.value, vData, vMonth.minusMonths(1), vApp.today().minusMonths(1))))	// mois précédent, déjà fixé
+		vApp.show(Screen.BUDGET)
+		fCompose.setContent { App(vApp) { null } }
+		fCompose.waitForIdle()
+		fCompose.onNodeWithText("Fixer les objectifs du mois").performScrollTo().performClick()
+		fCompose.waitForIdle()
+		val vPlan  = vApp.goals.value.plan(vMonth)!!										// objectifs fixés
+		assertEquals(listOf("Vie quotidienne", "Transports", "Épargne du mois"), vPlan.goals.map { it.label })
+		fCompose.onNodeWithText("Mettre à jour").assertExists()
+		capture(vApp, "26-budget-objectifs")
+		vApp.show(Screen.GOALS)
+		fCompose.waitForIdle()
+		fCompose.onNodeWithText("Objectifs globaux").assertExists()
+		fCompose.onNodeWithText("Objectifs du mois").assertExists()
+		fCompose.onNodeWithText("Historique").performScrollTo().assertExists()
+		capture(vApp, "26-objectifs")
+		vApp.setGoals(vApp.goals.value.copy(goals = listOf(fr.maubin.patrimoineplus.ui.goals.Goal("g", fr.maubin.patrimoineplus.ui.goals.GoalKind.WEALTH, "Patrimoine", target = 10_000_000))))
+		assertEquals(2, vApp.goals.value.months.size)														// l'historique reste
+		assertEquals(2, DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")).loadGoals(vApp.settings.value.source).months.size)	// enregistré
 	}
 }

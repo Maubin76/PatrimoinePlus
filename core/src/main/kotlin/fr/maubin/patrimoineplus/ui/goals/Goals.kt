@@ -69,11 +69,22 @@ data class Goal(
 }
 
 /*
-	Objectifs, dans l'ordre de saisie.
-	goals : objectifs
+	Objectifs du PC.
+	goals  : objectifs globaux, dans l'ordre de saisie
+	months : objectifs fixés mois par mois depuis le budget, du plus ancien au plus récent (historique)
 */
 @Serializable
-data class Goals(val goals: List<Goal> = emptyList())
+data class Goals(
+	val goals  : List<Goal>      = emptyList(),
+	val months : List<MonthPlan> = emptyList()
+)
+{
+	/*
+		Objectifs fixés pour un mois ; null s'ils ne l'ont pas été.
+		inMonth : mois
+	*/
+	fun plan(inMonth: java.time.YearMonth): MonthPlan? = months.firstOrNull { it.month == inMonth.toString() }
+}
 
 /*
 	Objectifs en texte (fichier du PC).

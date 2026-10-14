@@ -48,6 +48,8 @@ import fr.maubin.patrimoineplus.ui.property.editPurchaseForm
 import fr.maubin.patrimoineplus.ui.property.editSaleForm
 import fr.maubin.patrimoineplus.ui.planning.RecurrenceForm
 import fr.maubin.patrimoineplus.ui.theme.ColorTheme
+import fr.maubin.patrimoineplus.ui.goals.planMonth
+import fr.maubin.patrimoineplus.ui.goals.withPlan
 
 private const val kDayCheckMillis = 60_000L										// contrôle du changement de jour
 
@@ -625,7 +627,15 @@ class DesktopController(
 	}
 
 	/*
-		Remplace le budget prévisionnel et l'enregistre sur le PC.
+		Fixe les objectifs d'un mois à partir du budget (dépenses par thème,
+		épargne des investissements prévus) ; ceux déjà fixés pour ce mois sont
+		remplacés.
+		inMonth : mois
+	*/
+	fun confirmMonthGoals(inMonth: YearMonth) = setGoals(goals.value.withPlan(planMonth(budget.value, workspace.value.data, inMonth, today())))
+
+	/*
+		Remplace le budget et l'enregistre.
 		inBudget : budget
 	*/
 	fun setBudget(inBudget: Budget)
