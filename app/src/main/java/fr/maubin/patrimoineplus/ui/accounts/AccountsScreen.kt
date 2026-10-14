@@ -57,7 +57,8 @@ import fr.maubin.patrimoineplus.ui.planning.RecurrencesSection
 import fr.maubin.patrimoineplus.ui.planning.RecurrenceSheet
 import fr.maubin.patrimoineplus.ui.planning.editRecurrenceForm
 import fr.maubin.patrimoineplus.domain.model.AccountType
-import fr.maubin.patrimoineplus.ui.components.ProportionChart
+import fr.maubin.patrimoineplus.ui.components.ProportionChart
+import fr.maubin.patrimoineplus.ui.components.ProportionToggle
 
 /*
 	Onglet des comptes : liste réordonnable avec la valeur de chaque compte,
@@ -221,7 +222,7 @@ fun AccountsContent(
 			val vWeighted = (inState.active + inState.archived).filter { it.weight != null }	// comptes qui comptent dans le patrimoine
 			if (vWeighted.size > 1)
 			{
-				SectionHeader(inTitle = "Répartition")
+				SectionHeader(inTitle = "Répartition", inAction = { ProportionToggle() })
 				Spacer(Modifier.height(8.dp))
 				ProportionChart(
 					inSegments    = vWeighted.groupBy { it.weight!!.rank.coerceAtMost(kAllocationSlots - 1) }.toSortedMap()

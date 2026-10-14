@@ -50,7 +50,8 @@ import fr.maubin.patrimoineplus.ui.shell.PrivacyAction
 import fr.maubin.patrimoineplus.ui.shell.ScreenScaffold
 import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
 import fr.maubin.patrimoineplus.ui.theme.PatrimoineTheme
-import fr.maubin.patrimoineplus.ui.components.ProportionChart
+import fr.maubin.patrimoineplus.ui.components.ProportionChart
+import fr.maubin.patrimoineplus.ui.components.ProportionToggle
 
 private const val kClearedDisplay = "– – –,– – €"						// afficheur vide : aucun compte
 
@@ -121,7 +122,7 @@ fun HomeContent(
 					item { BalanceChart(inState.series, inState.series.last().month) }
 					item { Spacer(Modifier.height(32.dp)) }
 				}
-				item { SectionHeader(inTitle = "Répartition") }
+				item { SectionHeader(inTitle = "Répartition", inAction = { ProportionToggle() }) }
 				item { Spacer(Modifier.height(4.dp)) }
 				item { RepartitionBlock(inState, inOnManageAccounts) }
 			}

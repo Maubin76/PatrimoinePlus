@@ -333,7 +333,8 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   Budget, Projection, Bilan (onglets « Mois par mois » et « Bilan annuel »),
   Réglages (avec la section Catégories).
 - **Répartitions en barre ou en cercle** (PC et téléphone) : une icône sur
-  chaque diagramme de répartition bascule entre la barre et l'anneau, mêmes
+  chaque diagramme de répartition, sur la ligne du titre de sa tuile, bascule
+  entre la barre et l'anneau, mêmes
   parts dans le même ordre et les mêmes teintes que la légende ; le choix
   vaut pour toute l'appli et est mémorisé. Sur le PC, la tuile garde sa
   taille quand on bascule.

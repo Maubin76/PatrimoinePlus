@@ -67,7 +67,8 @@ import java.util.Locale
 import kotlin.math.abs
 import fr.maubin.patrimoineplus.domain.calc.PropertyItem
 import fr.maubin.patrimoineplus.domain.calc.PropertyNet
-import fr.maubin.patrimoineplus.ui.components.ProportionChart
+import fr.maubin.patrimoineplus.ui.components.ProportionChart
+import fr.maubin.patrimoineplus.ui.components.ProportionToggle
 
 private val kShortDate = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)	// date courte
 
@@ -152,7 +153,7 @@ fun PositionsSection(
 {
 	val vPositions = inPortfolio.valuation.positions							// positions
 	val vLines     = allocation(vPositions)										// répartition des titres
-	SectionHeader(inTitle = "Positions", inLinkLabel = if (vPositions.isEmpty()) null else "Actualiser", inOnLink = inOnRefresh)
+	SectionHeader(inTitle = "Positions", inLinkLabel = if (vPositions.isEmpty()) null else "Actualiser", inOnLink = inOnRefresh, inAction = if (vLines.size > 1) ({ ProportionToggle() }) else null)
 	Spacer(Modifier.height(8.dp))
 	if (vLines.size > 1)
 	{

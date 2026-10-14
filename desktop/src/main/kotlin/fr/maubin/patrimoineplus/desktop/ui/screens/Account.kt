@@ -85,7 +85,8 @@ import fr.maubin.patrimoineplus.desktop.ui.panels.Picker
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import fr.maubin.patrimoineplus.ui.components.ProportionChart
+import fr.maubin.patrimoineplus.ui.components.ProportionChart
+import fr.maubin.patrimoineplus.ui.components.ProportionToggle
 
 private val kDayTitle = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANCE)	// en-tête d'un jour
 private val kShortDay = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date d'une opération
@@ -600,7 +601,7 @@ private fun AllocationTile(
 )
 {
 	val vLines = allocation(inPortfolio.valuation.positions)						// répartition des titres
-	Tile(inModifier = inModifier, inTitle = "Répartition des titres") {
+	Tile(inModifier = inModifier, inTitle = "Répartition des titres", inAction = { if (vLines.isNotEmpty()) ProportionToggle() }) {
 		if (vLines.isEmpty())
 		{
 			Hint("Aucune position.")

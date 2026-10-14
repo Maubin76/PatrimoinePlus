@@ -81,18 +81,21 @@ fun InfoPill(
 }
 
 /*
-	Titre de section en gras, avec un lien souligné facultatif à droite.
+	Titre de section en gras, avec une action (icône) et un lien souligné
+	facultatifs à droite, sur la même ligne.
 	inTitle     : titre de la section
 	inLinkLabel : libellé du lien ; null pour ne pas en afficher
 	inOnLink    : action du lien
 	inModifier  : modificateur appliqué
+	inAction    : action placée à droite du titre (bascule d'un diagramme) ; null sans action
 */
 @Composable
 fun SectionHeader(
 	inTitle     : String,
-	inLinkLabel : String?     = null,
-	inOnLink    : () -> Unit  = {},
-	inModifier  : Modifier    = Modifier
+	inLinkLabel : String?                   = null,
+	inOnLink    : () -> Unit                = {},
+	inModifier  : Modifier                  = Modifier,
+	inAction    : (@Composable () -> Unit)? = null
 )
 {
 	Row(
@@ -104,6 +107,7 @@ fun SectionHeader(
 			style    = MaterialTheme.typography.headlineSmall,
 			modifier = Modifier.weight(1f).semantics { heading() }
 		)
+		inAction?.invoke()
 		if (inLinkLabel != null)
 		{
 			Box(

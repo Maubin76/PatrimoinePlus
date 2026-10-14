@@ -65,6 +65,7 @@ import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.ui.components.rankColor
 import fr.maubin.patrimoineplus.ui.components.ProportionChart
 import fr.maubin.patrimoineplus.ui.home.HomeGroup
+import fr.maubin.patrimoineplus.ui.components.ProportionToggle
 
 private val kShortDay   = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date courte
 private val kAccountMin = 300.dp													// largeur minimale d'une tuile de compte
@@ -232,7 +233,7 @@ private fun RepartitionTile(
 )
 {
 	val vGroups = inState.home.assetGroups.sortedByDescending { it.subtotalCents }			// de la plus grande part à la plus petite
-	Tile(inModifier = inModifier, inTitle = "Répartition") {
+	Tile(inModifier = inModifier, inTitle = "Répartition", inAction = { ProportionToggle() }) {
 		ProportionChart(
 			inSegments    = vGroups.mapIndexed { inRank, inGroup -> BarSegment(inGroup.subtotalCents, rankColor(inRank, vGroups.size)) },
 			inDescription = "Répartition par type de compte, nette des crédits, de la plus grande part à la plus petite"
