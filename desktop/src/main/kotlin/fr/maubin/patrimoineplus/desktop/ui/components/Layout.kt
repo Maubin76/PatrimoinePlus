@@ -163,8 +163,9 @@ fun Hint(inText: String)
 	inOnChange    : modification
 	inModifier    : place du champ
 	inPlaceholder : texte grisé quand le champ est vide
-	inEnd         : texte aligné à droite (montants)
+	inEnd         : texte aligné à droite (montants), texte grisé compris
 	inError       : bordure d'erreur
+	inUnderline   : filet sous le champ (toujours affiché en cas d'erreur)
 */
 @Composable
 fun CellField(
@@ -173,7 +174,8 @@ fun CellField(
 	inModifier    : Modifier = Modifier,
 	inPlaceholder : String   = "",
 	inEnd         : Boolean  = false,
-	inError       : Boolean  = false
+	inError       : Boolean  = false,
+	inUnderline   : Boolean  = true
 )
 {
 	val vColors = MaterialTheme.colorScheme											// palette courante
@@ -187,13 +189,13 @@ fun CellField(
 			cursorBrush   = androidx.compose.ui.graphics.SolidColor(vColors.onSurface),
 			modifier      = Modifier.fillMaxWidth().padding(vertical = 6.dp),
 			decorationBox = { inField ->
-				Box {
-					if (inValue.isEmpty() && inPlaceholder.isNotEmpty()) Text(inPlaceholder, style = vStyle.copy(color = vColors.onSurfaceVariant), maxLines = 1, overflow = TextOverflow.Ellipsis)
+				Box(Modifier.fillMaxWidth()) {												// toute la largeur : alignement à droite exact
+					if (inValue.isEmpty() && inPlaceholder.isNotEmpty()) Text(inPlaceholder, style = vStyle.copy(color = vColors.onSurfaceVariant), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
 					inField()
 				}
 			}
 		)
-		androidx.compose.material3.HorizontalDivider(color = if (inError) vColors.error else vColors.outlineVariant)
+		if (inUnderline || inError) androidx.compose.material3.HorizontalDivider(color = if (inError) vColors.error else vColors.outlineVariant)
 	}
 }
 

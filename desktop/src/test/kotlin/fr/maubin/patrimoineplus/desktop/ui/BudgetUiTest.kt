@@ -28,7 +28,10 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 import java.time.Clock
 import java.time.Instant
-import java.time.ZoneId
+import java.time.ZoneId
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.graphics.asSkiaBitmap
 
 /*
 	Budget prévisionnel dans l'interface du PC (sans écran), page de
@@ -95,11 +98,11 @@ class BudgetUiTest
 		fCompose.setContent { App(vApp) { null } }
 		fCompose.onNodeWithText("Budget prévisionnel").assertExists()
 		fCompose.onNodeWithText("Cashflow").assertExists()
-		listOf("Réel du mois", "Écart", "Prévu").forEach { assertTrue(it, fCompose.onAllNodesWithText(it).fetchSemanticsNodes().isEmpty()) }	// plus de suivi dans le budget
-		fCompose.onAllNodesWithText("Montant")[0].assertExists()
+		listOf("Réel du mois", "Écart", "Prévu", "Montant", "Thème").forEach { assertTrue(it, fCompose.onAllNodesWithText(it).fetchSemanticsNodes().isEmpty()) }	// ni suivi ni en-têtes de colonnes
 		fCompose.onAllNodesWithText("Ajouter une ligne")[1].performScrollTo().performClick()		// rubrique Dépenses
 		fCompose.waitForIdle()
 		val vNew = vApp.budget.value.lines.single { it.name.isEmpty() }					// ligne ajoutée
+		File("build/captures-desktop/17-budget-ligne-vide.png").writeBytes(org.jetbrains.skia.Image.makeFromBitmap(fCompose.onRoot().captureToImage().asSkiaBitmap()).encodeToData(EncodedImageFormat.PNG)!!.bytes)	// « 0,00 » grisé aligné sur les montants
 		assertEquals(BudgetSection.EXPENSE, vNew.section)
 		val vFields = fCompose.onAllNodes(hasSetTextAction())							// champs des lignes
 		val vCount  = vFields.fetchSemanticsNodes().size								// nombre de champs

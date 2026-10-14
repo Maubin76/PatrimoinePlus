@@ -66,6 +66,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.sp
 
+private const val kNameWeight   = 2.2f											// largeur relative de la colonne du nom
+private const val kThemeWeight  = 1.8f											// largeur relative de la colonne du thème (dépenses)
+private const val kAmountWeight = 1.2f											// largeur relative de la colonne du montant
+
 /*
 	Budget prévisionnel mensuel, page de planification : lignes libres
 	d'entrées, de dépenses (rangées par thème) et d'investissements, chiffres
@@ -136,8 +140,8 @@ private fun Figures(inBudget: Budget)
 }
 
 /*
-	Tuile d'une rubrique : ses lignes (nom, thème pour une dépense, montant)
-	et l'ajout d'une ligne. Les dépenses sont rangées par thème, avec le total
+	Tuile d'une rubrique : ses lignes (nom, thème pour une dépense, montant,
+	sans en-têtes de colonnes) et l'ajout d'une ligne. Les dépenses sont rangées par thème, avec le total
 	de chaque thème.
 	inSection : rubrique
 	inView    : budget rangé par thème
@@ -173,17 +177,6 @@ private fun SectionTile(
 				}
 			)
 		}
-		else
-		{
-			Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-				val vHeads = listOfNotNull("Nom" to 3f, ("Thème" to 1.6f).takeIf { inSection == BudgetSection.EXPENSE }, "Montant" to 1.2f)	// en-têtes
-			vHeads.forEach { (inHead, inWeight) ->
-					Text(inHead, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(inWeight).padding(end = 12.dp))
-				}
-				Spacer(Modifier.width(40.dp))
-			}
-			HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-		}
 		val vChange = { inLineView: BudgetLineView -> { inNew: BudgetLine? -> inUpdate(inBudget.lines.mapNotNull { if (it.id == inLineView.line.id) inNew else it }) } }	// modification d'une ligne
 		if (inSection == BudgetSection.EXPENSE)
 		{
@@ -210,8 +203,8 @@ private fun ThemeRow(inTheme: ThemeView)
 {
 	Row(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
 		val vStyle = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp, lineHeight = 24.sp)	// sous-titre : entre l'en-tête de colonne et le titre de rubrique
-		Text(inTheme.theme.label, style = vStyle, modifier = Modifier.weight(4.6f).padding(end = 12.dp))
-		Box(Modifier.weight(1.2f).padding(end = 12.dp), contentAlignment = Alignment.CenterEnd) { AmountText(inCents = inTheme.planned, inStyle = vStyle) }
+		Text(inTheme.theme.label, style = vStyle, modifier = Modifier.weight(kNameWeight + kThemeWeight).padding(end = 12.dp))
+		Box(Modifier.weight(kAmountWeight).padding(end = 12.dp), contentAlignment = Alignment.CenterEnd) { AmountText(inCents = inTheme.planned, inStyle = vStyle) }
 		Spacer(Modifier.width(40.dp))
 	}
 	HorizontalDivider(thickness = 1.5.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f))	// trait sous le thème, plus marqué qu'un filet
@@ -233,20 +226,20 @@ private fun LineRow(
 	val vLine   = inView.line																// ligne
 	var vAmount by remember(vLine.id) { mutableStateOf(if (vLine.amount == 0L) "" else editableEuros(vLine.amount)) }	// montant tapé
 	Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-		CellField(vLine.name, { inOnChange(vLine.copy(name = it)) }, Modifier.weight(3f).padding(end = 12.dp), inPlaceholder = "Nom")
+		CellField(vLine.name, { inOnChange(vLine.copy(name = it)) }, Modifier.weight(if (vLine.section == BudgetSection.EXPENSE) kNameWeight else kNameWeight + kThemeWeight).padding(end = 12.dp), inPlaceholder = "Nom", inUnderline = false)
 		if (vLine.section == BudgetSection.EXPENSE)
 		{
 			MenuCell(
 				inText     = (inView.theme ?: ExpenseTheme.DAILY).label,
 				inOptions  = ExpenseTheme.entries.map { it.name to it.label },
 				inOnSelect = { inName -> inOnChange(vLine.copy(theme = ExpenseTheme.valueOf(inName), categoryId = null, accountId = null)) },
-				inModifier = Modifier.weight(1.6f).padding(end = 12.dp)
+				inModifier = Modifier.weight(kThemeWeight).padding(end = 12.dp)
 			)
 		}
 		CellField(
 			inValue    = vAmount,
 			inOnChange = { inText -> vAmount = inText; (if (inText.isBlank()) 0L else parseEuros(inText)?.takeIf { it >= 0 })?.let { inOnChange(vLine.copy(amount = it)) } },
-			inModifier = Modifier.weight(1.2f).padding(end = 12.dp),
+			inModifier = Modifier.weight(kAmountWeight).padding(end = 12.dp),
 			inPlaceholder = "0,00",
 			inEnd      = true,
 			inError    = vAmount.isNotBlank() && parseEuros(vAmount)?.let { it >= 0 } != true
