@@ -135,7 +135,7 @@ fun App(
 	val vSettings by inController.settings.collectAsState()					// réglages
 	val vSpace    by inController.workspace.collectAsState()				// données
 	val vPending  by inController.pending.collectAsState()					// action retenue
-	PatrimoineTheme(inDarkTheme = vSettings.appearance.isDark(), inTrendColors = vSettings.trend) {
+	PatrimoineTheme(inDarkTheme = vSettings.appearance.isDark(), inColorTheme = vSettings.colors) {
 		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie)) {
 			Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
 				if (vSpace.source == Source.None)

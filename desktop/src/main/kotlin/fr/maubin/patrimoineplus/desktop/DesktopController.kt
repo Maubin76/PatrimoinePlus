@@ -47,6 +47,7 @@ import fr.maubin.patrimoineplus.ui.property.SaleForm
 import fr.maubin.patrimoineplus.ui.property.editPurchaseForm
 import fr.maubin.patrimoineplus.ui.property.editSaleForm
 import fr.maubin.patrimoineplus.ui.planning.RecurrenceForm
+import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 
 private const val kDayCheckMillis = 60_000L										// contrôle du changement de jour
 
@@ -355,10 +356,10 @@ class DesktopController(
 	fun setAppearance(inAppearance: ThemeMode) = update(fSettings.value.copy(appearance = inAppearance))
 
 	/*
-		Active ou désactive les couleurs des hausses et des baisses.
-		inEnabled : vrai pour colorer
+		Choisit le thème de couleurs (mémorisé).
+		inTheme : thème
 	*/
-	fun setTrend(inEnabled: Boolean) = update(fSettings.value.copy(trend = inEnabled))
+	fun setColorTheme(inTheme: ColorTheme) = update(fSettings.value.copy(colors = inTheme))
 
 	/*
 		Choisit la forme d'un diagramme de répartition (mémorisée pour lui seul).

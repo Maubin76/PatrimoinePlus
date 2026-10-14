@@ -68,7 +68,8 @@ import androidx.compose.ui.Modifier
 import fr.maubin.patrimoineplus.ui.entry.newEntryForm
 import fr.maubin.patrimoineplus.ui.home.buildHomeState
 import fr.maubin.patrimoineplus.ui.components.LocalProportionStyle
-import fr.maubin.patrimoineplus.ui.components.ProportionStyle
+import fr.maubin.patrimoineplus.ui.components.ProportionStyle
+import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 
 private const val kOutDir = "build/outputs/roborazzi"						// dossier des captures
 
@@ -170,9 +171,10 @@ class ScreenshotTest
 		inHidden   : Boolean,
 		inSelected : TopLevelDestination,
 		inPosition : Float = inSelected.ordinal.toFloat(),
+		inColors   : ColorTheme = ColorTheme.MONOCHROME,
 		inScreen   : @Composable () -> Unit
 	): @Composable () -> Unit = {
-		PatrimoineTheme(inDarkTheme = inDark) {
+		PatrimoineTheme(inDarkTheme = inDark, inColorTheme = inColors) {
 			CompositionLocalProvider(LocalAmountsHidden provides inHidden) {
 				AppFrame(
 					inPosition = { inPosition },
@@ -330,6 +332,36 @@ class ScreenshotTest
 		captureRoboImage("$kOutDir/home-demo.png", content = shell(false, false, TopLevelDestination.Home) {
 			HomeContent(vState, {}, {})
 		})
+	}
+
+	/*
+		Accueil de démonstration en thème Coloré, clair puis sombre : fonds
+		teintés, encre bleu nuit, répartition aux couleurs de la palette,
+		variation du mois en bleu-vert.
+	*/
+	@Test
+	@Config(qualifiers = "w360dp-h1500dp-xxhdpi")
+	fun homeColorful()
+	{
+		val vToday = LocalDate.parse("2026-10-07")								// date de calcul
+		val vDemo  = buildDemoData(vToday)										// démonstration
+		val vState = buildHomeState(vDemo.accounts, vDemo.transactions, vDemo.prices, vToday, vDemo.loans)	// état calculé, en net
+		captureRoboImage("$kOutDir/home-colore.png", content = shell(false, false, TopLevelDestination.Home, inColors = ColorTheme.COLORFUL) {
+			CompositionLocalProvider(LocalProportionStyle provides ProportionStyle(setOf("accueil"))) { HomeContent(vState, {}, {}) }
+		})
+	}
+
+	/*
+		Accueil de démonstration en thème Coloré sombre.
+	*/
+	@Test
+	@Config(qualifiers = "w360dp-h1500dp-xxhdpi")
+	fun homeColorfulDark()
+	{
+		val vToday = LocalDate.parse("2026-10-07")								// date de calcul
+		val vDemo  = buildDemoData(vToday)										// démonstration
+		val vState = buildHomeState(vDemo.accounts, vDemo.transactions, vDemo.prices, vToday, vDemo.loans)	// état calculé, en net
+		captureRoboImage("$kOutDir/home-colore-sombre.png", content = shell(true, false, TopLevelDestination.Home, inColors = ColorTheme.COLORFUL) { HomeContent(vState, {}, {}) })
 	}
 
 	/*

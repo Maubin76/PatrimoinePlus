@@ -30,7 +30,9 @@ import fr.maubin.patrimoineplus.ui.budget.BudgetSection
 import fr.maubin.patrimoineplus.ui.budget.CashFlowDiagram
 import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
 import kotlin.math.max
-import kotlin.math.min
+import kotlin.math.min
+import fr.maubin.patrimoineplus.ui.theme.LocalColorTheme
+import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 
 private val kNodeWidth = 8.dp															// largeur d'un nœud (bouts arrondis)
 private val kGap       = 8.dp															// espace entre deux nœuds d'un thème
@@ -38,15 +40,42 @@ private val kLaneGap   = 16.dp															// espace entre deux thèmes
 private val kChipH     = 24.dp															// hauteur d'une pastille d'étiquette
 private val kFlowSpan  = 380.dp															// hauteur donnée au total du budget
 
-private val kSource    = Color(0xFFB7C1F7)												// entrées (pervenche)
-private val kBudget    = Color(0xFFF7D0B0)												// budget du mois (pêche)
-private val kInvest    = Color(0xFFF2B4C3)												// investissements (rose)
-private val kRest      = Color(0xFFC8CDD7)												// reste (gris bleuté)
-private val kDeficit   = Color(0xFFEE9A9A)												// déficit (rouge doux)
-private val kThemes    = listOf(															// thèmes de dépenses, dans l'ordre
-	Color(0xFFD6B6E6), Color(0xFFC4B6F5), Color(0xFFA7DCD5), Color(0xFFF5B6A6),
-	Color(0xFFF2D8A2), Color(0xFFB7E0C2), Color(0xFFAECCEA), Color(0xFFE6C4AF)
+/*
+	Teintes du diagramme de cashflow (pastel, sous des étiquettes toujours
+	foncées).
+	source  : entrées
+	budget  : budget du mois
+	invest  : investissements
+	rest    : reste
+	deficit : déficit
+	themes  : thèmes de dépenses, dans l'ordre
+*/
+private class FlowPalette(
+	val source  : Color,
+	val budget  : Color,
+	val invest  : Color,
+	val rest    : Color,
+	val deficit : Color,
+	val themes  : List<Color>
 )
+
+private val kPastels  = FlowPalette(
+	source  = Color(0xFFB7C1F7),																// pervenche
+	budget  = Color(0xFFF7D0B0),																// pêche
+	invest  = Color(0xFFF2B4C3),																// rose
+	rest    = Color(0xFFC8CDD7),																// gris bleuté
+	deficit = Color(0xFFEE9A9A),																// rouge doux
+	themes  = listOf(Color(0xFFD6B6E6), Color(0xFFC4B6F5), Color(0xFFA7DCD5), Color(0xFFF5B6A6), Color(0xFFF2D8A2), Color(0xFFB7E0C2), Color(0xFFAECCEA), Color(0xFFE6C4AF))
+)																							// thèmes Monochrome et Minimal
+
+private val kSummer   = FlowPalette(
+	source  = Color(0xFFA9D6EC),																// bleu ciel adouci
+	budget  = Color(0xFFFFD466),																// ambre adouci
+	invest  = Color(0xFF7CC6D8),																// bleu-vert adouci
+	rest    = Color(0xFFCFE3EC),																// ciel très pâle
+	deficit = Color(0xFFFDB066),																// orange adouci
+	themes  = listOf(Color(0xFF8ECAE6), Color(0xFFFFE299), Color(0xFF4DB3CB), Color(0xFFFDA34D), Color(0xFFB9DEEF), Color(0xFFFFC94D), Color(0xFF9BD3E0), Color(0xFFFEC28A))
+)																							// thème Coloré : palette de l'appli, adoucie
 
 /*
 	Nœud placé : position verticale et teinte.
@@ -120,8 +149,9 @@ fun SankeyDiagram(
 	val vMeasurer = rememberTextMeasurer()												// mesure des étiquettes
 	val vHidden   = LocalAmountsHidden.current											// mode discret
 	val vText     = MaterialTheme.typography.labelLarge.copy(color = Color(0xFF1D1D24))	// texte des pastilles (toujours sur fond clair)
+	val vPalette  = if (LocalColorTheme.current == ColorTheme.COLORFUL) kSummer else kPastels	// teintes du thème
 	val vPx       = with(LocalDensity.current) { Metrics(kNodeWidth.toPx(), kGap.toPx(), kLaneGap.toPx(), kChipH.toPx(), kFlowSpan.toPx(), 12.dp.toPx()) }	// mesures en pixels
-	val vLayout   = layoutDiagram(inDiagram, vPx)											// placement vertical
+	val vLayout   = layoutDiagram(inDiagram, vPx, vPalette)											// placement vertical
 	val vHeight   = with(LocalDensity.current) { vLayout.height.toDp() }				// hauteur du dessin
 	Canvas(
 		inModifier.fillMaxWidth().height(vHeight).semantics {
@@ -148,7 +178,7 @@ fun SankeyDiagram(
 		vAt = vLayout.budget.top
 		inDiagram.groups.forEachIndexed { inIndex, inGroup ->
 			val vGroupP = vLayout.groups[inIndex]													// nœud du thème
-			ribbon(vX1 + vNode, vAt, vX2, vGroupP.top, vGroupP.height, kBudget.copy(alpha = vAlpha))
+			ribbon(vX1 + vNode, vAt, vX2, vGroupP.top, vGroupP.height, vPalette.budget.copy(alpha = vAlpha))
 			vAt += vGroupP.height
 			var vFrom = vGroupP.top																	// départ depuis le thème
 			inGroup.items.indices.forEach { inItem ->
@@ -159,7 +189,7 @@ fun SankeyDiagram(
 		}
 		// Nœuds.
 		vLayout.sources.forEach { node(vX0, it, vNode, vEdge(it.color)) }
-		node(vX1, vLayout.budget, vNode, vEdge(kBudget))
+		node(vX1, vLayout.budget, vNode, vEdge(vPalette.budget))
 		vLayout.groups.forEachIndexed { inIndex, inPlaced ->
 			node(vX2, inPlaced, vNode, vEdge(inPlaced.color))
 			vLayout.items[inIndex].forEach { node(vX3, it, vNode, vEdge(inPlaced.color)) }
@@ -185,10 +215,12 @@ fun SankeyDiagram(
 	est centré sur l'ensemble des thèmes, les entrées sur le budget.
 	inDiagram : diagramme
 	inPx      : mesures
+	inPalette : teintes du thème
 */
 private fun layoutDiagram(
 	inDiagram : CashFlowDiagram,
-	inPx      : Metrics
+	inPx      : Metrics,
+	inPalette : FlowPalette
 ): Layout
 {
 	val vScale  = if (inDiagram.total > 0) inPx.span / inDiagram.total else 0f		// pixels par centime
@@ -201,9 +233,9 @@ private fun layoutDiagram(
 	inDiagram.groups.forEach { inGroup ->
 		val vColor = when (inGroup.kind)
 		{
-			BudgetSection.INVESTMENT -> kInvest
-			null                     -> kRest
-			else                     -> kThemes[vTheme++ % kThemes.size]
+			BudgetSection.INVESTMENT -> inPalette.invest
+			null                     -> inPalette.rest
+			else                     -> inPalette.themes[vTheme++ % inPalette.themes.size]
 		}																				// teinte du thème
 		val vLane  = if (inGroup.items.isEmpty()) vSlot(inGroup.amount)
 			else inGroup.items.sumOf { vSlot(it.amount).toDouble() }.toFloat() + inPx.gap * (inGroup.items.size - 1)	// hauteur du couloir
@@ -220,13 +252,13 @@ private fun layoutDiagram(
 	val vGroupsBottom = vY - inPx.laneGap												// bas du dernier thème
 	val vBudgetH = inDiagram.total * vScale											// épaisseur du budget
 	val vMid     = (vTop + vGroupsBottom) / 2f											// milieu des thèmes
-	val vBudget  = Placed(vMid - vBudgetH / 2f, vBudgetH, kBudget)						// nœud du budget
+	val vBudget  = Placed(vMid - vBudgetH / 2f, vBudgetH, inPalette.budget)						// nœud du budget
 	val vStack   = inDiagram.sources.sumOf { vSlot(it.amount).toDouble() }.toFloat() + inPx.gap * (inDiagram.sources.size - 1)	// hauteur des entrées
 	var vSrcY    = max(vTop, vMid - vStack / 2f)									// haut de la première entrée
 	val vSources = inDiagram.sources.map { inFlow ->
 		val vSlotH = vSlot(inFlow.amount)												// place de l'entrée
 		val vH     = inFlow.amount * vScale												// épaisseur de l'entrée
-		Placed(vSrcY + vSlotH / 2f - vH / 2f, max(vH, 3f), if (inFlow.kind == null) kDeficit else kSource).also { vSrcY += vSlotH + inPx.gap }
+		Placed(vSrcY + vSlotH / 2f - vH / 2f, max(vH, 3f), if (inFlow.kind == null) inPalette.deficit else inPalette.source).also { vSrcY += vSlotH + inPx.gap }
 	}
 	val vBottom = max(vGroupsBottom, max(vSrcY - inPx.gap, vBudget.top + vBudget.height)) + inPx.pad	// bas du dessin
 	return Layout(vSources, vBudget, vGroups, vItems, vBottom)

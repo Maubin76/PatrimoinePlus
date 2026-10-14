@@ -11,7 +11,8 @@ import fr.maubin.patrimoineplus.ui.goals.Goals
 import fr.maubin.patrimoineplus.ui.goals.decodeGoals
 import fr.maubin.patrimoineplus.ui.goals.encodeGoals
 import java.nio.file.StandardCopyOption
-import java.util.Properties
+import java.util.Properties
+import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 
 /*
 	Source des données de l'appli PC.
@@ -36,14 +37,14 @@ sealed interface Source
 	source     : source des données au prochain lancement
 	appearance : apparence
 	hidden     : mode discret (montants masqués)
-	trend      : hausses en vert, baisses en rouge (noir et blanc par défaut)
+	colors     : thème de couleurs (Monochrome par défaut)
 	pies       : clés des diagrammes de répartition affichés en cercle (barre par défaut)
 */
 data class DesktopSettings(
 	val source     : Source    = Source.None,
 	val appearance : ThemeMode = ThemeMode.SYSTEM,
 	val hidden     : Boolean   = false,
-	val trend      : Boolean   = false,
+	val colors     : ColorTheme = ColorTheme.MONOCHROME,
 	val pies       : Set<String> = emptySet()
 )
 
@@ -76,7 +77,8 @@ class DesktopConfig(private val inFile: Path)
 			source     = vSource,
 			appearance = ThemeMode.entries.firstOrNull { it.name == vProps.getProperty("appearance") } ?: ThemeMode.SYSTEM,
 			hidden     = vProps.getProperty("hidden") == "true",
-			trend      = vProps.getProperty("trend") == "true",
+			colors     = ColorTheme.entries.firstOrNull { it.name == vProps.getProperty("theme") }
+				?: if (vProps.getProperty("trend") == "true") ColorTheme.MINIMAL else ColorTheme.MONOCHROME,	// ancien réglage vert et rouge : thème Minimal
 			pies       = vProps.getProperty("pies").orEmpty().split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
 		)
 	}
@@ -101,7 +103,7 @@ class DesktopConfig(private val inFile: Path)
 		}
 		vProps.setProperty("appearance", inSettings.appearance.name)
 		vProps.setProperty("hidden", inSettings.hidden.toString())
-		vProps.setProperty("trend", inSettings.trend.toString())
+		vProps.setProperty("theme", inSettings.colors.name)
 		vProps.setProperty("pies", inSettings.pies.sorted().joinToString(","))
 		inFile.parent?.let { Files.createDirectories(it) }
 		val vTemp = inFile.resolveSibling("${inFile.fileName}.tmp")				// écriture provisoire

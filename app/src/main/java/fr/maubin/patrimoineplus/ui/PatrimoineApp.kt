@@ -152,7 +152,7 @@ private fun MainTabs(
 	val vSnackbar  = remember { SnackbarHostState() }						// messages éphémères
 	val vHidden    by inAppViewModel.amountsHidden.collectAsStateWithLifecycle()	// mode discret
 	val vThemeMode by inAppViewModel.themeMode.collectAsStateWithLifecycle()	// apparence choisie
-	val vTrend     by inAppViewModel.trendColors.collectAsStateWithLifecycle()	// couleurs des hausses et baisses
+	val vColors    by inAppViewModel.colorTheme.collectAsStateWithLifecycle()	// thème de couleurs
 	val vToggle    = inAppViewModel::toggleAmountsHidden					// bascule du mode discret
 	val vData      by inEntry.data.collectAsStateWithLifecycle()			// données de saisie
 	var vEntry     by remember { mutableStateOf<EntryForm?>(null) }		// saisie ouverte
@@ -198,8 +198,8 @@ private fun MainTabs(
 					inSafety      = rememberSafetyActions(vSnackbar),
 					inSync        = rememberSyncActions(vSnackbar),
 					inDemo        = demoActions(vSnackbar),
-					inTrend       = vTrend,
-					inOnTrend     = inAppViewModel::setTrendColors
+					inColorTheme  = vColors,
+					inOnColorTheme = inAppViewModel::setColorTheme
 				)
 			}
 		}

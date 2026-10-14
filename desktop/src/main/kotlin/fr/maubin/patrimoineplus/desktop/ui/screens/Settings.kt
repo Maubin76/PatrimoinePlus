@@ -30,12 +30,13 @@ import fr.maubin.patrimoineplus.desktop.DesktopController
 import fr.maubin.patrimoineplus.desktop.data.Source
 import fr.maubin.patrimoineplus.ui.components.BorderedCard
 import fr.maubin.patrimoineplus.ui.components.SectionHeader
-import java.nio.file.Path
+import java.nio.file.Path
 import fr.maubin.patrimoineplus.desktop.data.WorkspaceState
+import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 
 /*
 	Réglages de l'appli PC : source des données (dossier synchronisé,
-	démonstration), apparence, mode discret, catégories.
+	démonstration), apparence et thème de couleurs, mode discret, catégories.
 	inSpace        : données (catégories)
 	inController   : contrôleur
 	inOnPickFolder : ouvre le sélecteur de dossier
@@ -97,16 +98,30 @@ fun SettingsScreen(
 				)
 			}
 		}
-		Spacer(Modifier.height(12.dp))
-		BorderedCard {
-			Row(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-				Column(Modifier.weight(1f)) {
-					Text("Hausses en vert, baisses en rouge", style = MaterialTheme.typography.titleMedium)
-					Text("Colore les variations et les plus-values. Sinon, tout reste en noir et blanc ; le signe + ou − est toujours affiché.", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
-				}
-				Switch(checked = vSettings.trend, onCheckedChange = inController::setTrend)
+		Spacer(Modifier.height(16.dp))
+		Text("Thème", style = MaterialTheme.typography.titleMedium)
+		Spacer(Modifier.height(8.dp))
+		SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+			ColorTheme.entries.forEachIndexed { inIndex, inEntry ->
+				SegmentedButton(
+					selected = inEntry == vSettings.colors,
+					onClick  = { inController.setColorTheme(inEntry) },
+					shape    = SegmentedButtonDefaults.itemShape(index = inIndex, count = ColorTheme.entries.size),
+					icon     = {},
+					colors   = SegmentedButtonDefaults.colors(
+						activeContainerColor   = vColors.primary,
+						activeContentColor     = vColors.onPrimary,
+						activeBorderColor      = vColors.primary,
+						inactiveContainerColor = vColors.surface,
+						inactiveContentColor   = vColors.onSurface,
+						inactiveBorderColor    = vColors.outlineVariant
+					),
+					label    = { Text(inEntry.label) }
+				)
 			}
 		}
+		Spacer(Modifier.height(8.dp))
+		Text(vSettings.colors.detail, style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
 		Spacer(Modifier.height(32.dp))
 		SectionHeader(inTitle = "Confidentialité")
 		Spacer(Modifier.height(12.dp))

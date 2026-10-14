@@ -98,9 +98,11 @@ class DesktopUiTest
 		vApp.setAppearance(ThemeMode.DARK)
 		capture("05-livret-sombre") { App(vApp) { null } }
 		vApp.back()
-		vApp.setTrend(true)
+		vApp.setColorTheme(fr.maubin.patrimoineplus.ui.theme.ColorTheme.MINIMAL)
 		capture("06-tableau-de-bord-sombre-couleurs") { App(vApp) { null } }
-		vApp.setTrend(false)
+		vApp.setColorTheme(fr.maubin.patrimoineplus.ui.theme.ColorTheme.COLORFUL)
+		capture("06-tableau-de-bord-sombre-colore") { App(vApp) { null } }
+		vApp.setColorTheme(fr.maubin.patrimoineplus.ui.theme.ColorTheme.MONOCHROME)
 		vApp.show(Screen.SETTINGS)
 		capture("07-reglages-sombre") { App(vApp) { null } }
 		vApp.setAppearance(ThemeMode.LIGHT)

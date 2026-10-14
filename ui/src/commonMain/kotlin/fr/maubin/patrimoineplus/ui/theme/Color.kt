@@ -121,3 +121,111 @@ val MonoDarkColors: ColorScheme = darkColorScheme(
 // (écart ΔE ≥ 15 entre voisins, y compris daltonisme), chaque teinte étant doublée d'une étiquette.
 val kAllocationLight = listOf(Color(0xFF0A0A0A), Color(0xFF5C5C5C), Color(0xFF9E9E9E), Color(0xFFCFCFCF))	// mode clair
 val kAllocationDark  = listOf(Color(0xFFF5F5F5), Color(0xFFABABAB), Color(0xFF6E6E6E), Color(0xFF3D3D3D))	// mode sombre
+
+// ---------- Thème Coloré ----------
+// Palette « Refreshing Summer Fun » sur toute l'interface : fonds teintés de bleu
+// ciel (clair) ou de bleu nuit (sombre), encre bleu nuit, accents de la palette.
+// Les textes secondaires et négatifs sont assombris (clair) ou éclaircis
+// (sombre) pour garder un contraste d'au moins 4,5:1.
+
+private val kSkyPaper       = Color(0xFFF3F9FC)							// fond clair teinté de bleu ciel
+private val kSky50          = Color(0xFFEAF4F9)							// conteneur bas
+private val kSky100         = Color(0xFFE1EFF6)							// conteneur
+private val kSky150         = Color(0xFFD6E9F2)							// pastille de sélection
+private val kSky200         = Color(0xFFCBE3EE)							// conteneur le plus haut
+private val kSkyRule        = Color(0xFFD6E6EE)							// filets
+private val kSkyOutline     = Color(0xFF8AA9B9)							// contours de champs
+private val kSkyMuted       = Color(0xFF3F6478)							// texte secondaire (6:1 sur le fond)
+private val kNegativeWarm   = Color(0xFFA65200)							// négatifs, orange assombri (5,2:1)
+
+private val kNight          = Color(0xFF01202F)							// fond sombre bleu nuit
+private val kNightLow       = Color(0xFF022839)							// conteneur bas sombre
+private val kNightMid       = Color(0xFF023047)							// conteneur sombre (bleu nuit de la palette)
+private val kNightHigh      = Color(0xFF0A3A54)							// pastille de sélection sombre
+private val kNightTop       = Color(0xFF12445F)							// conteneur le plus haut sombre
+private val kNightOutline   = Color(0xFF4F7A90)							// contours sombres
+private val kNightMuted     = Color(0xFF9FC4D6)							// texte secondaire sombre
+private val kIce            = Color(0xFFEAF6FB)							// encre claire
+private val kNegativeLight  = Color(0xFFFFB066)							// négatifs, mode sombre
+
+/*
+	Palette claire du thème Coloré.
+*/
+val ColorfulLightColors: ColorScheme = lightColorScheme(
+	primary                 = kDeepSpace,
+	onPrimary               = kWhite,
+	primaryContainer        = kDeepSpace,
+	onPrimaryContainer      = kWhite,
+	secondary               = kBlueGreen,
+	onSecondary             = kWhite,
+	secondaryContainer      = kSky150,
+	onSecondaryContainer    = kDeepSpace,
+	tertiary                = kAmber,
+	onTertiary              = kDeepSpace,
+	tertiaryContainer       = kSky100,
+	onTertiaryContainer     = kDeepSpace,
+	background              = kSkyPaper,
+	onBackground            = kDeepSpace,
+	surface                 = kSkyPaper,
+	onSurface               = kDeepSpace,
+	surfaceVariant          = kSky100,
+	onSurfaceVariant        = kSkyMuted,
+	surfaceTint             = Color.Transparent,
+	inverseSurface          = kDeepSpace,
+	inverseOnSurface        = kWhite,
+	inversePrimary          = kSkyBlue,
+	outline                 = kSkyOutline,
+	outlineVariant          = kSkyRule,
+	surfaceBright           = kWhite,
+	surfaceDim              = kSky200,
+	surfaceContainerLowest  = kWhite,
+	surfaceContainerLow     = kSky50,
+	surfaceContainer        = kSky100,
+	surfaceContainerHigh    = kSky150,
+	surfaceContainerHighest = kSky200,
+	error                   = kNegativeWarm,
+	onError                 = kWhite,
+	errorContainer          = Color(0xFFFFEBD6),
+	onErrorContainer        = Color(0xFF5A2C00)
+)
+
+/*
+	Palette sombre du thème Coloré : fond bleu nuit, encre glacée.
+*/
+val ColorfulDarkColors: ColorScheme = darkColorScheme(
+	primary                 = kSkyBlue,
+	onPrimary               = kDeepSpace,
+	primaryContainer        = kSkyBlue,
+	onPrimaryContainer      = kDeepSpace,
+	secondary               = kBlueGreen,
+	onSecondary             = kIce,
+	secondaryContainer      = kNightHigh,
+	onSecondaryContainer    = kIce,
+	tertiary                = kAmber,
+	onTertiary              = kDeepSpace,
+	tertiaryContainer       = kNightMid,
+	onTertiaryContainer     = kIce,
+	background              = kNight,
+	onBackground            = kIce,
+	surface                 = kNight,
+	onSurface               = kIce,
+	surfaceVariant          = kNightMid,
+	onSurfaceVariant        = kNightMuted,
+	surfaceTint             = Color.Transparent,
+	inverseSurface          = kIce,
+	inverseOnSurface        = kNight,
+	inversePrimary          = kDeepSpace,
+	outline                 = kNightOutline,
+	outlineVariant          = kNightTop,
+	surfaceBright           = kNightMid,
+	surfaceDim              = kNight,
+	surfaceContainerLowest  = kNight,
+	surfaceContainerLow     = kNightLow,
+	surfaceContainer        = kNightMid,
+	surfaceContainerHigh    = kNightHigh,
+	surfaceContainerHighest = kNightTop,
+	error                   = kNegativeLight,
+	onError                 = kNight,
+	errorContainer          = Color(0xFF4A2500),
+	onErrorContainer        = Color(0xFFFFE3C7)
+)

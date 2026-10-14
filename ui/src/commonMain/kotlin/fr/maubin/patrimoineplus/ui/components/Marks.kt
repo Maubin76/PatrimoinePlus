@@ -35,7 +35,11 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.lerp
+import fr.maubin.patrimoineplus.ui.theme.LocalColorTheme
+import fr.maubin.patrimoineplus.ui.theme.ColorTheme
+import fr.maubin.patrimoineplus.ui.theme.kColorfulDark
+import fr.maubin.patrimoineplus.ui.theme.kColorfulLight
 
 private val kCardShape = RoundedCornerShape(16.dp)							// coins des cartes
 
@@ -211,8 +215,12 @@ const val kAllocationSlots = 4													// teintes de répartition (la derni�
 	inRank : rang de valeur
 */
 @Composable
-fun allocationColor(inRank: Int): Color =
-	(if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) kAllocationDark else kAllocationLight)[inRank.coerceIn(0, kAllocationSlots - 1)]
+fun allocationColor(inRank: Int): Color
+{
+	val vDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f					// fond sombre
+	if (LocalColorTheme.current == ColorTheme.COLORFUL) return (if (vDark) kColorfulDark else kColorfulLight)[inRank.coerceIn(0, kAllocationSlots - 1)]
+	return (if (vDark) kAllocationDark else kAllocationLight)[inRank.coerceIn(0, kAllocationSlots - 1)]
+}
 
 /*
 	Teinte d'un rang dans un dégradé régulier, de la teinte la plus marquée
@@ -227,7 +235,13 @@ fun rankColor(
 	inCount : Int
 ): Color
 {
-	val vRamp = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) kAllocationDark else kAllocationLight	// rampe du mode
+	val vDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f					// fond sombre
+	if (LocalColorTheme.current == ColorTheme.COLORFUL)
+	{
+		val vPalette = if (vDark) kColorfulDark else kColorfulLight						// teintes de la palette, dans l'ordre des rangs
+		return vPalette[inRank.coerceIn(0, vPalette.lastIndex)]
+	}
+	val vRamp = if (vDark) kAllocationDark else kAllocationLight					// rampe du mode
 	return lerp(vRamp.first(), vRamp.last(), if (inCount <= 1) 0f else inRank.coerceIn(0, inCount - 1).toFloat() / (inCount - 1))
 }
 
@@ -238,7 +252,20 @@ fun rankColor(
 */
 @Composable
 fun typeColor(inType: AccountType): Color =
-	when (inType)
+	if (LocalColorTheme.current == ColorTheme.COLORFUL)
+	{
+		val vPalette = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) kColorfulDark else kColorfulLight	// teintes de la palette
+		when (inType)
+		{
+			AccountType.CHECKING    -> vPalette[0]
+			AccountType.SAVINGS     -> vPalette[2]
+			AccountType.BROKERAGE   -> vPalette[1]
+			AccountType.REAL_ESTATE -> vPalette[3]
+			AccountType.COLLECTIBLE -> vPalette[4]
+			AccountType.LOAN        -> MaterialTheme.colorScheme.outline
+		}
+	}
+	else when (inType)
 	{
 		AccountType.CHECKING  -> MaterialTheme.colorScheme.onSurface
 		AccountType.SAVINGS   -> MaterialTheme.colorScheme.secondary

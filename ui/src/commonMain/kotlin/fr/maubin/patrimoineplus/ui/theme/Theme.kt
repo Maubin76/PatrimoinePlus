@@ -6,25 +6,30 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 
 /*
-	Thème Material 3 de l'application : monochrome, noir sur blanc, blanc sur
-	noir en mode sombre (qui suit le système). Les couleurs dynamiques Material
-	You sont volontairement écartées.
-	Hausses et baisses en vert et rouge seulement sur demande (inTrendColors).
-	inDarkTheme   : force le mode sombre ou clair
-	inTrendColors : colore les hausses et les baisses
-	inContent     : contenu affiché sous ce thème
+	Thème Material 3 de l'application, selon le thème de couleurs choisi :
+	Monochrome (noir sur blanc, blanc sur noir), Minimal (même palette, hausses
+	en vert et baisses en rouge) ou Coloré (palette « Refreshing Summer Fun »
+	sur toute l'interface). Chacun existe en clair et en sombre. Les couleurs
+	dynamiques Material You sont volontairement écartées.
+	inDarkTheme  : force le mode sombre ou clair
+	inColorTheme : thème de couleurs
+	inContent    : contenu affiché sous ce thème
 */
 @Composable
 fun PatrimoineTheme(
-	inDarkTheme   : Boolean = isSystemInDarkTheme(),
-	inTrendColors : Boolean = false,
-	inContent     : @Composable () -> Unit
+	inDarkTheme  : Boolean    = isSystemInDarkTheme(),
+	inColorTheme : ColorTheme = ColorTheme.MONOCHROME,
+	inContent    : @Composable () -> Unit
 )
 {
 	MaterialTheme(
-		colorScheme = if (inDarkTheme) MonoDarkColors else MonoLightColors,
+		colorScheme = when
+		{
+			inColorTheme == ColorTheme.COLORFUL -> if (inDarkTheme) ColorfulDarkColors else ColorfulLightColors
+			else                                -> if (inDarkTheme) MonoDarkColors else MonoLightColors
+		},
 		typography  = monoTypography()
 	) {
-		CompositionLocalProvider(LocalTrendColors provides inTrendColors, content = inContent)
+		CompositionLocalProvider(LocalColorTheme provides inColorTheme, content = inContent)
 	}
 }

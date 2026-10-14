@@ -28,7 +28,8 @@ class DesktopConfigTest
 		val vFolder = fTemp.newFolder("Mon dossier é").toPath()							// dossier avec espace et accent
 		listOf(
 			DesktopSettings(Source.Folder(vFolder), ThemeMode.DARK, hidden = true),
-			DesktopSettings(Source.Demo, ThemeMode.LIGHT, hidden = false, trend = true),
+			DesktopSettings(Source.Demo, ThemeMode.LIGHT, hidden = false, colors = fr.maubin.patrimoineplus.ui.theme.ColorTheme.MINIMAL),
+			DesktopSettings(Source.Demo, ThemeMode.DARK, hidden = false, colors = fr.maubin.patrimoineplus.ui.theme.ColorTheme.COLORFUL),
 			DesktopSettings(Source.None, ThemeMode.SYSTEM, hidden = true)
 		).forEach { inSettings ->
 			vConfig.save(inSettings)
@@ -49,7 +50,9 @@ class DesktopConfigTest
 		assertEquals(DesktopSettings(), DesktopConfig(vFile).load())
 		Files.writeString(vFile, "source=folder\nfolder=C:/dossier\\u0000invalide\n")
 		assertEquals(DesktopSettings(), DesktopConfig(vFile).load())				// chemin impossible : pas de plantage
-		DesktopConfig(vFile).save(DesktopSettings(trend = true))
+		Files.writeString(vFile, "source=demo\ntrend=true\n")
+		assertEquals(fr.maubin.patrimoineplus.ui.theme.ColorTheme.MINIMAL, DesktopConfig(vFile).load().colors)	// ancien réglage vert et rouge : thème Minimal
+		DesktopConfig(vFile).save(DesktopSettings(colors = fr.maubin.patrimoineplus.ui.theme.ColorTheme.COLORFUL))
 		assertEquals(listOf("desktop.properties"), Files.list(fTemp.root.toPath()).use { inList -> inList.map { it.fileName.toString() }.toList() })	// pas de fichier provisoire restant
 	}
 }

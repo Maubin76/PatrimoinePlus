@@ -37,7 +37,9 @@ import fr.maubin.patrimoineplus.ui.theme.ThemeMode
 import fr.maubin.patrimoineplus.ui.components.BorderedCard
 import fr.maubin.patrimoineplus.ui.components.SectionHeader
 import fr.maubin.patrimoineplus.ui.shell.ScreenScaffold
-import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
+import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
+import fr.maubin.patrimoineplus.ui.theme.ColorTheme
+import fr.maubin.patrimoineplus.ui.components.SegmentedChoice
 
 /*
 	Verrou et sauvegarde, vus par l'écran des réglages.
@@ -66,8 +68,8 @@ data class SafetyActions(
 	inSafety      : verrou et sauvegarde
 	inDemo        : actions de démonstration ; null en version release
 	inSync        : synchronisation avec le PC ; null pour masquer la section
-	inTrend       : vrai si hausses et baisses sont colorées
-	inOnTrend     : active ou désactive ces couleurs
+	inColorTheme   : thème de couleurs choisi
+	inOnColorTheme : change le thème de couleurs
 */
 @Composable
 fun SettingsScreen(
@@ -78,8 +80,8 @@ fun SettingsScreen(
 	inSafety      : SafetyActions,
 	inDemo        : DemoActions? = null,
 	inSync        : SyncActions? = null,
-	inTrend       : Boolean = false,
-	inOnTrend     : (Boolean) -> Unit = {}
+	inColorTheme   : ColorTheme = ColorTheme.MONOCHROME,
+	inOnColorTheme : (ColorTheme) -> Unit = {}
 )
 {
 	ScreenScaffold(inTitle = "Réglages") { inPadding ->
@@ -92,15 +94,17 @@ fun SettingsScreen(
 			SectionHeader(inTitle = "Apparence")
 			Spacer(Modifier.height(8.dp))
 			ThemeModeSelector(inThemeMode, inOnThemeMode)
-			Spacer(Modifier.height(12.dp))
-			BorderedCard {
-				SwitchRow(
-					inTitle    = "Hausses en vert, baisses en rouge",
-					inDetail   = "Colore les variations et les plus-values. Sinon, tout reste en noir et blanc ; le signe + ou − est toujours affiché.",
-					inChecked  = inTrend,
-					inOnChange = inOnTrend
-				)
-			}
+			Spacer(Modifier.height(16.dp))
+			Text("Thème", style = MaterialTheme.typography.titleMedium)
+			Spacer(Modifier.height(8.dp))
+			SegmentedChoice(
+				inOptions  = ColorTheme.entries,
+				inSelected = inColorTheme,
+				inLabel    = { it.label },
+				inOnSelect = inOnColorTheme
+			)
+			Spacer(Modifier.height(8.dp))
+			Text(inColorTheme.detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			Spacer(Modifier.height(32.dp))
 			SectionHeader(inTitle = "Confidentialité")
 			Spacer(Modifier.height(8.dp))

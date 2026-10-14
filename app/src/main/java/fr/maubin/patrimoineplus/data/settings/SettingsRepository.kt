@@ -11,7 +11,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
-import androidx.datastore.preferences.core.stringSetPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
+import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 
 /*
 	Réglages de l'application, mémorisés entre les sessions.
@@ -30,14 +31,14 @@ interface SettingsRepository
 	// Apparence choisie : suivre le système, clair ou sombre.
 	val themeMode: Flow<ThemeMode>
 
-	// Vrai pour colorer hausses et baisses en vert et rouge (noir et blanc par défaut).
-	val trendColors: Flow<Boolean>
+	// Thème de couleurs (Monochrome par défaut ; ancien réglage vert et rouge : Minimal).
+	val colorTheme: Flow<ColorTheme>
 
 	/*
-		Active ou désactive les couleurs des hausses et des baisses.
-		inEnabled : vrai pour colorer
+		Choisit le thème de couleurs.
+		inTheme : thème
 	*/
-	suspend fun setTrendColors(inEnabled: Boolean)
+	suspend fun setColorTheme(inTheme: ColorTheme)
 
 	// Clés des diagrammes de répartition affichés en cercle (barre par défaut).
 	val pieCharts: Flow<Set<String>>
@@ -112,7 +113,8 @@ class DataStoreSettingsRepository @Inject constructor(
 {
 	private val kAmountsHiddenKey = booleanPreferencesKey("amounts_hidden")	// clé du mode discret
 	private val kThemeModeKey     = stringPreferencesKey("theme_mode")		// clé de l'apparence
-	private val kTrendColorsKey   = booleanPreferencesKey("trend_colors")	// clé des couleurs de hausse et de baisse
+	private val kTrendColorsKey   = booleanPreferencesKey("trend_colors")	// ancienne clé des couleurs de hausse et de baisse (lue pour la reprise)
+	private val kColorThemeKey    = stringPreferencesKey("color_theme")		// clé du thème de couleurs
 	private val kPieChartsKey     = stringSetPreferencesKey("pie_chart_keys")	// clé des répartitions affichées en cercle
 	private val kOnboardingKey    = booleanPreferencesKey("onboarding_done")	// clé du premier lancement
 	private val kLastAccountKey   = stringPreferencesKey("last_account")	// clé du dernier compte utilisé
@@ -132,16 +134,19 @@ class DataStoreSettingsRepository @Inject constructor(
 		inDataStore.edit { inPreferences -> inPreferences[kAmountsHiddenKey] = inHidden }
 	}
 
-	override val trendColors: Flow<Boolean> =
-		inDataStore.data.map { inPreferences -> inPreferences[kTrendColorsKey] ?: false }
+	override val colorTheme: Flow<ColorTheme> =
+		inDataStore.data.map { inPreferences ->
+			ColorTheme.entries.firstOrNull { it.name == inPreferences[kColorThemeKey] }
+				?: if (inPreferences[kTrendColorsKey] == true) ColorTheme.MINIMAL else ColorTheme.MONOCHROME
+		}
 
 	/*
-		Enregistre le choix des couleurs de hausse et de baisse.
-		inEnabled : vrai pour colorer
+		Enregistre le thème de couleurs.
+		inTheme : thème
 	*/
-	override suspend fun setTrendColors(inEnabled: Boolean)
+	override suspend fun setColorTheme(inTheme: ColorTheme)
 	{
-		inDataStore.edit { inPreferences -> inPreferences[kTrendColorsKey] = inEnabled }
+		inDataStore.edit { inPreferences -> inPreferences[kColorThemeKey] = inTheme.name }
 	}
 
 	override val pieCharts: Flow<Set<String>> =

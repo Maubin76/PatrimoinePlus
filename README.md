@@ -332,6 +332,15 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   Recherche, Opérations (saisie rapide puis récurrences et mensualités),
   Budget, Projection, Bilan (onglets « Mois par mois » et « Bilan annuel »),
   Réglages (avec la section Catégories).
+- **Thèmes de couleurs** (Réglages › Apparence › Thème, PC et téléphone,
+  chacun en clair et en sombre) : **Monochrome** (tout en noir et blanc),
+  **Minimal** (noir et blanc, hausses en vert et baisses en rouge),
+  **Coloré** (palette « Refreshing Summer Fun » sur toute l'interface :
+  fonds teintés, encre bleu nuit, graphiques et cashflow aux couleurs de la
+  palette, hausses en bleu-vert et baisses en orange). Les teintes des
+  graphiques sont validées (voisins distincts, daltonisme compris) et les
+  textes gardent un contraste d'au moins 4,5:1. Remplace l'ancien réglage
+  « Hausses en vert, baisses en rouge » (activé : thème Minimal).
 - **Répartitions en barre ou en cercle** (PC et téléphone) : une icône sur
   chaque diagramme de répartition, sur la ligne du titre de sa tuile, bascule
   entre la barre et l'anneau, mêmes

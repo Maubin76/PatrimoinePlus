@@ -134,4 +134,35 @@ class NavigationUiTest
 		assertEquals(setOf("titres:$vPea"), vApp.settings.value.pies)							// le PEA reste en cercle
 		assertEquals(setOf("titres:$vPea"), DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")).load().pies)	// mémorisé pour la prochaine fois
 	}
+
+	/*
+		Thème Coloré sur le PC : choix dans les réglages (mémorisé), tableau de
+		bord, budget (cashflow) et réglages en clair. Captures `24-*.png`.
+	*/
+	@Test
+	fun colorfulTheme()
+	{
+		val vApp = demo()																	// démonstration
+		vApp.show(Screen.SETTINGS)
+		fCompose.setContent { App(vApp) { null } }
+		fCompose.waitForIdle()
+		fCompose.onNodeWithText("Coloré").performScrollTo().performClick()
+		fCompose.waitForIdle()
+		assertEquals(fr.maubin.patrimoineplus.ui.theme.ColorTheme.COLORFUL, vApp.settings.value.colors)
+		assertEquals(fr.maubin.patrimoineplus.ui.theme.ColorTheme.COLORFUL, DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")).load().colors)
+		capture(vApp, "24-reglages-colore")
+		vApp.show(Screen.DASHBOARD)
+		capture(vApp, "24-tableau-de-bord-colore")
+		val vData = vApp.workspace.value.data												// données
+		val vCat  = { inName: String -> vData.categories.first { it.name == inName }.id }	// catégorie par nom
+		vApp.setBudget(fr.maubin.patrimoineplus.ui.budget.Budget(listOf(
+			fr.maubin.patrimoineplus.ui.budget.BudgetLine("1", fr.maubin.patrimoineplus.ui.budget.BudgetSection.INCOME, "Salaire", 320_000, categoryId = vCat("Salaire")),
+			fr.maubin.patrimoineplus.ui.budget.BudgetLine("2", fr.maubin.patrimoineplus.ui.budget.BudgetSection.EXPENSE, "Loyer", 95_000, theme = fr.maubin.patrimoineplus.ui.budget.ExpenseTheme.HOUSING),
+			fr.maubin.patrimoineplus.ui.budget.BudgetLine("3", fr.maubin.patrimoineplus.ui.budget.BudgetSection.EXPENSE, "Courses", 45_000, theme = fr.maubin.patrimoineplus.ui.budget.ExpenseTheme.DAILY),
+			fr.maubin.patrimoineplus.ui.budget.BudgetLine("4", fr.maubin.patrimoineplus.ui.budget.BudgetSection.EXPENSE, "Prêt", 90_000, theme = fr.maubin.patrimoineplus.ui.budget.ExpenseTheme.CREDIT),
+			fr.maubin.patrimoineplus.ui.budget.BudgetLine("5", fr.maubin.patrimoineplus.ui.budget.BudgetSection.INVESTMENT, "Livret A", 50_000, accountId = vData.accounts.first { it.name == "Livret A" }.id)
+		)))
+		vApp.show(Screen.BUDGET)
+		capture(vApp, "24-budget-colore")
+	}
 }

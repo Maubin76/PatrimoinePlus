@@ -9,7 +9,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import javax.inject.Inject
+import javax.inject.Inject
+import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 
 /*
 	État partagé par toute l'interface : mode discret, apparence et couleurs
@@ -42,17 +43,17 @@ class AppViewModel @Inject constructor(
 		viewModelScope.launch { inSettings.setAmountsHidden(inHidden) }
 	}
 
-	// Vrai pour colorer hausses et baisses.
-	val trendColors: StateFlow<Boolean> =
-		inSettings.trendColors.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+	// Thème de couleurs choisi.
+	val colorTheme: StateFlow<ColorTheme> =
+		inSettings.colorTheme.stateIn(viewModelScope, SharingStarted.Eagerly, ColorTheme.MONOCHROME)
 
 	/*
-		Active ou désactive les couleurs des hausses et des baisses.
-		inEnabled : vrai pour colorer
+		Choisit le thème de couleurs.
+		inTheme : thème
 	*/
-	fun setTrendColors(inEnabled: Boolean)
+	fun setColorTheme(inTheme: ColorTheme)
 	{
-		viewModelScope.launch { inSettings.setTrendColors(inEnabled) }
+		viewModelScope.launch { inSettings.setColorTheme(inTheme) }
 	}
 
 	// Clés des diagrammes de répartition affichés en cercle.
