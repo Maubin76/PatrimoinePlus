@@ -63,7 +63,8 @@ import java.time.LocalDate
 import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.sp
 
 /*
 	Budget prévisionnel mensuel, page de planification : lignes libres
@@ -207,12 +208,13 @@ private fun SectionTile(
 @Composable
 private fun ThemeRow(inTheme: ThemeView)
 {
-	Row(Modifier.fillMaxWidth().padding(top = 22.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-		Text(inTheme.theme.label, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(4.6f).padding(end = 12.dp))	// sous-titre du thème
-		Box(Modifier.weight(1.2f).padding(end = 12.dp), contentAlignment = Alignment.CenterEnd) { AmountText(inCents = inTheme.planned, inStyle = MaterialTheme.typography.titleLarge) }
+	Row(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+		val vStyle = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp, lineHeight = 24.sp)	// sous-titre : entre l'en-tête de colonne et le titre de rubrique
+		Text(inTheme.theme.label, style = vStyle, modifier = Modifier.weight(4.6f).padding(end = 12.dp))
+		Box(Modifier.weight(1.2f).padding(end = 12.dp), contentAlignment = Alignment.CenterEnd) { AmountText(inCents = inTheme.planned, inStyle = vStyle) }
 		Spacer(Modifier.width(40.dp))
 	}
-	HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.outline)		// trait marqué sous le thème
+	HorizontalDivider(thickness = 1.5.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f))	// trait sous le thème, plus marqué qu'un filet
 }
 
 /*
