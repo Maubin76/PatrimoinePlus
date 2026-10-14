@@ -601,7 +601,7 @@ private fun LazyListScope.globalContent(
 		item { PortfolioHeader(vPortfolio) }
 		chartSection("Évolution de la valeur", inExtras.valueSeries)
 		item { Spacer(Modifier.height(28.dp)) }
-		item { PositionsSection(vPortfolio, inExtras.openingPositions, inActions.onPrices, inActions.onAddOpening, inActions.onDelOpening, inActions.onRefresh, inActions.onAsset, inQuotesAt) }
+		item { PositionsSection(vPortfolio, inExtras.openingPositions, inActions.onPrices, inActions.onAddOpening, inActions.onDelOpening, inActions.onRefresh, inActions.onAsset, inQuotesAt, "titres:${vAccount?.id}") }
 	}
 	else
 	{

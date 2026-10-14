@@ -98,34 +98,40 @@ class NavigationUiTest
 	}
 
 	/*
-		Bascule barre ↔ cercle des répartitions : une icône dans la tuile, le
-		choix vaut pour toutes les répartitions et est mémorisé ; la tuile
-		garde sa taille (le titre « Comptes » sous elle ne bouge pas) ;
-		légende présente une seule fois dans chaque forme. Captures
-		`23-*.png` en cercle.
+		Bascule barre ↔ cercle des répartitions : une icône dans la tuile ;
+		chaque diagramme a sa forme, indépendante des autres (tableau de bord,
+		titres du PEA), mémorisée dans les réglages et retrouvée au prochain
+		passage ; la tuile garde sa taille (le titre « Comptes » sous elle ne
+		bouge pas) ; légende présente une seule fois. Captures `23-*.png` en
+		cercle.
 	*/
 	@Test
 	fun proportionToggle()
 	{
 		val vApp = demo()																	// démonstration
+		val vPea = vApp.workspace.value.data.accounts.single { it.name == "PEA" }.id		// compte Bourse
 		fCompose.setContent { App(vApp) { null } }
 		fCompose.waitForIdle()
 		fCompose.onNodeWithContentDescription("Afficher en diagramme circulaire").performScrollTo()
 		val vBefore = fCompose.onNodeWithText("Comptes").fetchSemanticsNode().positionInRoot	// position sous les tuiles
 		fCompose.onNodeWithContentDescription("Afficher en diagramme circulaire").performScrollTo().performClick()	// tuile sous la partie visible de la fenêtre de test
 		fCompose.waitForIdle()
-		assertTrue(vApp.settings.value.pie)
+		assertEquals(setOf("tableau-de-bord"), vApp.settings.value.pies)
 		assertEquals(vBefore, fCompose.onNodeWithText("Comptes").fetchSemanticsNode().positionInRoot)
 		fCompose.onNodeWithText("Immobilier").assertExists()									// légende unique (la forme cachée n'est pas lue)
-		fCompose.onNodeWithContentDescription("Afficher en barre").assertExists()
 		capture(vApp, "23-tableau-de-bord-cercle")
-		vApp.openAccount(vApp.workspace.value.data.accounts.single { it.name == "PEA" }.id)
+		vApp.openAccount(vPea)
 		fCompose.waitForIdle()
-		fCompose.onNodeWithContentDescription("Afficher en barre").assertExists()				// même choix sur la page du PEA
+		fCompose.onNodeWithContentDescription("Afficher en diagramme circulaire").assertExists()	// le PEA garde sa barre
+		fCompose.onNodeWithContentDescription("Afficher en diagramme circulaire").performScrollTo().performClick()
+		fCompose.waitForIdle()
+		assertEquals(setOf("tableau-de-bord", "titres:$vPea"), vApp.settings.value.pies)
 		capture(vApp, "23-pea-cercle")
-		fCompose.onNodeWithContentDescription("Afficher en barre").performScrollTo().performClick()
+		vApp.back()
 		fCompose.waitForIdle()
-		assertTrue(!vApp.settings.value.pie)
-		assertTrue(!DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")).load().pie)
+		fCompose.onNodeWithContentDescription("Afficher en barre").performScrollTo().performClick()	// le tableau de bord, retrouvé en cercle, repasse en barre
+		fCompose.waitForIdle()
+		assertEquals(setOf("titres:$vPea"), vApp.settings.value.pies)							// le PEA reste en cercle
+		assertEquals(setOf("titres:$vPea"), DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")).load().pies)	// mémorisé pour la prochaine fois
 	}
 }

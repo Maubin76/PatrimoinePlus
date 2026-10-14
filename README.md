@@ -335,8 +335,10 @@ bord** de pilotage plutôt qu'une suite d'écrans.
 - **Répartitions en barre ou en cercle** (PC et téléphone) : une icône sur
   chaque diagramme de répartition, sur la ligne du titre de sa tuile, bascule
   entre la barre et l'anneau, mêmes
-  parts dans le même ordre et les mêmes teintes que la légende ; le choix
-  vaut pour toute l'appli et est mémorisé. Sur le PC, la tuile garde sa
+  parts dans le même ordre et les mêmes teintes que la légende ; chaque
+  diagramme garde sa forme, indépendamment des autres (tableau de bord,
+  titres de chaque compte Bourse, accueil, onglet Comptes), mémorisée pour
+  la prochaine visite. Sur le PC, la tuile garde sa
   taille quand on bascule.
 - **Rapprochement avec le relevé de la banque** (vue d'un compte, tuile
   Relevés › « Rapprocher un relevé… ») : le fichier CSV exporté par le site de

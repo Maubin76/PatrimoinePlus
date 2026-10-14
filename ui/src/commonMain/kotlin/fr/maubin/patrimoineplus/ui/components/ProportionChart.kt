@@ -37,15 +37,23 @@ private val kPieMin       = 140.dp												// diamètre du cercle au-dessus d
 private val kToggleSize   = 32.dp												// zone de l'icône de bascule
 
 /*
-	Forme des diagrammes de répartition, choisie par l'utilisateur (réglage
-	de l'appli, commun à tous les diagrammes de répartition).
-	pie      : vrai pour le diagramme circulaire, faux pour la barre
-	onChange : enregistre le nouveau choix
+	Forme de chaque diagramme de répartition, choisie par l'utilisateur et
+	mémorisée par l'appli : chaque diagramme a sa clé (tableau de bord,
+	répartition des titres d'un compte…) et sa forme, indépendante des autres.
+	pies     : clés des diagrammes affichés en cercle ; les autres sont en barre
+	onChange : enregistre le choix d'un diagramme (clé, vrai pour le cercle)
 */
 data class ProportionStyle(
-	val pie      : Boolean           = false,
-	val onChange : (Boolean) -> Unit = {}
+	val pies     : Set<String>               = emptySet(),
+	val onChange : (String, Boolean) -> Unit = { _, _ -> }
 )
+{
+	/*
+		Vrai si le diagramme est affiché en cercle.
+		inKey : clé du diagramme
+	*/
+	fun isPie(inKey: String): Boolean = inKey in pies
+}
 
 // Forme des diagrammes de répartition, fournie par l'appli.
 val LocalProportionStyle = staticCompositionLocalOf { ProportionStyle() }
@@ -59,6 +67,7 @@ val LocalProportionStyle = staticCompositionLocalOf { ProportionStyle() }
 	légende quand la largeur le permet, au-dessus sinon. Stable : les deux
 	formes sont mesurées et la plus haute fixe la hauteur, si bien que
 	basculer ne change pas la taille de la tuile.
+	inKey         : clé du diagramme (sa forme est mémorisée à part)
 	inSegments    : parts, dans l'ordre d'affichage (barre de gauche à droite, cercle dans le sens horaire depuis midi)
 	inDescription : description pour les lecteurs d'écran
 	inModifier    : place du diagramme
@@ -67,6 +76,7 @@ val LocalProportionStyle = staticCompositionLocalOf { ProportionStyle() }
 */
 @Composable
 fun ProportionChart(
+	inKey         : String,
 	inSegments    : List<BarSegment>,
 	inDescription : String,
 	inModifier    : Modifier                  = Modifier,
@@ -74,11 +84,11 @@ fun ProportionChart(
 	inLegend      : (@Composable () -> Unit)? = null
 )
 {
-	val vStyle = LocalProportionStyle.current										// forme choisie
+	val vPie   = LocalProportionStyle.current.isPie(inKey)							// forme choisie pour ce diagramme
 	if (!inStable)
 	{
 		Box(inModifier.fillMaxWidth()) {
-			if (vStyle.pie) PieForm(inSegments, inDescription, false, kPieMin, inLegend) else BarForm(inSegments, inDescription, inLegend)
+			if (vPie) PieForm(inSegments, inDescription, false, kPieMin, inLegend) else BarForm(inSegments, inDescription, inLegend)
 		}
 		return
 	}
@@ -86,9 +96,9 @@ fun ProportionChart(
 	val vSideBy = inLegend != null																// légende avec le diagramme
 	Layout(
 		content  = {
-			Box(if (vStyle.pie) Modifier.clearAndSetSemantics {} else Modifier) { BarForm(inSegments, inDescription, inLegend) }
-			Box(if (vStyle.pie && vWide) Modifier else Modifier.clearAndSetSemantics {}) { PieForm(inSegments, inDescription, true, kPieSide, inLegend) }
-			Box(if (vStyle.pie && !vWide) Modifier else Modifier.clearAndSetSemantics {}) { PieForm(inSegments, inDescription, false, kPieMin, inLegend) }
+			Box(if (vPie) Modifier.clearAndSetSemantics {} else Modifier) { BarForm(inSegments, inDescription, inLegend) }
+			Box(if (vPie && vWide) Modifier else Modifier.clearAndSetSemantics {}) { PieForm(inSegments, inDescription, true, kPieSide, inLegend) }
+			Box(if (vPie && !vWide) Modifier else Modifier.clearAndSetSemantics {}) { PieForm(inSegments, inDescription, false, kPieMin, inLegend) }
 		},
 		modifier = inModifier.fillMaxWidth()
 	) { inMeasurables, inConstraints ->
@@ -96,10 +106,10 @@ fun ProportionChart(
 		val vIsWide = vSideBy && inConstraints.maxWidth >= kWideChart.roundToPx()		// place pour le cercle à côté
 		if (vIsWide != vWide) vWide = vIsWide
 		val vBar    = inMeasurables[0].measure(vFree)								// forme barre
-		val vPie    = inMeasurables[if (vIsWide) 1 else 2].measure(vFree)			// forme cercle retenue
-		val vHeight = maxOf(vBar.height, vPie.height)								// hauteur commune : la plus haute des deux formes
+		val vRing   = inMeasurables[if (vIsWide) 1 else 2].measure(vFree)			// forme cercle retenue
+		val vHeight = maxOf(vBar.height, vRing.height)								// hauteur commune : la plus haute des deux formes
 		layout(inConstraints.maxWidth, vHeight) {
-			(if (vStyle.pie) vPie else vBar).place(0, 0)
+			(if (vPie) vRing else vBar).place(0, 0)
 		}
 	}
 }
@@ -203,21 +213,23 @@ fun PieChart(
 }
 
 /*
-	Icône de bascule des diagrammes de répartition, à placer sur la ligne du
+	Icône de bascule d'un diagramme de répartition, à placer sur la ligne du
 	titre de la tuile ou de la section : montre la forme vers laquelle on
 	bascule (petit anneau en mode barre, petite barre en mode cercle).
+	inKey : clé du diagramme
 */
 @Composable
-fun ProportionToggle()
+fun ProportionToggle(inKey: String)
 {
-	val vStyle = LocalProportionStyle.current										// forme choisie
+	val vStyle = LocalProportionStyle.current										// formes choisies
+	val vPie   = vStyle.isPie(inKey)												// forme de ce diagramme
 	val vInk = MaterialTheme.colorScheme.onSurfaceVariant							// teinte de l'icône
 	IconButton(
-		onClick  = { vStyle.onChange(!vStyle.pie) },
-		modifier = Modifier.size(kToggleSize).semantics { contentDescription = if (vStyle.pie) "Afficher en barre" else "Afficher en diagramme circulaire" }
+		onClick  = { vStyle.onChange(inKey, !vPie) },
+		modifier = Modifier.size(kToggleSize).semantics { contentDescription = if (vPie) "Afficher en barre" else "Afficher en diagramme circulaire" }
 	) {
 		Canvas(Modifier.size(18.dp)) {
-			if (vStyle.pie)
+			if (vPie)
 			{
 				val vHeight = size.height * 0.36f										// épaisseur de la barre
 				drawRoundRect(vInk, Offset(0f, (size.height - vHeight) / 2f), Size(size.width * 0.58f, vHeight), CornerRadius(vHeight / 2f))

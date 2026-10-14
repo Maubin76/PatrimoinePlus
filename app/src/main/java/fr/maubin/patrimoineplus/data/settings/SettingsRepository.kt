@@ -10,7 +10,8 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
-import javax.inject.Singleton
+import javax.inject.Singleton
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 
 /*
 	Réglages de l'application, mémorisés entre les sessions.
@@ -38,14 +39,15 @@ interface SettingsRepository
 	*/
 	suspend fun setTrendColors(inEnabled: Boolean)
 
-	// Vrai pour les diagrammes de répartition en cercle (barre par défaut).
-	val pieCharts: Flow<Boolean>
+	// Clés des diagrammes de répartition affichés en cercle (barre par défaut).
+	val pieCharts: Flow<Set<String>>
 
 	/*
-		Choisit la forme des diagrammes de répartition.
+		Choisit la forme d'un diagramme de répartition (mémorisée pour lui seul).
+		inKey : clé du diagramme
 		inPie : vrai pour le cercle
 	*/
-	suspend fun setPieCharts(inPie: Boolean)
+	suspend fun setPieChart(inKey: String, inPie: Boolean)
 
 	// Vrai une fois l'assistant du premier lancement terminé ou passé.
 	val onboardingDone: Flow<Boolean>
@@ -111,7 +113,7 @@ class DataStoreSettingsRepository @Inject constructor(
 	private val kAmountsHiddenKey = booleanPreferencesKey("amounts_hidden")	// clé du mode discret
 	private val kThemeModeKey     = stringPreferencesKey("theme_mode")		// clé de l'apparence
 	private val kTrendColorsKey   = booleanPreferencesKey("trend_colors")	// clé des couleurs de hausse et de baisse
-	private val kPieChartsKey     = booleanPreferencesKey("pie_charts")		// clé de la forme des répartitions
+	private val kPieChartsKey     = stringSetPreferencesKey("pie_chart_keys")	// clé des répartitions affichées en cercle
 	private val kOnboardingKey    = booleanPreferencesKey("onboarding_done")	// clé du premier lancement
 	private val kLastAccountKey   = stringPreferencesKey("last_account")	// clé du dernier compte utilisé
 	private val kLockKey          = booleanPreferencesKey("lock_enabled")	// clé du verrou biométrique
@@ -142,16 +144,20 @@ class DataStoreSettingsRepository @Inject constructor(
 		inDataStore.edit { inPreferences -> inPreferences[kTrendColorsKey] = inEnabled }
 	}
 
-	override val pieCharts: Flow<Boolean> =
-		inDataStore.data.map { inPreferences -> inPreferences[kPieChartsKey] ?: false }
+	override val pieCharts: Flow<Set<String>> =
+		inDataStore.data.map { inPreferences -> inPreferences[kPieChartsKey] ?: emptySet() }
 
 	/*
-		Enregistre la forme des diagrammes de répartition.
+		Enregistre la forme d'un diagramme de répartition.
+		inKey : clé du diagramme
 		inPie : vrai pour le cercle
 	*/
-	override suspend fun setPieCharts(inPie: Boolean)
+	override suspend fun setPieChart(inKey: String, inPie: Boolean)
 	{
-		inDataStore.edit { inPreferences -> inPreferences[kPieChartsKey] = inPie }
+		inDataStore.edit { inPreferences ->
+			val vKeys = inPreferences[kPieChartsKey] ?: emptySet()					// répartitions en cercle
+			inPreferences[kPieChartsKey] = if (inPie) vKeys + inKey else vKeys - inKey
+		}
 	}
 
 	override val themeMode: Flow<ThemeMode> =

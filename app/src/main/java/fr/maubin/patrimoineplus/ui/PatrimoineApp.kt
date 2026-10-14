@@ -77,9 +77,9 @@ fun PatrimoineApp(inAppViewModel: AppViewModel = hiltViewModel())
 {
 	val vNavController = rememberNavController()							// contrôleur de navigation
 	val vHidden        by inAppViewModel.amountsHidden.collectAsStateWithLifecycle()	// mode discret
-	val vPie           by inAppViewModel.pieCharts.collectAsStateWithLifecycle()		// répartitions en cercle
+	val vPies          by inAppViewModel.pieCharts.collectAsStateWithLifecycle()		// répartitions en cercle
 
-	CompositionLocalProvider(LocalAmountsHidden provides vHidden, LocalProportionStyle provides ProportionStyle(vPie, inAppViewModel::setPieCharts)) {
+	CompositionLocalProvider(LocalAmountsHidden provides vHidden, LocalProportionStyle provides ProportionStyle(vPies, inAppViewModel::setPieChart)) {
 		NavHost(
 			navController      = vNavController,
 			startDestination   = MainRoute,

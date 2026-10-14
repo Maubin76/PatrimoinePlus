@@ -55,17 +55,21 @@ class AppViewModel @Inject constructor(
 		viewModelScope.launch { inSettings.setTrendColors(inEnabled) }
 	}
 
-	// Vrai pour les diagrammes de répartition en cercle.
-	val pieCharts: StateFlow<Boolean> =
-		inSettings.pieCharts.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+	// Clés des diagrammes de répartition affichés en cercle.
+	val pieCharts: StateFlow<Set<String>> =
+		inSettings.pieCharts.stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
 
 	/*
-		Choisit la forme des diagrammes de répartition.
+		Choisit la forme d'un diagramme de répartition.
+		inKey : clé du diagramme
 		inPie : vrai pour le cercle
 	*/
-	fun setPieCharts(inPie: Boolean)
+	fun setPieChart(
+		inKey : String,
+		inPie : Boolean
+	)
 	{
-		viewModelScope.launch { inSettings.setPieCharts(inPie) }
+		viewModelScope.launch { inSettings.setPieChart(inKey, inPie) }
 	}
 
 	// Apparence choisie ; « Système » tant que le réglage n'est pas lu.

@@ -233,8 +233,9 @@ private fun RepartitionTile(
 )
 {
 	val vGroups = inState.home.assetGroups.sortedByDescending { it.subtotalCents }			// de la plus grande part à la plus petite
-	Tile(inModifier = inModifier, inTitle = "Répartition", inAction = { ProportionToggle() }) {
+	Tile(inModifier = inModifier, inTitle = "Répartition", inAction = { ProportionToggle("tableau-de-bord") }) {
 		ProportionChart(
+			inKey         = "tableau-de-bord",
 			inSegments    = vGroups.mapIndexed { inRank, inGroup -> BarSegment(inGroup.subtotalCents, rankColor(inRank, vGroups.size)) },
 			inDescription = "Répartition par type de compte, nette des crédits, de la plus grande part à la plus petite"
 		) {

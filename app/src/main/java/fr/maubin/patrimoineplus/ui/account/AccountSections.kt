@@ -138,6 +138,7 @@ private fun StatRow(
 	inOnRefresh : met à jour les cours automatiquement
 	inOnAsset   : ouvre la fiche d'un actif
 	inQuotesAt  : instant de la dernière mise à jour automatique (ms) ; null avant la première
+	inChartKey  : clé de la répartition des titres (forme mémorisée pour ce compte)
 */
 @Composable
 fun PositionsSection(
@@ -148,16 +149,18 @@ fun PositionsSection(
 	inOnRemove  : (OpeningPositionItem) -> Unit,
 	inOnRefresh : () -> Unit       = {},
 	inOnAsset   : (String) -> Unit = {},
-	inQuotesAt  : Long?            = null
+	inQuotesAt  : Long?            = null,
+	inChartKey  : String           = "titres"
 )
 {
 	val vPositions = inPortfolio.valuation.positions							// positions
 	val vLines     = allocation(vPositions)										// répartition des titres
-	SectionHeader(inTitle = "Positions", inLinkLabel = if (vPositions.isEmpty()) null else "Actualiser", inOnLink = inOnRefresh, inAction = if (vLines.size > 1) ({ ProportionToggle() }) else null)
+	SectionHeader(inTitle = "Positions", inLinkLabel = if (vPositions.isEmpty()) null else "Actualiser", inOnLink = inOnRefresh, inAction = if (vLines.size > 1) ({ ProportionToggle(inChartKey) }) else null)
 	Spacer(Modifier.height(8.dp))
 	if (vLines.size > 1)
 	{
 		ProportionChart(
+			inKey         = inChartKey,
 			inSegments    = vLines.groupBy { slotOf(it, vLines) }.toSortedMap().map { (inSlot, inGroup) -> BarSegment(inGroup.sumOf { it.position.valueCents }, allocationColor(inSlot)) },
 			inDescription = "Répartition des titres : " + vLines.joinToString(", ") { "${inPortfolio.names[it.position.assetId] ?: "Actif supprimé"} ${it.percent}\u202F%" },
 			inStable      = false

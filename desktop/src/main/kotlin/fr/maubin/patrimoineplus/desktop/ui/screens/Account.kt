@@ -261,7 +261,7 @@ private fun BrokerageView(
 	)
 	TileRow(
 		Cell(1.6f) { inMod -> ChartTile("Évolution de la valeur", inExtras.valueSeries, inExtras.valueSeries.lastOrNull()?.month, inMod) },
-		Cell(1f) { inMod -> AllocationTile(vPortfolio, inController, inMod) }
+		Cell(1f) { inMod -> AllocationTile(vPortfolio, inController, inMod, "titres:${inState.account?.id}") }
 	)
 	inState.account?.let { inAccount -> PositionsTile(vPortfolio, inExtras, inAccount.id, inController) }
 	OperationsTile(inState, inOnOpen)
@@ -592,22 +592,25 @@ private fun StatementsTile(
 	inPortfolio  : portefeuille
 	inController : contrôleur
 	inModifier   : place de la tuile
+	inKey        : clé du diagramme (forme mémorisée pour ce compte)
 */
 @Composable
 private fun AllocationTile(
 	inPortfolio  : PortfolioView,
 	inController : DesktopController,
-	inModifier   : Modifier
+	inModifier   : Modifier,
+	inKey        : String
 )
 {
 	val vLines = allocation(inPortfolio.valuation.positions)						// répartition des titres
-	Tile(inModifier = inModifier, inTitle = "Répartition des titres", inAction = { if (vLines.isNotEmpty()) ProportionToggle() }) {
+	Tile(inModifier = inModifier, inTitle = "Répartition des titres", inAction = { if (vLines.isNotEmpty()) ProportionToggle(inKey) }) {
 		if (vLines.isEmpty())
 		{
 			Hint("Aucune position.")
 			return@Tile
 		}
 		ProportionChart(
+			inKey         = inKey,
 			inSegments    = vLines.withIndex().groupBy { it.index.coerceAtMost(kAllocationSlots - 1) }.toSortedMap()
 				.map { (inRank, inGroup) -> BarSegment(inGroup.sumOf { it.value.position.valueCents }, allocationColor(inRank)) },
 			inDescription = "Répartition des titres"

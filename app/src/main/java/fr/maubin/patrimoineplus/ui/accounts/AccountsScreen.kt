@@ -222,9 +222,10 @@ fun AccountsContent(
 			val vWeighted = (inState.active + inState.archived).filter { it.weight != null }	// comptes qui comptent dans le patrimoine
 			if (vWeighted.size > 1)
 			{
-				SectionHeader(inTitle = "Répartition", inAction = { ProportionToggle() })
+				SectionHeader(inTitle = "Répartition", inAction = { ProportionToggle("comptes") })
 				Spacer(Modifier.height(8.dp))
 				ProportionChart(
+					inKey         = "comptes",
 					inSegments    = vWeighted.groupBy { it.weight!!.rank.coerceAtMost(kAllocationSlots - 1) }.toSortedMap()
 						.map { (inRank, inGroup) -> BarSegment(inGroup.sumOf { it.weight!!.counted }, allocationColor(inRank)) },
 					inDescription = "Part de chaque compte dans le patrimoine : " +

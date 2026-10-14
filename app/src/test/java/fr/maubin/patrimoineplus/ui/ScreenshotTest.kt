@@ -344,7 +344,7 @@ class ScreenshotTest
 		val vDemo  = buildDemoData(vToday)										// démonstration
 		val vState = buildHomeState(vDemo.accounts, vDemo.transactions, vDemo.prices, vToday, vDemo.loans)	// état calculé, en net
 		captureRoboImage("$kOutDir/home-pie.png", content = shell(false, false, TopLevelDestination.Home) {
-			CompositionLocalProvider(LocalProportionStyle provides ProportionStyle(true)) { HomeContent(vState, {}, {}) }
+			CompositionLocalProvider(LocalProportionStyle provides ProportionStyle(setOf("accueil"))) { HomeContent(vState, {}, {}) }
 		})
 	}
 

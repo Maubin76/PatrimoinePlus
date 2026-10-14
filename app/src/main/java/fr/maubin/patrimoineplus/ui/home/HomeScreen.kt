@@ -122,7 +122,7 @@ fun HomeContent(
 					item { BalanceChart(inState.series, inState.series.last().month) }
 					item { Spacer(Modifier.height(32.dp)) }
 				}
-				item { SectionHeader(inTitle = "Répartition", inAction = { ProportionToggle() }) }
+				item { SectionHeader(inTitle = "Répartition", inAction = { ProportionToggle("accueil") }) }
 				item { Spacer(Modifier.height(4.dp)) }
 				item { RepartitionBlock(inState, inOnManageAccounts) }
 			}
@@ -234,6 +234,7 @@ private fun RepartitionBlock(
 	val vHidden = LocalAmountsHidden.current								// mode discret actif
 	Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
 		ProportionChart(
+			inKey         = "accueil",
 			inSegments    = inState.assetGroups.map { BarSegment(it.subtotalCents, typeColor(it.type)) },
 			inDescription = repartitionDescription(inState, vHidden),
 			inStable      = false
