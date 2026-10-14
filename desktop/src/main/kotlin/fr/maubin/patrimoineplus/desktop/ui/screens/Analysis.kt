@@ -99,9 +99,6 @@ fun AnalysisSection(
 		modifier            = Modifier.fillMaxWidth(),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
-		Column {
-			Text("Dépenses et revenus des douze derniers mois, tous comptes (virements et ordres de bourse exclus). Moyennes sur les mois complets.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-		}
 		if (vTable.expenses.isEmpty() && vTable.incomes.isEmpty())
 		{
 			Tile { Hint("Aucune dépense ni revenu sur les douze derniers mois.") }

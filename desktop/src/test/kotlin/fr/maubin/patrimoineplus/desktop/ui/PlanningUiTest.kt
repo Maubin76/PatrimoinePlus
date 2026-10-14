@@ -114,7 +114,7 @@ class PlanningUiTest
 		vApp.show(Screen.REPORT)
 		capture(vApp, "15-bilan")
 		fCompose.setContent { App(vApp) { null } }
-		fCompose.onNodeWithText("Bilan 2026").assertExists()
+		fCompose.onNodeWithText("Exporter en PDF…").assertExists()						// onglet du bilan annuel (sans titre propre)
 		fCompose.onNodeWithText("Exporter en PDF…").assertExists()
 		val vFile = fTemp.root.toPath().resolve("bilan.pdf")							// fichier exporté
 		assertNull(vApp.exportReport(2026, vFile))

@@ -168,7 +168,7 @@ fun buildDemoData(inToday: LocalDate): DataSet
 			postings = listOfNotNull(inPayer?.let { Posting(newId(), it.id, -inCents) }, Posting(newId(), inAccount.id, inCents))).also { vOps += it }
 	}
 
-	val vFlat    = acquire(vStart.minusYears(7), vHome, "Appartement (démo)", 24_000_000, null, stableId("bien:appartement"))	// résidence principale, achetée avec le prêt il y a sept ans
+	val vFlat    = acquire(vStart, vHome, "Appartement (démo)", 24_000_000, null, stableId("bien:appartement"))	// résidence principale, déjà possédée au début du suivi (comme son prêt)
 	acquire(vStart, vObjects, "Lithographie", 180_000, null)
 	acquire(vStart.plusMonths(3).plusDays(7), vObjects, "Montre de collection", 420_000, vCourant)
 	acquire(vStart, vObjects, "Vinyles des années 70", 60_000, null)?.let { inVinyls ->

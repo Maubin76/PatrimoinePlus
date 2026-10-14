@@ -107,10 +107,7 @@ private fun AnnualReportSection(
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
 		Row(verticalAlignment = Alignment.CenterVertically) {
-			Column(Modifier.weight(1f)) {
-				Text("Bilan ${vReport.year}", style = MaterialTheme.typography.headlineSmall)
-				Text("Du 1er janvier au ${vReport.to.format(kLongDay)}" + if (vReport.partial) " (année en cours)" else "", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-			}
+			Spacer(Modifier.weight(1f))														// années et export à droite
 			vYears.forEach { inYear ->
 				FilterChip(selected = inYear == vYear, onClick = { vYear = inYear }, label = { Text("$inYear") }, modifier = Modifier.padding(end = 8.dp))
 			}
