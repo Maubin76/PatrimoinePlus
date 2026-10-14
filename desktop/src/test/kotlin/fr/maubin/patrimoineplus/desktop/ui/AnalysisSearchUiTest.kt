@@ -80,7 +80,7 @@ class AnalysisSearchUiTest
 	fun analysisCellOpensOperations()
 	{
 		val vApp   = demo()															// démonstration
-		vApp.show(Screen.ANALYSIS)
+		vApp.show(Screen.REPORT); vApp.showReportTab(fr.maubin.patrimoineplus.desktop.ReportTab.MONTHLY)
 		capture(vApp, "12-analyse")
 		val vTable = buildExpenseAnalysis(vApp.workspace.value.data, vApp.today())	// tableau attendu
 		val vRow   = vTable.expenses.first()											// catégorie la plus dépensière
@@ -90,7 +90,7 @@ class AnalysisSearchUiTest
 		fCompose.onNodeWithText("Par catégorie").performScrollTo().assertExists()
 		fCompose.onAllNodes(hasText(vText) and hasClickAction()).onFirst().performSemanticsAction(SemanticsActions.OnClick)	// case cliquable (pas la ligne de total), même hors de la fenêtre de test
 		fCompose.waitForIdle()
-		assertEquals(Screen.OPERATIONS, vApp.navigation.value.screen)
+		assertEquals(Screen.SEARCH, vApp.navigation.value.screen)
 		assertEquals(vRow.category.id, vApp.query.value.categoryId)
 		assertEquals(vTable.months[vCol].atDay(1), vApp.query.value.from)
 	}
@@ -106,7 +106,7 @@ class AnalysisSearchUiTest
 		fCompose.setContent { App(vApp) { null } }
 		fCompose.onRoot().performKeyInput { withKeyDown(Key.CtrlLeft) { pressKey(Key.F) } }
 		fCompose.waitForIdle()
-		assertEquals(Screen.OPERATIONS, vApp.navigation.value.screen)
+		assertEquals(Screen.SEARCH, vApp.navigation.value.screen)
 		fCompose.onNode(hasSetTextAction() and hasText("Rechercher", substring = true)).performTextInput("electricite")
 		fCompose.waitForIdle()
 		val vRents = vApp.workspace.value.data.transactions.filter { it.label.contains("Électricité", ignoreCase = true) && !it.date.isAfter(vApp.today().plusYears(1)) }	// factures d'électricité (sans accent dans la recherche)

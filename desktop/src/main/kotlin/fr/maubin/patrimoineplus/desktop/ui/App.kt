@@ -75,15 +75,13 @@ import fr.maubin.patrimoineplus.desktop.ui.panels.OperationPanel
 import fr.maubin.patrimoineplus.desktop.ui.panels.PricesPanel
 import fr.maubin.patrimoineplus.desktop.ui.panels.StatementPanel
 import fr.maubin.patrimoineplus.desktop.ui.screens.AccountScreen
-import fr.maubin.patrimoineplus.desktop.ui.screens.CategoriesScreen
+import fr.maubin.patrimoineplus.desktop.ui.screens.EntriesScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.DashboardScreen
-import fr.maubin.patrimoineplus.desktop.ui.screens.AnalysisScreen
-import fr.maubin.patrimoineplus.desktop.ui.screens.BatchScreen
+import fr.maubin.patrimoineplus.desktop.ui.screens.SearchScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.BudgetScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.GoalsScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.ProjectionScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.ReportScreen
-import fr.maubin.patrimoineplus.desktop.ui.screens.OperationsScreen
 import fr.maubin.patrimoineplus.desktop.ui.screens.ReconcileScreen
 import androidx.compose.runtime.staticCompositionLocalOf
 import fr.maubin.patrimoineplus.desktop.ui.screens.SettingsScreen
@@ -101,7 +99,6 @@ import java.util.Locale
 import fr.maubin.patrimoineplus.desktop.ui.panels.PurchasePanel
 import fr.maubin.patrimoineplus.desktop.ui.panels.SalePanel
 import fr.maubin.patrimoineplus.desktop.ui.panels.RecurrencePanel
-import fr.maubin.patrimoineplus.desktop.ui.screens.RecurringScreen
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -206,16 +203,13 @@ private fun Shell(
 							inAccountId?.endsWith("#relevé") == true -> vBank?.let { ReconcileScreen(inSpace, inController, it) }
 							inAccountId != null              -> AccountScreen(inSpace, inController, inAccountId, vNav.month)
 							inScreen == Screen.DASHBOARD     -> DashboardScreen(inSpace, inController)
-							inScreen == Screen.OPERATIONS    -> OperationsScreen(inSpace, inController)
-							inScreen == Screen.ANALYSIS      -> AnalysisScreen(inSpace, inController)
-							inScreen == Screen.BATCH         -> BatchScreen(inSpace, inController)
+							inScreen == Screen.SEARCH        -> SearchScreen(inSpace, inController)
+							inScreen == Screen.OPERATIONS    -> EntriesScreen(inSpace, inController)
 							inScreen == Screen.REPORT        -> ReportScreen(inSpace, inController)
 							inScreen == Screen.PROJECTION    -> ProjectionScreen(inSpace, inController)
 							inScreen == Screen.BUDGET        -> BudgetScreen(inSpace, inController)
-							inScreen == Screen.RECURRING     -> RecurringScreen(inSpace, inController)
 							inScreen == Screen.GOALS         -> GoalsScreen(inSpace, inController)
-							inScreen == Screen.CATEGORIES    -> CategoriesScreen(inSpace, inController)
-							else                             -> SettingsScreen(inController, inOnPickFolder)
+							else                             -> SettingsScreen(inSpace, inController, inOnPickFolder)
 						}
 					}
 				}
@@ -364,7 +358,7 @@ private fun Rail(
 				verticalAlignment = Alignment.CenterVertically
 			) {
 				Icon(
-					imageVector        = when (inEntry) { Screen.DASHBOARD -> LineIcons.Home; Screen.OPERATIONS -> LineIcons.Search; Screen.ANALYSIS -> LineIcons.Bars; Screen.BATCH -> LineIcons.Edit; Screen.RECURRING -> LineIcons.Repeat; Screen.REPORT -> LineIcons.Document; Screen.PROJECTION -> LineIcons.Trend; Screen.BUDGET -> LineIcons.Wallet; Screen.GOALS -> LineIcons.Target; Screen.CATEGORIES -> LineIcons.Grid; Screen.SETTINGS -> LineIcons.Sliders },
+					imageVector        = when (inEntry) { Screen.DASHBOARD -> LineIcons.Home; Screen.GOALS -> LineIcons.Target; Screen.SEARCH -> LineIcons.Search; Screen.OPERATIONS -> LineIcons.Edit; Screen.BUDGET -> LineIcons.Wallet; Screen.PROJECTION -> LineIcons.Trend; Screen.REPORT -> LineIcons.Document; Screen.SETTINGS -> LineIcons.Sliders },
 					contentDescription = null,
 					tint               = if (vActive) vColors.onPrimary else vColors.onSurface,
 					modifier           = Modifier.size(20.dp)

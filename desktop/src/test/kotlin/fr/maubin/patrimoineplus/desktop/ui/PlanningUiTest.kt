@@ -75,7 +75,7 @@ class PlanningUiTest
 	fun batchEntry()
 	{
 		val vApp = demo()																// démonstration
-		vApp.show(Screen.BATCH)
+		vApp.show(Screen.OPERATIONS)
 		fCompose.setContent { App(vApp) { null } }
 		fCompose.waitForIdle()
 		val vBefore = vApp.workspace.value.data.transactions.size						// opérations avant

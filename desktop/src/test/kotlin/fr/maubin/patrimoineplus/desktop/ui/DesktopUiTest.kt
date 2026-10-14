@@ -108,7 +108,7 @@ class DesktopUiTest
 		vApp.newOperation()
 		capture("08-saisie-panneau") { App(vApp) { null } }
 		vApp.closePanel()
-		vApp.show(Screen.CATEGORIES)
+		vApp.show(Screen.SETTINGS)
 		capture("09-categories") { App(vApp) { null } }
 		vApp.openPanel(fr.maubin.patrimoineplus.desktop.Panel.AccountSheet(vApp.workspace.value.data.accounts.first { it.name == "PEA" }.id))
 		capture("10-fiche-compte") { App(vApp) { null } }

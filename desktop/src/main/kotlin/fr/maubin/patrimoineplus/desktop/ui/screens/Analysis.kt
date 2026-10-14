@@ -83,24 +83,23 @@ private val LocalColumns = staticCompositionLocalOf { Columns() }					// largeur
 /*
 	Analyse des dépenses et des revenus des douze derniers mois, tous comptes :
 	indicateurs moyens, barres mois par mois, puis le tableau catégories ×
-	mois ; un clic sur une case montre ses opérations (écran Opérations
-	filtré sur la catégorie et le mois).
+	mois ; un clic sur une case montre ses opérations (écran Recherche
+	filtré sur la catégorie et le mois). Onglet « Mois par mois » du Bilan.
 	inSpace      : données
 	inController : contrôleur
 */
 @Composable
-fun AnalysisScreen(
+fun AnalysisSection(
 	inSpace      : WorkspaceState,
 	inController : DesktopController
 )
 {
 	val vTable = remember(inSpace.data, inSpace.today) { buildExpenseAnalysis(inSpace.data, inSpace.today) }	// tableau d'analyse
 	Column(
-		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
+		modifier            = Modifier.fillMaxWidth(),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
 		Column {
-			Text("Analyse", style = MaterialTheme.typography.headlineMedium)
 			Text("Dépenses et revenus des douze derniers mois, tous comptes (virements et ordres de bourse exclus). Moyennes sur les mois complets.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		}
 		if (vTable.expenses.isEmpty() && vTable.incomes.isEmpty())

@@ -198,7 +198,7 @@ class DesktopRobustnessTest
 		val vFirst = vApp.panel.value!!.token											// première ouverture
 		vApp.newOperation()
 		assertNotEquals(vFirst, vApp.panel.value!!.token)
-		vApp.show(Screen.CATEGORIES)
+		vApp.show(Screen.SETTINGS)
 		assertNull(vApp.panel.value)
 	}
 

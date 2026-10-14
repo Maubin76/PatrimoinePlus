@@ -62,12 +62,12 @@ import fr.maubin.patrimoineplus.ui.icons.LineIcons
 	date), Ctrl+Entrée enregistre tout. La catégorie est proposée d'après le
 	libellé ; montant sans signe = dépense, « + » = entrée. Tout est contrôlé
 	puis enregistré en une fois ; les lignes refusées montrent leur erreur.
-	Les lignes restent si l'on change d'écran.
+	Les lignes restent si l'on change d'écran. Section de l'écran Opérations.
 	inSpace      : données
 	inController : contrôleur
 */
 @Composable
-fun BatchScreen(
+fun BatchSection(
 	inSpace      : WorkspaceState,
 	inController : DesktopController
 )
@@ -104,12 +104,12 @@ fun BatchScreen(
 	val vFilled  = vRows.filterNot { it.isBlank }										// lignes remplies
 	val vAmounts = vFilled.mapNotNull { inRow -> parseEuros(inRow.amount.trim().removePrefix("+"))?.let { if (inRow.amount.trim().startsWith("+")) it else -it } }	// montants lisibles
 	Column(
-		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp)
+		modifier            = Modifier.fillMaxWidth()
 			.onPreviewKeyEvent { inEvent -> if (inEvent.type == KeyEventType.KeyDown && inEvent.isCtrlPressed && (inEvent.key == Key.Enter || inEvent.key == Key.NumPadEnter)) { save(); true } else false },
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
 		Column {
-			Text("Saisie rapide", style = MaterialTheme.typography.headlineMedium)
+			Text("Saisie rapide", style = MaterialTheme.typography.headlineSmall)
 			Text("Dépenses et revenus en série. Tab : case suivante · Entrée : nouvelle ligne · Ctrl+Entrée : tout enregistrer. Montant sans signe = dépense ; « + » devant = entrée (revenu, remboursement).", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		}
 		Tile(

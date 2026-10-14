@@ -36,25 +36,22 @@ import fr.maubin.patrimoineplus.domain.model.CategoryKind
 
 /*
 	Catégories de dépense et de revenu, côte à côte : ajout, modification
-	(clic), ordre (flèches), nombre d'opérations de chacune.
+	(clic), ordre (flèches), nombre d'opérations de chacune. Section des
+	réglages.
 	inSpace      : données
 	inController : contrôleur
 */
 @Composable
-fun CategoriesScreen(
+fun CategoriesSection(
 	inSpace      : WorkspaceState,
 	inController : DesktopController
 )
 {
-	Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(40.dp)) {
-		Text("Catégories", style = MaterialTheme.typography.headlineMedium)
-		Spacer(Modifier.height(32.dp))
-		TwoColumns(
-			inRatio = 1f,
-			inLeft  = { KindColumn(inSpace, inController, CategoryKind.EXPENSE) },
-			inRight = { KindColumn(inSpace, inController, CategoryKind.INCOME) }
-		)
-	}
+	TwoColumns(
+		inRatio = 1f,
+		inLeft  = { KindColumn(inSpace, inController, CategoryKind.EXPENSE) },
+		inRight = { KindColumn(inSpace, inController, CategoryKind.INCOME) }
+	)
 }
 
 /*
@@ -70,7 +67,7 @@ private fun KindColumn(
 	inKind       : CategoryKind
 )
 {
-	SectionHeader(inTitle = if (inKind == CategoryKind.EXPENSE) "Dépenses" else "Revenus")
+	Text(if (inKind == CategoryKind.EXPENSE) "Dépenses" else "Revenus", style = MaterialTheme.typography.titleMedium)	// sous-titre de la section Catégories des réglages
 	Spacer(Modifier.height(12.dp))
 	CategoryList(inSpace, inController, inKind)
 	Spacer(Modifier.height(12.dp))

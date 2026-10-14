@@ -30,16 +30,19 @@ import fr.maubin.patrimoineplus.desktop.DesktopController
 import fr.maubin.patrimoineplus.desktop.data.Source
 import fr.maubin.patrimoineplus.ui.components.BorderedCard
 import fr.maubin.patrimoineplus.ui.components.SectionHeader
-import java.nio.file.Path
+import java.nio.file.Path
+import fr.maubin.patrimoineplus.desktop.data.WorkspaceState
 
 /*
 	Réglages de l'appli PC : source des données (dossier synchronisé,
-	démonstration), apparence, mode discret.
+	démonstration), apparence, mode discret, catégories.
+	inSpace        : données (catégories)
 	inController   : contrôleur
 	inOnPickFolder : ouvre le sélecteur de dossier
 */
 @Composable
 fun SettingsScreen(
+	inSpace        : WorkspaceState,
 	inController   : DesktopController,
 	inOnPickFolder : () -> Path?
 )
@@ -116,5 +119,11 @@ fun SettingsScreen(
 				Switch(checked = vSettings.hidden, onCheckedChange = { inController.toggleHidden() })
 			}
 		}
+		Spacer(Modifier.height(32.dp))
+		SectionHeader(inTitle = "Catégories")
+		Spacer(Modifier.height(4.dp))
+		Text("Dépenses et revenus : ajout, modification (clic), ordre (flèches).", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+		Spacer(Modifier.height(12.dp))
+		CategoriesSection(inSpace, inController)
 	}
 }

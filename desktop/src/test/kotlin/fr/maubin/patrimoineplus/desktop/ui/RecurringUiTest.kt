@@ -38,9 +38,9 @@ import java.io.File
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
+import java.time.ZoneId
 import fr.maubin.patrimoineplus.domain.calc.amortization
-import fr.maubin.patrimoineplus.domain.model.TransactionKind
+import fr.maubin.patrimoineplus.domain.model.TransactionKind
 import androidx.compose.ui.test.performScrollTo
 
 /*
@@ -89,7 +89,7 @@ class RecurringUiTest
 	*/
 	private fun type(inLabel: String, inText: String)
 	{
-		fCompose.onAllNodes(hasSetTextAction() and hasText(inLabel, substring = true)).onFirst().performTextInput(inText)
+		fCompose.onAllNodes(hasSetTextAction() and hasText(inLabel, substring = true)).onLast().performTextInput(inText)	// champ du panneau (dessiné après l'écran)
 	}
 
 	/*
@@ -117,13 +117,13 @@ class RecurringUiTest
 	fun recurrences()
 	{
 		val vApp = demo()																	// démonstration
-		vApp.show(Screen.RECURRING)
+		vApp.show(Screen.OPERATIONS)
 		capture(vApp, "20-recurrences")
 		vApp.openAccount(vApp.workspace.value.data.accounts.single { it.name == "Crédit auto" }.id)
 		capture(vApp, "20-credit")
-		vApp.show(Screen.RECURRING)
+		vApp.show(Screen.OPERATIONS)
 		fCompose.setContent { App(vApp) { null } }
-		fCompose.onNodeWithText("Nouvelle récurrence").performClick()
+		fCompose.onNodeWithText("Nouvelle récurrence").performScrollTo().performClick()		// sous la saisie rapide
 		fCompose.waitForIdle()
 		type("Libellé", "Netflix")
 		type("Montant (€)", "13,49")

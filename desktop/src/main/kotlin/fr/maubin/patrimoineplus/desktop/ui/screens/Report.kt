@@ -42,19 +42,57 @@ import fr.maubin.patrimoineplus.ui.report.reportYears
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import fr.maubin.patrimoineplus.domain.format.formatEuros
-import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
+import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
+import androidx.compose.foundation.layout.Box
+import androidx.compose.runtime.collectAsState
+import fr.maubin.patrimoineplus.desktop.ReportTab
+import fr.maubin.patrimoineplus.desktop.ui.panels.Choice
 
 private val kLongDay = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)	// date en toutes lettres
 
 /*
-	Bilan annuel : choix de l'année, chiffres de l'année en tuiles (patrimoine,
-	revenus et dépenses, placements, comptes, catégories) et export PDF
-	imprimable.
+	Écran Bilan : onglets « Mois par mois » (dépenses et revenus des douze
+	derniers mois) et « Bilan annuel » (chiffres de l'année en tuiles :
+	patrimoine, revenus et dépenses, placements, comptes, catégories ; export
+	PDF imprimable).
 	inSpace      : données
 	inController : contrôleur
 */
 @Composable
 fun ReportScreen(
+	inSpace      : WorkspaceState,
+	inController : DesktopController
+)
+{
+	val vTab by inController.reportTab.collectAsState()								// onglet affiché
+	Column(
+		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
+		verticalArrangement = Arrangement.spacedBy(20.dp)
+	) {
+		Row(verticalAlignment = Alignment.CenterVertically) {
+			Column(Modifier.weight(1f)) {
+				Text("Bilan", style = MaterialTheme.typography.headlineMedium)
+				Text("Le passé en chiffres : dépenses et revenus mois par mois, ou l’année entière avec son export PDF.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+			}
+			Spacer(Modifier.width(24.dp))
+			Box(Modifier.width(360.dp)) { Choice(ReportTab.entries.map { it to it.label }, vTab, inController::showReportTab) }
+		}
+		when (vTab)
+		{
+			ReportTab.MONTHLY -> AnalysisSection(inSpace, inController)
+			ReportTab.ANNUAL  -> AnnualReportSection(inSpace, inController)
+		}
+	}
+}
+
+/*
+	Onglet « Bilan annuel » : choix de l'année, chiffres de l'année en
+	tuiles et export PDF.
+	inSpace      : données
+	inController : contrôleur
+*/
+@Composable
+private fun AnnualReportSection(
 	inSpace      : WorkspaceState,
 	inController : DesktopController
 )
@@ -65,12 +103,12 @@ fun ReportScreen(
 	val vPick   = LocalSavePicker.current													// choix du fichier PDF
 	var vError  by remember { mutableStateOf<String?>(null) }							// échec de l'export
 	Column(
-		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
+		modifier            = Modifier.fillMaxWidth(),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
 		Row(verticalAlignment = Alignment.CenterVertically) {
 			Column(Modifier.weight(1f)) {
-				Text("Bilan ${vReport.year}", style = MaterialTheme.typography.headlineMedium)
+				Text("Bilan ${vReport.year}", style = MaterialTheme.typography.headlineSmall)
 				Text("Du 1er janvier au ${vReport.to.format(kLongDay)}" + if (vReport.partial) " (année en cours)" else "", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			}
 			vYears.forEach { inYear ->

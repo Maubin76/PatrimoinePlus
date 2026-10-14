@@ -204,7 +204,7 @@ Détail complet : [`doc/SPEC.md` § 2](doc/SPEC.md#2-modèle-de-données).
   la récurrence retient sa dernière échéance créée, si bien qu'une opération
   supprimée n'est pas recréée. Saisie : « Répéter » dans la saisie d'une
   opération, ou section « Opérations récurrentes » (onglet Comptes du
-  téléphone, écran Récurrences du PC).
+  téléphone, écran Opérations du PC, sous la saisie rapide).
 - **Crédits** : un compte Crédit créé avec son tableau d'amortissement
   (montant, taux nominal, durée, première mensualité, assurance mensuelle,
   compte payeur, catégorie des intérêts, « Crédit » créée si besoin) ;
@@ -328,6 +328,10 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   (icône, suppression avec réaffectation), relevés, cours saisis à la main,
   positions initiales, fiche d'un actif. Mêmes contrôles et mêmes règles que
   le téléphone (`:core` : `DataEditor`, logique de saisie partagée).
+- **Volet latéral du PC**, dans cet ordre : Tableau de bord, Objectifs,
+  Recherche, Opérations (saisie rapide puis récurrences et mensualités),
+  Budget, Projection, Bilan (onglets « Mois par mois » et « Bilan annuel »),
+  Réglages (avec la section Catégories).
 - **Rapprochement avec le relevé de la banque** (vue d'un compte, tuile
   Relevés › « Rapprocher un relevé… ») : le fichier CSV exporté par le site de
   la banque est lu sans réglage (encodage, séparateur, lignes d'informations,
@@ -338,23 +342,23 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   corriger puis créer en une fois ; opérations de l'appli absentes du relevé.
   Rien n'est mémorisé (pas de pointage) ; le format exact de chaque banque reste
   à vérifier sur un vrai export.
-- **Analyse** (barre latérale) : dépenses et revenus des douze derniers mois,
+- **Bilan › Mois par mois** (barre latérale) : dépenses et revenus des douze derniers mois,
   tous comptes : moyennes (dépenses, revenus, taux d'épargne), plus fortes
   hausses du dernier mois, barres mois par mois, tableau catégories × mois
   (moyenne des mois complets, écart du dernier mois). Un clic sur une case
   ouvre ses opérations.
-- **Opérations** (barre latérale, Ctrl+F) : recherche dans toutes les
+- **Recherche** (barre latérale, Ctrl+F) : recherche dans toutes les
   opérations (mots sans accents ni majuscules dans le libellé, les notes, la
   catégorie, les comptes ; montant exact ; filtres de compte, de catégorie, de
   période et de montant), total des résultats ; sélection multiple (cases,
   Ctrl+clic, Maj+clic, tout sélectionner) pour **changer la catégorie** de
   plusieurs dépenses ou revenus d'un coup, ou les **supprimer** (confirmé ;
   refusé si une vente devenait impossible).
-- **Saisie rapide** (barre latérale) : dépenses et revenus en série dans une
+- **Opérations › Saisie rapide** (barre latérale ; la page continue avec les récurrences et les mensualités) : dépenses et revenus en série dans une
   grille au clavier (Tab, Entrée pour une nouvelle ligne, Ctrl+Entrée pour tout
   enregistrer) ; catégorie proposée d'après le libellé ; montant sans signe =
   dépense, « + » = entrée ; tout est contrôlé puis enregistré en une fois.
-- **Bilan annuel** (barre latérale) : patrimoine au début et à la fin de
+- **Bilan › Bilan annuel** (barre latérale) : patrimoine au début et à la fin de
   l'année (avoirs et crédits restant dus), comptes, revenus et dépenses par
   catégorie, taux d'épargne, intérêts, dividendes, plus-values réalisées par
   titre ; **biens** achetés, ajoutés (déjà possédés) et vendus (plus-values) ;

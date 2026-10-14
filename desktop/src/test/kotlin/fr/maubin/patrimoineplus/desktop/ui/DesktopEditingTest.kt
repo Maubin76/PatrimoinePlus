@@ -198,7 +198,7 @@ class DesktopEditingTest
 	fun createCategory()
 	{
 		val vApp = demoApp()														// contrôleur
-		vApp.show(Screen.CATEGORIES)
+		vApp.show(Screen.SETTINGS)
 		fCompose.onNodeWithText("Ajouter une catégorie de dépense").performScrollTo().performClick()
 		type("Nom", "Cadeaux")
 		fCompose.onNodeWithText("Enregistrer").performClick()

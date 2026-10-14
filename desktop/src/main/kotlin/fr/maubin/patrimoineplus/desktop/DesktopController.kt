@@ -57,16 +57,23 @@ private const val kDayCheckMillis = 60_000L										// contrôle du changement 
 enum class Screen(val label: String)
 {
 	DASHBOARD("Tableau de bord"),												// patrimoine, comptes, opérations récentes
-	OPERATIONS("Opérations"),													// recherche et modification groupée
-	BATCH("Saisie rapide"),														// saisie en grille
-	RECURRING("Récurrences"),													// opérations récurrentes et mensualités
-	ANALYSIS("Analyse"),														// dépenses et revenus mois par mois
-	REPORT("Bilan annuel"),														// bilan d'une année, PDF
-	PROJECTION("Projection"),													// patrimoine à quelques années
-	BUDGET("Budget"),															// budget prévisionnel et cashflow
 	GOALS("Objectifs"),															// objectifs chiffrés ou à cocher
-	CATEGORIES("Catégories"),													// catégories de dépense et de revenu
-	SETTINGS("Réglages")														// source, apparence
+	SEARCH("Recherche"),														// recherche et modification groupée des opérations
+	OPERATIONS("Opérations"),													// saisie rapide en grille, puis récurrences et mensualités
+	BUDGET("Budget"),															// budget prévisionnel et cashflow
+	PROJECTION("Projection"),													// patrimoine à quelques années
+	REPORT("Bilan"),															// mois par mois (analyse) et bilan annuel, PDF
+	SETTINGS("Réglages")														// source, apparence, catégories
+}
+
+/*
+	Onglet de l'écran Bilan.
+	label : libellé de l'onglet
+*/
+enum class ReportTab(val label: String)
+{
+	MONTHLY("Mois par mois"),													// dépenses et revenus des douze derniers mois
+	ANNUAL("Bilan annuel")														// bilan d'une année, PDF
 }
 
 /*
@@ -219,6 +226,7 @@ class DesktopController(
 	private val fQuery      = MutableStateFlow(SearchQuery())					// critères de la recherche
 	private val fFocus      = MutableStateFlow(0)								// demandes de focus du champ de recherche (Ctrl+F)
 	private val fBatch      = MutableStateFlow<List<BatchRow>>(emptyList())	// lignes de la saisie en grille
+	private val fReportTab  = MutableStateFlow(ReportTab.ANNUAL)				// onglet affiché du bilan
 	private val fProjection = MutableStateFlow<ProjectionInput?>(null)			// hypothèses de la projection ; null : par défaut
 	private val fBudget     = MutableStateFlow(inConfig.loadBudget(fSettings.value.source))	// budget prévisionnel de la source
 	private val fGoals      = MutableStateFlow(inConfig.loadGoals(fSettings.value.source))		// objectifs de la source
@@ -254,6 +262,18 @@ class DesktopController(
 
 	// Lignes de la saisie en grille (gardées en changeant d'écran).
 	val batch: StateFlow<List<BatchRow>> = fBatch
+
+	// Onglet affiché de l'écran Bilan.
+	val reportTab: StateFlow<ReportTab> = fReportTab
+
+	/*
+		Change l'onglet de l'écran Bilan.
+		inTab : onglet
+	*/
+	fun showReportTab(inTab: ReportTab)
+	{
+		fReportTab.value = inTab
+	}
 
 	// Hypothèses de la projection ; null pour celles par défaut.
 	val projection: StateFlow<ProjectionInput?> = fProjection
@@ -499,23 +519,23 @@ class DesktopController(
 	}
 
 	/*
-		Ouvre l'écran des opérations avec des critères (clic sur une case du
+		Ouvre l'écran Recherche avec des critères (clic sur une case du
 		tableau d'analyse).
 		inQuery : critères
 	*/
 	fun openSearch(inQuery: SearchQuery)
 	{
 		fQuery.value = inQuery
-		show(Screen.OPERATIONS)
+		show(Screen.SEARCH)
 	}
 
 	/*
-		Raccourci Ctrl+F : écran des opérations, curseur dans le champ de
+		Raccourci Ctrl+F : écran Recherche, curseur dans le champ de
 		recherche.
 	*/
 	fun focusSearch()
 	{
-		show(Screen.OPERATIONS)
+		show(Screen.SEARCH)
 		fFocus.value++
 	}
 

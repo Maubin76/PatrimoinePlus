@@ -77,7 +77,7 @@ private const val kShown = 500														// lignes affichées au plus
 	inController : contrôleur
 */
 @Composable
-fun OperationsScreen(
+fun SearchScreen(
 	inSpace      : WorkspaceState,
 	inController : DesktopController
 )
@@ -97,7 +97,7 @@ fun OperationsScreen(
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
 		Column {
-			Text("Opérations", style = MaterialTheme.typography.headlineMedium)
+			Text("Recherche", style = MaterialTheme.typography.headlineMedium)
 			Text("Recherche dans toutes les opérations (Ctrl+F) ; sélection multiple avec les cases, Ctrl+clic ou Maj+clic.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		}
 		Filters(inSpace, vQuery, vFocus, inController::setQuery)

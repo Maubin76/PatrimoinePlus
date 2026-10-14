@@ -45,11 +45,12 @@ private val kDay = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)			/
 	échéance, montant), création et modification dans le panneau ;
 	mensualités des crédits, rappelées en lecture seule. Chaque échéance est
 	créée automatiquement à sa date, sur le PC comme sur le téléphone.
+	Section de l'écran Opérations, sous la saisie rapide.
 	inSpace      : données
 	inController : contrôleur
 */
 @Composable
-fun RecurringScreen(
+fun RecurringSection(
 	inSpace      : WorkspaceState,
 	inController : DesktopController
 )
@@ -59,12 +60,12 @@ fun RecurringScreen(
 	val vToday = inSpace.today																// date du jour
 	val vRecs  = vData.recurrences.sortedWith(compareBy<Recurrence> { nextOccurrence(it, vToday) ?: java.time.LocalDate.MAX }.thenBy { it.label })	// par prochaine échéance
 	Column(
-		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
+		modifier            = Modifier.fillMaxWidth(),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
 		Row(verticalAlignment = Alignment.CenterVertically) {
 			Column(Modifier.weight(1f)) {
-				Text("Récurrences", style = MaterialTheme.typography.headlineMedium)
+				Text("Récurrences", style = MaterialTheme.typography.headlineSmall)
 				Text("Salaire, loyer, abonnements, versements : chaque échéance crée l’opération toute seule, à sa date. Une opération créée se modifie ou se supprime comme les autres ; supprimée, elle n’est pas recréée.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			}
 			Spacer(Modifier.width(24.dp))
