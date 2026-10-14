@@ -99,7 +99,7 @@ class GoalsUiTest
 		fCompose.onNodeWithText("Marquer comme fait").performScrollTo().performClick()
 		fCompose.waitForIdle()
 		assertTrue(vApp.goals.value.goals.single { it.id == "7" }.done)
-		fCompose.onNodeWithText("Nouvel objectif").performClick()
+		fCompose.onNodeWithText("Nouvel objectif").performScrollTo().performClick()				// en haut de la page, au-dessus de la section du mois
 		fCompose.waitForIdle()
 		fCompose.onAllNodes(hasSetTextAction() and hasText("Intitulé")).onFirst().performTextInput("Patrimoine de 50 000 €")
 		fCompose.onAllNodes(hasSetTextAction() and hasText("Cible (€)")).onFirst().performTextInput("50000")
