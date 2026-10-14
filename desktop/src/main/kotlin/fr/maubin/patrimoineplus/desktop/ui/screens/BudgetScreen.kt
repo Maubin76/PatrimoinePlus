@@ -57,7 +57,11 @@ import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import java.time.YearMonth
 import java.util.UUID
 import fr.maubin.patrimoineplus.ui.budget.ExpenseTheme
-import fr.maubin.patrimoineplus.ui.budget.ThemeView
+import fr.maubin.patrimoineplus.ui.budget.ThemeView
+import fr.maubin.patrimoineplus.ui.components.flowAccent
+import fr.maubin.patrimoineplus.ui.components.FlowAccent
+import fr.maubin.patrimoineplus.ui.components.isColorful
+import androidx.compose.ui.graphics.Color
 
 private const val kUntracked = "__aucun__"											// choix « Sans catégorie » ou « Aucun compte »
 
@@ -126,7 +130,7 @@ private fun Figures(inView: BudgetView)
 	TileRow(
 		*BudgetSection.entries.map { inSection ->
 			Cell(1f) { inMod ->
-				Tile(inModifier = inMod) {
+				Tile(inModifier = inMod, inAccent = sectionAccent(inSection)) {
 					TileFigure(if (inSection == BudgetSection.INVESTMENT) "Investissements prévus" else "${inSection.label} prévues") { AmountText(inCents = vPlan(inSection), inStyle = MaterialTheme.typography.headlineSmall) }
 					Row(verticalAlignment = Alignment.CenterVertically) {
 						Text("Réel ${monthTitle(inView.month).lowercase()} : ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -136,7 +140,7 @@ private fun Figures(inView: BudgetView)
 			}
 		}.toTypedArray(),
 		Cell(1f) { inMod ->
-			Tile(inModifier = inMod) {
+			Tile(inModifier = inMod, inFilled = isColorful()) {
 				TileFigure("Reste prévu") { AmountText(inCents = inView.budget.remaining, inStyle = MaterialTheme.typography.headlineSmall, inShowPlusSign = true, inTrend = true) }
 				Row(verticalAlignment = Alignment.CenterVertically) {
 					Text("Réel : ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -171,6 +175,7 @@ private fun SectionTile(
 	val vLines = inView.section(inSection)												// lignes de la rubrique
 	Tile(
 		inTitle  = inSection.label,
+		inAccent = sectionAccent(inSection),
 		inAction = {
 			Text("Total ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			AmountText(inCents = inBudget.total(inSection), inStyle = MaterialTheme.typography.titleMedium)
@@ -297,3 +302,19 @@ private fun LineRow(
 		}
 	}
 }
+
+/*
+	Couleur d'une rubrique du budget dans le thème Coloré : entrées
+	bleu-vert, dépenses orange, investissements ambre.
+	inSection : rubrique
+*/
+@Composable
+private fun sectionAccent(inSection: BudgetSection): Color =
+	flowAccent(
+		when (inSection)
+		{
+			BudgetSection.INCOME     -> FlowAccent.INFLOW
+			BudgetSection.EXPENSE    -> FlowAccent.OUTFLOW
+			BudgetSection.INVESTMENT -> FlowAccent.INVEST
+		}
+	)

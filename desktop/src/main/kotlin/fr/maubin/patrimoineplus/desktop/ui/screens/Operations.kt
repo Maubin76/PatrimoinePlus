@@ -64,6 +64,8 @@ import fr.maubin.patrimoineplus.ui.search.SearchQuery
 import fr.maubin.patrimoineplus.ui.search.searchTransactions
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import fr.maubin.patrimoineplus.ui.components.operationAccent
+import androidx.compose.material3.LocalContentColor
 
 private val kRowDate   = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)	// date d'une ligne
 private const val kShown = 500														// lignes affichées au plus
@@ -274,8 +276,9 @@ private fun HitRow(
 		verticalAlignment = Alignment.CenterVertically
 	) {
 		Checkbox(checked = inSelected, onCheckedChange = { inOnToggle() })
-		Box(Modifier.size(32.dp).clip(CircleShape).background(vColors.surfaceContainer), contentAlignment = Alignment.Center) {
-			Icon(CategoryIcons.of(inHit.icon), contentDescription = null, modifier = Modifier.size(18.dp))
+		val vBadge = operationAccent(inHit.amount)										// entrée ou sortie (thème Coloré)
+		Box(Modifier.size(32.dp).clip(CircleShape).background(vBadge?.first ?: vColors.surfaceContainer), contentAlignment = Alignment.Center) {
+			Icon(CategoryIcons.of(inHit.icon), contentDescription = null, tint = vBadge?.second ?: LocalContentColor.current, modifier = Modifier.size(18.dp))
 		}
 		Spacer(Modifier.width(14.dp))
 		Column(Modifier.weight(1f)) {

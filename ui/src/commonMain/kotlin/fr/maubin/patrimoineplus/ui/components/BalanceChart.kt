@@ -33,7 +33,8 @@ import fr.maubin.patrimoineplus.domain.format.formatEuros
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
-import java.util.Locale
+import java.util.Locale
+import androidx.compose.ui.graphics.Color
 
 private val kMonthYear = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.FRANCE)	// mois en toutes lettres
 
@@ -58,6 +59,7 @@ fun BalanceChart(
 		return
 	}
 	val vColors  = MaterialTheme.colorScheme									// palette courante
+	val vInk     = LocalAccent.current.takeIf { it != Color.Unspecified } ?: vColors.onSurface	// trait : couleur de la page (thème Coloré) ou encre
 	val vHidden  = LocalAmountsHidden.current									// mode discret actif
 	var vPicked  by remember(inSeries, inHighlight) { mutableStateOf(inSeries.indexOfFirst { it.month == inHighlight }.takeIf { it >= 0 } ?: inSeries.lastIndex) }	// point affiché
 	val vPoint   = inSeries[vPicked]												// point affiché
@@ -102,13 +104,13 @@ fun BalanceChart(
 				drawLine(vColors.outlineVariant, Offset(0f, vZero), Offset(size.width, vZero), 1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f)))
 			}
 			val vPath = smoothPath(inSeries.indices.map(::at))					// tracé lissé de la courbe
-			drawPath(vPath, vColors.onSurface, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+			drawPath(vPath, vInk, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
 			inSeries.indices.forEach { inIndex ->
 				val vChosen = inIndex == vPicked								// point mis en avant
-				drawCircle(if (vChosen) vColors.onSurface else vColors.surface, if (vChosen) 5.dp.toPx() else 3.dp.toPx(), at(inIndex))
+				drawCircle(if (vChosen) vInk else vColors.surface, if (vChosen) 5.dp.toPx() else 3.dp.toPx(), at(inIndex))
 				if (!vChosen)
 				{
-					drawCircle(vColors.onSurface, 3.dp.toPx(), at(inIndex), style = Stroke(1.5.dp.toPx()))
+					drawCircle(vInk, 3.dp.toPx(), at(inIndex), style = Stroke(1.5.dp.toPx()))
 				}
 			}
 		}

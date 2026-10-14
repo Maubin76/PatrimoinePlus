@@ -63,6 +63,9 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToLong
+import fr.maubin.patrimoineplus.ui.components.flowAccent
+import fr.maubin.patrimoineplus.ui.components.flowColorOr
+import fr.maubin.patrimoineplus.ui.components.FlowAccent
 
 private val kMonthShort  = DateTimeFormatter.ofPattern("MMM", Locale.FRANCE)		// mois en tête de colonne
 /*
@@ -127,10 +130,10 @@ fun AnalysisSection(
 private fun Figures(inTable: ExpenseAnalysis)
 {
 	TileRow(
-		Cell(1f) { inMod -> Tile(inModifier = inMod) { TileFigure("Dépenses moyennes par mois") { AmountText(inCents = inTable.averageExpense, inStyle = MaterialTheme.typography.headlineSmall) } } },
-		Cell(1f) { inMod -> Tile(inModifier = inMod) { TileFigure("Revenus moyens par mois") { AmountText(inCents = inTable.averageIncome, inStyle = MaterialTheme.typography.headlineSmall) } } },
+		Cell(1f) { inMod -> Tile(inModifier = inMod, inAccent = flowAccent(FlowAccent.OUTFLOW)) { TileFigure("Dépenses moyennes par mois") { AmountText(inCents = inTable.averageExpense, inStyle = MaterialTheme.typography.headlineSmall) } } },
+		Cell(1f) { inMod -> Tile(inModifier = inMod, inAccent = flowAccent(FlowAccent.INFLOW)) { TileFigure("Revenus moyens par mois") { AmountText(inCents = inTable.averageIncome, inStyle = MaterialTheme.typography.headlineSmall) } } },
 		Cell(1f) { inMod ->
-			Tile(inModifier = inMod) {
+			Tile(inModifier = inMod, inAccent = flowAccent(FlowAccent.INVEST)) {
 				TileFigure("Taux d’épargne moyen") {
 					Text(inTable.averageRate?.takeIf { !LocalAmountsHidden.current }?.let { formatPermille(it).removePrefix("+") } ?: "—", style = MaterialTheme.typography.headlineSmall)
 				}
@@ -163,8 +166,8 @@ private fun Figures(inTable: ExpenseAnalysis)
 @Composable
 private fun MonthBars(inTable: ExpenseAnalysis)
 {
-	val vInk    = MaterialTheme.colorScheme.onSurface									// dépenses
-	val vLight  = MaterialTheme.colorScheme.outline										// revenus
+	val vInk    = flowColorOr(FlowAccent.OUTFLOW, MaterialTheme.colorScheme.onSurface)	// dépenses (orange en thème Coloré)
+	val vLight  = flowColorOr(FlowAccent.INFLOW, MaterialTheme.colorScheme.outline)		// revenus (bleu-vert en thème Coloré)
 	val vMax    = (inTable.totalExpense + inTable.totalIncome).maxOrNull()?.coerceAtLeast(1L) ?: 1L	// plus grande valeur
 	val vHidden = LocalAmountsHidden.current											// mode discret
 	Row(verticalAlignment = Alignment.CenterVertically) {

@@ -101,6 +101,10 @@ import fr.maubin.patrimoineplus.ui.property.propertyNoun
 import fr.maubin.patrimoineplus.ui.planning.LoanSection
 import fr.maubin.patrimoineplus.domain.model.Frequency
 import fr.maubin.patrimoineplus.ui.components.operationAccent
+import fr.maubin.patrimoineplus.ui.components.LocalAccent
+import fr.maubin.patrimoineplus.ui.components.accountAccent
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.graphics.Color
 
 private val kMonthTitle = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.FRANCE)	// en-tête d'un mois
 private val kShortDay   = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)	// date en tête du sous-titre
@@ -400,6 +404,33 @@ fun AccountDetailScreen(
 	inId : identifiant
 */
 private fun Set<String>.toggle(inId: String): Set<String> = if (inId in this) this - inId else this + inId
+
+/*
+	Vue d'un compte à la couleur de son type (thème Coloré : courbes et
+	éléments d'accent) ; voir AccountDetailBody.
+	inState      : état du compte
+	inExtras     : compléments
+	inSelection  : opérations sélectionnées
+	inSnackbar   : messages éphémères
+	inActions    : actions
+	inRefreshing : actualisation des cours en cours
+	inQuotesAt   : date de la dernière mise à jour des cours
+*/
+@Composable
+private fun AccountDetailBody(
+	inState      : AccountDetailState,
+	inExtras     : AccountExtras,
+	inSelection  : Set<String>,
+	inSnackbar   : SnackbarHostState,
+	inActions    : AccountDetailActions,
+	inRefreshing : Boolean = false,
+	inQuotesAt   : Long?   = null
+)
+{
+	CompositionLocalProvider(LocalAccent provides (inState.account?.let { accountAccent(it.type) } ?: Color.Unspecified)) {
+		AccountDetailBody(inState, inExtras, inSelection, inSnackbar, inActions, inRefreshing, inQuotesAt)
+	}
+}
 
 /*
 	Contenu de la vue d'un compte, sans état propre (prévisualisable).

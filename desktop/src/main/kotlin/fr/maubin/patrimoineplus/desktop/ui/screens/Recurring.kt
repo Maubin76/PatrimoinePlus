@@ -36,7 +36,16 @@ import fr.maubin.patrimoineplus.ui.planning.RecurrenceForm
 import fr.maubin.patrimoineplus.ui.planning.editRecurrenceForm
 import fr.maubin.patrimoineplus.ui.planning.nextOccurrence
 import java.time.format.DateTimeFormatter
-import java.util.Locale
+import java.util.Locale
+import fr.maubin.patrimoineplus.ui.components.operationAccent
+import fr.maubin.patrimoineplus.ui.components.accountAccent
+import fr.maubin.patrimoineplus.domain.model.AccountType
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
 
 private val kDay = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)			// date d'une échéance
 
@@ -81,7 +90,10 @@ fun RecurringSection(
 					modifier          = Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(onClickLabel = "Modifier") { inController.openPanel(Panel.Recurring(editRecurrenceForm(inRec, vData.categories))) }.padding(horizontal = 8.dp, vertical = 6.dp),
 					verticalAlignment = Alignment.CenterVertically
 				) {
-					Icon(CategoryIcons.of(vCat?.icon ?: "repeat"), contentDescription = null, modifier = Modifier.size(20.dp))
+					val vBadge = operationAccent(inRec.amountCents)								// entrée ou sortie (thème Coloré)
+					Box(Modifier.size(32.dp).clip(CircleShape).background(vBadge?.first ?: Color.Transparent), contentAlignment = Alignment.Center) {
+						Icon(CategoryIcons.of(vCat?.icon ?: "repeat"), contentDescription = null, tint = vBadge?.second ?: LocalContentColor.current, modifier = Modifier.size(20.dp))
+					}
 					Spacer(Modifier.width(14.dp))
 					Column(Modifier.weight(1f)) {
 						Text(inRec.label, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -103,7 +115,7 @@ fun RecurringSection(
 		}
 		if (vData.loans.isNotEmpty())
 		{
-			Tile(inTitle = "Mensualités de crédit") {
+			Tile(inTitle = "Mensualités de crédit", inAccent = accountAccent(AccountType.LOAN)) {
 				vData.loans.forEach { inLoan ->
 					val vNext = amortization(inLoan).firstOrNull { it.date.isAfter(vToday) }			// prochaine mensualité
 					Row(

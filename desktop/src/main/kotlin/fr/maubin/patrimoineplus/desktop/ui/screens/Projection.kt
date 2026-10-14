@@ -53,7 +53,11 @@ import fr.maubin.patrimoineplus.ui.projection.projectWealth
 import fr.maubin.patrimoineplus.ui.components.smoothPath
 import fr.maubin.patrimoineplus.domain.format.formatEuros
 import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
-import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
+import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
+import fr.maubin.patrimoineplus.ui.components.flowAccent
+import fr.maubin.patrimoineplus.ui.components.flowColorOr
+import fr.maubin.patrimoineplus.ui.components.FlowAccent
+import fr.maubin.patrimoineplus.ui.components.isColorful
 
 private val kHorizons = listOf(5, 10, 20, 30)											// horizons proposés, en années
 
@@ -86,9 +90,9 @@ fun ProjectionScreen(
 		Inputs(vInput, vDefault) { inController.setProjection(it) }
 		TileRow(
 			Cell(1f) { inMod -> Tile(inModifier = inMod) { TileFigure("Aujourd’hui") { AmountText(inCents = vResult.start, inStyle = MaterialTheme.typography.headlineSmall) } } },
-			Cell(1f) { inMod -> Tile(inModifier = inMod) { TileFigure("Dans ${vInput.years} ans, prudent") { AmountText(inCents = vResult.last.prudent, inStyle = MaterialTheme.typography.headlineSmall) } } },
-			Cell(1.2f) { inMod -> Tile(inModifier = inMod) { TileFigure("Dans ${vInput.years} ans, central") { AmountText(inCents = vResult.last.central, inStyle = MaterialTheme.typography.headlineMedium) } } },
-			Cell(1f) { inMod -> Tile(inModifier = inMod) { TileFigure("Dans ${vInput.years} ans, favorable") { AmountText(inCents = vResult.last.optimistic, inStyle = MaterialTheme.typography.headlineSmall) } } },
+			Cell(1f) { inMod -> Tile(inModifier = inMod, inAccent = flowAccent(FlowAccent.INFLOW)) { TileFigure("Dans ${vInput.years} ans, prudent") { AmountText(inCents = vResult.last.prudent, inStyle = MaterialTheme.typography.headlineSmall) } } },
+			Cell(1.2f) { inMod -> Tile(inModifier = inMod, inFilled = isColorful()) { TileFigure("Dans ${vInput.years} ans, central") { AmountText(inCents = vResult.last.central, inStyle = MaterialTheme.typography.headlineMedium) } } },
+			Cell(1f) { inMod -> Tile(inModifier = inMod, inAccent = flowAccent(FlowAccent.INFLOW)) { TileFigure("Dans ${vInput.years} ans, favorable") { AmountText(inCents = vResult.last.optimistic, inStyle = MaterialTheme.typography.headlineSmall) } } },
 			Cell(1f) { inMod ->
 				Tile(inModifier = inMod) {
 					TileFigure("Dont versements") { AmountText(inCents = vResult.last.contributed - vResult.start, inStyle = MaterialTheme.typography.headlineSmall) }
@@ -181,12 +185,13 @@ private fun Inputs(
 @Composable
 private fun Chart(inResult: Projection)
 {
-	val vInk   = MaterialTheme.colorScheme.onSurface									// scénario central
-	val vSoft  = MaterialTheme.colorScheme.onSurfaceVariant							// autres scénarios
-	val vLight = MaterialTheme.colorScheme.outline										// versements seuls
+	val vInk   = flowColorOr(FlowAccent.MAIN, MaterialTheme.colorScheme.onSurface)		// scénario central
+	val vSoft  = MaterialTheme.colorScheme.onSurfaceVariant							// textes des axes
+	val vSide  = flowColorOr(FlowAccent.INFLOW, vSoft)								// autres scénarios (bleu-vert en thème Coloré)
+	val vLight = flowColorOr(FlowAccent.INVEST, MaterialTheme.colorScheme.outline)	// versements seuls (ambre en thème Coloré)
 	val vRule  = MaterialTheme.colorScheme.outlineVariant								// filets
 	Row(verticalAlignment = Alignment.CenterVertically) {
-		listOf(vInk to "Central", vSoft to "Prudent et favorable", vLight to "Versements seuls").forEach { (inColor, inLabel) ->
+		listOf(vInk to "Central", vSide to "Prudent et favorable", vLight to "Versements seuls").forEach { (inColor, inLabel) ->
 			SeriesDot(inColor); Spacer(Modifier.width(8.dp)); Text(inLabel, style = MaterialTheme.typography.bodyMedium); Spacer(Modifier.width(20.dp))
 		}
 	}
@@ -216,8 +221,8 @@ private fun Chart(inResult: Projection)
 				drawPath(vPath, inColor, style = Stroke(width = inWidth, pathEffect = if (inDash) PathEffect.dashPathEffect(floatArrayOf(8f, 6f)) else null))
 			}
 			series({ inResult.points[it].contributed }, vLight, 1.5.dp.toPx(), false)
-			series({ inResult.points[it].prudent }, vSoft, 1.5.dp.toPx(), true)
-			series({ inResult.points[it].optimistic }, vSoft, 1.5.dp.toPx(), true)
+			series({ inResult.points[it].prudent }, vSide, 1.5.dp.toPx(), true)
+			series({ inResult.points[it].optimistic }, vSide, 1.5.dp.toPx(), true)
 			series({ inResult.points[it].central }, vInk, 2.5.dp.toPx(), false)
 		}
 	}

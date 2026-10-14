@@ -165,4 +165,40 @@ class NavigationUiTest
 		vApp.show(Screen.BUDGET)
 		capture(vApp, "24-budget-colore")
 	}
+
+	/*
+		Thème Coloré sur les autres pages : vue d'un compte (couleur de son
+		type), bilan (mois par mois et annuel), budget, projection, objectifs,
+		opérations et recherche. Captures `25-*.png` (relecture humaine).
+	*/
+	@Test
+	fun colorfulPages()
+	{
+		val vApp  = demo()																	// démonstration
+		val vData = vApp.workspace.value.data												// données
+		vApp.setColorTheme(fr.maubin.patrimoineplus.ui.theme.ColorTheme.COLORFUL)
+		vApp.setGoals(fr.maubin.patrimoineplus.ui.goals.Goals(listOf(
+			fr.maubin.patrimoineplus.ui.goals.Goal("g1", fr.maubin.patrimoineplus.ui.goals.GoalKind.WEALTH, "Patrimoine de 100 000 €", target = 10_000_000),
+			fr.maubin.patrimoineplus.ui.goals.Goal("g2", fr.maubin.patrimoineplus.ui.goals.GoalKind.ACCOUNT, "Livret A plein", target = 2_295_000, accountId = vData.accounts.first { it.name == "Livret A" }.id),
+			fr.maubin.patrimoineplus.ui.goals.Goal("g3", fr.maubin.patrimoineplus.ui.goals.GoalKind.RATE, "Épargner 30 %", target = 300),
+			fr.maubin.patrimoineplus.ui.goals.Goal("g4", fr.maubin.patrimoineplus.ui.goals.GoalKind.TYPE, "Bourse à 20 000 €", target = 2_000_000, accountType = fr.maubin.patrimoineplus.domain.model.AccountType.BROKERAGE)
+		)))
+		vApp.openAccount(vData.accounts.first { it.name == "Compte courant" }.id)
+		capture(vApp, "25-compte-courant")
+		vApp.openAccount(vData.accounts.first { it.name == "PEA" }.id)
+		capture(vApp, "25-pea")
+		vApp.back()
+		vApp.show(Screen.REPORT)
+		capture(vApp, "25-bilan-annuel")
+		vApp.showReportTab(fr.maubin.patrimoineplus.desktop.ReportTab.MONTHLY)
+		capture(vApp, "25-bilan-mois")
+		vApp.show(Screen.PROJECTION)
+		capture(vApp, "25-projection")
+		vApp.show(Screen.GOALS)
+		capture(vApp, "25-objectifs")
+		vApp.show(Screen.OPERATIONS)
+		capture(vApp, "25-operations")
+		vApp.show(Screen.SEARCH)
+		capture(vApp, "25-recherche")
+	}
 }

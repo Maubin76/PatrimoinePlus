@@ -12,6 +12,7 @@ import fr.maubin.patrimoineplus.ui.theme.kBlueGreen
 import fr.maubin.patrimoineplus.ui.theme.kDeepSpace
 import fr.maubin.patrimoineplus.ui.theme.kSkyBlue
 import fr.maubin.patrimoineplus.ui.theme.kTiger
+import androidx.compose.runtime.staticCompositionLocalOf
 
 // Couleurs d'accent du thème Coloré, posées sur le contenu (tuiles, pastilles)
 // et pas sur les fonds, qui restent ceux des autres thèmes.
@@ -68,3 +69,46 @@ fun operationAccent(inCents: Long): Pair<Color, Color>?
 	return if (vDark) vBase.copy(alpha = 0.28f) to (if (inCents > 0) Color(0xFF4CC3E0) else Color(0xFFFFB066))
 		else vBase.copy(alpha = 0.16f) to (if (inCents > 0) kRiseInk else kFallInk)
 }
+
+/*
+	Sens d'un montant, pour sa couleur dans le thème Coloré (pages Bilan,
+	Budget, Projection, Objectifs…).
+*/
+enum class FlowAccent
+{
+	INFLOW,																			// entrées, revenus : bleu-vert
+	OUTFLOW,																		// sorties, dépenses : orange
+	INVEST,																			// épargne, placements : ambre
+	MAIN																			// chiffre principal : couleur principale du thème
+}
+
+/*
+	Couleur d'un sens de montant dans le thème Coloré ; non précisée dans les
+	autres thèmes.
+	inKind : sens
+*/
+@Composable
+fun flowAccent(inKind: FlowAccent): Color =
+	if (!isColorful()) Color.Unspecified
+	else when (inKind)
+	{
+		FlowAccent.INFLOW  -> kBlueGreen
+		FlowAccent.OUTFLOW -> kTiger
+		FlowAccent.INVEST  -> kAmber
+		FlowAccent.MAIN    -> MaterialTheme.colorScheme.primary
+	}
+
+/*
+	Couleur d'un sens de montant dans le thème Coloré, sinon la couleur donnée.
+	inKind     : sens
+	inFallback : couleur des thèmes Monochrome et Minimal
+*/
+@Composable
+fun flowColorOr(
+	inKind     : FlowAccent,
+	inFallback : Color
+): Color = flowAccent(inKind).takeIf { it != Color.Unspecified } ?: inFallback
+
+// Couleur d'accent de la page en cours (vue d'un compte : couleur de son type) ;
+// reprise par les courbes et la tuile principale. Non précisée : encre du thème.
+val LocalAccent = staticCompositionLocalOf { Color.Unspecified }

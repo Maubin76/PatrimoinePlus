@@ -82,7 +82,11 @@ import fr.maubin.patrimoineplus.ui.goals.evaluateGoals
 import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import java.util.UUID
 import kotlin.math.abs
-import kotlin.math.roundToLong
+import kotlin.math.roundToLong
+import fr.maubin.patrimoineplus.ui.components.flowAccent
+import fr.maubin.patrimoineplus.ui.components.FlowAccent
+import fr.maubin.patrimoineplus.ui.components.accountAccent
+import androidx.compose.ui.graphics.Color
 
 private const val kBarMillis = 420														// remplissage de la barre d'avancement
 
@@ -253,8 +257,10 @@ private fun GoalTile(
 	val vHidden = LocalAmountsHidden.current												// mode discret
 	val vMoney  = { inCents: Long, inPlus: Boolean -> if (vHidden) kMaskedAmount else formatEuros(inCents, inPlus) }	// montant en texte
 	val vSoft   = MaterialTheme.colorScheme.onSurfaceVariant								// texte secondaire
+	val vAccent = goalAccent(vGoal, inSpace)												// couleur de l'objectif (thème Coloré)
 	Tile(
 		inModifier = inMod,
+		inAccent   = vAccent,
 		inTitle    = vGoal.title.ifBlank { vGoal.kind.label },
 		inAction   = {
 			StatusPill(inView.status)
@@ -289,7 +295,7 @@ private fun GoalTile(
 				)
 			}
 			Spacer(Modifier.height(10.dp))
-			ProgressBar(inView.progress)
+			ProgressBar(inView.progress, vAccent)
 			Spacer(Modifier.height(10.dp))
 			details(inView, vMoney).forEach { Text(it, style = MaterialTheme.typography.bodyMedium, color = vSoft) }
 			if (vGoal.kind == GoalKind.MANUAL)
@@ -378,9 +384,13 @@ private fun details(
 /*
 	Barre d'avancement fine, remplie en douceur.
 	inPercent : avancement, de 0 à 100
+	inColor   : couleur de la part remplie ; non précisée : encre du thème
 */
 @Composable
-private fun ProgressBar(inPercent: Int)
+private fun ProgressBar(
+	inPercent : Int,
+	inColor   : Color = Color.Unspecified
+)
 {
 	val vFill by animateFloatAsState(inPercent / 100f, tween(kBarMillis), label = "avancement")	// part remplie
 	Row(verticalAlignment = Alignment.CenterVertically) {
@@ -388,7 +398,7 @@ private fun ProgressBar(inPercent: Int)
 			Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(4.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest)
 				.semantics { contentDescription = "Avancement $inPercent %" }
 		) {
-			Box(Modifier.fillMaxWidth(vFill).height(8.dp).clip(RoundedCornerShape(4.dp)).background(MaterialTheme.colorScheme.onSurface))
+			Box(Modifier.fillMaxWidth(vFill).height(8.dp).clip(RoundedCornerShape(4.dp)).background(inColor.takeIf { it != Color.Unspecified } ?: MaterialTheme.colorScheme.onSurface))
 		}
 		Text("$inPercent %", style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(56.dp).padding(start = 12.dp))
 	}
@@ -562,3 +572,25 @@ private fun rateText(inPermille: Long): String = (if (inPermille < 0) "-" else "
 	inPermille : taux, en pour mille
 */
 private fun rateInput(inPermille: Long): String = if (inPermille % 10 == 0L) (inPermille / 10).toString() else "${inPermille / 10},${abs(inPermille) % 10}"
+
+/*
+	Couleur d'un objectif dans le thème Coloré : celle du compte ou du type
+	visé, bleu-vert pour l'épargne mensuelle, ambre pour le taux d'épargne,
+	orange pour un montant saisi, couleur principale sinon.
+	inGoal  : objectif
+	inSpace : données (type du compte visé)
+*/
+@Composable
+private fun goalAccent(
+	inGoal  : Goal,
+	inSpace : WorkspaceState
+): Color =
+	when (inGoal.kind)
+	{
+		GoalKind.ACCOUNT -> inSpace.data.accounts.firstOrNull { it.id == inGoal.accountId }?.let { accountAccent(it.type) } ?: flowAccent(FlowAccent.MAIN)
+		GoalKind.TYPE    -> inGoal.accountType?.let { accountAccent(it) } ?: flowAccent(FlowAccent.MAIN)
+		GoalKind.MONTHLY -> flowAccent(FlowAccent.INFLOW)
+		GoalKind.RATE    -> flowAccent(FlowAccent.INVEST)
+		GoalKind.MANUAL  -> flowAccent(FlowAccent.OUTFLOW)
+		else             -> flowAccent(FlowAccent.MAIN)
+	}

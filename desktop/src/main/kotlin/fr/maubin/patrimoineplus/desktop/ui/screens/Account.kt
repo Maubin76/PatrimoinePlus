@@ -86,7 +86,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import fr.maubin.patrimoineplus.ui.components.ProportionChart
-import fr.maubin.patrimoineplus.ui.components.ProportionToggle
+import fr.maubin.patrimoineplus.ui.components.ProportionToggle
+import fr.maubin.patrimoineplus.ui.components.LocalAccent
+import fr.maubin.patrimoineplus.ui.components.accountAccent
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 private val kDayTitle = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANCE)	// en-tête d'un jour
 private val kShortDay = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date d'une opération
@@ -125,6 +133,8 @@ fun AccountScreen(
 	val vOpen: (OperationItem) -> Unit = { inItem ->
 		inController.openTransaction(inItem.transaction)
 	}																				// ouvre une opération
+	val vAccent = accountAccent(vAccount.type)										// couleur du type (thème Coloré)
+	CompositionLocalProvider(LocalAccent provides vAccent) {
 	Column(
 		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -132,6 +142,11 @@ fun AccountScreen(
 		Row(verticalAlignment = Alignment.CenterVertically) {
 			IconButton(onClick = inController::back) { Icon(LineIcons.Back, contentDescription = "Retour au tableau de bord") }
 			Spacer(Modifier.width(8.dp))
+			if (vAccent != Color.Unspecified)
+			{
+				Box(Modifier.width(6.dp).height(44.dp).clip(RoundedCornerShape(3.dp)).background(vAccent))	// marque du type
+				Spacer(Modifier.width(14.dp))
+			}
 			Column(Modifier.weight(1f)) {
 				Text(vAccount.name, style = MaterialTheme.typography.headlineMedium)
 				Text(accountDetail(vAccount), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -146,6 +161,7 @@ fun AccountScreen(
 			AccountType.REAL_ESTATE, AccountType.COLLECTIBLE -> PropertyView(vState, inSpace, inController, vAccount)
 			AccountType.LOAN      -> LoanView(vState, inSpace, inController, vAccount, vOpen)
 		}
+	}
 	}
 }
 
@@ -500,7 +516,7 @@ private fun Figure(
 	inNote     : String? = null
 )
 {
-	Tile(inModifier = inModifier) {
+	Tile(inModifier = inModifier, inAccent = if (inStrong) LocalAccent.current else Color.Unspecified) {	// chiffre principal : tuile à la couleur du compte
 		TileFigure(inLabel) {
 			AmountText(
 				inCents        = inCents,

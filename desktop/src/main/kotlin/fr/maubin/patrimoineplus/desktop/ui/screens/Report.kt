@@ -46,7 +46,13 @@ import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.collectAsState
 import fr.maubin.patrimoineplus.desktop.ReportTab
-import fr.maubin.patrimoineplus.desktop.ui.panels.Choice
+import fr.maubin.patrimoineplus.desktop.ui.panels.Choice
+import fr.maubin.patrimoineplus.ui.components.flowAccent
+import fr.maubin.patrimoineplus.ui.components.FlowAccent
+import fr.maubin.patrimoineplus.ui.components.accountAccent
+import fr.maubin.patrimoineplus.ui.components.isColorful
+import fr.maubin.patrimoineplus.domain.model.AccountType
+import androidx.compose.ui.graphics.Color
 
 private val kLongDay = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)	// date en toutes lettres
 
@@ -133,7 +139,7 @@ private fun AnnualReportSection(
 					}
 				}
 			},
-			Cell(1f) { inMod -> Tile(inModifier = inMod) { TileFigure("Variation") { AmountText(inCents = vReport.wealthChange, inStyle = MaterialTheme.typography.headlineSmall, inShowPlusSign = true, inTrend = true) } } },
+			Cell(1f) { inMod -> Tile(inModifier = inMod, inFilled = isColorful()) { TileFigure("Variation") { AmountText(inCents = vReport.wealthChange, inStyle = MaterialTheme.typography.headlineSmall, inShowPlusSign = true, inTrend = true) } } },
 			Cell(1f) { inMod ->
 				Tile(inModifier = inMod) {
 					TileFigure("Taux d’épargne") { Text(vReport.savingsRate?.takeIf { !LocalAmountsHidden.current }?.let { formatPermille(it).removePrefix("+") } ?: "—", style = MaterialTheme.typography.headlineSmall) }
@@ -143,7 +149,7 @@ private fun AnnualReportSection(
 		)
 		TileRow(
 			Cell(1f) { inMod ->
-				Tile(inModifier = inMod, inTitle = "Revenus et dépenses") {
+				Tile(inModifier = inMod, inTitle = "Revenus et dépenses", inAccent = flowAccent(FlowAccent.INFLOW)) {
 					Line("Revenus", vReport.totalIncomes)
 					Line("Dépenses", vReport.totalExpenses)
 					HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -151,7 +157,7 @@ private fun AnnualReportSection(
 				}
 			},
 			Cell(1f) { inMod ->
-				Tile(inModifier = inMod, inTitle = "Placements") {
+				Tile(inModifier = inMod, inTitle = "Placements", inAccent = flowAccent(FlowAccent.INVEST)) {
 					Line("Intérêts (comptes d’épargne)", vReport.interest)
 					Line("Dividendes (comptes Bourse)", vReport.dividends)
 					Line("Plus-values réalisées", vReport.totalRealized, inSigned = true)
@@ -178,7 +184,7 @@ private fun AnnualReportSection(
 		{
 			TileRow(
 				Cell(1f) { inMod ->
-					Tile(inModifier = inMod, inTitle = "Biens") {
+					Tile(inModifier = inMod, inTitle = "Biens", inAccent = accountAccent(AccountType.REAL_ESTATE)) {
 						if (vReport.bought.isEmpty() && vReport.sold.isEmpty()) Hint("Aucun achat ni vente de bien sur la période.")
 						vReport.bought.forEach { Line(if (it.paid) "Achat · ${it.name}" else "Ajouté (déjà possédé) · ${it.name}", it.cost) }
 						vReport.sold.forEach { Line("Vente · ${it.name} (achat ${if (LocalAmountsHidden.current) kMaskedAmount else formatEuros(it.cost)})", it.salePrice ?: 0L) }
@@ -190,7 +196,7 @@ private fun AnnualReportSection(
 					}
 				},
 				Cell(1f) { inMod ->
-					Tile(inModifier = inMod, inTitle = "Crédits") {
+					Tile(inModifier = inMod, inTitle = "Crédits", inAccent = accountAccent(AccountType.LOAN)) {
 						if (vReport.loans.isEmpty()) Hint("Aucun crédit sur la période.")
 						vReport.loans.forEach { inLoan ->
 							Text(inLoan.account.name, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp))
@@ -204,8 +210,8 @@ private fun AnnualReportSection(
 			)
 		}
 		TileRow(
-			Cell(1f) { inMod -> CategoriesTile("Dépenses par catégorie", vReport.expenses, vReport.totalExpenses, inMod) },
-			Cell(1f) { inMod -> CategoriesTile("Revenus par catégorie", vReport.incomes, vReport.totalIncomes, inMod) }
+			Cell(1f) { inMod -> CategoriesTile("Dépenses par catégorie", vReport.expenses, vReport.totalExpenses, inMod, flowAccent(FlowAccent.OUTFLOW)) },
+			Cell(1f) { inMod -> CategoriesTile("Revenus par catégorie", vReport.incomes, vReport.totalIncomes, inMod, flowAccent(FlowAccent.INFLOW)) }
 		)
 		Hint("Le PDF reprend ces chiffres (biens et crédits compris) et le patrimoine de fin de chaque mois, sur des pages A4 prêtes à imprimer.")
 	}
@@ -238,16 +244,18 @@ private fun Line(
 	inLines    : montants par catégorie
 	inTotal    : total
 	inModifier : place
+	inAccent   : couleur de la tuile (thème Coloré)
 */
 @Composable
 private fun CategoriesTile(
 	inTitle    : String,
 	inLines    : List<CategoryYear>,
 	inTotal    : Long,
-	inModifier : Modifier
+	inModifier : Modifier,
+	inAccent   : Color = Color.Unspecified
 )
 {
-	Tile(inModifier = inModifier, inTitle = inTitle) {
+	Tile(inModifier = inModifier, inTitle = inTitle, inAccent = inAccent) {
 		if (inLines.isEmpty()) Hint("Rien sur la période.")
 		inLines.forEach { inLine ->
 			Row(Modifier.fillMaxWidth().heightIn(min = 32.dp), verticalAlignment = Alignment.CenterVertically) {

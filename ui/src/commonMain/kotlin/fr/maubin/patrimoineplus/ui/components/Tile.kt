@@ -161,7 +161,7 @@ fun Sparkline(
 	inColor       : Color    = Color.Unspecified
 )
 {
-	val vLine  = if (inColor != Color.Unspecified) inColor else MaterialTheme.colorScheme.onSurface	// trait
+	val vLine  = listOf(inColor, LocalAccent.current).firstOrNull { it != Color.Unspecified } ?: MaterialTheme.colorScheme.onSurface	// trait : couleur donnée, de la page, ou encre
 	Canvas(inModifier.fillMaxWidth().height(inHeight).semantics { contentDescription = inDescription }) {
 		if (inSeries.size < 2)
 		{

@@ -343,7 +343,13 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   la répartition et les comptes du téléphone ; patrimoine net en tuile
   pleine ; pastilles des opérations en bleu-vert (entrées) ou orange
   (sorties) ; graphiques et cashflow aux couleurs de la palette ; hausses en
-  bleu-vert et baisses en orange). Les teintes des
+  bleu-vert et baisses en orange). Sur les autres pages, mêmes repères : vue
+  d'un compte à la couleur de son type (marque, tuile principale, courbe) ;
+  entrées et revenus en bleu-vert, sorties et dépenses en orange, épargne et
+  placements en ambre (bilan, budget, projection, objectifs) ; chiffre
+  principal en tuile pleine (variation du bilan, reste du budget, scénario
+  central de la projection) ; pastilles d'opérations colorées dans la
+  recherche et les récurrences. Les teintes des
   graphiques sont validées (voisins distincts, daltonisme compris) et les
   textes gardent un contraste d'au moins 4,5:1. Remplace l'ancien réglage
   « Hausses en vert, baisses en rouge » (activé : thème Minimal).
