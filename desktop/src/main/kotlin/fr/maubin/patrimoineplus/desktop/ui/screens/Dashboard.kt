@@ -66,6 +66,9 @@ import fr.maubin.patrimoineplus.ui.components.rankColor
 import fr.maubin.patrimoineplus.ui.components.ProportionChart
 import fr.maubin.patrimoineplus.ui.home.HomeGroup
 import fr.maubin.patrimoineplus.ui.components.ProportionToggle
+import fr.maubin.patrimoineplus.ui.components.isColorful
+import fr.maubin.patrimoineplus.ui.components.accountAccent
+import androidx.compose.ui.graphics.Color
 
 private val kShortDay   = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date courte
 private val kAccountMin = 300.dp													// largeur minimale d'une tuile de compte
@@ -140,10 +143,10 @@ fun DashboardScreen(
 @Composable
 private fun Figures(inState: DashboardState)
 {
-	val vMuted = MaterialTheme.colorScheme.onSurfaceVariant							// texte secondaire
 	TileRow(
 		Cell(1.6f) { inMod ->
-			Tile(inModifier = inMod) {
+			Tile(inModifier = inMod, inFilled = isColorful()) {
+				val vMuted = MaterialTheme.colorScheme.onSurfaceVariant						// texte secondaire (inversé dans la tuile pleine)
 				Text(if (inState.home.debtCents != 0L) "Patrimoine net" else "Patrimoine", style = MaterialTheme.typography.titleMedium, color = vMuted)
 				Spacer(Modifier.height(4.dp))
 				AmountText(inCents = inState.home.totalCents, inStyle = MaterialTheme.typography.displayMedium, inRolling = true)
@@ -170,6 +173,7 @@ private fun Figures(inState: DashboardState)
 		},
 		Cell(1f) { inMod ->
 			Tile(inModifier = inMod, inTitle = "Sur douze mois") {
+				val vMuted = MaterialTheme.colorScheme.onSurfaceVariant						// texte secondaire
 				val vChange = inState.yearChange											// variation sur un an
 				if (vChange == null)
 				{
@@ -236,13 +240,27 @@ private fun RepartitionTile(
 	Tile(inModifier = inModifier, inTitle = "Répartition", inAction = { ProportionToggle("tableau-de-bord") }) {
 		ProportionChart(
 			inKey         = "tableau-de-bord",
-			inSegments    = vGroups.mapIndexed { inRank, inGroup -> BarSegment(inGroup.subtotalCents, rankColor(inRank, vGroups.size)) },
+			inSegments    = vGroups.mapIndexed { inRank, inGroup -> BarSegment(inGroup.subtotalCents, groupColor(inGroup, inRank, vGroups.size)) },
 			inDescription = "Répartition par type de compte, nette des crédits, de la plus grande part à la plus petite"
 		) {
 			Column { RepartitionLegend(vGroups) }
 		}
 	}
 }
+
+/*
+	Teinte d'un type dans la répartition : couleur du type (thème Coloré, la
+	même que ses tuiles), sinon dégradé de gris selon le rang.
+	inGroup : type
+	inRank  : rang (0 : la plus grande part)
+	inCount : nombre de types
+*/
+@Composable
+private fun groupColor(
+	inGroup : HomeGroup,
+	inRank  : Int,
+	inCount : Int
+): Color = if (isColorful()) typeColor(inGroup.type) else rankColor(inRank, inCount)
 
 /*
 	Légende de la répartition : un type par ligne, dans l'ordre du
@@ -254,7 +272,7 @@ private fun RepartitionLegend(inGroups: List<HomeGroup>)
 {
 	inGroups.forEachIndexed { inRank, inGroup ->
 		Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
-			SeriesDot(rankColor(inRank, inGroups.size))
+			SeriesDot(groupColor(inGroup, inRank, inGroups.size))
 			Spacer(Modifier.width(12.dp))
 			Text(inGroup.type.label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
 			Text("${inGroup.percent} %", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -286,7 +304,8 @@ private fun AccountTileView(
 )
 {
 	val vMuted = MaterialTheme.colorScheme.onSurfaceVariant							// texte secondaire
-	Tile(inModifier = inModifier, inOnClick = inOnOpen, inClickLabel = "Ouvrir ${inTile.account.name}") {
+	val vAccent = accountAccent(inTile.account.type)									// couleur du type (thème Coloré)
+	Tile(inModifier = inModifier, inOnClick = inOnOpen, inClickLabel = "Ouvrir ${inTile.account.name}", inAccent = vAccent) {
 		Row(verticalAlignment = Alignment.Top) {
 			Column(Modifier.weight(1f)) {
 				Text(inTile.account.name, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -312,7 +331,7 @@ private fun AccountTileView(
 			}
 		}
 		Spacer(Modifier.height(12.dp))
-		Sparkline(inTile.series, "Évolution de ${inTile.account.name} sur ${inTile.series.size} mois")
+		Sparkline(inTile.series, "Évolution de ${inTile.account.name} sur ${inTile.series.size} mois", inColor = vAccent)
 		Spacer(Modifier.height(16.dp))
 		HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 		Spacer(Modifier.height(12.dp))
@@ -485,7 +504,7 @@ fun MiniBar(
 )
 {
 	ProportionBar(
-		inSegments    = listOf(BarSegment((inFraction.coerceIn(0f, 1f) * 1000).toLong(), MaterialTheme.colorScheme.onSurface), BarSegment(((1f - inFraction.coerceIn(0f, 1f)) * 1000).toLong(), MaterialTheme.colorScheme.surfaceContainerHigh)),
+		inSegments    = listOf(BarSegment((inFraction.coerceIn(0f, 1f) * 1000).toLong(), MaterialTheme.colorScheme.primary), BarSegment(((1f - inFraction.coerceIn(0f, 1f)) * 1000).toLong(), MaterialTheme.colorScheme.surfaceContainerHigh)),
 		inDescription = "${(inFraction * 100).toInt()} %",
 		inModifier    = inModifier
 	)

@@ -335,9 +335,15 @@ bord** de pilotage plutôt qu'une suite d'écrans.
 - **Thèmes de couleurs** (Réglages › Apparence › Thème, PC et téléphone,
   chacun en clair et en sombre) : **Monochrome** (tout en noir et blanc),
   **Minimal** (noir et blanc, hausses en vert et baisses en rouge),
-  **Coloré** (palette « Refreshing Summer Fun » sur toute l'interface :
-  fonds teintés, encre bleu nuit, graphiques et cashflow aux couleurs de la
-  palette, hausses en bleu-vert et baisses en orange). Les teintes des
+  **Coloré** (palette « Refreshing Summer Fun » : fonds identiques aux
+  autres thèmes, encre et boutons bleu nuit — bleu ciel en sombre —, une
+  couleur par type de compte (Courant bleu-vert, Épargne ambre, Bourse
+  orange, Immobilier bleu nuit, Collection bleu ciel, Crédit ardoise)
+  portée par les tuiles du tableau de bord (fond teinté, bandeau, courbe),
+  la répartition et les comptes du téléphone ; patrimoine net en tuile
+  pleine ; pastilles des opérations en bleu-vert (entrées) ou orange
+  (sorties) ; graphiques et cashflow aux couleurs de la palette ; hausses en
+  bleu-vert et baisses en orange). Les teintes des
   graphiques sont validées (voisins distincts, daltonisme compris) et les
   textes gardent un contraste d'au moins 4,5:1. Remplace l'ancien réglage
   « Hausses en vert, baisses en rouge » (activé : thème Minimal).

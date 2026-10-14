@@ -40,7 +40,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import fr.maubin.patrimoineplus.domain.calc.SeriesPoint
+import fr.maubin.patrimoineplus.domain.calc.SeriesPoint
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 
 private val kTileShape = RoundedCornerShape(20.dp)								// forme d'une tuile
 private const val kHoverMillis = 160												// fondu du survol
@@ -55,6 +60,9 @@ private const val kPressMillis = 90												// enfoncement au clic
 	inOnClick  : action d'un clic ; null pour une tuile inerte
 	inClickLabel : description de l'action (lecteurs d'écran)
 	inAction   : élément à droite du titre (bouton, lien) ; null sans action
+	inAccent   : couleur de la tuile (thème Coloré : type du compte) : fond
+	             légèrement teinté, bord et bandeau du haut ; non précisée : tuile neutre
+	inFilled   : tuile pleine, à la couleur principale, texte inversé (chiffre mis en avant)
 	inContent  : contenu
 */
 @Composable
@@ -64,40 +72,55 @@ fun Tile(
 	inOnClick    : (() -> Unit)?                     = null,
 	inClickLabel : String?                           = null,
 	inAction     : (@Composable RowScope.() -> Unit)? = null,
+	inAccent     : Color                             = Color.Unspecified,
+	inFilled     : Boolean                           = false,
 	inContent    : @Composable ColumnScope.() -> Unit
 )
 {
-	val vColors   = MaterialTheme.colorScheme										// palette courante
+	val vBase     = MaterialTheme.colorScheme										// palette de l'appli
+	val vColors   = if (inFilled) vBase.copy(surface = vBase.primary, onSurface = vBase.onPrimary, onSurfaceVariant = vBase.onPrimary.copy(alpha = 0.78f),
+		surfaceContainerLow = lerp(vBase.primary, vBase.onPrimary, 0.08f), surfaceContainerHigh = lerp(vBase.primary, vBase.onPrimary, 0.2f),
+		outline = vBase.onPrimary.copy(alpha = 0.5f), outlineVariant = vBase.primary) else vBase	// tuile pleine : couleurs inversées
+	val vDark     = vBase.surface.luminance() < 0.5f								// fond sombre
+	val vTint     = inAccent != Color.Unspecified									// tuile teintée
 	val vSource   = remember { MutableInteractionSource() }						// survol et clics
 	val vHovered  by vSource.collectIsHoveredAsState()							// souris au-dessus
 	val vPressed  by vSource.collectIsPressedAsState()							// bouton de la souris enfoncé
 	val vActive   = inOnClick != null && vHovered								// mise en avant du survol
 	val vClick    = if (inOnClick != null) Modifier.clickable(interactionSource = vSource, indication = null, role = Role.Button, onClickLabel = inClickLabel, onClick = inOnClick) else Modifier
-	val vFill     by animateColorAsState(if (vActive) vColors.surfaceContainerLow else vColors.surface, tween(kHoverMillis), label = "fond")	// fond, en fondu
-	val vEdge     by animateColorAsState(if (vActive) vColors.outline else vColors.outlineVariant, tween(kHoverMillis), label = "bord")	// bord, en fondu
+	val vRest     = if (vTint) lerp(vColors.surface, inAccent, if (vDark) 0.14f else 0.07f) else vColors.surface	// fond au repos
+	val vHover    = if (vTint) lerp(vColors.surface, inAccent, if (vDark) 0.22f else 0.13f) else vColors.surfaceContainerLow	// fond survolé
+	val vFill     by animateColorAsState(if (vActive) vHover else vRest, tween(kHoverMillis), label = "fond")	// fond, en fondu
+	val vEdge     by animateColorAsState(if (vTint) inAccent.copy(alpha = if (vActive) 0.9f else 0.45f) else if (vActive) vColors.outline else vColors.outlineVariant, tween(kHoverMillis), label = "bord")	// bord, en fondu
 	val vScale    by animateFloatAsState(if (inOnClick != null && vPressed) 0.985f else 1f, tween(kPressMillis), label = "appui")	// léger enfoncement au clic
 	Surface(
 		modifier = inModifier.graphicsLayer { scaleX = vScale; scaleY = vScale }.hoverable(vSource).then(vClick),
 		shape    = kTileShape,
 		color    = vFill,
+		contentColor = vColors.onSurface,
 		border   = BorderStroke(1.dp, vEdge)
 	) {
-		Column(Modifier.padding(24.dp)) {
-			if (inTitle != null || inAction != null)
-			{
-				Row(Modifier.fillMaxWidth().heightIn(min = 32.dp), verticalAlignment = Alignment.CenterVertically) {
-					Text(
-						text     = inTitle.orEmpty(),
-						style    = MaterialTheme.typography.titleMedium,
-						maxLines = 1,
-						overflow = TextOverflow.Ellipsis,
-						modifier = Modifier.weight(1f)
-					)
-					inAction?.invoke(this)
+		MaterialTheme(colorScheme = vColors) {
+			Column {
+				if (vTint) Box(Modifier.fillMaxWidth().height(5.dp).background(inAccent))		// bandeau à la couleur du type
+				Column(Modifier.padding(24.dp)) {
+					if (inTitle != null || inAction != null)
+					{
+						Row(Modifier.fillMaxWidth().heightIn(min = 32.dp), verticalAlignment = Alignment.CenterVertically) {
+							Text(
+								text     = inTitle.orEmpty(),
+								style    = MaterialTheme.typography.titleMedium,
+								maxLines = 1,
+								overflow = TextOverflow.Ellipsis,
+								modifier = Modifier.weight(1f)
+							)
+							inAction?.invoke(this)
+						}
+						androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
+					}
+					inContent()
 				}
-				androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
 			}
-			inContent()
 		}
 	}
 }
@@ -127,16 +150,18 @@ fun TileFigure(
 	inDescription : description lue par les lecteurs d'écran
 	inModifier    : modificateur appliqué
 	inHeight      : hauteur
+	inColor       : couleur du trait ; non précisée : encre du thème
 */
 @Composable
 fun Sparkline(
 	inSeries      : List<SeriesPoint>,
 	inDescription : String,
 	inModifier    : Modifier = Modifier,
-	inHeight      : Dp       = 48.dp
+	inHeight      : Dp       = 48.dp,
+	inColor       : Color    = Color.Unspecified
 )
 {
-	val vLine  = MaterialTheme.colorScheme.onSurface								// trait
+	val vLine  = if (inColor != Color.Unspecified) inColor else MaterialTheme.colorScheme.onSurface	// trait
 	Canvas(inModifier.fillMaxWidth().height(inHeight).semantics { contentDescription = inDescription }) {
 		if (inSeries.size < 2)
 		{

@@ -58,7 +58,12 @@ import fr.maubin.patrimoineplus.ui.planning.RecurrenceSheet
 import fr.maubin.patrimoineplus.ui.planning.editRecurrenceForm
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.ui.components.ProportionChart
-import fr.maubin.patrimoineplus.ui.components.ProportionToggle
+import fr.maubin.patrimoineplus.ui.components.ProportionToggle
+import fr.maubin.patrimoineplus.ui.components.accountAccent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 /*
 	Onglet des comptes : liste réordonnable avec la valeur de chaque compte,
@@ -291,6 +296,12 @@ private fun AccountRow(
 	) {
 		inItem.weight?.let { inWeight ->
 			SeriesDot(allocationColor(inWeight.rank))
+			Spacer(Modifier.width(12.dp))
+		}
+		val vAccent = accountAccent(inItem.account.type)								// couleur du type (thème Coloré)
+		if (vAccent != Color.Unspecified)
+		{
+			Box(Modifier.width(4.dp).height(40.dp).clip(RoundedCornerShape(2.dp)).background(vAccent))	// marque du type
 			Spacer(Modifier.width(12.dp))
 		}
 		Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {

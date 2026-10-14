@@ -100,6 +100,7 @@ import fr.maubin.patrimoineplus.ui.property.newSaleForm
 import fr.maubin.patrimoineplus.ui.property.propertyNoun
 import fr.maubin.patrimoineplus.ui.planning.LoanSection
 import fr.maubin.patrimoineplus.domain.model.Frequency
+import fr.maubin.patrimoineplus.ui.components.operationAccent
 
 private val kMonthTitle = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.FRANCE)	// en-tête d'un mois
 private val kShortDay   = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)	// date en tête du sous-titre
@@ -850,6 +851,7 @@ private fun OperationRow(
 )
 {
 	val vColors = MaterialTheme.colorScheme									// palette courante
+	val vAccent = operationAccent(inItem.amount)								// entrée ou sortie (thème Coloré)
 	Row(
 		modifier          = Modifier
 			.fillMaxWidth()
@@ -869,13 +871,13 @@ private fun OperationRow(
 			modifier         = Modifier
 				.size(36.dp)
 				.clip(CircleShape)
-				.background(if (inSelected) vColors.onSurface else vColors.surfaceContainer),
+				.background(if (inSelected) vColors.onSurface else vAccent?.first ?: vColors.surfaceContainer),
 			contentAlignment = Alignment.Center
 		) {
 			Icon(
 				imageVector        = if (inSelected) LineIcons.Check else CategoryIcons.of(inItem.icon),
 				contentDescription = null,
-				tint               = if (inSelected) vColors.surface else vColors.onSurface,
+				tint               = if (inSelected) vColors.surface else vAccent?.second ?: vColors.onSurface,
 				modifier           = Modifier.size(20.dp)
 			)
 		}

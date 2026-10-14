@@ -254,16 +254,7 @@ fun rankColor(
 fun typeColor(inType: AccountType): Color =
 	if (LocalColorTheme.current == ColorTheme.COLORFUL)
 	{
-		val vPalette = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) kColorfulDark else kColorfulLight	// teintes de la palette
-		when (inType)
-		{
-			AccountType.CHECKING    -> vPalette[0]
-			AccountType.SAVINGS     -> vPalette[2]
-			AccountType.BROKERAGE   -> vPalette[1]
-			AccountType.REAL_ESTATE -> vPalette[3]
-			AccountType.COLLECTIBLE -> vPalette[4]
-			AccountType.LOAN        -> MaterialTheme.colorScheme.outline
-		}
+		accountAccent(inType)																// couleur du type, la même que sur les tuiles
 	}
 	else when (inType)
 	{

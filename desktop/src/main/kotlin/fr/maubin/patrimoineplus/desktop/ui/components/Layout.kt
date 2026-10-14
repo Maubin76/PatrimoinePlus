@@ -33,7 +33,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.ui.components.AmountText
 import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
-import kotlin.math.max
+import kotlin.math.max
+import fr.maubin.patrimoineplus.ui.components.operationAccent
+import androidx.compose.material3.LocalContentColor
 
 val kTileGap = 20.dp																// espace entre deux tuiles
 
@@ -130,8 +132,9 @@ fun OperationLine(
 			.padding(horizontal = 8.dp, vertical = 6.dp),
 		verticalAlignment = Alignment.CenterVertically
 	) {
-		Box(Modifier.size(32.dp).clip(CircleShape).background(vColors.surfaceContainer), contentAlignment = Alignment.Center) {
-			Icon(CategoryIcons.of(inIcon), contentDescription = null, modifier = Modifier.size(18.dp))
+		val vAccent = operationAccent(inCents)												// entrée ou sortie (thème Coloré)
+		Box(Modifier.size(32.dp).clip(CircleShape).background(vAccent?.first ?: vColors.surfaceContainer), contentAlignment = Alignment.Center) {
+			Icon(CategoryIcons.of(inIcon), contentDescription = null, tint = vAccent?.second ?: LocalContentColor.current, modifier = Modifier.size(18.dp))
 		}
 		Spacer(Modifier.width(14.dp))
 		Column(Modifier.weight(1f)) {
