@@ -60,8 +60,9 @@ import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
 import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import fr.maubin.patrimoineplus.ui.components.monthTitle
+import fr.maubin.patrimoineplus.ui.components.monthTitle
 import fr.maubin.patrimoineplus.domain.model.AccountType
+import fr.maubin.patrimoineplus.ui.components.rankColor
 
 private val kShortDay   = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date courte
 private val kAccountMin = 300.dp													// largeur minimale d'une tuile de compte
@@ -94,7 +95,7 @@ fun DashboardScreen(
 		}
 		Figures(vState)
 		TileRow(
-			Cell(2f) { inMod -> EvolutionTile(vState, inMod) },
+			Cell(1f) { inMod -> EvolutionTile(vState, inMod) },
 			Cell(1f) { inMod -> RepartitionTile(vState, inMod) }
 		)
 		Row(Modifier.fillMaxWidth().padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -197,7 +198,8 @@ private fun Figures(inState: DashboardState)
 }
 
 /*
-	Tuile de l'évolution du patrimoine sur douze mois.
+	Tuile de l'évolution du patrimoine sur douze mois (moitié de la largeur,
+	à côté de la répartition).
 	inState    : tableau de bord
 	inModifier : place de la tuile
 */
@@ -215,7 +217,9 @@ private fun EvolutionTile(
 }
 
 /*
-	Tuile de la répartition par type de compte.
+	Tuile de la répartition par type de compte, nette des crédits : types
+	rangés de la plus grande part à la plus petite (barre de gauche à droite,
+	puis légende), en dégradé de gris du plus marqué au plus discret.
 	inState    : tableau de bord
 	inModifier : place de la tuile
 */
@@ -225,30 +229,22 @@ private fun RepartitionTile(
 	inModifier : Modifier
 )
 {
+	val vGroups = inState.home.assetGroups.sortedByDescending { it.subtotalCents }			// de la plus grande part à la plus petite
 	Tile(inModifier = inModifier, inTitle = "Répartition") {
 		ProportionBar(
-			inSegments    = inState.home.assetGroups.map { BarSegment(it.subtotalCents, typeColor(it.type)) },
-			inDescription = "Répartition par type de compte, nette des crédits"
+			inSegments    = vGroups.mapIndexed { inRank, inGroup -> BarSegment(inGroup.subtotalCents, rankColor(inRank, vGroups.size)) },
+			inDescription = "Répartition par type de compte, nette des crédits, de la plus grande part à la plus petite"
 		)
 		Spacer(Modifier.height(16.dp))
-		inState.home.assetGroups.forEach { inGroup ->
+		vGroups.forEachIndexed { inRank, inGroup ->
 			Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
-				SeriesDot(typeColor(inGroup.type))
+				SeriesDot(rankColor(inRank, vGroups.size))
 				Spacer(Modifier.width(12.dp))
 				Text(inGroup.type.label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
 				Text("${inGroup.percent} %", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 				Spacer(Modifier.width(16.dp))
 				AmountText(inCents = inGroup.subtotalCents, inStyle = MaterialTheme.typography.bodyLarge)
 			}
-		}
-		if (inState.home.unlinkedDebtCents != 0L)
-		{
-			HorizontalDivider(Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.outlineVariant)
-			Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
-				Text("Crédits à déduire", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-				AmountText(inCents = inState.home.unlinkedDebtCents, inStyle = MaterialTheme.typography.bodyLarge)
-			}
-			Hint("Crédits sans bien financé ; les autres sont déjà déduits de leur bien.")
 		}
 	}
 }

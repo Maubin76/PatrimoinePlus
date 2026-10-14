@@ -34,7 +34,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.lerp
 
 private val kCardShape = RoundedCornerShape(16.dp)							// coins des cartes
 
@@ -208,6 +209,23 @@ const val kAllocationSlots = 4													// teintes de répartition (la derni�
 @Composable
 fun allocationColor(inRank: Int): Color =
 	(if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) kAllocationDark else kAllocationLight)[inRank.coerceIn(0, kAllocationSlots - 1)]
+
+/*
+	Teinte d'un rang dans un dégradé régulier, de la teinte la plus marquée
+	(rang 0 : la plus grosse part) à la plus discrète (dernier rang), entre
+	les deux extrémités de la rampe de répartition validée.
+	inRank  : rang de valeur (0 : le plus gros)
+	inCount : nombre de rangs
+*/
+@Composable
+fun rankColor(
+	inRank  : Int,
+	inCount : Int
+): Color
+{
+	val vRamp = if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) kAllocationDark else kAllocationLight	// rampe du mode
+	return lerp(vRamp.first(), vRamp.last(), if (inCount <= 1) 0f else inRank.coerceIn(0, inCount - 1).toFloat() / (inCount - 1))
+}
 
 /*
 	Teinte d'un type de compte (répartitions par type) : courant, épargne,
