@@ -406,12 +406,14 @@ private fun details(
 	inPercent : avancement, de 0 à 100
 	inColor   : couleur de la part remplie ; non précisée : encre du thème
 	inModifier : place de la barre
+	inLabel    : texte à droite de la barre ; null : le pourcentage rempli
 */
 @Composable
 private fun ProgressBar(
 	inPercent  : Int,
 	inColor    : Color    = Color.Unspecified,
-	inModifier : Modifier = Modifier
+	inModifier : Modifier = Modifier,
+	inLabel    : String?  = null
 )
 {
 	val vFill by animateFloatAsState(inPercent / 100f, tween(kBarMillis), label = "avancement")	// part remplie
@@ -422,7 +424,7 @@ private fun ProgressBar(
 		) {
 			Box(Modifier.fillMaxWidth(vFill).height(8.dp).clip(RoundedCornerShape(4.dp)).background(inColor.takeIf { it != Color.Unspecified } ?: MaterialTheme.colorScheme.onSurface))
 		}
-		Text("$inPercent %", style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(56.dp).padding(start = 12.dp))
+		Text(inLabel ?: "$inPercent %", style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(if (inLabel != null) 110.dp else 56.dp).padding(start = 12.dp))
 	}
 }
 
@@ -683,8 +685,9 @@ private fun MonthSection(
 
 /*
 	Tuile d'un objectif du mois : thème (ou épargne) et état. Dépenses : ce
-	qu'il reste à dépenser dans le thème (ou le dépassement), barre de la part
-	restante qui se vide au fil des dépenses, puis le montant dépensé.
+	qu'il reste à dépenser dans le thème (ou le dépassement), barre
+	d'utilisation qui se remplit au fil des dépenses avec la part restante
+	écrite à côté, puis le montant dépensé.
 	Épargne : mis de côté sur la cible, barre, puis ce qu'il reste à mettre
 	de côté.
 	inView : objectif évalué
@@ -718,9 +721,10 @@ private fun MonthGoalTile(
 		}
 		Spacer(Modifier.height(10.dp))
 		ProgressBar(
-			if (vSpend) (100 - inView.percent).coerceIn(0, 100) else inView.percent.coerceAtMost(100),
-			if (inView.status == MonthGoalStatus.EXCEEDED || inView.status == MonthGoalStatus.MISSED) MaterialTheme.colorScheme.error else vAccent
-		)																					// dépenses : part restante ; épargne : part atteinte
+			inView.percent.coerceAtMost(100),
+			if (inView.status == MonthGoalStatus.EXCEEDED || inView.status == MonthGoalStatus.MISSED) MaterialTheme.colorScheme.error else vAccent,
+			inLabel = if (vSpend) "${(100 - inView.percent).coerceAtLeast(0)} % restant" else null
+		)																					// dépenses : barre d'utilisation, part restante écrite ; épargne : part atteinte
 		Spacer(Modifier.height(6.dp))
 		Hint(
 			when

@@ -153,8 +153,9 @@ private fun SectionTile(
 {
 	val vLines = inView.section(inSection)												// lignes de la rubrique
 	Tile(
-		inTitle  = inSection.label,
-		inAccent = sectionAccent(inSection),
+		inTitle      = inSection.label,
+		inTitleStyle = MaterialTheme.typography.headlineSmall,							// titre de rubrique, bien visible
+		inAccent     = sectionAccent(inSection),
 		inAction = {
 			Text("Total ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			AmountText(inCents = inBudget.total(inSection), inStyle = MaterialTheme.typography.titleMedium)
@@ -206,12 +207,12 @@ private fun SectionTile(
 @Composable
 private fun ThemeRow(inTheme: ThemeView)
 {
-	Row(Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-		Text(inTheme.theme.label, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(4.6f).padding(end = 12.dp))
-		Box(Modifier.weight(1.2f).padding(end = 12.dp), contentAlignment = Alignment.CenterEnd) { AmountText(inCents = inTheme.planned, inStyle = MaterialTheme.typography.titleSmall) }
+	Row(Modifier.fillMaxWidth().padding(top = 22.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+		Text(inTheme.theme.label, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(4.6f).padding(end = 12.dp))	// sous-titre du thème
+		Box(Modifier.weight(1.2f).padding(end = 12.dp), contentAlignment = Alignment.CenterEnd) { AmountText(inCents = inTheme.planned, inStyle = MaterialTheme.typography.titleLarge) }
 		Spacer(Modifier.width(40.dp))
 	}
-	HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+	HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.outline)		// trait marqué sous le thème
 }
 
 /*

@@ -45,7 +45,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.text.TextStyle
 
 private val kTileShape = RoundedCornerShape(20.dp)								// forme d'une tuile
 private const val kHoverMillis = 160												// fondu du survol
@@ -63,6 +64,7 @@ private const val kPressMillis = 90												// enfoncement au clic
 	inAccent   : couleur de la tuile (thème Coloré : type du compte) : fond
 	             légèrement teinté, bord et bandeau du haut ; non précisée : tuile neutre
 	inFilled   : tuile pleine, à la couleur principale, texte inversé (chiffre mis en avant)
+	inTitleStyle : style du titre ; null : titre de tuile ordinaire
 	inContent  : contenu
 */
 @Composable
@@ -74,6 +76,7 @@ fun Tile(
 	inAction     : (@Composable RowScope.() -> Unit)? = null,
 	inAccent     : Color                             = Color.Unspecified,
 	inFilled     : Boolean                           = false,
+	inTitleStyle : TextStyle?                        = null,
 	inContent    : @Composable ColumnScope.() -> Unit
 )
 {
@@ -109,7 +112,7 @@ fun Tile(
 						Row(Modifier.fillMaxWidth().heightIn(min = 32.dp), verticalAlignment = Alignment.CenterVertically) {
 							Text(
 								text     = inTitle.orEmpty(),
-								style    = MaterialTheme.typography.titleMedium,
+								style    = inTitleStyle ?: MaterialTheme.typography.titleMedium,
 								maxLines = 1,
 								overflow = TextOverflow.Ellipsis,
 								modifier = Modifier.weight(1f)
