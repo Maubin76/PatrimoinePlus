@@ -34,6 +34,10 @@ dependencies {
 	testImplementation(libs.compose.desktop.ui.test.junit4)
 }
 
+// Version commune aux deux applis ; le paquet Windows veut trois nombres (1.0 → 1.0.0).
+val kVersion = property("patrimoineplus.version").toString()						// version affichée
+val kPackage = (kVersion.split('.') + listOf("0", "0", "0")).take(3).joinToString(".")	// version du paquet
+
 compose.desktop {
 	application {
 		mainClass = "fr.maubin.patrimoineplus.desktop.MainKt"
@@ -41,7 +45,7 @@ compose.desktop {
 		nativeDistributions {
 			targetFormats(TargetFormat.Msi)
 			packageName    = "PatrimoinePlus"
-			packageVersion = "1.0.0"
+			packageVersion = kPackage
 			description    = "Suivi du patrimoine et des dépenses"
 			vendor         = "Mathieu Aubin"
 			// Modules de la JVM embarquée : suggestRuntimeModules, plus java.xml (lecture des classeurs)
@@ -63,6 +67,6 @@ tasks.register<Zip>("packageZip") {
 	description = "Construit le dossier portable de l'appli PC et le zippe."
 	dependsOn("createDistributable")
 	from(layout.buildDirectory.dir("compose/binaries/main/app"))
-	archiveFileName.set("PatrimoinePlus-1.0.0-windows.zip")
+	archiveFileName.set("PatrimoinePlus-$kVersion-windows.zip")
 	destinationDirectory.set(layout.buildDirectory.dir("distributions"))
 }

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 // Module application : Kotlin (intégré à AGP 9), Compose, Hilt, KSP.
 plugins {
 	alias(libs.plugins.android.application)
@@ -9,6 +11,13 @@ plugins {
 	alias(libs.plugins.roborazzi)
 }
 
+// Clé de signature des versions publiées : lue dans le gradle.properties de
+// l'utilisateur ou dans local.properties (jamais versionnés). Absente (CI,
+// autre poste) : la version release est signée avec la clé de debug.
+val kLocal      = Properties().apply { rootProject.file("local.properties").takeIf { it.exists() }?.reader()?.use { load(it) } }	// local.properties
+val kSigning    = { inName: String -> (findProperty("patrimoineplus.$inName") ?: kLocal.getProperty("patrimoineplus.$inName"))?.toString() }	// réglage de signature
+val kKeystore   = kSigning("keystore")?.let { file(it) }?.takeIf { it.exists() }		// fichier de la clé
+
 android {
 	namespace  = "fr.maubin.patrimoineplus"
 	compileSdk = 37
@@ -17,20 +26,32 @@ android {
 		applicationId = "fr.maubin.patrimoineplus"
 		minSdk        = 30
 		targetSdk     = 35
-		versionCode   = 1
-		versionName   = "0.1.0"
+		versionCode   = property("patrimoineplus.versionCode").toString().toInt()
+		versionName   = property("patrimoineplus.version").toString()
 
 		testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 	}
 
+	signingConfigs {
+		if (kKeystore != null)
+		{
+			create("publication") {
+				storeFile     = kKeystore
+				storePassword = kSigning("keyPassword")
+				keyAlias      = kSigning("keyAlias")
+				keyPassword   = kSigning("keyPassword")
+			}
+		}
+	}
+
 	buildTypes {
-		// Version optimisée (R8), signée avec la clé de debug pour pouvoir
-		// l'installer directement sur le téléphone : c'est elle qui reflète la
-		// fluidité réelle des animations.
+		// Version optimisée (R8), signée avec la clé de publication : les mises
+		// à jour s'installent par-dessus sans perdre les données. Sans clé,
+		// signée avec la clé de debug pour l'installer quand même.
 		release {
 			isMinifyEnabled   = true
 			isShrinkResources = true
-			signingConfig     = signingConfigs.getByName("debug")
+			signingConfig     = signingConfigs.findByName("publication") ?: signingConfigs.getByName("debug")
 			proguardFiles(
 				getDefaultProguardFile("proguard-android-optimize.txt"),
 				"proguard-rules.pro"

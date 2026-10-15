@@ -21,9 +21,25 @@ dans [`doc/SPEC.md`](doc/SPEC.md) ; la couverture des tests dans
 ./gradlew :desktop:packageZip        # dossier portable zippé de l'appli PC
 ./gradlew :desktop:test             # tests de l'appli PC
 ./gradlew :app:testDebugUnitTest    # tests de l'appli Android (Robolectric)
-./gradlew :app:assembleRelease      # APK optimisé (R8), signé avec la clé de debug :
+./gradlew :app:assembleRelease      # APK optimisé (R8), signé avec la clé de publication :
                                     # app/build/outputs/apk/release/app-release.apk
 ```
+
+## Publier une version
+
+- **Version** : `patrimoineplus.version` (ex. `1.0`) dans `gradle.properties`,
+  commune aux deux applis (paquet Windows en `1.0.0`) ;
+  `patrimoineplus.versionCode` augmente de 1 à chaque version Android publiée.
+- **Clé de signature** : un keystore hors du dépôt, décrit par trois lignes
+  dans le `gradle.properties` de l'utilisateur (`~/.gradle`) ou dans
+  `local.properties` (jamais versionnés) :
+  `patrimoineplus.keystore` (chemin), `patrimoineplus.keyAlias`,
+  `patrimoineplus.keyPassword`. Toujours la même clé : sinon Android refuse la
+  mise à jour par-dessus. Sans clé (CI), l'APK release est signé avec la clé
+  de debug.
+- **Fichiers** : `./gradlew :app:assembleRelease :desktop:packageZip`, puis
+  release GitHub (tag `v1.0`) avec l'APK et
+  `desktop/build/distributions/PatrimoinePlus-1.0-windows.zip`.
 
 ## Intégration continue
 
@@ -301,7 +317,7 @@ blanc que le téléphone, mais pensée pour un grand écran : un **tableau de
 bord** de pilotage plutôt qu'une suite d'écrans.
 
 - **Installation** : `./gradlew :desktop:packageZip` produit
-  `desktop/build/distributions/PatrimoinePlus-1.0.0-windows.zip` (≈ 60 Mo) :
+  `desktop/build/distributions/PatrimoinePlus-<version>-windows.zip` (≈ 70 Mo) :
   à dézipper n'importe où, puis lancer `PatrimoinePlus.exe` (Java inclus, sans
   installation ni droits administrateur). Non signé : Windows peut afficher un
   avertissement au premier lancement (« Informations complémentaires ›
