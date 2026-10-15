@@ -27,9 +27,15 @@ dans [`doc/SPEC.md`](doc/SPEC.md) ; la couverture des tests dans
 
 ## Publier une version
 
+- **Automatique** : chaque push sur `main` aux tests verts publie une release
+  GitHub (voir Intégration continue) ; la version augmente de 0.1 à chaque
+  fois, commitée par la CI : faire `git pull` sur `main` avant la branche
+  suivante.
 - **Version** : `patrimoineplus.version` (ex. `1.0`) dans `gradle.properties`,
   commune aux deux applis (paquet Windows en `1.0.0`) ;
   `patrimoineplus.versionCode` augmente de 1 à chaque version Android publiée.
+  Pour sauter un numéro (ex. `2.0`), le changer à la main : non encore
+  publié, il sort tel quel.
 - **Clé de signature** : un keystore hors du dépôt, décrit par trois lignes
   dans le `gradle.properties` de l'utilisateur (`~/.gradle`) ou dans
   `local.properties` (jamais versionnés) :
@@ -37,9 +43,12 @@ dans [`doc/SPEC.md`](doc/SPEC.md) ; la couverture des tests dans
   `patrimoineplus.keyPassword`. Toujours la même clé : sinon Android refuse la
   mise à jour par-dessus. Sans clé (CI), l'APK release est signé avec la clé
   de debug.
-- **Fichiers** : `./gradlew :app:assembleRelease :desktop:packageZip`, puis
-  release GitHub (tag `v1.0`) avec l'APK et
-  `desktop/build/distributions/PatrimoinePlus-1.0-windows.zip`.
+- **Secrets GitHub** (Settings › Secrets and variables › Actions) pour la
+  CI : `KEYSTORE_BASE64` (le keystore en base64), `KEY_ALIAS`,
+  `KEY_PASSWORD` ; sans eux, la release échoue plutôt que de signer avec la
+  clé de debug.
+- **À la main** : `./gradlew :app:assembleRelease :desktop:packageZip` donne
+  l'APK et `desktop/build/distributions/PatrimoinePlus-<version>-windows.zip`.
 
 ## Intégration continue
 
@@ -49,8 +58,11 @@ possible depuis l'onglet Actions), la CI installe le JDK 21, lance tous les
 tests JVM (`:core:test`, `:app:testDebugUnitTest`, `:desktop:test`) puis
 construit l'APK debug. En cas
 d'échec, les rapports de tests sont joints à l'exécution (artefact
-« rapports-tests », 14 jours). Un nouveau push sur la même branche annule
-l'exécution en cours. Les tests ne dépendent ni du fuseau horaire ni de la
+« rapports-tests », 14 jours). Tests verts : numéro de version (publié tel
+quel si son tag `vX.Y` n'existe pas, sinon + 0.1 commité sur `main` par la
+CI), APK signé (Linux), zip de l'appli PC (Windows), puis release GitHub
+`vX.Y` avec les deux fichiers et la liste des commits depuis la précédente.
+Les exécutions se suivent sans s'interrompre. Les tests ne dépendent ni du fuseau horaire ni de la
 langue du système (vérifié en UTC et en anglais, comme sur la machine de CI).
 
 ## Socle technique

@@ -2,6 +2,13 @@
 # JVM (module commun, appli Android, appli PC) puis construit l'APK debug. Les rapports de tests sont joints à l'exécution
 # en cas d'échec. Les branches de travail ne la déclenchent pas ; elle reste
 # lançable à la main depuis l'onglet Actions (workflow_dispatch).
+#
+# Tests verts sur main : publication d'une release. La version de
+# gradle.properties est publiée telle quelle si son tag n'existe pas encore
+# (première version, numéro changé à la main) ; sinon elle augmente de 0.1
+# (1.0 → 1.1, numéro Android + 1), commitée sur main par la CI. Puis APK signé
+# (Linux, clé des secrets KEYSTORE_BASE64, KEY_ALIAS, KEY_PASSWORD), zip de
+# l'appli PC (Windows) et release GitHub « vX.Y » avec les deux fichiers.
 name: CI
 
 on:
@@ -9,10 +16,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# Un nouveau push sur la même branche annule l'exécution précédente, devenue inutile.
+# Exécutions à la suite, sans en interrompre une : une release coupée en plein
+# milieu laisserait une version commitée sans ses fichiers.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -55,3 +63,158 @@ jobs:
             desktop/build/reports/tests/
             desktop/build/test-results/
           retention-days: 14
+
+  version:
+    name: Numéro de version
+    needs: tests
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+      sha: ${{ steps.bump.outputs.sha }}
+
+    steps:
+      - name: Récupérer le code et les tags
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Augmenter la version si elle est déjà publiée
+        id: bump
+        run: |
+          vVersion=$(grep '^patrimoineplus.version=' gradle.properties | cut -d= -f2 | tr -d '\r')
+          vCode=$(grep '^patrimoineplus.versionCode=' gradle.properties | cut -d= -f2 | tr -d '\r')
+          if git rev-parse -q --verify "refs/tags/v$vVersion" > /dev/null
+          then
+            vMajor=$(echo "$vVersion" | cut -d. -f1)
+            vMinor=$(echo "$vVersion" | cut -d. -f2)
+            vVersion="$vMajor.$((vMinor + 1))"
+            vCode=$((vCode + 1))
+            sed -i "s/^patrimoineplus.version=.*/patrimoineplus.version=$vVersion/; s/^patrimoineplus.versionCode=.*/patrimoineplus.versionCode=$vCode/" gradle.properties
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -q -am "chore(version): $vVersion [skip ci]"
+            git push origin HEAD:refs/heads/main
+          fi
+          echo "version=$vVersion" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "Version publiée : $vVersion (code $vCode)"
+
+  android:
+    name: APK signé
+    needs: version
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Récupérer le code de la version
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.version.outputs.sha }}
+
+      - name: Installer le JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Préparer Gradle (avec cache)
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Construire l'APK signé
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]
+          then
+            echo "::error::Secrets KEYSTORE_BASE64, KEY_ALIAS et KEY_PASSWORD absents : pas de release signée avec la clé de debug."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/patrimoineplus.jks"
+          ./gradlew :app:assembleRelease \
+            "-Ppatrimoineplus.keystore=$RUNNER_TEMP/patrimoineplus.jks" \
+            "-Ppatrimoineplus.keyAlias=$KEY_ALIAS" \
+            "-Ppatrimoineplus.keyPassword=$KEY_PASSWORD"
+          mv app/build/outputs/apk/release/app-release.apk "PatrimoinePlus-${{ needs.version.outputs.version }}.apk"
+          rm "$RUNNER_TEMP/patrimoineplus.jks"
+
+      - name: Garder l'APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: apk
+          path: PatrimoinePlus-*.apk
+          retention-days: 7
+
+  desktop:
+    name: Zip de l'appli PC
+    needs: version
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Récupérer le code de la version
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.version.outputs.sha }}
+
+      - name: Installer le JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Préparer Gradle (avec cache)
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Construire le zip
+        shell: bash
+        run: ./gradlew :desktop:packageZip
+
+      - name: Garder le zip
+        uses: actions/upload-artifact@v7
+        with:
+          name: zip
+          path: desktop/build/distributions/PatrimoinePlus-*-windows.zip
+          retention-days: 7
+
+  release:
+    name: Release GitHub
+    needs: [version, android, desktop]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - name: Récupérer le code et les tags
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.version.outputs.sha }}
+          fetch-depth: 0
+
+      - name: Récupérer l'APK et le zip
+        uses: actions/download-artifact@v7
+        with:
+          path: fichiers
+          merge-multiple: true
+
+      - name: Publier la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.version.outputs.version }}
+          SHA: ${{ needs.version.outputs.sha }}
+        run: |
+          vPrevious=$(git tag -l 'v*' --sort=-v:refname | head -1)
+          if [ -n "$vPrevious" ]
+          then
+            echo "## Changements depuis $vPrevious" > notes.md
+            git log --no-merges --format='- %s' "$vPrevious..$SHA" | grep -v '^- chore(version)' >> notes.md || true
+          else
+            echo "Première version publiée." > notes.md
+          fi
+          gh release create "v$VERSION" fichiers/* --target "$SHA" --title "PatrimoinePlus $VERSION" --notes-file notes.md
