@@ -133,28 +133,33 @@ class BudgetTest
 			BudgetLine("2", BudgetSection.EXPENSE, "Loyer", eur(850.0), theme = ExpenseTheme.HOUSING),
 			BudgetLine("3", BudgetSection.EXPENSE, "Électricité", eur(50.0), categoryId = vHousing.id),	// ancien budget : thème tiré de la catégorie
 			BudgetLine("4", BudgetSection.EXPENSE, "Courses", eur(150.0), theme = ExpenseTheme.DAILY),
-			BudgetLine("5", BudgetSection.EXPENSE, "Restaurants", eur(300.0), theme = ExpenseTheme.DAILY),
+			BudgetLine("5", BudgetSection.EXPENSE, "Restaurants", eur(300.0), theme = ExpenseTheme.PLEASURE),
 			BudgetLine("6", BudgetSection.EXPENSE, "Crédit", eur(650.0), theme = ExpenseTheme.CREDIT),
 			BudgetLine("7", BudgetSection.INVESTMENT, "Actions", eur(500.0)),
 			BudgetLine("8", BudgetSection.INVESTMENT, "Crypto", eur(50.0))
 		))																					// budget à thèmes
 		val vView    = compareBudget(vBudget, vData, YearMonth.of(2026, 10))				// budget comparé
 		val vDiagram = cashFlow(vView, inActual = false)									// diagramme prévu
-		assertEquals(listOf("Investissements", "Logement", "Crédit", "Vie quotidienne", "Reste"), vDiagram.groups.map { it.name })
+		assertEquals(listOf("Investissements", "Logement", "Crédit", "Plaisirs", "Vie quotidienne", "Reste"), vDiagram.groups.map { it.name })
 		assertEquals(listOf("Actions", "Crypto"), vDiagram.groups[0].items.map { it.name })
 		assertEquals(listOf("Loyer", "Électricité"), vDiagram.groups[1].items.map { it.name })
 		assertTrue(vDiagram.groups[2].items.isEmpty())										// une ligne du nom du thème
-		assertEquals(listOf("Restaurants", "Courses"), vDiagram.groups[3].items.map { it.name })
+		assertEquals(listOf("Restaurants"), vDiagram.groups[3].items.map { it.name })			// ligne seule, d'un autre nom que son thème
+		assertEquals(listOf("Courses"), vDiagram.groups[4].items.map { it.name })
 		assertEquals(vDiagram.total, vDiagram.groups.sumOf { it.amount })
-		assertEquals(listOf(ExpenseTheme.DAILY, ExpenseTheme.HOUSING, ExpenseTheme.CREDIT), vView.themes.map { it.theme })	// ordre des thèmes
-		assertEquals(listOf(eur(200.0), eur(900.0), eur(650.0)), vView.themes.map { it.actual })	// courses + loisirs, logement, prêt
+		assertEquals(listOf(ExpenseTheme.DAILY, ExpenseTheme.PLEASURE, ExpenseTheme.HOUSING, ExpenseTheme.CREDIT), vView.themes.map { it.theme })	// ordre des thèmes
+		assertEquals(listOf(eur(120.0), eur(80.0), eur(900.0), eur(650.0)), vView.themes.map { it.actual })	// courses, loisirs, logement, prêt
 		val vReal    = cashFlow(vView, inActual = true)										// diagramme du réel
-		assertEquals(listOf("Logement", "Crédit", "Vie quotidienne"), vReal.groups.map { it.name })	// salaire non suivi : déficit, pas de reste
+		assertEquals(listOf("Logement", "Crédit", "Vie quotidienne", "Plaisirs"), vReal.groups.map { it.name })	// salaire non suivi : déficit, pas de reste
 		assertTrue(vReal.groups.all { it.items.isEmpty() })									// réel par thème, sans détail
 		assertEquals(ExpenseTheme.TRANSPORT, themeOfCategory("Transports"))
 		assertEquals(ExpenseTheme.SUBSCRIPTIONS, themeOfCategory("abonnement"))
 		assertEquals(ExpenseTheme.CREDIT, themeOfCategory("Crédit auto"))
 		assertEquals(ExpenseTheme.DAILY, themeOfCategory("Santé"))
+		assertEquals(ExpenseTheme.PLEASURE, themeOfCategory("Loisirs"))
+		assertEquals(ExpenseTheme.PLEASURE, themeOfCategory("plaisir"))
+		assertEquals(ExpenseTheme.PLEASURE, themeOfCategory("Sorties & restaurants"))
+		assertEquals(ExpenseTheme.DAILY, themeOfCategory("Déplaisir"))						// « plaisir » au milieu d'un mot
 		assertEquals(ExpenseTheme.CREDIT, themeOfCategory("Prêt immobilier"))
 		assertEquals(ExpenseTheme.CREDIT, themeOfCategory("Emprunts"))
 		assertEquals(ExpenseTheme.DAILY, themeOfCategory("Prêt-à-porter"))					// vêtements, pas un crédit

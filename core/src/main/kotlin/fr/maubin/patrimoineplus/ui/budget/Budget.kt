@@ -29,7 +29,8 @@ enum class BudgetSection(val label: String)
 */
 enum class ExpenseTheme(val label: String)
 {
-	DAILY("Vie quotidienne"),														// alimentation, santé, loisirs… : toutes les autres catégories
+	DAILY("Vie quotidienne"),														// alimentation, santé… : toutes les autres catégories
+	PLEASURE("Plaisirs"),															// catégorie « Plaisir(s) », « Loisir(s) » ou « Sortie(s) »
 	SUBSCRIPTIONS("Abonnements"),													// catégorie « Abonnements »
 	TRANSPORT("Transports"),														// catégorie « Transport(s) »
 	HOUSING("Logement"),															// catégorie « Logement »
@@ -39,8 +40,8 @@ enum class ExpenseTheme(val label: String)
 /*
 	Thème d'une catégorie de dépense, d'après son nom (sans accents ni
 	majuscules, singulier ou pluriel) : Logement, Transport(s), Abonnement(s),
-	Crédit / Prêt / Emprunt ; toute autre catégorie relève de la vie
-	quotidienne.
+	Crédit / Prêt / Emprunt, Plaisir(s) / Loisir(s) / Sortie(s) ; toute autre
+	catégorie relève de la vie quotidienne.
 	inName : nom de la catégorie
 */
 fun themeOfCategory(inName: String): ExpenseTheme
@@ -54,6 +55,7 @@ fun themeOfCategory(inName: String): ExpenseTheme
 		vKey.startsWith("transport")                                                    -> ExpenseTheme.TRANSPORT
 		vKey.startsWith("abonnement")                                                   -> ExpenseTheme.SUBSCRIPTIONS
 		vLoan                                                                           -> ExpenseTheme.CREDIT
+		vFirst in setOf("plaisir", "plaisirs", "loisir", "loisirs", "sortie", "sorties") -> ExpenseTheme.PLEASURE
 		else                                                                            -> ExpenseTheme.DAILY
 	}
 }

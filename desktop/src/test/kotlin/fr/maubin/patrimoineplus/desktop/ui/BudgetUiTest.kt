@@ -28,10 +28,10 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 import java.time.Clock
 import java.time.Instant
-import java.time.ZoneId
+import java.time.ZoneId
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.graphics.asSkiaBitmap
+import androidx.compose.ui.graphics.asSkiaBitmap
 import androidx.compose.ui.test.onNodeWithContentDescription
 
 /*
@@ -100,7 +100,7 @@ class BudgetUiTest
 		fCompose.onNodeWithText("Budget prévisionnel").assertExists()
 		fCompose.onNodeWithText("Cashflow").assertExists()
 		listOf("Réel du mois", "Écart", "Prévu", "Montant", "Thème").forEach { assertTrue(it, fCompose.onAllNodesWithText(it).fetchSemanticsNodes().isEmpty()) }	// ni suivi ni en-têtes de colonnes
-		ExpenseTheme.entries.forEach { fCompose.onNodeWithContentDescription("Ajouter une ligne à ${it.label}").assertExists() }	// les cinq thèmes, même vides, avec leur « + »
+		ExpenseTheme.entries.forEach { fCompose.onNodeWithContentDescription("Ajouter une ligne à ${it.label}").assertExists() }	// les six thèmes, même vides, avec leur « + »
 		assertTrue(fCompose.onAllNodesWithText("Ajouter une ligne").fetchSemanticsNodes().isEmpty())	// boutons réduits à « + »
 		fCompose.onNodeWithContentDescription("Ajouter une ligne à Abonnements").performScrollTo().performClick()	// thème Abonnements, vide jusque-là
 		fCompose.waitForIdle()
@@ -110,7 +110,7 @@ class BudgetUiTest
 		val vFields = fCompose.onAllNodes(hasSetTextAction())							// champs des lignes
 		val vCount  = vFields.fetchSemanticsNodes().size								// nombre de champs
 		assertEquals(ExpenseTheme.SUBSCRIPTIONS, vNew.theme)							// thème du « + » choisi
-		vFields[vCount - 8].performTextInput("Netflix")								// nom de la nouvelle ligne (suivie des lignes Transports, Logement et Crédit)
+		vFields[vCount - 8].performTextInput("Netflix")								// nom de la nouvelle ligne (suivie de la seconde colonne : Transports, Logement et Crédit)
 		vFields[vCount - 7].performTextInput("30")
 		fCompose.waitForIdle()
 		assertTrue(vApp.budget.value.lines.any { it.name == "Netflix" && it.amount == 3_000L && it.theme == ExpenseTheme.SUBSCRIPTIONS && it.categoryId == null })

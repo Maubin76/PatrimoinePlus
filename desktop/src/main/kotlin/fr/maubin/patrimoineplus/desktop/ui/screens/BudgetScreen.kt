@@ -149,8 +149,8 @@ private fun Figures(inBudget: Budget)
 /*
 	Tuile d'une rubrique : ses lignes (nom et montant) ; « + » ajoute une
 	ligne. Entrées et investissements : « + » sur la ligne du titre. Dépenses :
-	les cinq thèmes toujours affichés, chacun avec son total et son « + »,
-	qui range la nouvelle ligne dans ce thème.
+	les six thèmes toujours affichés, sur deux colonnes de trois, chacun avec
+	son total et son « + », qui range la nouvelle ligne dans ce thème.
 	inSection  : rubrique
 	inView     : budget rangé par thème
 	inBudget   : budget
@@ -181,10 +181,16 @@ private fun SectionTile(
 	) {
 		if (inSection == BudgetSection.EXPENSE)
 		{
-			ExpenseTheme.entries.forEach { inTheme ->
-				val vTheme = inView.themes.firstOrNull { it.theme == inTheme }				// lignes du thème
-				ThemeRow(inTheme, vTheme?.planned ?: 0L) { vAdd(inTheme) }
-				vTheme?.lines.orEmpty().forEach { inLineView -> LineRow(inLineView, vChange(inLineView)) }
+			Row(horizontalArrangement = Arrangement.spacedBy(32.dp), verticalAlignment = Alignment.Top) {
+				ExpenseTheme.entries.chunked(3).forEach { inColumn ->
+					Column(Modifier.weight(1f)) {
+						inColumn.forEach { inTheme ->
+							val vTheme = inView.themes.firstOrNull { it.theme == inTheme }		// lignes du thème
+							ThemeRow(inTheme, vTheme?.planned ?: 0L) { vAdd(inTheme) }
+							vTheme?.lines.orEmpty().forEach { inLineView -> LineRow(inLineView, vChange(inLineView)) }
+						}
+					}
+				}
 			}
 		}
 		else

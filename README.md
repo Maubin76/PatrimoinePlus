@@ -406,11 +406,12 @@ bord** de pilotage plutôt qu'une suite d'écrans.
 - **Budget** (barre latérale) : page de **planification** d'un mois type
   (le suivi se fait dans Objectifs), en lignes libres d'entrées, de
   dépenses et d'investissements (nom et montant) ; une dépense porte l'un
-  des cinq **thèmes** Vie quotidienne, Abonnements, Transports, Logement,
-  Crédit, qui la regroupe dans le schéma et dans les objectifs du mois (le
-  réel d'un thème vient des catégories du même nom ; Crédit : « Crédit »,
-  « Prêt », « Emprunt » ; toutes les autres catégories de dépense : Vie
-  quotidienne) ; bandeau « Objectifs du mois » (mois en cours ou suivant) ;
+  des six **thèmes** Vie quotidienne, Plaisirs, Abonnements, Transports,
+  Logement, Crédit (affichés sur deux colonnes de trois), qui la regroupe
+  dans le schéma et dans les objectifs du mois (le réel d'un thème vient
+  des catégories du même nom ; Crédit : « Crédit », « Prêt », « Emprunt » ;
+  Plaisirs : « Plaisirs », « Loisirs », « Sorties » ; toutes les autres
+  catégories de dépense : Vie quotidienne) ; bandeau « Objectifs du mois » (mois en cours ou suivant) ;
   **diagramme de cashflow (Sankey)** du budget sur
   quatre colonnes : entrées → budget → investissements (en haut) puis
   thèmes de dépenses (du plus fort au plus faible), puis reste →
