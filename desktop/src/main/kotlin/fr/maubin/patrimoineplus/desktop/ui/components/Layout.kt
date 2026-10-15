@@ -180,7 +180,7 @@ fun CellField(
 {
 	val vColors = MaterialTheme.colorScheme											// palette courante
 	val vStyle  = MaterialTheme.typography.bodyLarge.copy(color = vColors.onSurface, textAlign = if (inEnd) androidx.compose.ui.text.style.TextAlign.End else androidx.compose.ui.text.style.TextAlign.Start)	// style du texte
-	Column(inModifier) {
+	Column(inModifier.fillMaxWidth()) {
 		androidx.compose.foundation.text.BasicTextField(
 			value         = inValue,
 			onValueChange = inOnChange,
@@ -189,7 +189,7 @@ fun CellField(
 			cursorBrush   = androidx.compose.ui.graphics.SolidColor(vColors.onSurface),
 			modifier      = Modifier.fillMaxWidth().padding(vertical = 6.dp),
 			decorationBox = { inField ->
-				Box(Modifier.fillMaxWidth()) {												// toute la largeur : alignement à droite exact
+				Box(Modifier.fillMaxWidth(), contentAlignment = if (inEnd) Alignment.CenterEnd else Alignment.CenterStart) {	// toute la largeur : alignement à droite exact, avec ou sans filet
 					if (inValue.isEmpty() && inPlaceholder.isNotEmpty()) Text(inPlaceholder, style = vStyle.copy(color = vColors.onSurfaceVariant), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
 					inField()
 				}

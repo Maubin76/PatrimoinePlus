@@ -64,10 +64,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import fr.maubin.patrimoineplus.domain.format.kCurrencySeparator
 
-private const val kNameWeight   = 2.2f											// largeur relative de la colonne du nom
-private const val kThemeWeight  = 1.8f											// largeur relative de la colonne du thème (dépenses)
+private const val kNameWeight   = 2.4f											// largeur relative de la colonne du nom
 private const val kAmountWeight = 1.2f											// largeur relative de la colonne du montant
 
 /*
@@ -111,7 +113,12 @@ fun BudgetScreen(
 				if (vDiagram.deficit) Hint("Les sorties dépassent les entrées : le déficit apparaît comme une entrée, à gauche.")
 			}
 		}
-		BudgetSection.entries.forEach { inSection -> SectionTile(inSection, vView, vBudget, vUpdate) }
+		TileRow(
+			Cell(1f) { inMod -> SectionTile(BudgetSection.INCOME, vView, vBudget, vUpdate, inMod) },
+			Cell(1f) { inMod -> SectionTile(BudgetSection.INVESTMENT, vView, vBudget, vUpdate, inMod) },
+			inMinWidth = 760.dp
+		)																					// entrées et investissements côte à côte
+		SectionTile(BudgetSection.EXPENSE, vView, vBudget, vUpdate)
 	}
 }
 
@@ -140,80 +147,99 @@ private fun Figures(inBudget: Budget)
 }
 
 /*
-	Tuile d'une rubrique : ses lignes (nom, thème pour une dépense, montant,
-	sans en-têtes de colonnes) et l'ajout d'une ligne. Les dépenses sont rangées par thème, avec le total
-	de chaque thème.
-	inSection : rubrique
-	inView    : budget rangé par thème
-	inBudget  : budget
-	inUpdate  : enregistre les lignes
+	Tuile d'une rubrique : ses lignes (nom et montant) ; « + » ajoute une
+	ligne. Entrées et investissements : « + » sur la ligne du titre. Dépenses :
+	les cinq thèmes toujours affichés, chacun avec son total et son « + »,
+	qui range la nouvelle ligne dans ce thème.
+	inSection  : rubrique
+	inView     : budget rangé par thème
+	inBudget   : budget
+	inUpdate   : enregistre les lignes
+	inModifier : place de la tuile
 */
 @Composable
 private fun SectionTile(
-	inSection : BudgetSection,
-	inView    : BudgetView,
-	inBudget  : Budget,
-	inUpdate  : (List<BudgetLine>) -> Unit
+	inSection  : BudgetSection,
+	inView     : BudgetView,
+	inBudget   : Budget,
+	inUpdate   : (List<BudgetLine>) -> Unit,
+	inModifier : Modifier = Modifier
 )
 {
-	val vLines = inView.section(inSection)												// lignes de la rubrique
+	val vChange = { inLineView: BudgetLineView -> { inNew: BudgetLine? -> inUpdate(inBudget.lines.mapNotNull { if (it.id == inLineView.line.id) inNew else it }) } }	// modification d'une ligne
+	val vAdd    = { inTheme: ExpenseTheme? -> inUpdate(inBudget.lines + BudgetLine(UUID.randomUUID().toString(), inSection, "", 0, theme = inTheme)) }	// ajout d'une ligne
 	Tile(
+		inModifier   = inModifier,
 		inTitle      = inSection.label,
 		inTitleStyle = MaterialTheme.typography.headlineSmall,							// titre de rubrique, bien visible
 		inAccent     = sectionAccent(inSection),
-		inAction = {
+		inAction     = {
 			Text("Total ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			AmountText(inCents = inBudget.total(inSection), inStyle = MaterialTheme.typography.titleMedium)
+			if (inSection != BudgetSection.EXPENSE) AddButton("Ajouter une ligne aux ${inSection.label.lowercase()}") { vAdd(null) }
 		}
 	) {
-		if (vLines.isEmpty())
-		{
-			Hint(
-				when (inSection)
-				{
-					BudgetSection.INCOME     -> "Salaire, primes, loyers perçus…"
-					BudgetSection.EXPENSE    -> "Vie quotidienne, abonnements, transports, logement, crédit…"
-					BudgetSection.INVESTMENT -> "Versements vers un livret, un PEA, une assurance vie…"
-				}
-			)
-		}
-		val vChange = { inLineView: BudgetLineView -> { inNew: BudgetLine? -> inUpdate(inBudget.lines.mapNotNull { if (it.id == inLineView.line.id) inNew else it }) } }	// modification d'une ligne
 		if (inSection == BudgetSection.EXPENSE)
 		{
-			inView.themes.forEach { inTheme ->
-				ThemeRow(inTheme)
-				inTheme.lines.forEach { inLineView -> LineRow(inLineView, vChange(inLineView)) }
+			ExpenseTheme.entries.forEach { inTheme ->
+				val vTheme = inView.themes.firstOrNull { it.theme == inTheme }				// lignes du thème
+				ThemeRow(inTheme, vTheme?.planned ?: 0L) { vAdd(inTheme) }
+				vTheme?.lines.orEmpty().forEach { inLineView -> LineRow(inLineView, vChange(inLineView)) }
 			}
 		}
 		else
 		{
+			val vLines = inView.section(inSection)											// lignes de la rubrique
+			if (vLines.isEmpty()) Hint(if (inSection == BudgetSection.INCOME) "Salaire, primes, loyers perçus…" else "Versements vers un livret, un PEA, une assurance vie…")
 			vLines.forEach { inLineView -> LineRow(inLineView, vChange(inLineView)) }
 		}
-		Spacer(Modifier.padding(top = 6.dp))
-		OutlinedButton(onClick = { inUpdate(inBudget.lines + BudgetLine(UUID.randomUUID().toString(), inSection, "", 0, theme = ExpenseTheme.DAILY.takeIf { inSection == BudgetSection.EXPENSE })) }) { Text("Ajouter une ligne") }
 	}
 }
 
 /*
-	Ligne d'un thème de dépenses : nom du thème et total de ses lignes.
-	inTheme : thème
+	Bouton « + » d'ajout d'une ligne, aligné sur la colonne des « × ».
+	inDescription : action lue par les lecteurs d'écran
+	inOnClick     : ajout
 */
 @Composable
-private fun ThemeRow(inTheme: ThemeView)
+private fun AddButton(
+	inDescription : String,
+	inOnClick     : () -> Unit
+)
 {
-	Row(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-		val vStyle = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp, lineHeight = 24.sp)	// sous-titre : entre l'en-tête de colonne et le titre de rubrique
-		Text(inTheme.theme.label, style = vStyle, modifier = Modifier.weight(kNameWeight + kThemeWeight).padding(end = 12.dp))
-		Box(Modifier.weight(kAmountWeight).padding(end = 12.dp), contentAlignment = Alignment.CenterEnd) { AmountText(inCents = inTheme.planned, inStyle = vStyle) }
-		Spacer(Modifier.width(40.dp))
+	Box(Modifier.width(40.dp), contentAlignment = Alignment.Center) {
+		IconButton(onClick = inOnClick, modifier = Modifier.semantics { contentDescription = inDescription }) {
+			Text("+", style = MaterialTheme.typography.titleLarge)
+		}
+	}
+}
+
+/*
+	Ligne d'un thème de dépenses : nom du thème, total de ses lignes et « + »
+	qui ajoute une ligne dans ce thème.
+	inTheme   : thème
+	inPlanned : total des lignes du thème
+	inOnAdd   : ajout d'une ligne au thème
+*/
+@Composable
+private fun ThemeRow(
+	inTheme   : ExpenseTheme,
+	inPlanned : Long,
+	inOnAdd   : () -> Unit
+)
+{
+	Row(Modifier.fillMaxWidth().padding(top = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+		val vStyle = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp, lineHeight = 24.sp)	// sous-titre : entre le texte des lignes et le titre de rubrique
+		Text(inTheme.label, style = vStyle, modifier = Modifier.weight(kNameWeight).padding(end = 12.dp))
+		Box(Modifier.weight(kAmountWeight).padding(end = 12.dp), contentAlignment = Alignment.CenterEnd) { AmountText(inCents = inPlanned, inStyle = vStyle) }
+		AddButton("Ajouter une ligne à ${inTheme.label}", inOnAdd)
 	}
 	HorizontalDivider(thickness = 1.5.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f))	// trait sous le thème, plus marqué qu'un filet
 }
 
 /*
-	Ligne de budget modifiable : nom et montant ; une dépense porte aussi un
-	thème (Vie quotidienne, Abonnements, Transports, Logement, Crédit) qui la
-	regroupe dans le schéma et dans les objectifs du mois.
+	Ligne de budget modifiable : nom et montant, sans filets ; « × » la
+	retire. Une dépense reste dans le thème où elle a été ajoutée.
 	inView     : ligne
 	inOnChange : nouvelle ligne ; null pour la retirer
 */
@@ -225,25 +251,20 @@ private fun LineRow(
 {
 	val vLine   = inView.line																// ligne
 	var vAmount by remember(vLine.id) { mutableStateOf(if (vLine.amount == 0L) "" else editableEuros(vLine.amount)) }	// montant tapé
-	Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-		CellField(vLine.name, { inOnChange(vLine.copy(name = it)) }, Modifier.weight(if (vLine.section == BudgetSection.EXPENSE) kNameWeight else kNameWeight + kThemeWeight).padding(end = 12.dp), inPlaceholder = "Nom", inUnderline = false)
-		if (vLine.section == BudgetSection.EXPENSE)
-		{
-			MenuCell(
-				inText     = (inView.theme ?: ExpenseTheme.DAILY).label,
-				inOptions  = ExpenseTheme.entries.map { it.name to it.label },
-				inOnSelect = { inName -> inOnChange(vLine.copy(theme = ExpenseTheme.valueOf(inName), categoryId = null, accountId = null)) },
-				inModifier = Modifier.weight(kThemeWeight).padding(end = 12.dp)
+	Row(Modifier.fillMaxWidth().heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
+		CellField(vLine.name, { inOnChange(vLine.copy(name = it)) }, Modifier.weight(kNameWeight).padding(end = 12.dp), inPlaceholder = "Nom", inUnderline = false)
+		Row(Modifier.weight(kAmountWeight).padding(end = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+			CellField(
+				inValue     = vAmount,
+				inOnChange  = { inText -> vAmount = inText; (if (inText.isBlank()) 0L else parseEuros(inText)?.takeIf { it >= 0 })?.let { inOnChange(vLine.copy(amount = it)) } },
+				inModifier  = Modifier.weight(1f),
+				inPlaceholder = "0,00",
+				inEnd       = true,
+				inError     = vAmount.isNotBlank() && parseEuros(vAmount)?.let { it >= 0 } != true,
+				inUnderline = false
 			)
+			Text("$kCurrencySeparator€", style = MaterialTheme.typography.bodyLarge)						// même fin que les totaux : chiffres alignés
 		}
-		CellField(
-			inValue    = vAmount,
-			inOnChange = { inText -> vAmount = inText; (if (inText.isBlank()) 0L else parseEuros(inText)?.takeIf { it >= 0 })?.let { inOnChange(vLine.copy(amount = it)) } },
-			inModifier = Modifier.weight(kAmountWeight).padding(end = 12.dp),
-			inPlaceholder = "0,00",
-			inEnd      = true,
-			inError    = vAmount.isNotBlank() && parseEuros(vAmount)?.let { it >= 0 } != true
-		)
 		Box(Modifier.width(40.dp)) {
 			IconButton(onClick = { inOnChange(null) }) { Icon(LineIcons.Close, contentDescription = "Retirer la ligne", modifier = Modifier.size(16.dp)) }
 		}

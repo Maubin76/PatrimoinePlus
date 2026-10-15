@@ -31,7 +31,8 @@ import java.time.Instant
 import java.time.ZoneId
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.graphics.asSkiaBitmap
+import androidx.compose.ui.graphics.asSkiaBitmap
+import androidx.compose.ui.test.onNodeWithContentDescription
 
 /*
 	Budget prévisionnel dans l'interface du PC (sans écran), page de
@@ -99,22 +100,20 @@ class BudgetUiTest
 		fCompose.onNodeWithText("Budget prévisionnel").assertExists()
 		fCompose.onNodeWithText("Cashflow").assertExists()
 		listOf("Réel du mois", "Écart", "Prévu", "Montant", "Thème").forEach { assertTrue(it, fCompose.onAllNodesWithText(it).fetchSemanticsNodes().isEmpty()) }	// ni suivi ni en-têtes de colonnes
-		fCompose.onAllNodesWithText("Ajouter une ligne")[1].performScrollTo().performClick()		// rubrique Dépenses
+		ExpenseTheme.entries.forEach { fCompose.onNodeWithContentDescription("Ajouter une ligne à ${it.label}").assertExists() }	// les cinq thèmes, même vides, avec leur « + »
+		assertTrue(fCompose.onAllNodesWithText("Ajouter une ligne").fetchSemanticsNodes().isEmpty())	// boutons réduits à « + »
+		fCompose.onNodeWithContentDescription("Ajouter une ligne à Abonnements").performScrollTo().performClick()	// thème Abonnements, vide jusque-là
 		fCompose.waitForIdle()
 		val vNew = vApp.budget.value.lines.single { it.name.isEmpty() }					// ligne ajoutée
 		File("build/captures-desktop/17-budget-ligne-vide.png").writeBytes(org.jetbrains.skia.Image.makeFromBitmap(fCompose.onRoot().captureToImage().asSkiaBitmap()).encodeToData(EncodedImageFormat.PNG)!!.bytes)	// « 0,00 » grisé aligné sur les montants
 		assertEquals(BudgetSection.EXPENSE, vNew.section)
 		val vFields = fCompose.onAllNodes(hasSetTextAction())							// champs des lignes
 		val vCount  = vFields.fetchSemanticsNodes().size								// nombre de champs
-		assertEquals(ExpenseTheme.DAILY, vNew.theme)									// thème par défaut
-		vFields[vCount - 12].performTextInput("Netflix")								// nom de la nouvelle ligne (dernière de « Vie quotidienne », avant transports, logement, crédit et 2 investissements)
-		vFields[vCount - 11].performTextInput("30")
-		fCompose.onAllNodesWithText("Vie quotidienne").onLast().performScrollTo().performClick()	// thème de la nouvelle ligne (en-tête, puis lignes du thème)
-		fCompose.waitForIdle()
-		fCompose.onAllNodesWithText("Abonnements").onLast().performClick()				// choix du menu (dernier nœud affiché)
+		assertEquals(ExpenseTheme.SUBSCRIPTIONS, vNew.theme)							// thème du « + » choisi
+		vFields[vCount - 8].performTextInput("Netflix")								// nom de la nouvelle ligne (suivie des lignes Transports, Logement et Crédit)
+		vFields[vCount - 7].performTextInput("30")
 		fCompose.waitForIdle()
 		assertTrue(vApp.budget.value.lines.any { it.name == "Netflix" && it.amount == 3_000L && it.theme == ExpenseTheme.SUBSCRIPTIONS && it.categoryId == null })
-		fCompose.onAllNodesWithText("Abonnements")[0].assertExists()					// nouvel en-tête de thème (puis le menu de la ligne)
 		val vNext = DesktopController(DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")), Workspace(kClock), null, kClock)	// lancement suivant
 		assertEquals(vApp.budget.value, vNext.budget.value)
 	}
