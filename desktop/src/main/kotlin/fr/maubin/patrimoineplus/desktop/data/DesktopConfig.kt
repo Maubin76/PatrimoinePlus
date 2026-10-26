@@ -39,13 +39,15 @@ sealed interface Source
 	hidden     : mode discret (montants masqués)
 	colors     : thème de couleurs (Monochrome par défaut)
 	pies       : clés des diagrammes de répartition affichés en cercle (barre par défaut)
+	glass      : effet verre (désactivé par défaut)
 */
 data class DesktopSettings(
 	val source     : Source    = Source.None,
 	val appearance : ThemeMode = ThemeMode.SYSTEM,
 	val hidden     : Boolean   = false,
 	val colors     : ColorTheme = ColorTheme.MONOCHROME,
-	val pies       : Set<String> = emptySet()
+	val pies       : Set<String> = emptySet(),
+	val glass      : Boolean   = false
 )
 
 /*
@@ -79,7 +81,8 @@ class DesktopConfig(private val inFile: Path)
 			hidden     = vProps.getProperty("hidden") == "true",
 			colors     = ColorTheme.entries.firstOrNull { it.name == vProps.getProperty("theme") }
 				?: if (vProps.getProperty("trend") == "true") ColorTheme.MINIMAL else ColorTheme.MONOCHROME,	// ancien réglage vert et rouge : thème Minimal
-			pies       = vProps.getProperty("pies").orEmpty().split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+			pies       = vProps.getProperty("pies").orEmpty().split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet(),
+			glass      = vProps.getProperty("glass") == "true"
 		)
 	}
 
@@ -105,6 +108,7 @@ class DesktopConfig(private val inFile: Path)
 		vProps.setProperty("hidden", inSettings.hidden.toString())
 		vProps.setProperty("theme", inSettings.colors.name)
 		vProps.setProperty("pies", inSettings.pies.sorted().joinToString(","))
+		vProps.setProperty("glass", inSettings.glass.toString())
 		inFile.parent?.let { Files.createDirectories(it) }
 		val vTemp = inFile.resolveSibling("${inFile.fileName}.tmp")				// écriture provisoire
 		Files.newBufferedWriter(vTemp, Charsets.UTF_8).use { vProps.store(it, "Réglages de PatrimoinePlus (PC)") }

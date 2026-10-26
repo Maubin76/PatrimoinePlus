@@ -44,7 +44,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.luminance
+import fr.maubin.patrimoineplus.ui.components.isGlass
+import fr.maubin.patrimoineplus.ui.components.glassPanel
 
 val kTileGap = 20.dp																// espace entre deux tuiles
 
@@ -240,7 +242,8 @@ private val kShadowTint = Color(0xFF5B4E9E)											// teinte des ombres (lava
 
 /*
 	Surface flottante de l'appli PC : fond des panneaux, sans bord, posée sur
-	le fond par une ombre douce teintée de lavande (noire en sombre).
+	le fond par une ombre douce teintée de lavande (noire en sombre) ; avec
+	l'effet verre, panneau de verre translucide.
 	inShape    : forme
 	inModifier : modificateur appliqué
 	inContent  : contenu
@@ -254,12 +257,13 @@ fun FloatingSurface(
 {
 	val vDark  = MaterialTheme.colorScheme.surface.luminance() < 0.5f				// fond sombre
 	val vShade = if (vDark) Color.Black else kShadowTint								// teinte de l'ombre
+	val vGlass = isGlass()															// effet verre
 	Surface(
-		modifier     = inModifier.shadow(12.dp, inShape, ambientColor = vShade.copy(alpha = if (vDark) 0.5f else 0.10f), spotColor = vShade.copy(alpha = if (vDark) 0.6f else 0.16f)),
+		modifier     = if (vGlass) inModifier.glassPanel(inShape, vDark) else inModifier.shadow(12.dp, inShape, ambientColor = vShade.copy(alpha = if (vDark) 0.5f else 0.10f), spotColor = vShade.copy(alpha = if (vDark) 0.6f else 0.16f)),
 		shape        = inShape,
-		color        = MaterialTheme.colorScheme.surface,
+		color        = if (vGlass) Color.Transparent else MaterialTheme.colorScheme.surface,
 		contentColor = MaterialTheme.colorScheme.onSurface,
-		border       = if (vDark) BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)) else null,
+		border       = if (vDark && !vGlass) BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)) else null,
 		content      = inContent
 	)
 }

@@ -58,6 +58,7 @@ import fr.maubin.patrimoineplus.ui.components.flowAccent
 import fr.maubin.patrimoineplus.ui.components.flowColorOr
 import fr.maubin.patrimoineplus.ui.components.FlowAccent
 import fr.maubin.patrimoineplus.ui.components.isColorful
+import fr.maubin.patrimoineplus.ui.components.heroFilled
 
 private val kHorizons = listOf(5, 10, 20, 30)											// horizons proposés, en années
 
@@ -91,7 +92,7 @@ fun ProjectionScreen(
 		TileRow(
 			Cell(1f) { inMod -> Tile(inModifier = inMod) { TileFigure("Aujourd’hui") { AmountText(inCents = vResult.start, inStyle = MaterialTheme.typography.headlineSmall) } } },
 			Cell(1f) { inMod -> Tile(inModifier = inMod, inAccent = flowAccent(FlowAccent.INFLOW)) { TileFigure("Dans ${vInput.years} ans, prudent") { AmountText(inCents = vResult.last.prudent, inStyle = MaterialTheme.typography.headlineSmall) } } },
-			Cell(1.2f) { inMod -> Tile(inModifier = inMod, inFilled = isColorful()) { TileFigure("Dans ${vInput.years} ans, central") { AmountText(inCents = vResult.last.central, inStyle = MaterialTheme.typography.headlineMedium) } } },
+			Cell(1.2f) { inMod -> Tile(inModifier = inMod, inFilled = heroFilled()) { TileFigure("Dans ${vInput.years} ans, central") { AmountText(inCents = vResult.last.central, inStyle = MaterialTheme.typography.headlineMedium) } } },
 			Cell(1f) { inMod -> Tile(inModifier = inMod, inAccent = flowAccent(FlowAccent.INFLOW)) { TileFigure("Dans ${vInput.years} ans, favorable") { AmountText(inCents = vResult.last.optimistic, inStyle = MaterialTheme.typography.headlineSmall) } } },
 			Cell(1f) { inMod ->
 				Tile(inModifier = inMod) {

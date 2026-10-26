@@ -27,7 +27,9 @@ import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
 import androidx.compose.ui.test.assertIsSelected
-import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsOff
 
 /*
 	Volet latéral du PC (sans écran) : huit entrées dans l'ordre voulu ;
@@ -170,6 +172,36 @@ class NavigationUiTest
 		)))
 		vApp.show(Screen.BUDGET)
 		capture(vApp, "24-budget-colore")
+	}
+
+	/*
+		Effet verre : interrupteur des réglages, mémorisé ; captures `27-*.png`
+		en clair et en sombre (noir profond et violet), Monochrome et Coloré.
+	*/
+	@Test
+	fun glassEffect()
+	{
+		val vApp = demo()																	// démonstration
+		vApp.show(Screen.SETTINGS)
+		fCompose.setContent { App(vApp) { null } }
+		fCompose.waitForIdle()
+		fCompose.onNodeWithContentDescription("Effet verre").performScrollTo().assertIsOff().performClick()
+		fCompose.waitForIdle()
+		assertEquals(true, vApp.settings.value.glass)
+		assertEquals(true, DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")).load().glass)
+		fCompose.onNodeWithContentDescription("Effet verre").assertIsOn()
+		capture(vApp, "27-reglages-verre")
+		vApp.show(Screen.DASHBOARD)
+		capture(vApp, "27-tableau-de-bord-verre")
+		vApp.setAppearance(ThemeMode.DARK)
+		capture(vApp, "27-tableau-de-bord-verre-sombre")
+		vApp.show(Screen.BUDGET)
+		capture(vApp, "27-budget-verre-sombre")
+		vApp.setColorTheme(fr.maubin.patrimoineplus.ui.theme.ColorTheme.COLORFUL)
+		vApp.show(Screen.DASHBOARD)
+		capture(vApp, "27-tableau-de-bord-verre-sombre-colore")
+		vApp.newOperation()
+		capture(vApp, "27-saisie-verre-sombre")
 	}
 
 	/*

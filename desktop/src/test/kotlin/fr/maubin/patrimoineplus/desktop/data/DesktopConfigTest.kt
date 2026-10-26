@@ -30,6 +30,7 @@ class DesktopConfigTest
 			DesktopSettings(Source.Folder(vFolder), ThemeMode.DARK, hidden = true),
 			DesktopSettings(Source.Demo, ThemeMode.LIGHT, hidden = false, colors = fr.maubin.patrimoineplus.ui.theme.ColorTheme.MINIMAL),
 			DesktopSettings(Source.Demo, ThemeMode.DARK, hidden = false, colors = fr.maubin.patrimoineplus.ui.theme.ColorTheme.COLORFUL),
+			DesktopSettings(Source.Demo, ThemeMode.DARK, hidden = false, glass = true),
 			DesktopSettings(Source.None, ThemeMode.SYSTEM, hidden = true)
 		).forEach { inSettings ->
 			vConfig.save(inSettings)

@@ -95,12 +95,12 @@ import java.nio.file.Path
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Locale
+import java.util.Locale
 import fr.maubin.patrimoineplus.desktop.ui.panels.PurchasePanel
-import fr.maubin.patrimoineplus.desktop.ui.panels.SalePanel
-import fr.maubin.patrimoineplus.desktop.ui.panels.RecurrencePanel
+import fr.maubin.patrimoineplus.desktop.ui.panels.SalePanel
+import fr.maubin.patrimoineplus.desktop.ui.panels.RecurrencePanel
 import fr.maubin.patrimoineplus.ui.components.LocalProportionStyle
-import fr.maubin.patrimoineplus.ui.components.ProportionStyle
+import fr.maubin.patrimoineplus.ui.components.ProportionStyle
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.TooltipPlacement
@@ -124,8 +124,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.DpOffset
 import fr.maubin.patrimoineplus.ui.theme.DeskTheme
-import fr.maubin.patrimoineplus.ui.theme.ThemeMode
+import fr.maubin.patrimoineplus.ui.theme.ThemeMode
 import fr.maubin.patrimoineplus.desktop.ui.components.FloatingSurface
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.graphics.Path as DrawPath
+import fr.maubin.patrimoineplus.ui.components.isGlass
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -165,9 +170,10 @@ fun App(
 	val vSpace    by inController.workspace.collectAsState()				// données
 	val vPending  by inController.pending.collectAsState()					// action retenue
 	val vDark     = vSettings.appearance.isDark()									// mode sombre effectif
-	DeskTheme(inDarkTheme = vDark, inColorTheme = vSettings.colors) {
+	DeskTheme(inDarkTheme = vDark, inColorTheme = vSettings.colors, inGlass = vSettings.glass) {
 		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie)) {
-			Surface(Modifier.fillMaxSize().deskGround(vDark), color = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSurface) {
+			if (vSettings.glass) GlassBackdrop(vDark)										// formes floues derrière le verre
+			Surface(if (vSettings.glass) Modifier.fillMaxSize() else Modifier.fillMaxSize().deskGround(vDark), color = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSurface) {
 				if (vSpace.source == Source.None)
 				{
 					WelcomeScreen(
@@ -216,8 +222,8 @@ private fun Shell(
 			.fillMaxSize()
 			.padding(14.dp)
 			.clip(vFrame)
-			.background(Color.White.copy(alpha = if (inDark) 0.025f else 0.38f))
-			.border(1.dp, Color.White.copy(alpha = if (inDark) 0.06f else 0.7f), vFrame)
+			.background(Color.White.copy(alpha = if (inDark) 0.025f else if (isGlass()) 0.18f else 0.38f))
+			.border(1.dp, Color.White.copy(alpha = if (inDark) 0.07f else 0.7f), vFrame)
 			.focusRequester(vFocus).focusable().onPreviewKeyEvent { inEvent ->
 			when
 			{
@@ -486,6 +492,51 @@ private fun RailButton(
 			contentAlignment = Alignment.Center
 		) {
 			Icon(inIcon, contentDescription = null, tint = vTint, modifier = Modifier.size(22.dp))
+		}
+	}
+}
+
+/*
+	Fond de l'effet verre : formes floues que les panneaux translucides
+	laissent deviner. Clair : dégradé pastel et grands halos (lavande, rose,
+	bleu ciel, pêche). Sombre : noir profond, facettes fumées et lueurs
+	violette et indigo.
+	inDark : mode sombre
+*/
+@Composable
+private fun GlassBackdrop(inDark: Boolean)
+{
+	Box(Modifier.fillMaxSize().background(if (inDark) Color(0xFF07070B) else Color(0xFFE9E4FA))) {
+		Canvas(Modifier.fillMaxSize().blur(if (inDark) 18.dp else 70.dp, BlurredEdgeTreatment.Rectangle)) {
+			val vW = size.width															// largeur
+			val vH = size.height															// hauteur
+			val vM = maxOf(vW, vH)															// plus grande dimension
+			if (inDark)
+			{
+				val vFacet = { inColor: Color, inPoints: List<Pair<Float, Float>> ->
+					drawPath(DrawPath().apply {
+						moveTo(inPoints[0].first * vW, inPoints[0].second * vH)
+						inPoints.drop(1).forEach { (inX, inY) -> lineTo(inX * vW, inY * vH) }
+						close()
+					}, inColor)
+				}																		// facette, en fractions de l'écran
+				vFacet(Color(0xFF14141C), listOf(0f to 0f, 0.42f to 0f, 0.18f to 0.55f, 0f to 0.4f))
+				vFacet(Color(0xFF1C1C26), listOf(0.42f to 0f, 0.78f to 0f, 0.5f to 0.38f, 0.18f to 0.55f))
+				vFacet(Color(0xFF101017), listOf(0.78f to 0f, 1f to 0f, 1f to 0.48f, 0.5f to 0.38f))
+				vFacet(Color(0xFF191922), listOf(0f to 0.4f, 0.18f to 0.55f, 0.36f to 1f, 0f to 1f))
+				vFacet(Color(0xFF0C0C12), listOf(0.18f to 0.55f, 0.5f to 0.38f, 0.7f to 1f, 0.36f to 1f))
+				vFacet(Color(0xFF1F1F2A), listOf(0.5f to 0.38f, 1f to 0.48f, 1f to 1f, 0.7f to 1f))
+				drawCircle(Brush.radialGradient(listOf(Color(0xFF5B4BE0).copy(alpha = 0.42f), Color.Transparent), center = Offset(0.82f * vW, 0.12f * vH), radius = 0.45f * vM), radius = 0.45f * vM, center = Offset(0.82f * vW, 0.12f * vH))
+				drawCircle(Brush.radialGradient(listOf(Color(0xFF2A3A8C).copy(alpha = 0.30f), Color.Transparent), center = Offset(0.12f * vW, 0.92f * vH), radius = 0.4f * vM), radius = 0.4f * vM, center = Offset(0.12f * vW, 0.92f * vH))
+			}
+			else
+			{
+				drawRect(Brush.linearGradient(listOf(Color(0xFFE6E0FA), Color(0xFFDDE6F8), Color(0xFFE5E0F7)), start = Offset.Zero, end = Offset(vW, vH)))
+				drawCircle(Color(0xFFC3B2FF).copy(alpha = 0.75f), radius = 0.26f * vM, center = Offset(0.2f * vW, 0.18f * vH))
+				drawCircle(Color(0xFFFFBFD8).copy(alpha = 0.70f), radius = 0.28f * vM, center = Offset(0.06f * vW, 0.86f * vH))
+				drawCircle(Color(0xFF9FCBFF).copy(alpha = 0.65f), radius = 0.27f * vM, center = Offset(0.86f * vW, 0.34f * vH))
+				drawCircle(Color(0xFFFFD9B8).copy(alpha = 0.50f), radius = 0.2f * vM, center = Offset(0.6f * vW, 0.98f * vH))
+			}
 		}
 	}
 }

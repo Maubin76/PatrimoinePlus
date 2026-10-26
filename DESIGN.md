@@ -621,6 +621,11 @@ Le PC est un monde d'élévation : chaque panneau flotte. En clair, aucune surfa
 
 **The Borderless Panel Rule.** En clair, aucun panneau flottant ne porte de bord ; s'il ne se détache pas, c'est l'ombre qui manque, pas un filet.
 
+#### Effet verre (réglage)
+Option de Réglages › Apparence (`ui/components/Glass.kt`). Derrière l'appli, des formes floues : en clair, le dégradé pastel et de grands halos lavande, rose, bleu ciel et pêche floutés à 70 dp ; en sombre, noir profond (#07070B), facettes fumées floutées à 18 dp et lueurs violette et indigo. Les panneaux deviennent du verre : aplat translucide plus clair en haut à gauche (blanc 72 → 42 % en clair, 8,5 → 2,5 % en sombre ; teinté du type de compte en Coloré), liseré dégradé (blanc 95 → 30 % en clair, 24 → 3 % en sombre), **sans ombre portée** (elle se verrait à travers le verre). En sombre, l'encre de la coque devient le violet #6A5CF5 (pilules, disque du rail) et le chiffre mis en avant est une tuile pleine en verre violet (#7B6CF6 → #3B31B0), quel que soit le thème ; les données gardent les couleurs du thème. Menus, fenêtres et champs restent opaques.
+
+**The Glass Light Rule.** Le verre prend la lumière en haut à gauche : aplat et liseré s'éteignent toujours vers le bas à droite ; jamais d'ombre sous un panneau translucide.
+
 ### Shapes
 
 Trois rayons qui s'emboîtent : le cadre (36 dp) contient les panneaux (28 dp), qui contiennent les champs et lignes (14 à 20 dp ; échelle de formes 14, 16, 20, 28, 32). Tout ce qui se touche dans la coque est une pilule ou un disque : boutons du rail (48 dp), capsules du rail et du bandeau, pilule « Nouvelle opération » (44 dp de haut), segmentés (piste en pilule, choix de 38 dp), info-bulles, pastilles d'icône des lignes d'opération (32 dp). Les icônes sont au trait fin du jeu `LineIcons` (trait de 1,6 sur une grille de 24, extrémités arrondies, sans aplat), à 22 dp dans le rail, 18 dp dans les boutons.

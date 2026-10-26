@@ -35,6 +35,8 @@ import fr.maubin.patrimoineplus.desktop.data.WorkspaceState
 import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 import fr.maubin.patrimoineplus.desktop.ui.panels.Choice
 import fr.maubin.patrimoineplus.desktop.ui.components.FloatingCard
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 
 /*
 	Réglages de l'appli PC : source des données (dossier synchronisé,
@@ -88,6 +90,16 @@ fun SettingsScreen(
 		Choice(ColorTheme.entries.map { it to it.label }, vSettings.colors, inController::setColorTheme)
 		Spacer(Modifier.height(8.dp))
 		Text(vSettings.colors.detail, style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+		Spacer(Modifier.height(16.dp))
+		FloatingCard {
+			Row(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+				Column(Modifier.weight(1f)) {
+					Text("Effet verre", style = MaterialTheme.typography.titleMedium)
+					Text("Panneaux translucides sur un fond de formes floues ; en sombre, noir profond et accent violet.", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+				}
+				Switch(checked = vSettings.glass, onCheckedChange = inController::setGlass, modifier = Modifier.semantics { contentDescription = "Effet verre" })
+			}
+		}
 		Spacer(Modifier.height(32.dp))
 		SectionHeader(inTitle = "Confidentialité")
 		Spacer(Modifier.height(12.dp))

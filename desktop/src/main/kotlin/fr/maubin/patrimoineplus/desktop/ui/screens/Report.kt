@@ -53,6 +53,7 @@ import fr.maubin.patrimoineplus.ui.components.accountAccent
 import fr.maubin.patrimoineplus.ui.components.isColorful
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import androidx.compose.ui.graphics.Color
+import fr.maubin.patrimoineplus.ui.components.heroFilled
 
 private val kLongDay = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)	// date en toutes lettres
 
@@ -139,7 +140,7 @@ private fun AnnualReportSection(
 					}
 				}
 			},
-			Cell(1f) { inMod -> Tile(inModifier = inMod, inFilled = isColorful()) { TileFigure("Variation") { AmountText(inCents = vReport.wealthChange, inStyle = MaterialTheme.typography.headlineSmall, inShowPlusSign = true, inTrend = true) } } },
+			Cell(1f) { inMod -> Tile(inModifier = inMod, inFilled = heroFilled()) { TileFigure("Variation") { AmountText(inCents = vReport.wealthChange, inStyle = MaterialTheme.typography.headlineSmall, inShowPlusSign = true, inTrend = true) } } },
 			Cell(1f) { inMod ->
 				Tile(inModifier = inMod) {
 					TileFigure("Taux d’épargne") { Text(vReport.savingsRate?.takeIf { !LocalAmountsHidden.current }?.let { formatPermille(it).removePrefix("+") } ?: "—", style = MaterialTheme.typography.headlineSmall) }

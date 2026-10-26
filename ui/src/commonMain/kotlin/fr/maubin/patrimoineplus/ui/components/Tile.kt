@@ -62,6 +62,8 @@ private const val kPressMillis = 90												// enfoncement au clic
 	par une ombre douce, titre facultatif avec une action à droite, contenu
 	libre. Cliquable, elle s'élève au survol de la souris (ombre plus
 	ample, fond légèrement teinté) et s'enfonce légèrement au clic, qui l'ouvre.
+	Effet verre : panneau de verre translucide (tuile pleine en verre violet
+	en sombre).
 	inModifier : modificateur appliqué
 	inTitle    : titre de la tuile ; null sans titre
 	inOnClick  : action d'un clic ; null pour une tuile inerte
@@ -87,12 +89,18 @@ fun Tile(
 )
 {
 	val vBase     = MaterialTheme.colorScheme										// palette de l'appli
-	val vHero     = if (isColorful()) colorfulMain() else vBase.primary				// fond d'une tuile pleine : accent Coloré, sinon encre
+	val vDark     = vBase.surface.luminance() < 0.5f								// fond sombre
+	val vHero     = when
+	{
+		isGlass() && vDark -> kGlassHero													// verre sombre : violet
+		isColorful()       -> colorfulMain()												// accent Coloré
+		else               -> vBase.primary												// encre
+	}																				// fond d'une tuile pleine
 	val vOnHero   = if (vHero.luminance() < 0.5f) Color.White else Color(0xFF0B1B26)	// texte sur la tuile pleine
 	val vColors   = if (inFilled) vBase.copy(primary = vOnHero, onPrimary = vHero, surface = vHero, onSurface = vOnHero, onSurfaceVariant = vOnHero.copy(alpha = 0.78f),
 		surfaceContainerLow = lerp(vHero, vOnHero, 0.08f), surfaceContainerHigh = lerp(vHero, vOnHero, 0.2f),
 		outline = vOnHero.copy(alpha = 0.5f), outlineVariant = vHero) else vBase	// tuile pleine : couleurs inversées
-	val vDark     = vBase.surface.luminance() < 0.5f								// fond sombre
+	val vGlassy   = isGlass() && (!inFilled || vDark)								// panneau de verre (la tuile pleine reste pleine en clair)
 	val vTint     = inAccent != Color.Unspecified									// tuile teintée
 	val vSource   = remember { MutableInteractionSource() }						// survol et clics
 	val vHovered  by vSource.collectIsHoveredAsState()							// souris au-dessus
@@ -108,12 +116,19 @@ fun Tile(
 	Surface(
 		modifier = inModifier
 			.graphicsLayer { scaleX = vScale; scaleY = vScale; translationY = -2.dp.toPx() * vLift }
-			.shadow((10f + 10f * vLift).dp, kTileShape, ambientColor = vShade.copy(alpha = if (vDark) 0.5f else 0.10f), spotColor = vShade.copy(alpha = if (vDark) 0.6f else 0.16f))
+			.then(
+				when
+				{
+					vGlassy && inFilled -> Modifier.glassHero(kTileShape, vLift)
+					vGlassy             -> Modifier.glassPanel(kTileShape, vDark, inAccent, vLift)
+					else                -> Modifier.shadow((10f + 10f * vLift).dp, kTileShape, ambientColor = vShade.copy(alpha = if (vDark) 0.5f else 0.10f), spotColor = vShade.copy(alpha = if (vDark) 0.6f else 0.16f))
+				}
+			)
 			.hoverable(vSource).then(vClick),
 		shape    = kTileShape,
-		color    = vFill,
+		color    = if (vGlassy) Color.Transparent else vFill,
 		contentColor = vColors.onSurface,
-		border   = if (vDark) BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)) else null	// sombre : arête à peine lisible
+		border   = if (vDark && !vGlassy) BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)) else null	// sombre : arête à peine lisible (le verre a son liseré)
 	) {
 		MaterialTheme(colorScheme = vColors) {
 			CompositionLocalProvider(LocalColorTheme provides if (inFilled) ColorTheme.MONOCHROME else LocalColorTheme.current) {	// tuile pleine : variations à l'encre de la tuile (lisibles sur l'aplat), signe écrit

@@ -362,7 +362,10 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   saisie en panneaux blancs flottants (ombre douce, sans bord), titre de
   page en grand ; police géométrique **Outfit** (OFL, ressource Compose du
   module `:ui`, licence dans `doc/licenses/`), chiffres tabulaires. Le
-  téléphone garde Hanken Grotesk et son apparence.
+  téléphone garde Hanken Grotesk et son apparence. **Effet verre** (Réglages ›
+  Apparence, mémorisé) : panneaux translucides à liseré lumineux sur un fond
+  de formes floues (halos pastel en clair ; en sombre, noir profond, facettes
+  fumées, lueur violette, coque et chiffre mis en avant en violet).
 - **Rail d'icônes du PC**, dans cet ordre : Tableau de bord, Objectifs,
   Recherche, Opérations (saisie rapide puis récurrences et mensualités),
   Budget, Projection, Bilan (onglets « Mois par mois » et « Bilan annuel »),

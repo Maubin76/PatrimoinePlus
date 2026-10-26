@@ -20,6 +20,7 @@ import org.jetbrains.compose.resources.Font
 import androidx.compose.material3.Shapes
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
+import fr.maubin.patrimoineplus.ui.components.LocalGlass
 
 // Neutres de l'appli PC, légèrement teintés de lavande (fond pastel).
 private val kDeskInk          = Color(0xFF16151F)								// encre
@@ -41,6 +42,19 @@ private val kDeskNightLow     = Color(0xFF292B42)								// survol, sombre
 private val kDeskNightMid     = Color(0xFF2F3149)								// conteneur, sombre
 private val kDeskNightHigh    = Color(0xFF373952)								// conteneur marqué, sombre
 private val kDeskNightHighest = Color(0xFF41435E)								// conteneur le plus marqué, sombre
+
+// Verre sombre : noir profond, verre fumé, accent violet.
+private val kGlassInk       = Color(0xFFF3F3F7)								// encre
+private val kGlassInkMuted  = Color(0xFFA2A2B4)								// texte secondaire
+private val kGlassBack      = Color(0xFF07070B)								// fond
+private val kGlassPanel     = Color(0xFF15151C)								// menus, fenêtres (opaques)
+private val kGlassOutline   = Color(0xFF5E5E70)								// contour marqué
+private val kGlassRule      = Color(0xFF2A2A33)								// filet
+private val kGlassLow       = Color(0xFF1B1B23)								// survol
+private val kGlassMid       = Color(0xFF202029)								// conteneur
+private val kGlassHigh      = Color(0xFF272731)								// conteneur marqué
+private val kGlassHighest   = Color(0xFF30303B)								// conteneur le plus marqué
+private val kGlassViolet    = Color(0xFF6A5CF5)								// accent violet (pilules, disque du rail)
 
 /*
 	Construit une graisse de la police variable Outfit (géométrique ronde de
@@ -129,16 +143,41 @@ fun deskTypography(): Typography
 	encre de la coque (pilules, disque du rail, boutons) presque noire, ou
 	lune en sombre, quel que soit le thème ; panneaux blancs (nuit indigo en
 	sombre) posés sur le fond pastel.
+	Verre sombre : noir profond, encre claire et accent violet pour la coque.
 	inDark       : mode sombre
 	inColorTheme : thème de couleurs
+	inGlass      : effet verre
 */
 fun deskColors(
 	inDark       : Boolean,
-	inColorTheme : ColorTheme
+	inColorTheme : ColorTheme,
+	inGlass      : Boolean = false
 ): ColorScheme
 {
 	val vColorful = inColorTheme == ColorTheme.COLORFUL								// thème Coloré
-	return if (inDark)
+	return if (inDark && inGlass)
+	{
+		val vBase = if (vColorful) ColorfulDarkColors else MonoDarkColors			// palette du thème
+		vBase.copy(
+			primary                 = kGlassViolet,
+			onPrimary               = Color.White,
+			inverseSurface          = kGlassInk,
+			inverseOnSurface        = kGlassBack,
+			background              = kGlassBack,
+			surface                 = kGlassPanel,
+			onSurface               = kGlassInk,
+			onBackground            = kGlassInk,
+			onSurfaceVariant        = kGlassInkMuted,
+			outline                 = kGlassOutline,
+			outlineVariant          = kGlassRule,
+			surfaceContainerLowest  = kGlassBack,
+			surfaceContainerLow     = kGlassLow,
+			surfaceContainer        = kGlassMid,
+			surfaceContainerHigh    = kGlassHigh,
+			surfaceContainerHighest = kGlassHighest
+		)
+	}
+	else if (inDark)
 	{
 		val vBase = if (vColorful) ColorfulDarkColors else MonoDarkColors			// palette du thème
 		vBase.copy(
@@ -198,16 +237,18 @@ private val kDeskShapes = Shapes(
 	couleurs que l'appli Android pour les données.
 	inDarkTheme  : mode sombre
 	inColorTheme : thème de couleurs
+	inGlass      : effet verre (panneaux translucides ; en sombre, noir profond et violet)
 	inContent    : contenu
 */
 @Composable
 fun DeskTheme(
 	inDarkTheme  : Boolean,
 	inColorTheme : ColorTheme,
+	inGlass      : Boolean = false,
 	inContent    : @Composable () -> Unit
 )
 {
-	MaterialTheme(colorScheme = deskColors(inDarkTheme, inColorTheme), typography = deskTypography(), shapes = kDeskShapes) {
-		CompositionLocalProvider(LocalColorTheme provides inColorTheme, content = inContent)
+	MaterialTheme(colorScheme = deskColors(inDarkTheme, inColorTheme, inGlass), typography = deskTypography(), shapes = kDeskShapes) {
+		CompositionLocalProvider(LocalColorTheme provides inColorTheme, LocalGlass provides inGlass, content = inContent)
 	}
 }

@@ -70,6 +70,7 @@ import fr.maubin.patrimoineplus.ui.components.isColorful
 import fr.maubin.patrimoineplus.ui.components.accountAccent
 import androidx.compose.ui.graphics.Color
 import fr.maubin.patrimoineplus.ui.theme.colorfulMain
+import fr.maubin.patrimoineplus.ui.components.heroFilled
 
 private val kShortDay   = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date courte
 private val kAccountMin = 300.dp													// largeur minimale d'une tuile de compte
@@ -147,7 +148,7 @@ private fun Figures(inState: DashboardState)
 {
 	TileRow(
 		Cell(1.6f) { inMod ->
-			Tile(inModifier = inMod, inFilled = isColorful()) {
+			Tile(inModifier = inMod, inFilled = heroFilled()) {
 				val vMuted = MaterialTheme.colorScheme.onSurfaceVariant						// texte secondaire (inversé dans la tuile pleine)
 				Text(if (inState.home.debtCents != 0L) "Patrimoine net" else "Patrimoine", style = MaterialTheme.typography.titleMedium, color = vMuted)
 				Spacer(Modifier.height(4.dp))

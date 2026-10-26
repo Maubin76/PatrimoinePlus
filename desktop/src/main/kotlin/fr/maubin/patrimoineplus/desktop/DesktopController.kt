@@ -364,6 +364,12 @@ class DesktopController(
 	fun setColorTheme(inTheme: ColorTheme) = update(fSettings.value.copy(colors = inTheme))
 
 	/*
+		Active ou retire l'effet verre (mémorisé).
+		inGlass : vrai pour l'effet verre
+	*/
+	fun setGlass(inGlass: Boolean) = update(fSettings.value.copy(glass = inGlass))
+
+	/*
 		Choisit la forme d'un diagramme de répartition (mémorisée pour lui seul).
 		inKey : clé du diagramme
 		inPie : vrai pour le cercle, faux pour la barre

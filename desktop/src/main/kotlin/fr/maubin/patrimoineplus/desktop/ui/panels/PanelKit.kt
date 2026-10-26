@@ -61,7 +61,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.size
-import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.Role
+import fr.maubin.patrimoineplus.ui.components.isGlass
+import fr.maubin.patrimoineplus.ui.components.glassPanel
 
 val kPanelWidth = 440.dp																// largeur du panneau latéral
 
@@ -95,9 +97,10 @@ fun SidePanel(
 			Modifier
 				.fillMaxHeight()
 				.fillMaxWidth()
-				.shadow(18.dp, vShape, ambientColor = Color(0xFF5B4E9E).copy(alpha = if (vDark) 0.5f else 0.12f), spotColor = Color(0xFF5B4E9E).copy(alpha = if (vDark) 0.6f else 0.2f))
-				.clip(vShape)
-				.background(MaterialTheme.colorScheme.surface)
+				.then(
+					if (isGlass()) Modifier.glassPanel(vShape, vDark).clip(vShape)
+					else Modifier.shadow(18.dp, vShape, ambientColor = Color(0xFF5B4E9E).copy(alpha = if (vDark) 0.5f else 0.12f), spotColor = Color(0xFF5B4E9E).copy(alpha = if (vDark) 0.6f else 0.2f)).clip(vShape).background(MaterialTheme.colorScheme.surface)
+				)
 				.onPreviewKeyEvent { inEvent ->
 					if (inEvent.type == KeyEventType.KeyDown && inEvent.key == Key.Escape) { inOnClose(); true } else false
 				}

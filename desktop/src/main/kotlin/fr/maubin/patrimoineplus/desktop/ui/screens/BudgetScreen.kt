@@ -67,7 +67,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
-import fr.maubin.patrimoineplus.domain.format.kCurrencySeparator
+import fr.maubin.patrimoineplus.domain.format.kCurrencySeparator
+import fr.maubin.patrimoineplus.ui.components.heroFilled
 
 private const val kNameWeight   = 2.4f											// largeur relative de la colonne du nom
 private const val kAmountWeight = 1.2f											// largeur relative de la colonne du montant
@@ -138,7 +139,7 @@ private fun Figures(inBudget: Budget)
 			}
 		}.toTypedArray(),
 		Cell(1f) { inMod ->
-			Tile(inModifier = inMod, inFilled = isColorful()) {
+			Tile(inModifier = inMod, inFilled = heroFilled()) {
 				TileFigure("Reste") { AmountText(inCents = inBudget.remaining, inStyle = MaterialTheme.typography.headlineSmall, inShowPlusSign = true, inTrend = true) }
 			}
 		},
