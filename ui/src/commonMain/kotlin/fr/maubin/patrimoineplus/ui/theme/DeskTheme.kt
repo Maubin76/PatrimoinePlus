@@ -144,6 +144,8 @@ fun deskColors(
 		vBase.copy(
 			primary                 = kDeskMoon,
 			onPrimary               = kDeskInk,
+			inverseSurface          = kDeskMoon,
+			inverseOnSurface        = kDeskInk,
 			background              = kDeskNightBack,
 			surface                 = kDeskNight,
 			onSurface               = kDeskMoon,
@@ -164,6 +166,8 @@ fun deskColors(
 		vBase.copy(
 			primary                 = kDeskInk,
 			onPrimary               = Color.White,
+			inverseSurface          = kDeskInk,
+			inverseOnSurface        = Color.White,
 			background              = kDeskBack,
 			surface                 = Color.White,
 			onSurface               = kDeskInk,

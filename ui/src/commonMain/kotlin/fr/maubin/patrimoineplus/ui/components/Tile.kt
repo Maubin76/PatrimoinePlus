@@ -48,6 +48,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.draw.shadow
 import fr.maubin.patrimoineplus.ui.theme.colorfulMain
+import androidx.compose.runtime.CompositionLocalProvider
+import fr.maubin.patrimoineplus.ui.theme.LocalColorTheme
+import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 
 private val kTileShape = RoundedCornerShape(28.dp)								// forme d'une tuile : panneau très arrondi
 private val kShadowTint = Color(0xFF5B4E9E)										// ombre teintée de lavande (clair)
@@ -113,23 +116,25 @@ fun Tile(
 		border   = if (vDark) BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)) else null	// sombre : arête à peine lisible
 	) {
 		MaterialTheme(colorScheme = vColors) {
-			Column {
-				Column(Modifier.padding(26.dp)) {
-					if (inTitle != null || inAction != null)
-					{
-						Row(Modifier.fillMaxWidth().heightIn(min = 32.dp), verticalAlignment = Alignment.CenterVertically) {
-							Text(
-								text     = inTitle.orEmpty(),
-								style    = inTitleStyle ?: MaterialTheme.typography.titleMedium,
-								maxLines = 1,
-								overflow = TextOverflow.Ellipsis,
-								modifier = Modifier.weight(1f)
-							)
-							inAction?.invoke(this)
+			CompositionLocalProvider(LocalColorTheme provides if (inFilled) ColorTheme.MONOCHROME else LocalColorTheme.current) {	// tuile pleine : variations à l'encre de la tuile (lisibles sur l'aplat), signe écrit
+				Column {
+					Column(Modifier.padding(26.dp)) {
+						if (inTitle != null || inAction != null)
+						{
+							Row(Modifier.fillMaxWidth().heightIn(min = 32.dp), verticalAlignment = Alignment.CenterVertically) {
+								Text(
+									text     = inTitle.orEmpty(),
+									style    = inTitleStyle ?: MaterialTheme.typography.titleMedium,
+									maxLines = 1,
+									overflow = TextOverflow.Ellipsis,
+									modifier = Modifier.weight(1f)
+								)
+								inAction?.invoke(this)
+							}
+							androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
 						}
-						androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
+						inContent()
 					}
-					inContent()
 				}
 			}
 		}

@@ -1,51 +1,1111 @@
 {
 	"schemaVersion": 2,
-	"generatedAt": "2026-10-07T14:45:00+00:00",
+	"generatedAt": "2026-10-26T12:00:00+00:00",
 	"title": "Design System: PatrimoinePlus",
 	"extensions": {
 		"colorMeta": {
-			"white": { "role": "neutral", "displayName": "Blanc", "canonical": "#FFFFFF", "mode": "light", "tonalRamp": ["#0B0B0B", "#242424", "#404040", "#5D5D5D", "#7D7D7D", "#9E9E9E", "#C1C1C1", "#EEEEEE"] },
-			"ink": { "role": "primary", "displayName": "Encre", "canonical": "#0A0A0A", "mode": "light", "tonalRamp": ["#0B0B0B", "#242424", "#404040", "#5D5D5D", "#7D7D7D", "#9E9E9E", "#C1C1C1", "#EEEEEE"] },
-			"grey-secondary": { "role": "neutral", "displayName": "Gris secondaire", "canonical": "#6B6B6B", "mode": "light", "tonalRamp": ["#0B0B0B", "#242424", "#404040", "#5D5D5D", "#7D7D7D", "#9E9E9E", "#C1C1C1", "#EEEEEE"] },
-			"rule": { "role": "neutral", "displayName": "Filet", "canonical": "#EBEBEB", "mode": "light", "tonalRamp": ["#0B0B0B", "#242424", "#404040", "#5D5D5D", "#7D7D7D", "#9E9E9E", "#C1C1C1", "#EEEEEE"] },
-			"outline": { "role": "neutral", "displayName": "Contour", "canonical": "#9E9E9E", "mode": "light", "tonalRamp": ["#0B0B0B", "#242424", "#404040", "#5D5D5D", "#7D7D7D", "#9E9E9E", "#C1C1C1", "#EEEEEE"] },
-			"grey-selection": { "role": "neutral", "displayName": "Gris de sélection", "canonical": "#EDEDED", "mode": "light", "tonalRamp": ["#0B0B0B", "#242424", "#404040", "#5D5D5D", "#7D7D7D", "#9E9E9E", "#C1C1C1", "#EEEEEE"] },
-			"series-mid": { "role": "secondary", "displayName": "Gris moyen (livrets)", "canonical": "#8A8A8A", "mode": "light", "tonalRamp": ["#0B0B0B", "#242424", "#404040", "#5D5D5D", "#7D7D7D", "#9E9E9E", "#C1C1C1", "#EEEEEE"] },
-			"series-light": { "role": "tertiary", "displayName": "Gris clair (compte-titres)", "canonical": "#C4C4C4", "mode": "light", "tonalRamp": ["#0B0B0B", "#242424", "#404040", "#5D5D5D", "#7D7D7D", "#9E9E9E", "#C1C1C1", "#EEEEEE"] },
-			"negative": { "role": "error", "displayName": "Rouge négatif", "canonical": "#C62828", "mode": "light", "tonalRamp": ["#2B0606", "#4F0F0D", "#741714", "#9C201C", "#C62828", "#E06A62", "#F0A39C", "#FBDCD9"] },
-			"black": { "role": "neutral", "displayName": "Noir", "canonical": "#0B0B0B", "mode": "dark", "tonalRamp": ["#0B0B0B", "#242424", "#404040", "#5D5D5D", "#7D7D7D", "#9E9E9E", "#C1C1C1", "#EEEEEE"] },
-			"paper": { "role": "primary", "displayName": "Papier", "canonical": "#F5F5F5", "mode": "dark", "tonalRamp": ["#0B0B0B", "#242424", "#404040", "#5D5D5D", "#7D7D7D", "#9E9E9E", "#C1C1C1", "#EEEEEE"] },
-			"grey-secondary-dark": { "role": "neutral", "displayName": "Gris secondaire sombre", "canonical": "#A3A3A3", "mode": "dark", "tonalRamp": ["#0B0B0B", "#242424", "#404040", "#5D5D5D", "#7D7D7D", "#9E9E9E", "#C1C1C1", "#EEEEEE"] },
-			"rule-dark": { "role": "neutral", "displayName": "Filet sombre", "canonical": "#262626", "mode": "dark", "tonalRamp": ["#0B0B0B", "#242424", "#404040", "#5D5D5D", "#7D7D7D", "#9E9E9E", "#C1C1C1", "#EEEEEE"] },
-			"outline-dark": { "role": "neutral", "displayName": "Contour sombre", "canonical": "#6E6E6E", "mode": "dark", "tonalRamp": ["#0B0B0B", "#242424", "#404040", "#5D5D5D", "#7D7D7D", "#9E9E9E", "#C1C1C1", "#EEEEEE"] },
-			"night-pill": { "role": "neutral", "displayName": "Pilule nocturne", "canonical": "#1A1A1A", "mode": "dark", "tonalRamp": ["#0B0B0B", "#242424", "#404040", "#5D5D5D", "#7D7D7D", "#9E9E9E", "#C1C1C1", "#EEEEEE"] },
-			"grey-selection-dark": { "role": "neutral", "displayName": "Gris de sélection sombre", "canonical": "#333333", "mode": "dark", "tonalRamp": ["#0B0B0B", "#242424", "#404040", "#5D5D5D", "#7D7D7D", "#9E9E9E", "#C1C1C1", "#EEEEEE"] },
-			"series-mid-dark": { "role": "secondary", "displayName": "Gris moyen sombre (livrets)", "canonical": "#9E9E9E", "mode": "dark", "tonalRamp": ["#0B0B0B", "#242424", "#404040", "#5D5D5D", "#7D7D7D", "#9E9E9E", "#C1C1C1", "#EEEEEE"] },
-			"series-low-dark": { "role": "tertiary", "displayName": "Gris bas (compte-titres, sombre)", "canonical": "#5C5C5C", "mode": "dark", "tonalRamp": ["#0B0B0B", "#242424", "#404040", "#5D5D5D", "#7D7D7D", "#9E9E9E", "#C1C1C1", "#EEEEEE"] },
-			"negative-dark": { "role": "error", "displayName": "Rouge négatif sombre", "canonical": "#EF9A9A", "mode": "dark", "tonalRamp": ["#2B0606", "#4F0F0D", "#741714", "#9C201C", "#C62828", "#E06A62", "#F0A39C", "#FBDCD9"] }
+			"white": {
+				"role": "neutral",
+				"displayName": "Blanc",
+				"canonical": "#FFFFFF",
+				"mode": "light",
+				"tonalRamp": [
+					"#0B0B0B",
+					"#242424",
+					"#404040",
+					"#5D5D5D",
+					"#7D7D7D",
+					"#9E9E9E",
+					"#C1C1C1",
+					"#EEEEEE"
+				]
+			},
+			"ink": {
+				"role": "primary",
+				"displayName": "Encre",
+				"canonical": "#0A0A0A",
+				"mode": "light",
+				"tonalRamp": [
+					"#0B0B0B",
+					"#242424",
+					"#404040",
+					"#5D5D5D",
+					"#7D7D7D",
+					"#9E9E9E",
+					"#C1C1C1",
+					"#EEEEEE"
+				]
+			},
+			"grey-secondary": {
+				"role": "neutral",
+				"displayName": "Gris secondaire",
+				"canonical": "#6B6B6B",
+				"mode": "light",
+				"tonalRamp": [
+					"#0B0B0B",
+					"#242424",
+					"#404040",
+					"#5D5D5D",
+					"#7D7D7D",
+					"#9E9E9E",
+					"#C1C1C1",
+					"#EEEEEE"
+				]
+			},
+			"rule": {
+				"role": "neutral",
+				"displayName": "Filet",
+				"canonical": "#EBEBEB",
+				"mode": "light",
+				"tonalRamp": [
+					"#0B0B0B",
+					"#242424",
+					"#404040",
+					"#5D5D5D",
+					"#7D7D7D",
+					"#9E9E9E",
+					"#C1C1C1",
+					"#EEEEEE"
+				]
+			},
+			"outline": {
+				"role": "neutral",
+				"displayName": "Contour",
+				"canonical": "#9E9E9E",
+				"mode": "light",
+				"tonalRamp": [
+					"#0B0B0B",
+					"#242424",
+					"#404040",
+					"#5D5D5D",
+					"#7D7D7D",
+					"#9E9E9E",
+					"#C1C1C1",
+					"#EEEEEE"
+				]
+			},
+			"grey-selection": {
+				"role": "neutral",
+				"displayName": "Gris de sélection",
+				"canonical": "#EDEDED",
+				"mode": "light",
+				"tonalRamp": [
+					"#0B0B0B",
+					"#242424",
+					"#404040",
+					"#5D5D5D",
+					"#7D7D7D",
+					"#9E9E9E",
+					"#C1C1C1",
+					"#EEEEEE"
+				]
+			},
+			"series-mid": {
+				"role": "secondary",
+				"displayName": "Gris moyen (livrets)",
+				"canonical": "#8A8A8A",
+				"mode": "light",
+				"tonalRamp": [
+					"#0B0B0B",
+					"#242424",
+					"#404040",
+					"#5D5D5D",
+					"#7D7D7D",
+					"#9E9E9E",
+					"#C1C1C1",
+					"#EEEEEE"
+				]
+			},
+			"series-light": {
+				"role": "tertiary",
+				"displayName": "Gris clair (compte-titres)",
+				"canonical": "#C4C4C4",
+				"mode": "light",
+				"tonalRamp": [
+					"#0B0B0B",
+					"#242424",
+					"#404040",
+					"#5D5D5D",
+					"#7D7D7D",
+					"#9E9E9E",
+					"#C1C1C1",
+					"#EEEEEE"
+				]
+			},
+			"negative": {
+				"role": "error",
+				"displayName": "Rouge négatif",
+				"canonical": "#C62828",
+				"mode": "light",
+				"tonalRamp": [
+					"#2B0606",
+					"#4F0F0D",
+					"#741714",
+					"#9C201C",
+					"#C62828",
+					"#E06A62",
+					"#F0A39C",
+					"#FBDCD9"
+				]
+			},
+			"black": {
+				"role": "neutral",
+				"displayName": "Noir",
+				"canonical": "#0B0B0B",
+				"mode": "dark",
+				"tonalRamp": [
+					"#0B0B0B",
+					"#242424",
+					"#404040",
+					"#5D5D5D",
+					"#7D7D7D",
+					"#9E9E9E",
+					"#C1C1C1",
+					"#EEEEEE"
+				]
+			},
+			"paper": {
+				"role": "primary",
+				"displayName": "Papier",
+				"canonical": "#F5F5F5",
+				"mode": "dark",
+				"tonalRamp": [
+					"#0B0B0B",
+					"#242424",
+					"#404040",
+					"#5D5D5D",
+					"#7D7D7D",
+					"#9E9E9E",
+					"#C1C1C1",
+					"#EEEEEE"
+				]
+			},
+			"grey-secondary-dark": {
+				"role": "neutral",
+				"displayName": "Gris secondaire sombre",
+				"canonical": "#A3A3A3",
+				"mode": "dark",
+				"tonalRamp": [
+					"#0B0B0B",
+					"#242424",
+					"#404040",
+					"#5D5D5D",
+					"#7D7D7D",
+					"#9E9E9E",
+					"#C1C1C1",
+					"#EEEEEE"
+				]
+			},
+			"rule-dark": {
+				"role": "neutral",
+				"displayName": "Filet sombre",
+				"canonical": "#262626",
+				"mode": "dark",
+				"tonalRamp": [
+					"#0B0B0B",
+					"#242424",
+					"#404040",
+					"#5D5D5D",
+					"#7D7D7D",
+					"#9E9E9E",
+					"#C1C1C1",
+					"#EEEEEE"
+				]
+			},
+			"outline-dark": {
+				"role": "neutral",
+				"displayName": "Contour sombre",
+				"canonical": "#6E6E6E",
+				"mode": "dark",
+				"tonalRamp": [
+					"#0B0B0B",
+					"#242424",
+					"#404040",
+					"#5D5D5D",
+					"#7D7D7D",
+					"#9E9E9E",
+					"#C1C1C1",
+					"#EEEEEE"
+				]
+			},
+			"night-pill": {
+				"role": "neutral",
+				"displayName": "Pilule nocturne",
+				"canonical": "#1A1A1A",
+				"mode": "dark",
+				"tonalRamp": [
+					"#0B0B0B",
+					"#242424",
+					"#404040",
+					"#5D5D5D",
+					"#7D7D7D",
+					"#9E9E9E",
+					"#C1C1C1",
+					"#EEEEEE"
+				]
+			},
+			"grey-selection-dark": {
+				"role": "neutral",
+				"displayName": "Gris de sélection sombre",
+				"canonical": "#333333",
+				"mode": "dark",
+				"tonalRamp": [
+					"#0B0B0B",
+					"#242424",
+					"#404040",
+					"#5D5D5D",
+					"#7D7D7D",
+					"#9E9E9E",
+					"#C1C1C1",
+					"#EEEEEE"
+				]
+			},
+			"series-mid-dark": {
+				"role": "secondary",
+				"displayName": "Gris moyen sombre (livrets)",
+				"canonical": "#9E9E9E",
+				"mode": "dark",
+				"tonalRamp": [
+					"#0B0B0B",
+					"#242424",
+					"#404040",
+					"#5D5D5D",
+					"#7D7D7D",
+					"#9E9E9E",
+					"#C1C1C1",
+					"#EEEEEE"
+				]
+			},
+			"series-low-dark": {
+				"role": "tertiary",
+				"displayName": "Gris bas (compte-titres, sombre)",
+				"canonical": "#5C5C5C",
+				"mode": "dark",
+				"tonalRamp": [
+					"#0B0B0B",
+					"#242424",
+					"#404040",
+					"#5D5D5D",
+					"#7D7D7D",
+					"#9E9E9E",
+					"#C1C1C1",
+					"#EEEEEE"
+				]
+			},
+			"negative-dark": {
+				"role": "error",
+				"displayName": "Rouge négatif sombre",
+				"canonical": "#EF9A9A",
+				"mode": "dark",
+				"tonalRamp": [
+					"#2B0606",
+					"#4F0F0D",
+					"#741714",
+					"#9C201C",
+					"#C62828",
+					"#E06A62",
+					"#F0A39C",
+					"#FBDCD9"
+				]
+			},
+			"desk-ink": {
+				"role": "primary",
+				"displayName": "Encre de la coque",
+				"canonical": "#16151F",
+				"mode": "light",
+				"world": "desktop",
+				"tonalRamp": [
+					"#1A1924",
+					"#2F2D43",
+					"#474464",
+					"#615D89",
+					"#807CA6",
+					"#A7A4C1",
+					"#CDCBDC",
+					"#F0F0F5"
+				]
+			},
+			"desk-ink-muted": {
+				"role": "neutral",
+				"displayName": "Texte secondaire lavande",
+				"canonical": "#686479",
+				"mode": "light",
+				"world": "desktop",
+				"tonalRamp": [
+					"#1D1C22",
+					"#35333D",
+					"#4F4C5C",
+					"#6C687E",
+					"#8B879C",
+					"#AEABBA",
+					"#D1D0D8",
+					"#F2F1F3"
+				]
+			},
+			"desk-outline": {
+				"role": "neutral",
+				"displayName": "Contour lavande",
+				"canonical": "#A39FB5",
+				"mode": "light",
+				"world": "desktop",
+				"tonalRamp": [
+					"#1C1B23",
+					"#33313F",
+					"#4D495F",
+					"#696482",
+					"#8883A0",
+					"#ACA9BC",
+					"#D0CED9",
+					"#F1F1F4"
+				]
+			},
+			"desk-rule": {
+				"role": "neutral",
+				"displayName": "Filet lavande",
+				"canonical": "#ECE9F4",
+				"mode": "light",
+				"world": "desktop",
+				"tonalRamp": [
+					"#1A1429",
+					"#30254B",
+					"#473870",
+					"#614C99",
+					"#816DB6",
+					"#A799CC",
+					"#CDC5E2",
+					"#F0EEF6"
+				]
+			},
+			"desk-low": {
+				"role": "neutral",
+				"displayName": "Conteneur bas (survol)",
+				"canonical": "#F6F4FC",
+				"mode": "light",
+				"world": "desktop",
+				"tonalRamp": [
+					"#160D30",
+					"#281858",
+					"#3C2484",
+					"#5231B4",
+					"#7253D0",
+					"#9D87DE",
+					"#C7BBEC",
+					"#EFEBFA"
+				]
+			},
+			"desk-mid": {
+				"role": "neutral",
+				"displayName": "Conteneur (piste, survol du rail)",
+				"canonical": "#EFECF8",
+				"mode": "light",
+				"world": "desktop",
+				"tonalRamp": [
+					"#18102D",
+					"#2B1E52",
+					"#412D7B",
+					"#583EA8",
+					"#785FC4",
+					"#A18FD6",
+					"#CAC0E8",
+					"#EFECF8"
+				]
+			},
+			"desk-high": {
+				"role": "neutral",
+				"displayName": "Conteneur marqué",
+				"canonical": "#E7E3F4",
+				"mode": "light",
+				"world": "desktop",
+				"tonalRamp": [
+					"#18112C",
+					"#2B2051",
+					"#412F79",
+					"#5841A5",
+					"#7862C1",
+					"#A191D4",
+					"#CAC1E7",
+					"#EFEDF8"
+				]
+			},
+			"desk-highest": {
+				"role": "neutral",
+				"displayName": "Conteneur le plus marqué",
+				"canonical": "#DFDAF0",
+				"mode": "light",
+				"world": "desktop",
+				"tonalRamp": [
+					"#18122C",
+					"#2B2050",
+					"#413178",
+					"#5842A3",
+					"#7863C0",
+					"#A192D3",
+					"#CAC1E6",
+					"#EFEDF8"
+				]
+			},
+			"desk-back": {
+				"role": "neutral",
+				"displayName": "Fond lavande",
+				"canonical": "#EEEAF9",
+				"mode": "light",
+				"world": "desktop",
+				"tonalRamp": [
+					"#170E30",
+					"#2A1957",
+					"#3E2583",
+					"#5533B3",
+					"#7554CE",
+					"#9F88DD",
+					"#C8BCEC",
+					"#EFEBF9"
+				]
+			},
+			"desk-panel": {
+				"role": "neutral",
+				"displayName": "Panneau blanc",
+				"canonical": "#FFFFFF",
+				"mode": "light",
+				"world": "desktop",
+				"tonalRamp": [
+					"#1F1F1F",
+					"#383838",
+					"#545454",
+					"#737373",
+					"#919191",
+					"#B2B2B2",
+					"#D4D4D4",
+					"#F2F2F2"
+				]
+			},
+			"desk-ground-lavender": {
+				"role": "neutral",
+				"displayName": "Ciel lavande (dégradé)",
+				"canonical": "#E6E0FA",
+				"mode": "light",
+				"world": "desktop",
+				"tonalRamp": [
+					"#130835",
+					"#221061",
+					"#331791",
+					"#4620C6",
+					"#6742E1",
+					"#957BEA",
+					"#C3B4F3",
+					"#EDE9FB"
+				]
+			},
+			"desk-ground-mist": {
+				"role": "neutral",
+				"displayName": "Ciel bleu brume (dégradé)",
+				"canonical": "#DDE6F8",
+				"mode": "light",
+				"world": "desktop",
+				"tonalRamp": [
+					"#0A1833",
+					"#132C5D",
+					"#1D428C",
+					"#275ABE",
+					"#4979DA",
+					"#80A2E5",
+					"#B7CAF0",
+					"#EAEFFB"
+				]
+			},
+			"desk-ground-lilac": {
+				"role": "neutral",
+				"displayName": "Ciel lilas (dégradé)",
+				"canonical": "#E5E0F7",
+				"mode": "light",
+				"world": "desktop",
+				"tonalRamp": [
+					"#140D31",
+					"#251759",
+					"#382386",
+					"#4C2FB6",
+					"#6D51D2",
+					"#9985E0",
+					"#C5BAED",
+					"#EEEBFA"
+				]
+			},
+			"desk-halo-rose": {
+				"role": "neutral",
+				"displayName": "Halo rose poudré",
+				"canonical": "#F7DCE9",
+				"mode": "light",
+				"world": "desktop",
+				"tonalRamp": [
+					"#320B1E",
+					"#5B1537",
+					"#891F52",
+					"#BB2B70",
+					"#D64C8F",
+					"#E382B1",
+					"#EFB8D3",
+					"#FAEAF2"
+				]
+			},
+			"desk-halo-blue": {
+				"role": "neutral",
+				"displayName": "Halo bleu",
+				"canonical": "#D3E4FB",
+				"mode": "light",
+				"world": "desktop",
+				"tonalRamp": [
+					"#051B38",
+					"#093167",
+					"#0E4A9A",
+					"#1364D2",
+					"#3684ED",
+					"#73A9F2",
+					"#B0CEF8",
+					"#E8F1FD"
+				]
+			},
+			"desk-shadow-lavender": {
+				"role": "neutral",
+				"displayName": "Teinte des ombres",
+				"canonical": "#5B4E9E",
+				"mode": "light",
+				"world": "desktop",
+				"tonalRamp": [
+					"#181429",
+					"#2B254B",
+					"#413871",
+					"#584C9A",
+					"#786CB7",
+					"#A199CC",
+					"#CAC5E2",
+					"#EFEEF7"
+				]
+			},
+			"desk-moon": {
+				"role": "primary",
+				"displayName": "Lune (encre sombre)",
+				"canonical": "#F1EFF8",
+				"mode": "dark",
+				"world": "desktop",
+				"tonalRamp": [
+					"#18132B",
+					"#2C224E",
+					"#423375",
+					"#5A46A0",
+					"#7A66BC",
+					"#A295D0",
+					"#CAC3E5",
+					"#EFEDF7"
+				]
+			},
+			"desk-moon-muted": {
+				"role": "neutral",
+				"displayName": "Texte secondaire de nuit",
+				"canonical": "#A9A5BF",
+				"mode": "dark",
+				"world": "desktop",
+				"tonalRamp": [
+					"#1B1924",
+					"#322F42",
+					"#4A4662",
+					"#655F86",
+					"#857FA4",
+					"#AAA6BF",
+					"#CFCCDB",
+					"#F1F0F4"
+				]
+			},
+			"desk-night": {
+				"role": "neutral",
+				"displayName": "Nuit indigo (panneau)",
+				"canonical": "#222439",
+				"mode": "dark",
+				"world": "desktop",
+				"tonalRamp": [
+					"#171826",
+					"#2A2C46",
+					"#3F4369",
+					"#565B90",
+					"#767AAD",
+					"#9FA3C6",
+					"#C9CBDF",
+					"#EFF0F5"
+				]
+			},
+			"desk-night-back": {
+				"role": "neutral",
+				"displayName": "Fond de nuit",
+				"canonical": "#12131F",
+				"mode": "dark",
+				"world": "desktop",
+				"tonalRamp": [
+					"#161827",
+					"#292C47",
+					"#3E416A",
+					"#545991",
+					"#7479AE",
+					"#9EA1C7",
+					"#C8CADF",
+					"#EFEFF6"
+				]
+			},
+			"desk-night-outline": {
+				"role": "neutral",
+				"displayName": "Contour de nuit",
+				"canonical": "#6F6B86",
+				"mode": "dark",
+				"world": "desktop",
+				"tonalRamp": [
+					"#1C1B22",
+					"#34323E",
+					"#4E4B5E",
+					"#6A6680",
+					"#89859E",
+					"#ACAABB",
+					"#D0CFD9",
+					"#F1F1F4"
+				]
+			},
+			"desk-night-rule": {
+				"role": "neutral",
+				"displayName": "Filet de nuit",
+				"canonical": "#33354D",
+				"mode": "dark",
+				"world": "desktop",
+				"tonalRamp": [
+					"#181925",
+					"#2D2E43",
+					"#434665",
+					"#5B5F8A",
+					"#7B7FA8",
+					"#A3A5C2",
+					"#CBCCDC",
+					"#F0F0F5"
+				]
+			},
+			"desk-night-low": {
+				"role": "neutral",
+				"displayName": "Conteneur bas de nuit",
+				"canonical": "#292B42",
+				"mode": "dark",
+				"world": "desktop",
+				"tonalRamp": [
+					"#171926",
+					"#2B2D45",
+					"#404468",
+					"#585C8E",
+					"#787CAB",
+					"#A1A3C4",
+					"#CACBDE",
+					"#EFF0F5"
+				]
+			},
+			"desk-night-mid": {
+				"role": "neutral",
+				"displayName": "Conteneur de nuit",
+				"canonical": "#2F3149",
+				"mode": "dark",
+				"world": "desktop",
+				"tonalRamp": [
+					"#181925",
+					"#2C2E44",
+					"#424566",
+					"#5A5E8C",
+					"#7A7DA9",
+					"#A2A4C3",
+					"#CACCDD",
+					"#EFF0F5"
+				]
+			},
+			"desk-night-high": {
+				"role": "neutral",
+				"displayName": "Conteneur marqué de nuit",
+				"canonical": "#373952",
+				"mode": "dark",
+				"world": "desktop",
+				"tonalRamp": [
+					"#191925",
+					"#2D2F43",
+					"#444665",
+					"#5C5F89",
+					"#7C7FA7",
+					"#A3A6C2",
+					"#CBCCDC",
+					"#F0F0F5"
+				]
+			},
+			"desk-night-highest": {
+				"role": "neutral",
+				"displayName": "Conteneur le plus marqué de nuit",
+				"canonical": "#41435E",
+				"mode": "dark",
+				"world": "desktop",
+				"tonalRamp": [
+					"#191A24",
+					"#2E2F42",
+					"#454763",
+					"#5E6188",
+					"#7D80A5",
+					"#A5A6C0",
+					"#CCCDDC",
+					"#F0F0F5"
+				]
+			},
+			"desk-ground-night-indigo": {
+				"role": "neutral",
+				"displayName": "Ciel de nuit indigo",
+				"canonical": "#16162B",
+				"mode": "dark",
+				"world": "desktop",
+				"tonalRamp": [
+					"#151528",
+					"#26264A",
+					"#39396F",
+					"#4E4E98",
+					"#6E6EB5",
+					"#9A9ACB",
+					"#C6C6E2",
+					"#EEEEF6"
+				]
+			},
+			"desk-ground-night-blue": {
+				"role": "neutral",
+				"displayName": "Ciel de nuit bleu",
+				"canonical": "#121729",
+				"mode": "dark",
+				"world": "desktop",
+				"tonalRamp": [
+					"#13182B",
+					"#222C4E",
+					"#334275",
+					"#46599F",
+					"#6779BC",
+					"#95A2D0",
+					"#C3CAE5",
+					"#EDEFF7"
+				]
+			},
+			"desk-ground-night-plum": {
+				"role": "neutral",
+				"displayName": "Ciel de nuit prune",
+				"canonical": "#181427",
+				"mode": "dark",
+				"world": "desktop",
+				"tonalRamp": [
+					"#191528",
+					"#2E264A",
+					"#44396F",
+					"#5D4E98",
+					"#7D6EB5",
+					"#A49ACB",
+					"#CCC6E2",
+					"#F0EEF6"
+				]
+			},
+			"desk-halo-plum": {
+				"role": "neutral",
+				"displayName": "Halo prune (55 %)",
+				"canonical": "#3A2142",
+				"mode": "dark",
+				"world": "desktop",
+				"tonalRamp": [
+					"#241429",
+					"#42254B",
+					"#633870",
+					"#864D99",
+					"#A46DB6",
+					"#C099CC",
+					"#DBC5E2",
+					"#F4EEF6"
+				]
+			},
+			"desk-halo-indigo": {
+				"role": "neutral",
+				"displayName": "Halo indigo (45 %)",
+				"canonical": "#223259",
+				"mode": "dark",
+				"world": "desktop",
+				"tonalRamp": [
+					"#11192C",
+					"#1F2E51",
+					"#2F447A",
+					"#3F5DA6",
+					"#607DC2",
+					"#90A4D5",
+					"#C0CCE7",
+					"#EDF0F8"
+				]
+			},
+			"colorful-sky": {
+				"role": "secondary",
+				"displayName": "Bleu ciel (Coloré)",
+				"canonical": "#8ECAE6",
+				"mode": "both",
+				"world": "desktop",
+				"tonalRamp": [
+					"#0B2632",
+					"#14455C",
+					"#1E688A",
+					"#2A8DBC",
+					"#4BABD7",
+					"#82C4E3",
+					"#B8DEEF",
+					"#EAF5FA"
+				]
+			},
+			"colorful-blue-green": {
+				"role": "secondary",
+				"displayName": "Bleu-vert, hausses (Coloré)",
+				"canonical": "#219EBC",
+				"mode": "both",
+				"world": "desktop",
+				"tonalRamp": [
+					"#092C34",
+					"#11505F",
+					"#19788F",
+					"#22A4C3",
+					"#44C0DE",
+					"#7DD3E8",
+					"#B5E6F2",
+					"#E9F8FB"
+				]
+			},
+			"colorful-deep-space": {
+				"role": "secondary",
+				"displayName": "Bleu nuit, accent principal (Coloré)",
+				"canonical": "#023047",
+				"mode": "both",
+				"world": "desktop",
+				"tonalRamp": [
+					"#02283C",
+					"#034A6D",
+					"#056FA4",
+					"#0697DF",
+					"#2AB4F9",
+					"#6ACBFB",
+					"#ABE1FD",
+					"#E6F6FE"
+				]
+			},
+			"colorful-amber": {
+				"role": "tertiary",
+				"displayName": "Ambre (Coloré)",
+				"canonical": "#FFB703",
+				"mode": "both",
+				"world": "desktop",
+				"tonalRamp": [
+					"#3D2C00",
+					"#705000",
+					"#A87800",
+					"#E6A400",
+					"#FFC024",
+					"#FFD366",
+					"#FFE6A8",
+					"#FFF8E5"
+				]
+			},
+			"colorful-tiger": {
+				"role": "tertiary",
+				"displayName": "Orange, baisses (Coloré)",
+				"canonical": "#FB8500",
+				"mode": "both",
+				"world": "desktop",
+				"tonalRamp": [
+					"#3D2000",
+					"#703B00",
+					"#A85900",
+					"#E67A00",
+					"#FF9824",
+					"#FFB766",
+					"#FFD6A8",
+					"#FFF3E5"
+				]
+			}
 		},
 		"typographyMeta": {
-			"display-large": { "displayName": "Display Large", "purpose": "Total centré, première taille essayée par l'ajustement sur une ligne." },
-			"display-medium": { "displayName": "Display Medium", "purpose": "Repli du total." },
-			"display-small": { "displayName": "Display Small", "purpose": "Repli du total." },
-			"headline-large": { "displayName": "Headline Large", "purpose": "Repli du total." },
-			"headline-medium": { "displayName": "Headline Medium", "purpose": "Dernier repli du total." },
-			"headline-small": { "displayName": "Headline Small", "purpose": "Titres de section en demi-gras." },
-			"title-medium": { "displayName": "Title Medium", "purpose": "Titre de la barre du haut, nom et montant d'un compte, titre d'état vide et de réglage." },
-			"body-large": { "displayName": "Body Large", "purpose": "Légende de la répartition." },
-			"body-medium": { "displayName": "Body Medium", "purpose": "Type d'un compte, explications." },
-			"label-large": { "displayName": "Label Large", "purpose": "Pastille d'information, lien souligné, texte des boutons." }
+			"display-large": {
+				"displayName": "Display Large",
+				"purpose": "Total centré, première taille essayée par l'ajustement sur une ligne."
+			},
+			"display-medium": {
+				"displayName": "Display Medium",
+				"purpose": "Repli du total."
+			},
+			"display-small": {
+				"displayName": "Display Small",
+				"purpose": "Repli du total."
+			},
+			"headline-large": {
+				"displayName": "Headline Large",
+				"purpose": "Repli du total."
+			},
+			"headline-medium": {
+				"displayName": "Headline Medium",
+				"purpose": "Dernier repli du total."
+			},
+			"headline-small": {
+				"displayName": "Headline Small",
+				"purpose": "Titres de section en demi-gras."
+			},
+			"title-medium": {
+				"displayName": "Title Medium",
+				"purpose": "Titre de la barre du haut, nom et montant d'un compte, titre d'état vide et de réglage."
+			},
+			"body-large": {
+				"displayName": "Body Large",
+				"purpose": "Légende de la répartition."
+			},
+			"body-medium": {
+				"displayName": "Body Medium",
+				"purpose": "Type d'un compte, explications."
+			},
+			"label-large": {
+				"displayName": "Label Large",
+				"purpose": "Pastille d'information, lien souligné, texte des boutons."
+			},
+			"desk-display-medium": {
+				"displayName": "Display (PC)",
+				"purpose": "Chiffre clé d'une page, en tête de sa tuile."
+			},
+			"desk-display-small": {
+				"displayName": "Titre de page (PC)",
+				"purpose": "Titre de chaque page, 42 sp."
+			},
+			"desk-headline-medium": {
+				"displayName": "Headline Medium (PC)",
+				"purpose": "Chiffre mis en avant d'une tuile (scénario central)."
+			},
+			"desk-headline-small": {
+				"displayName": "Headline Small (PC)",
+				"purpose": "Chiffres de tuile, titres de section dans une page."
+			},
+			"desk-title-large": {
+				"displayName": "Title Large (PC)",
+				"purpose": "Titre du panneau de saisie."
+			},
+			"desk-title-medium": {
+				"displayName": "Title Medium (PC)",
+				"purpose": "Titre d'une tuile, nom d'un compte."
+			},
+			"desk-body-large": {
+				"displayName": "Body Large (PC)",
+				"purpose": "Lignes d'opération et leurs montants."
+			},
+			"desk-body-medium": {
+				"displayName": "Body Medium (PC)",
+				"purpose": "Libellés de chiffres, détails, bandeau d'état."
+			},
+			"desk-label-large": {
+				"displayName": "Label Large (PC)",
+				"purpose": "Boutons, info-bulles, segmentés."
+			},
+			"desk-label-medium": {
+				"displayName": "Label Medium (PC)",
+				"purpose": "Segmenté de cinq choix et plus."
+			}
 		},
 		"shadows": [
-			{ "name": "nav-pill", "value": "Compose shadowElevation 10dp (approx. 0 6px 20px rgba(0,0,0,0.14))", "purpose": "Ombre douce de la pilule de navigation, en mode clair uniquement ; liseré de 1dp en outlineVariant en mode sombre." }
+			{
+				"name": "nav-pill",
+				"value": "Compose shadowElevation 10dp (approx. 0 6px 20px rgba(0,0,0,0.14))",
+				"purpose": "Ombre douce de la pilule de navigation, en mode clair uniquement ; liseré de 1dp en outlineVariant en mode sombre."
+			},
+			{
+				"name": "desk-tile",
+				"value": "Compose shadow 10dp, ambient #5B4E9E 10 %, spot #5B4E9E 16 % (approx. 0 6px 24px rgba(91,78,158,0.14)) ; sombre : noir 50 % / 60 % + bord 1dp blanc 5 %",
+				"purpose": "Tuile au repos (PC)."
+			},
+			{
+				"name": "desk-tile-hover",
+				"value": "Compose shadow 20dp, mêmes teintes, translationY -2dp (approx. 0 12px 40px rgba(91,78,158,0.18))",
+				"purpose": "Tuile cliquable survolée (PC)."
+			},
+			{
+				"name": "desk-floating",
+				"value": "Compose shadow 12dp, ambient #5B4E9E 10 %, spot 16 % (approx. 0 8px 28px rgba(91,78,158,0.14))",
+				"purpose": "Capsules du rail et du bandeau, cartes flottantes (PC)."
+			},
+			{
+				"name": "desk-side-panel",
+				"value": "Compose shadow 18dp, ambient #5B4E9E 12 %, spot 20 % (approx. 0 10px 36px rgba(91,78,158,0.18))",
+				"purpose": "Panneau de saisie (PC)."
+			},
+			{
+				"name": "desk-tooltip",
+				"value": "shadowElevation 4dp",
+				"purpose": "Info-bulle du rail (PC)."
+			}
 		],
 		"motion": [
-			{ "name": "tab-fade-out", "value": "fadeOut tween 90ms", "purpose": "Disparition de l'onglet quitté." },
-			{ "name": "tab-fade-in", "value": "fadeIn tween 220ms, délai 90ms", "purpose": "Apparition de l'onglet ouvert." },
-			{ "name": "digit-roll", "value": "slideVertically + fade, tween 320ms", "purpose": "Roulement d'un chiffre du total ; coupé quand l'échelle d'animation système vaut 0." },
-			{ "name": "mask-crossfade", "value": "Crossfade tween 180ms", "purpose": "Passage montant visible / masqué en mode discret." },
-			{ "name": "entry-fab-in", "value": "fadeIn + scaleIn depuis 0.8, tween 150ms", "purpose": "Apparition du bouton de saisie en arrivant sur Accueil ou Comptes." },
-			{ "name": "entry-fab-out", "value": "fadeOut + scaleOut vers 0.8, tween 100ms", "purpose": "Disparition du bouton de saisie." }
+			{
+				"name": "tab-fade-out",
+				"value": "fadeOut tween 90ms",
+				"purpose": "Disparition de l'onglet quitté."
+			},
+			{
+				"name": "tab-fade-in",
+				"value": "fadeIn tween 220ms, délai 90ms",
+				"purpose": "Apparition de l'onglet ouvert."
+			},
+			{
+				"name": "digit-roll",
+				"value": "slideVertically + fade, tween 320ms",
+				"purpose": "Roulement d'un chiffre du total ; coupé quand l'échelle d'animation système vaut 0."
+			},
+			{
+				"name": "mask-crossfade",
+				"value": "Crossfade tween 180ms",
+				"purpose": "Passage montant visible / masqué en mode discret."
+			},
+			{
+				"name": "entry-fab-in",
+				"value": "fadeIn + scaleIn depuis 0.8, tween 150ms",
+				"purpose": "Apparition du bouton de saisie en arrivant sur Accueil ou Comptes."
+			},
+			{
+				"name": "entry-fab-out",
+				"value": "fadeOut + scaleOut vers 0.8, tween 100ms",
+				"purpose": "Disparition du bouton de saisie."
+			},
+			{
+				"name": "desk-ease",
+				"value": "cubic-bezier(0.2, 0, 0, 1)",
+				"purpose": "Courbe accentuée de tous les glissements (PC)."
+			},
+			{
+				"name": "desk-page",
+				"value": "fadeIn 280ms (délai 70ms) + slide 1/12 de largeur ; fadeOut 140ms",
+				"purpose": "Transition entre pages ; glissement seulement vers ou depuis un compte (PC)."
+			},
+			{
+				"name": "desk-panel",
+				"value": "slideIn 1/3 + fadeIn 240ms ; sortie 160ms",
+				"purpose": "Arrivée du panneau de saisie (PC)."
+			},
+			{
+				"name": "desk-rail-disc",
+				"value": "animateDp 260ms, desk-ease",
+				"purpose": "Glissement du disque de la page active (PC)."
+			},
+			{
+				"name": "desk-hover",
+				"value": "tween 160ms",
+				"purpose": "Fond et élévation d'une tuile survolée (PC)."
+			},
+			{
+				"name": "desk-press",
+				"value": "scale 0.985, tween 90ms",
+				"purpose": "Enfoncement d'une tuile au clic (PC)."
+			},
+			{
+				"name": "desk-choice",
+				"value": "animateColor 180ms",
+				"purpose": "Pilule active d'un segmenté (PC)."
+			},
+			{
+				"name": "desk-tooltip-delay",
+				"value": "350ms",
+				"purpose": "Délai d'apparition de l'info-bulle du rail (PC)."
+			}
 		],
 		"breakpoints": []
 	},
@@ -113,6 +1173,54 @@
 			"description": "Barre proportionnelle en niveaux de gris sur une rampe fixe, puis légende par type.",
 			"html": "<div class=\"ds-repart\"><div class=\"ds-bar\"><span style=\"flex:4\" class=\"ds-seg ds-s1\"></span><span style=\"flex:46\" class=\"ds-seg ds-s2\"></span><span style=\"flex:50\" class=\"ds-seg ds-s3\"></span></div><div class=\"ds-leg\"><span class=\"ds-dot ds-s1\"></span><span class=\"ds-leg-label\">Comptes courants</span><span class=\"ds-leg-pct\">4 %</span><span class=\"ds-leg-amt\">2 843,12 €</span></div><div class=\"ds-leg\"><span class=\"ds-dot ds-s2\"></span><span class=\"ds-leg-label\">Livrets</span><span class=\"ds-leg-pct\">46 %</span><span class=\"ds-leg-amt\">34 991,18 €</span></div><div class=\"ds-leg\"><span class=\"ds-dot ds-s3\"></span><span class=\"ds-leg-label\">Comptes-titres</span><span class=\"ds-leg-pct\">50 %</span><span class=\"ds-leg-amt\">38 715,40 €</span></div></div>",
 			"css": ".ds-repart { font-family: 'Hanken Grotesk', sans-serif; display: flex; flex-direction: column; } .ds-bar { display: flex; gap: 3px; height: 10px; border-radius: 9999px; background: #EDEDED; margin-bottom: 16px; } .ds-seg { border-radius: 9999px; } .ds-s1 { background: #0A0A0A; } .ds-s2 { background: #8A8A8A; } .ds-s3 { background: #C4C4C4; } .ds-leg { display: flex; align-items: center; min-height: 40px; font-size: 16px; line-height: 24px; color: #0A0A0A; } .ds-dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 12px; } .ds-leg-label { flex: 1; } .ds-leg-pct { color: #6B6B6B; margin-right: 16px; } .ds-leg-amt { font-variant-numeric: tabular-nums; }"
+		},
+		{
+			"name": "Tuile flottante (PC)",
+			"kind": "card",
+			"refersTo": "desk-tile",
+			"description": "Panneau blanc de 28dp sans bord, ombre lavande ; s'élève au survol et s'enfonce au clic.",
+			"html": "<div class=\"ds-desk-ground\"><div class=\"ds-desk-tile\" tabindex=\"0\"><div class=\"ds-desk-tile-title\">Compte courant</div><div class=\"ds-desk-tile-sub\">Courant · Banque démo</div><div class=\"ds-desk-tile-amount\">2 680,20 €</div></div></div>",
+			"css": ".ds-desk-ground { padding: 32px; background: linear-gradient(135deg, #E6E0FA, #DDE6F8, #E5E0F7); } .ds-desk-tile { font-family: 'Outfit', sans-serif; background: #FFFFFF; color: #16151F; border-radius: 28px; padding: 26px; box-shadow: 0 6px 24px rgba(91,78,158,0.14); transition: transform 160ms, box-shadow 160ms, background 160ms; cursor: pointer; } .ds-desk-tile:hover { background: #F6F4FC; transform: translateY(-2px); box-shadow: 0 12px 40px rgba(91,78,158,0.18); } .ds-desk-tile:active { transform: scale(0.985); } .ds-desk-tile:focus-visible { outline: 2px solid #16151F; outline-offset: 3px; } .ds-desk-tile-title { font-size: 17px; line-height: 24px; font-weight: 500; letter-spacing: -0.005em; } .ds-desk-tile-sub { font-size: 14px; color: #686479; letter-spacing: 0.01em; } .ds-desk-tile-amount { margin-top: 16px; font-size: 24px; line-height: 32px; font-weight: 500; letter-spacing: -0.015em; font-variant-numeric: tabular-nums; }"
+		},
+		{
+			"name": "Tuile pleine (PC, Coloré)",
+			"kind": "card",
+			"refersTo": "desk-tile-filled",
+			"description": "Tuile du chiffre clé en thème Coloré : aplat bleu nuit (bleu ciel en sombre), texte inversé.",
+			"html": "<div class=\"ds-desk-hero\"><div class=\"ds-desk-hero-label\">Patrimoine net</div><div class=\"ds-desk-hero-amount\">61 948,43 €</div></div>",
+			"css": ".ds-desk-hero { font-family: 'Outfit', sans-serif; background: #023047; color: #FFFFFF; border-radius: 28px; padding: 26px; box-shadow: 0 6px 24px rgba(91,78,158,0.14); } .ds-desk-hero-label { font-size: 17px; font-weight: 500; color: rgba(255,255,255,0.78); } .ds-desk-hero-amount { font-size: 45px; line-height: 52px; font-weight: 500; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }"
+		},
+		{
+			"name": "Rail d'icônes (PC)",
+			"kind": "nav",
+			"refersTo": "desk-rail",
+			"description": "Capsule flottante de boutons ronds de 48dp ; la page active sur un disque d'encre qui glisse.",
+			"html": "<nav class=\"ds-desk-rail\" role=\"tablist\"><button class=\"ds-desk-rb is-active\" role=\"tab\" aria-selected=\"true\" aria-label=\"Tableau de bord\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z\"/></svg></button><button class=\"ds-desk-rb\" role=\"tab\" aria-label=\"Objectifs\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"8\"/><circle cx=\"12\" cy=\"12\" r=\"4\"/></svg></button><button class=\"ds-desk-rb\" role=\"tab\" aria-label=\"Recherche\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"11\" cy=\"11\" r=\"6.5\"/><path d=\"M16 16l4 4\"/></svg></button><button class=\"ds-desk-rb\" role=\"tab\" aria-label=\"Opérations\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 20h4L19 9l-4-4L4 16z\"/></svg></button><button class=\"ds-desk-rb\" role=\"tab\" aria-label=\"Réglages\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 7h16M4 12h16M4 17h16\"/><circle cx=\"9\" cy=\"7\" r=\"1.8\"/><circle cx=\"15\" cy=\"12\" r=\"1.8\"/><circle cx=\"8\" cy=\"17\" r=\"1.8\"/></svg></button></nav>",
+			"css": ".ds-desk-rail { display: inline-flex; flex-direction: column; gap: 6px; padding: 6px; background: #FFFFFF; border-radius: 9999px; box-shadow: 0 6px 24px rgba(91,78,158,0.14); } .ds-desk-rb { width: 48px; height: 48px; border: none; border-radius: 50%; background: transparent; color: #686479; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background 130ms, color 260ms; } .ds-desk-rb:hover { background: #EFECF8; color: #16151F; } .ds-desk-rb:focus-visible { outline: 2px solid #16151F; outline-offset: 2px; } .ds-desk-rb.is-active { background: #16151F; color: #FFFFFF; }"
+		},
+		{
+			"name": "Capsule du bandeau (PC)",
+			"kind": "button",
+			"refersTo": "desk-button-primary",
+			"description": "Pilule « Nouvelle opération » à l'encre, puis boutons ronds recherche et œil, dans une capsule flottante.",
+			"html": "<div class=\"ds-desk-capsule\"><button class=\"ds-desk-btn\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg>Nouvelle opération</button><button class=\"ds-desk-rb\" aria-label=\"Rechercher (Ctrl+F)\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"11\" cy=\"11\" r=\"6.5\"/><path d=\"M16 16l4 4\"/></svg></button></div>",
+			"css": ".ds-desk-capsule { display: inline-flex; align-items: center; gap: 6px; padding: 6px; background: #FFFFFF; border-radius: 9999px; box-shadow: 0 6px 24px rgba(91,78,158,0.14); } .ds-desk-btn { font-family: 'Outfit', sans-serif; height: 44px; padding: 0 22px 0 18px; display: inline-flex; align-items: center; gap: 8px; border: none; border-radius: 9999px; background: #16151F; color: #FFFFFF; font-size: 14px; font-weight: 500; letter-spacing: 0.01em; cursor: pointer; transition: background 150ms; } .ds-desk-btn:hover { background: #2C2A3A; } .ds-desk-btn:focus-visible { outline: 2px solid #16151F; outline-offset: 3px; } .ds-desk-rb { width: 48px; height: 48px; border: none; border-radius: 50%; background: transparent; color: #686479; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background 130ms, color 260ms; } .ds-desk-rb:hover { background: #EFECF8; color: #16151F; } .ds-desk-rb:focus-visible { outline: 2px solid #16151F; outline-offset: 2px; }"
+		},
+		{
+			"name": "Segmenté en pilules (PC)",
+			"kind": "chip",
+			"refersTo": "desk-choice",
+			"description": "Piste en pilule, choix actif sur une pilule pleine à l'encre.",
+			"html": "<div class=\"ds-desk-choice\" role=\"radiogroup\"><button class=\"ds-desk-opt is-active\" role=\"radio\" aria-checked=\"true\">Dépense</button><button class=\"ds-desk-opt\" role=\"radio\" aria-checked=\"false\">Revenu</button><button class=\"ds-desk-opt\" role=\"radio\" aria-checked=\"false\">Virement</button></div>",
+			"css": ".ds-desk-choice { display: flex; gap: 4px; padding: 4px; background: #EFECF8; border-radius: 9999px; } .ds-desk-opt { font-family: 'Outfit', sans-serif; flex: 1; height: 38px; border: none; border-radius: 9999px; background: transparent; color: #16151F; font-size: 14px; font-weight: 500; letter-spacing: 0.01em; cursor: pointer; transition: background 180ms, color 180ms; } .ds-desk-opt:hover { background: #E7E3F4; } .ds-desk-opt.is-active { background: #16151F; color: #FFFFFF; } .ds-desk-opt:focus-visible { outline: 2px solid #16151F; outline-offset: 2px; }"
+		},
+		{
+			"name": "Champ du panneau (PC)",
+			"kind": "input",
+			"refersTo": "desk-field",
+			"description": "Champ contouré aux coins de 14dp, contour lavande.",
+			"html": "<label class=\"ds-desk-field\"><span>Libellé</span><input placeholder=\"Courses\"></label>",
+			"css": ".ds-desk-field { font-family: 'Outfit', sans-serif; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #686479; } .ds-desk-field input { font-family: 'Outfit', sans-serif; height: 48px; padding: 0 14px; border: 1px solid #A39FB5; border-radius: 14px; font-size: 16px; color: #16151F; background: #FFFFFF; letter-spacing: 0.005em; } .ds-desk-field input:hover { border-color: #16151F; } .ds-desk-field input:focus-visible { outline: none; border: 2px solid #16151F; padding: 0 13px; }"
 		}
 	],
 	"narrative": {
@@ -126,14 +1234,46 @@
 			"Séries de données en niveaux de gris : noir, gris moyen, gris clair."
 		],
 		"rules": [
-			{ "name": "The Ink Only Rule", "body": "Aucune couleur d'accent. Un état sélectionné, un lien ou une action se distinguent par l'encre, la graisse, le soulignement ou une pastille grise, jamais par une teinte.", "section": "colors" },
-			{ "name": "The Signed Red Rule", "body": "Le rouge n'apparaît que sur un montant négatif, et jamais seul : le signe « − » porte l'information, le rouge la confirme.", "section": "colors" },
-			{ "name": "The Fixed Palette Rule", "body": "Pas de couleurs dynamiques Material You ; surfaceTint est transparent pour qu'aucune élévation ne teinte une surface.", "section": "colors" },
-			{ "name": "The Greyscale Series Rule", "body": "Les types de compte s'identifient par trois niveaux de gris (encre, gris moyen, gris clair), en point de 10 dp et en segment de barre, toujours accompagnés de leur libellé.", "section": "colors" },
-			{ "name": "The One Loud Number Rule", "body": "Seul le total utilise l'échelle display ; aucun autre chiffre ni titre ne dépasse headlineSmall.", "section": "typography" },
-			{ "name": "The Tabular Digits Rule", "body": "Tous les montants restent en Hanken Grotesk et passent par le composant de montant ; pas de police à chiffres proportionnels pour un montant.", "section": "typography" },
-			{ "name": "The One Float Rule", "body": "Seule la pilule de navigation porte une ombre ; tout le reste se sépare par une bordure de 1 dp ou par l'espace.", "section": "elevation" },
-			{ "name": "The Pill or Card Rule", "body": "Une forme interactive est une pilule ou un rond ; un groupe de lignes est une carte de 16 dp. Pas de coins intermédiaires.", "section": "shapes" }
+			{
+				"name": "The Ink Only Rule",
+				"body": "Aucune couleur d'accent. Un état sélectionné, un lien ou une action se distinguent par l'encre, la graisse, le soulignement ou une pastille grise, jamais par une teinte.",
+				"section": "colors"
+			},
+			{
+				"name": "The Signed Red Rule",
+				"body": "Le rouge n'apparaît que sur un montant négatif, et jamais seul : le signe « − » porte l'information, le rouge la confirme.",
+				"section": "colors"
+			},
+			{
+				"name": "The Fixed Palette Rule",
+				"body": "Pas de couleurs dynamiques Material You ; surfaceTint est transparent pour qu'aucune élévation ne teinte une surface.",
+				"section": "colors"
+			},
+			{
+				"name": "The Greyscale Series Rule",
+				"body": "Les types de compte s'identifient par trois niveaux de gris (encre, gris moyen, gris clair), en point de 10 dp et en segment de barre, toujours accompagnés de leur libellé.",
+				"section": "colors"
+			},
+			{
+				"name": "The One Loud Number Rule",
+				"body": "Seul le total utilise l'échelle display ; aucun autre chiffre ni titre ne dépasse headlineSmall.",
+				"section": "typography"
+			},
+			{
+				"name": "The Tabular Digits Rule",
+				"body": "Tous les montants restent en Hanken Grotesk et passent par le composant de montant ; pas de police à chiffres proportionnels pour un montant.",
+				"section": "typography"
+			},
+			{
+				"name": "The One Float Rule",
+				"body": "Seule la pilule de navigation porte une ombre ; tout le reste se sépare par une bordure de 1 dp ou par l'espace.",
+				"section": "elevation"
+			},
+			{
+				"name": "The Pill or Card Rule",
+				"body": "Une forme interactive est une pilule ou un rond ; un groupe de lignes est une carte de 16 dp. Pas de coins intermédiaires.",
+				"section": "shapes"
+			}
 		],
 		"dos": [
 			"Do écrire en encre (ink / paper) sur le fond, et réserver le gris secondaire aux informations de second rang.",
@@ -151,6 +1291,65 @@
 			"Don't remplacer la pilule flottante par une barre de navigation Material pleine largeur, ni ajouter des libellés sous ses icônes.",
 			"Don't décorer une ligne par une tuile d'icône ; un type de compte s'identifie par son libellé et, dans la répartition, par un point gris.",
 			"Don't afficher un chiffre inventé dans un état vide ; montrer l'afficheur « – – –,– – € »."
+		]
+	},
+	"narrativeDesktop": {
+		"world": "desktop",
+		"northStar": "Pastel flottant",
+		"overview": "Le patrimoine posé sur des panneaux blancs qui flottent au-dessus d'un ciel pastel. Un dégradé lavande, bleu brume et rose poudré remplit la fenêtre ; un grand cadre arrondi translucide porte l'appli à 14 dp des bords ; dedans, des tuiles blanches très arrondies, sans bord, se détachent par une ombre douce teintée de lavande. L'encre presque noire n'apparaît en aplat que sur ce qui se touche : le disque de la page active, la pilule « Nouvelle opération », le choix actif d'un segmenté. En sombre, le ciel devient une nuit indigo et prune, les panneaux un indigo profond, l'encre une « lune » presque blanche.\n\nLa coque est un rail d'icônes seul, à gauche : logo rond en haut, capsule flottante de huit boutons ronds au milieu, bascule soleil / lune en bas. Le disque à l'encre de la page active glisse d'une icône à l'autre ; le nom de la page n'apparaît qu'en info-bulle. En haut, un bandeau d'état en texte discret, puis à droite une capsule flottante qui porte la pilule noire « Nouvelle opération », la recherche et l'œil du mode discret. Chaque page s'ouvre par son titre en grand (42 sp) puis des rangées de tuiles. La saisie arrive dans un panneau flottant à droite.\n\nLe thème de couleurs (Monochrome, Minimal, Coloré) ne colore que les données. Il ne touche jamais l'encre de la coque. En Coloré, les tuiles prennent un aplat pastel de la couleur de leur type et la tuile du chiffre clé devient pleine, à l'accent Coloré.",
+		"keyCharacteristics": [
+			"Fond en dégradé pastel à deux halos ; cadre translucide arrondi à 36 dp ; panneaux blancs à 28 dp, sans bord.",
+			"Profondeur par l'ombre douce teintée de lavande (noire en sombre), jamais par un filet en mode clair.",
+			"Encre de la coque en pilules et disques pleins, identique dans les trois thèmes de couleurs.",
+			"Une géométrique ronde unique, Outfit, en graisse moyenne pour les titres, chiffres tabulaires partout.",
+			"Rail d'icônes seul, disque actif glissant ; info-bulle en pilule pour le nom."
+		],
+		"rules": [
+			{
+				"name": "The Shell Ink Rule",
+				"body": "L'encre de la coque (disque du rail, pilule « Nouvelle opération », choix actif) reste desk-ink / desk-moon dans les trois thèmes ; la couleur du thème ne va qu'aux données.",
+				"section": "colors"
+			},
+			{
+				"name": "The Data Colour Rule",
+				"body": "En Monochrome et Minimal, barres et courbes restent à l'encre ; en Coloré, elles prennent l'accent Coloré ou la teinte du type, jamais l'encre.",
+				"section": "colors"
+			},
+			{
+				"name": "The Medium Weight Rule",
+				"body": "Les titres sont en 500, pas en demi-gras : la taille et le serrage portent la hiérarchie.",
+				"section": "typography"
+			},
+			{
+				"name": "The Lavender Shadow Rule",
+				"body": "En clair, une ombre est toujours teintée de lavande, jamais grise ni noire ; en sombre, elle est noire et doublée d'une arête blanche à 5 %.",
+				"section": "elevation"
+			},
+			{
+				"name": "The Borderless Panel Rule",
+				"body": "En clair, aucun panneau flottant ne porte de bord ; s'il ne se détache pas, c'est l'ombre qui manque, pas un filet.",
+				"section": "elevation"
+			},
+			{
+				"name": "The Nested Radius Rule",
+				"body": "Cadre 36 dp, panneau 28 dp, champ ou ligne 14 à 20 dp, commande en pilule ; une forme ne prend jamais un rayon plus grand que son contenant.",
+				"section": "shapes"
+			}
+		],
+		"dos": [
+			"Do poser tout contenu de page dans des tuiles flottantes de 28 dp, à 26 dp de marge interne et 20 dp d'écart.",
+			"Do ouvrir chaque page par son titre en desk-display-small, puis le chiffre clé dans la première tuile.",
+			"Do garder l'encre de la coque (desk-ink / desk-moon) pour le disque actif, la pilule « Nouvelle opération » et le choix actif, dans tous les thèmes de couleurs.",
+			"Do teinter les ombres de lavande en clair, et doubler les panneaux d'une arête blanche à 5 % en sombre.",
+			"Do réserver la tuile pleine au chiffre clé d'une page, en thème Coloré.",
+			"Do nommer chaque bouton icône dans une info-bulle et pour les lecteurs d'écran."
+		],
+		"donts": [
+			"Don't border une tuile ou un panneau en mode clair, ni poser une ombre grise ou noire sur le ciel pastel.",
+			"Don't colorer la coque (disque du rail, pilules, segmentés) à la couleur du thème de données.",
+			"Don't afficher de libellés dans le rail ni revenir à un volet latéral à libellés.",
+			"Don't remplacer les icônes au trait de `LineIcons` par des icônes Material pleines.",
+			"Don't donner à une forme un rayon plus grand que celui de son contenant."
 		]
 	}
 }
