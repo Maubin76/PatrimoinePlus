@@ -82,11 +82,11 @@ import fr.maubin.patrimoineplus.ui.goals.evaluateGoals
 import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import java.util.UUID
 import kotlin.math.abs
-import kotlin.math.roundToLong
+import kotlin.math.roundToLong
 import fr.maubin.patrimoineplus.ui.components.flowAccent
 import fr.maubin.patrimoineplus.ui.components.FlowAccent
 import fr.maubin.patrimoineplus.ui.components.accountAccent
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color
 import fr.maubin.patrimoineplus.ui.goals.MonthGoalKind
 import fr.maubin.patrimoineplus.ui.goals.MonthGoalStatus
 import fr.maubin.patrimoineplus.ui.goals.MonthGoalView
@@ -154,7 +154,7 @@ fun GoalsScreen(
 		) {
 			Row(verticalAlignment = Alignment.CenterVertically) {
 				Column(Modifier.weight(1f)) {
-					Text("Objectifs", style = MaterialTheme.typography.headlineMedium)
+					Text("Objectifs", style = MaterialTheme.typography.displaySmall)
 					Text("Vos grands objectifs, et ceux de chaque mois fixés depuis le budget. Tout est suivi sur vos opérations et enregistré sur ce PC.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 				}
 				Spacer(Modifier.width(24.dp))
@@ -301,7 +301,7 @@ private fun GoalTile(
 		}
 		else
 		{
-			Row(verticalAlignment = Alignment.Bottom) {
+			FlowRow(itemVerticalAlignment = Alignment.Bottom) {							// cible à côté du montant, ou en dessous si la place manque
 				when (vGoal.kind)
 				{
 					GoalKind.RATE -> Text(rateText(inView.current), style = MaterialTheme.typography.headlineSmall)

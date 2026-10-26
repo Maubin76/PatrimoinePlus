@@ -48,7 +48,9 @@ import fr.maubin.patrimoineplus.ui.entry.loanCharge
 import fr.maubin.patrimoineplus.ui.entry.suggestLoanPayment
 import fr.maubin.patrimoineplus.domain.format.formatEuros
 import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
-import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
+import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 
 /*
 	Saisie ou modification d'une opération dans le panneau latéral : dépense
@@ -136,7 +138,8 @@ fun OperationPanel(
 				{
 					Row(Modifier.fillMaxWidth().toggleable(value = vForm.refund, role = Role.Checkbox) { vForm = vForm.copy(refund = it) }, verticalAlignment = Alignment.CenterVertically) {
 						Checkbox(checked = vForm.refund, onCheckedChange = null)
-						Text("Remboursement (montant reçu, déduit des dépenses de la catégorie)", style = MaterialTheme.typography.bodyMedium)
+						Spacer(Modifier.width(10.dp))
+						Text("Remboursement (montant reçu, déduit des dépenses de la catégorie)", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
 					}
 				}
 				Picker("Compte", vEntry.accounts.map { it.id to it.name }, vForm.accountId, { vForm = vForm.copy(accountId = it) }, vErrors.account)

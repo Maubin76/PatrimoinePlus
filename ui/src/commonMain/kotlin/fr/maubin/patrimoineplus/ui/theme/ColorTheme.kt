@@ -1,7 +1,10 @@
 package fr.maubin.patrimoineplus.ui.theme
 
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.Composable
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.luminance
 
 /*
 	Thème de couleurs de l'application (téléphone et PC), indépendant de
@@ -28,6 +31,14 @@ val kBlueGreen  = Color(0xFF219EBC)												// bleu-vert
 val kDeepSpace  = Color(0xFF023047)												// bleu nuit
 val kAmber      = Color(0xFFFFB703)												// ambre
 val kTiger      = Color(0xFFFB8500)												// orange
+
+/*
+	Accent principal du thème Coloré (bleu nuit, bleu ciel sur fond sombre) :
+	chiffre mis en avant, courbes ; indépendant de l'encre des boutons.
+*/
+@Composable
+fun colorfulMain(): Color =
+	if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) kSkyBlue else kDeepSpace
 
 // Teintes de répartition du thème Coloré, dans l'ordre des rangs (la plus grosse
 // part d'abord) ; validées : voisins séparés (ΔE ≥ 15, daltonisme compris), les

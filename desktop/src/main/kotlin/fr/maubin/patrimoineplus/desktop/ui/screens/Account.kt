@@ -73,10 +73,10 @@ import fr.maubin.patrimoineplus.ui.property.editPurchaseForm
 import fr.maubin.patrimoineplus.ui.property.editSaleForm
 import fr.maubin.patrimoineplus.ui.property.newPurchaseForm
 import fr.maubin.patrimoineplus.ui.property.newSaleForm
-import fr.maubin.patrimoineplus.ui.property.propertyNoun
+import fr.maubin.patrimoineplus.ui.property.propertyNoun
 import fr.maubin.patrimoineplus.domain.calc.amortization
-import fr.maubin.patrimoineplus.domain.format.formatEuros
-import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
+import fr.maubin.patrimoineplus.domain.format.formatEuros
+import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
 import fr.maubin.patrimoineplus.domain.calc.propertyNets
 import fr.maubin.patrimoineplus.domain.calc.Ledger
 import fr.maubin.patrimoineplus.domain.model.Loan
@@ -85,8 +85,8 @@ import fr.maubin.patrimoineplus.desktop.ui.panels.Picker
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import fr.maubin.patrimoineplus.ui.components.ProportionChart
-import fr.maubin.patrimoineplus.ui.components.ProportionToggle
+import fr.maubin.patrimoineplus.ui.components.ProportionChart
+import fr.maubin.patrimoineplus.ui.components.ProportionToggle
 import fr.maubin.patrimoineplus.ui.components.LocalAccent
 import fr.maubin.patrimoineplus.ui.components.accountAccent
 import androidx.compose.runtime.CompositionLocalProvider
@@ -148,7 +148,7 @@ fun AccountScreen(
 				Spacer(Modifier.width(14.dp))
 			}
 			Column(Modifier.weight(1f)) {
-				Text(vAccount.name, style = MaterialTheme.typography.headlineMedium)
+				Text(vAccount.name, style = MaterialTheme.typography.displaySmall)
 				Text(accountDetail(vAccount), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			}
 			OutlinedButton(onClick = { inController.openPanel(Panel.AccountSheet(vAccount.id)) }) { Text("Modifier le compte") }

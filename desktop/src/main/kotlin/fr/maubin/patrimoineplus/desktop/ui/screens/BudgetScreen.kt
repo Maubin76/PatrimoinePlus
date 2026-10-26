@@ -50,23 +50,23 @@ import fr.maubin.patrimoineplus.ui.components.TileFigure
 import fr.maubin.patrimoineplus.ui.components.monthTitle
 import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import java.time.YearMonth
-import java.util.UUID
+import java.util.UUID
 import fr.maubin.patrimoineplus.ui.budget.ExpenseTheme
-import fr.maubin.patrimoineplus.ui.budget.ThemeView
+import fr.maubin.patrimoineplus.ui.budget.ThemeView
 import fr.maubin.patrimoineplus.ui.components.flowAccent
 import fr.maubin.patrimoineplus.ui.components.FlowAccent
 import fr.maubin.patrimoineplus.ui.components.isColorful
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color
 import fr.maubin.patrimoineplus.desktop.Screen
 import fr.maubin.patrimoineplus.domain.format.formatFrenchDate
 import java.time.LocalDate
 import androidx.compose.material3.Button
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.contentDescription
 import fr.maubin.patrimoineplus.domain.format.kCurrencySeparator
 
 private const val kNameWeight   = 2.4f											// largeur relative de la colonne du nom
@@ -97,7 +97,7 @@ fun BudgetScreen(
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
 		Column {
-			Text("Budget prévisionnel", style = MaterialTheme.typography.headlineMedium)
+			Text("Budget prévisionnel", style = MaterialTheme.typography.displaySmall)
 			Text("Un mois type : vos entrées, vos dépenses par thème et vos investissements. Fixez-en les objectifs du mois : leur suivi se fait dans la page Objectifs. Enregistré sur ce PC.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		}
 		Figures(vBudget)
@@ -215,7 +215,7 @@ private fun AddButton(
 {
 	Box(Modifier.width(40.dp), contentAlignment = Alignment.Center) {
 		IconButton(onClick = inOnClick, modifier = Modifier.semantics { contentDescription = inDescription }) {
-			Text("+", style = MaterialTheme.typography.titleLarge)
+			Icon(LineIcons.Plus, contentDescription = null, modifier = Modifier.size(20.dp))
 		}
 	}
 }
@@ -320,7 +320,8 @@ private fun MonthGoalsBar(
 	Tile(inAccent = flowAccent(FlowAccent.MAIN)) {
 		Row(verticalAlignment = Alignment.CenterVertically) {
 			Column(Modifier.weight(1f)) {
-				Text("Objectifs de ${monthTitle(inMonth).lowercase()}", style = MaterialTheme.typography.titleMedium)
+				val vName = monthTitle(inMonth).lowercase()										// mois, en minuscules
+				Text("Objectifs ${if (vName.first() in "aeiouyàâéèêîôû") "d’" else "de "}$vName", style = MaterialTheme.typography.titleMedium)
 				Text(
 					text  = when
 					{

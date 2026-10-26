@@ -99,7 +99,7 @@ fun ReconcileScreen(
 			IconButton(onClick = inController::closeBankStatement) { Icon(LineIcons.Back, contentDescription = "Retour au compte") }
 			Spacer(Modifier.width(8.dp))
 			Column(Modifier.weight(1f)) {
-				Text("Rapprochement · ${vAccount.name}", style = MaterialTheme.typography.headlineMedium)
+				Text("Rapprochement · ${vAccount.name}", style = MaterialTheme.typography.displaySmall)
 				Text(
 					"${inSession.fileName} : du ${vResult.from.format(kLong)} au ${vResult.to.format(kLong)}" +
 						if (inSession.skipped > 0) " (${inSession.skipped} ligne(s) illisible(s) ignorée(s))" else "",

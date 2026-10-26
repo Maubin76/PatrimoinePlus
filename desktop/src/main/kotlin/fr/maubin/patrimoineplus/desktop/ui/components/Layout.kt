@@ -33,9 +33,18 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.ui.components.AmountText
 import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
-import kotlin.math.max
+import kotlin.math.max
+
 import fr.maubin.patrimoineplus.ui.components.operationAccent
-import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.luminance
 
 val kTileGap = 20.dp																// espace entre deux tuiles
 
@@ -226,3 +235,43 @@ fun MenuCell(
 		}
 	}
 }
+
+private val kShadowTint = Color(0xFF5B4E9E)											// teinte des ombres (lavande)
+
+/*
+	Surface flottante de l'appli PC : fond des panneaux, sans bord, posée sur
+	le fond par une ombre douce teintée de lavande (noire en sombre).
+	inShape    : forme
+	inModifier : modificateur appliqué
+	inContent  : contenu
+*/
+@Composable
+fun FloatingSurface(
+	inShape    : Shape    = RoundedCornerShape(28.dp),
+	inModifier : Modifier = Modifier,
+	inContent  : @Composable () -> Unit
+)
+{
+	val vDark  = MaterialTheme.colorScheme.surface.luminance() < 0.5f				// fond sombre
+	val vShade = if (vDark) Color.Black else kShadowTint								// teinte de l'ombre
+	Surface(
+		modifier     = inModifier.shadow(12.dp, inShape, ambientColor = vShade.copy(alpha = if (vDark) 0.5f else 0.10f), spotColor = vShade.copy(alpha = if (vDark) 0.6f else 0.16f)),
+		shape        = inShape,
+		color        = MaterialTheme.colorScheme.surface,
+		contentColor = MaterialTheme.colorScheme.onSurface,
+		border       = if (vDark) BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)) else null,
+		content      = inContent
+	)
+}
+
+/*
+	Carte flottante (réglages, listes) : surface flottante pleine largeur,
+	contenu en colonne.
+	inContent : contenu
+*/
+@Composable
+fun FloatingCard(inContent: @Composable ColumnScope.() -> Unit)
+{
+	FloatingSurface(inModifier = Modifier.fillMaxWidth()) { Column(content = inContent) }
+}
+

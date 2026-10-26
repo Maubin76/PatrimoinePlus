@@ -42,11 +42,11 @@ import fr.maubin.patrimoineplus.ui.report.reportYears
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import fr.maubin.patrimoineplus.domain.format.formatEuros
-import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
+import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.collectAsState
 import fr.maubin.patrimoineplus.desktop.ReportTab
-import fr.maubin.patrimoineplus.desktop.ui.panels.Choice
+import fr.maubin.patrimoineplus.desktop.ui.panels.Choice
 import fr.maubin.patrimoineplus.ui.components.flowAccent
 import fr.maubin.patrimoineplus.ui.components.FlowAccent
 import fr.maubin.patrimoineplus.ui.components.accountAccent
@@ -77,7 +77,7 @@ fun ReportScreen(
 	) {
 		Row(verticalAlignment = Alignment.CenterVertically) {
 			Column(Modifier.weight(1f)) {
-				Text("Bilan", style = MaterialTheme.typography.headlineMedium)
+				Text("Bilan", style = MaterialTheme.typography.displaySmall)
 				Text("Le passé en chiffres : dépenses et revenus mois par mois, ou l’année entière avec son export PDF.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			}
 			Spacer(Modifier.width(24.dp))

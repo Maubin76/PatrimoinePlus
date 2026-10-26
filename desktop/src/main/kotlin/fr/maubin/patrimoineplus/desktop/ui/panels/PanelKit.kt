@@ -50,7 +50,18 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.ui.icons.LineIcons
-import java.time.LocalDate
+import java.time.LocalDate
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.semantics.Role
 
 val kPanelWidth = 440.dp																// largeur du panneau latéral
 
@@ -77,12 +88,15 @@ fun SidePanel(
 	inContent : @Composable ColumnScope.() -> Unit
 )
 {
-	Row(Modifier.fillMaxHeight().width(kPanelWidth)) {
-		VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+	val vShape = RoundedCornerShape(28.dp)										// panneau flottant
+	val vDark  = MaterialTheme.colorScheme.surface.luminance() < 0.5f				// fond sombre
+	Row(Modifier.fillMaxHeight().width(kPanelWidth).padding(top = 14.dp, end = 14.dp, bottom = 14.dp)) {
 		Column(
 			Modifier
 				.fillMaxHeight()
 				.fillMaxWidth()
+				.shadow(18.dp, vShape, ambientColor = Color(0xFF5B4E9E).copy(alpha = if (vDark) 0.5f else 0.12f), spotColor = Color(0xFF5B4E9E).copy(alpha = if (vDark) 0.6f else 0.2f))
+				.clip(vShape)
 				.background(MaterialTheme.colorScheme.surface)
 				.onPreviewKeyEvent { inEvent ->
 					if (inEvent.type == KeyEventType.KeyDown && inEvent.key == Key.Escape) { inOnClose(); true } else false
@@ -200,7 +214,7 @@ fun <T> Picker(
 			label          = { Text(inLabel) },
 			isError        = inError != null,
 			supportingText = inError?.let { { Text(it) } },
-			trailingIcon   = { Text("▾") },
+			trailingIcon   = { Icon(LineIcons.ChevronDown, contentDescription = null, modifier = Modifier.size(18.dp)) },
 			modifier       = Modifier.fillMaxWidth()
 		)
 		Box(Modifier.matchParentSizeOrFill().clickable(enabled = inEnabled) { vOpen = true })
@@ -219,7 +233,8 @@ fun <T> Picker(
 private fun Modifier.matchParentSizeOrFill(): Modifier = this.fillMaxWidth().height(64.dp)
 
 /*
-	Choix segmenté (mode de saisie, type, nature).
+	Choix segmenté en pilules (mode de saisie, type, nature, apparence) : piste
+	arrondie, choix actif sur une pilule pleine à l'encre de la coque.
 	inOptions  : choix (valeur, texte)
 	inSelected : valeur choisie
 	inOnSelect : nouveau choix
@@ -234,24 +249,30 @@ fun <T> Choice(
 )
 {
 	val vColors = MaterialTheme.colorScheme										// palette courante
-	SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-		inOptions.forEachIndexed { inIndex, (inValue, inText) ->
-			SegmentedButton(
-				selected = inValue == inSelected,
-				onClick  = { inOnSelect(inValue) },
-				enabled  = inEnabled,
-				shape    = SegmentedButtonDefaults.itemShape(index = inIndex, count = inOptions.size),
-				icon     = {},
-				colors   = SegmentedButtonDefaults.colors(
-					activeContainerColor   = vColors.primary,
-					activeContentColor     = vColors.onPrimary,
-					activeBorderColor      = vColors.primary,
-					inactiveContainerColor = vColors.surface,
-					inactiveContentColor   = vColors.onSurface,
-					inactiveBorderColor    = vColors.outlineVariant
-				),
-				label    = { Text(inText, style = if (inOptions.size > 4) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge, maxLines = 1, softWrap = false) }	// cinq choix : texte plus petit, sur une ligne
-			)
+	Row(
+		modifier              = Modifier.fillMaxWidth().clip(RoundedCornerShape(50)).background(vColors.surfaceContainer).padding(4.dp).selectableGroup(),
+		horizontalArrangement = Arrangement.spacedBy(4.dp)
+	) {
+		inOptions.forEach { (inValue, inText) ->
+			val vActive = inValue == inSelected										// choix actif
+			val vFill   by animateColorAsState(if (vActive) vColors.primary else Color.Transparent, tween(180), label = "choix")	// fond de la pilule
+			Box(
+				modifier         = Modifier
+					.weight(1f)
+					.height(38.dp)
+					.clip(RoundedCornerShape(50))
+					.background(vFill)
+					.selectable(selected = vActive, enabled = inEnabled, role = Role.RadioButton) { inOnSelect(inValue) },
+				contentAlignment = Alignment.Center
+			) {
+				Text(
+					text     = inText,
+					style    = if (inOptions.size > 4) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,	// cinq choix : texte plus petit
+					color    = when { vActive -> vColors.onPrimary; inEnabled -> vColors.onSurface; else -> vColors.onSurface.copy(alpha = 0.38f) },
+					maxLines = 1,
+					softWrap = false
+				)
+			}
 		}
 	}
 }

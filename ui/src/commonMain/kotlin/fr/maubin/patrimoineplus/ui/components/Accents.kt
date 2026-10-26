@@ -12,7 +12,8 @@ import fr.maubin.patrimoineplus.ui.theme.kBlueGreen
 import fr.maubin.patrimoineplus.ui.theme.kDeepSpace
 import fr.maubin.patrimoineplus.ui.theme.kSkyBlue
 import fr.maubin.patrimoineplus.ui.theme.kTiger
-import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.staticCompositionLocalOf
+import fr.maubin.patrimoineplus.ui.theme.colorfulMain
 
 // Couleurs d'accent du thème Coloré, posées sur le contenu (tuiles, pastilles)
 // et pas sur les fonds, qui restent ceux des autres thèmes.
@@ -95,7 +96,7 @@ fun flowAccent(inKind: FlowAccent): Color =
 		FlowAccent.INFLOW  -> kBlueGreen
 		FlowAccent.OUTFLOW -> kTiger
 		FlowAccent.INVEST  -> kAmber
-		FlowAccent.MAIN    -> MaterialTheme.colorScheme.primary
+		FlowAccent.MAIN    -> colorfulMain()
 	}
 
 /*

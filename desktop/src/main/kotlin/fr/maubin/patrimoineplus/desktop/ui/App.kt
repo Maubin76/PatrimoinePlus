@@ -100,7 +100,32 @@ import fr.maubin.patrimoineplus.desktop.ui.panels.PurchasePanel
 import fr.maubin.patrimoineplus.desktop.ui.panels.SalePanel
 import fr.maubin.patrimoineplus.desktop.ui.panels.RecurrencePanel
 import fr.maubin.patrimoineplus.ui.components.LocalProportionStyle
-import fr.maubin.patrimoineplus.ui.components.ProportionStyle
+import fr.maubin.patrimoineplus.ui.components.ProportionStyle
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.TooltipArea
+import androidx.compose.foundation.TooltipPlacement
+import androidx.compose.foundation.border
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.unit.DpOffset
+import fr.maubin.patrimoineplus.ui.theme.DeskTheme
+import fr.maubin.patrimoineplus.ui.theme.ThemeMode
+import fr.maubin.patrimoineplus.desktop.ui.components.FloatingSurface
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -112,11 +137,15 @@ val LocalSavePicker = staticCompositionLocalOf<(String) -> Path?> { { null } }
 val kContentMaxWidth    = 1600.dp													// largeur maximale du contenu
 private const val kPageMillis  = 280													// transition entre écrans
 private const val kPanelMillis = 240													// arrivée du panneau de saisie
+private const val kRailMillis  = 260													// glissement du disque du rail
+private val kRailButton = 48.dp														// diamètre d'un bouton du rail
+private val kRailGap    = 6.dp														// écart entre deux boutons du rail
+private val kRailStep   = kRailButton + kRailGap										// pas du rail
 private val kEase       = CubicBezierEasing(0.2f, 0f, 0f, 1f)						// courbe « accentuée » de Material
 
 /*
-	Racine de l'appli PC : thème selon l'apparence choisie, mode discret, puis
-	écran d'accueil (aucune source) ou appli complète.
+	Racine de l'appli PC : thème selon l'apparence choisie, fond pastel, mode
+	discret, puis écran d'accueil (aucune source) ou appli complète.
 	inController     : contrôleur
 	inOnPickSaveFile : choix d'un fichier où enregistrer une copie ; null si annulé
 	inOnPickBankFile : choix d'un relevé exporté par la banque ; null si annulé
@@ -135,9 +164,10 @@ fun App(
 	val vSettings by inController.settings.collectAsState()					// réglages
 	val vSpace    by inController.workspace.collectAsState()				// données
 	val vPending  by inController.pending.collectAsState()					// action retenue
-	PatrimoineTheme(inDarkTheme = vSettings.appearance.isDark(), inColorTheme = vSettings.colors) {
+	val vDark     = vSettings.appearance.isDark()									// mode sombre effectif
+	DeskTheme(inDarkTheme = vDark, inColorTheme = vSettings.colors) {
 		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie)) {
-			Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+			Surface(Modifier.fillMaxSize().deskGround(vDark), color = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSurface) {
 				if (vSpace.source == Source.None)
 				{
 					WelcomeScreen(
@@ -147,7 +177,7 @@ fun App(
 				}
 				else
 				{
-					Shell(inController, vSpace, inOnPickFolder)
+					Shell(inController, vSpace, inOnPickFolder, vDark)
 				}
 				vPending?.let { inAction -> UnsavedDialog(inAction, inController, inOnPickSaveFile) }
 			}
@@ -156,18 +186,21 @@ fun App(
 }
 
 /*
-	Appli complète : barre latérale de navigation à gauche, bandeau d'état en
-	haut, écran courant au centre (largeur limitée sur très grand écran),
-	panneau de saisie à droite.
+	Appli complète, dans un grand cadre arrondi posé sur le fond : logo, rail
+	d'icônes et bascule clair / sombre à gauche, bandeau d'état en haut, écran
+	courant au centre (largeur limitée sur très grand écran), panneau de
+	saisie flottant à droite.
 	inController   : contrôleur
 	inSpace        : données et état de la lecture
 	inOnPickFolder : sélecteur de dossier
+	inDark         : mode sombre effectif
 */
 @Composable
 private fun Shell(
 	inController   : DesktopController,
 	inSpace        : WorkspaceState,
-	inOnPickFolder : () -> Path?
+	inOnPickFolder : () -> Path?,
+	inDark         : Boolean
 )
 {
 	val vNav    by inController.navigation.collectAsState()					// position
@@ -177,8 +210,15 @@ private fun Shell(
 	val vFocus  = remember { FocusRequester() }									// focus clavier de secours (raccourcis)
 	LaunchedEffect(Unit) { vFocus.requestFocus() }
 	LaunchedEffect(inSpace.data) { inController.dropStalePanel() }
+	val vFrame  = RoundedCornerShape(36.dp)										// forme du cadre
 	Row(
-		Modifier.fillMaxSize().focusRequester(vFocus).focusable().onPreviewKeyEvent { inEvent ->
+		Modifier
+			.fillMaxSize()
+			.padding(14.dp)
+			.clip(vFrame)
+			.background(Color.White.copy(alpha = if (inDark) 0.025f else 0.38f))
+			.border(1.dp, Color.White.copy(alpha = if (inDark) 0.06f else 0.7f), vFrame)
+			.focusRequester(vFocus).focusable().onPreviewKeyEvent { inEvent ->
 			when
 			{
 				inEvent.type != KeyEventType.KeyDown || !inEvent.isCtrlPressed -> false
@@ -188,11 +228,9 @@ private fun Shell(
 			}
 		}
 	) {
-		Rail(vNav.screen, inController::show)
-		VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+		Rail(vNav.screen, inController::show, inDark, inController::setAppearance)
 		Column(Modifier.weight(1f).fillMaxHeight()) {
 			StatusBar(inSpace, vNotice, inController)
-			HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 			Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
 				Box(Modifier.widthIn(max = kContentMaxWidth).fillMaxSize()) {
 					AnimatedContent(
@@ -326,56 +364,152 @@ private fun UnsavedDialog(
 }
 
 /*
-	Barre latérale : logo, puis un bouton par écran principal (l'écran actif est
-	plein).
-	inScreen   : écran actif
-	inOnScreen : change d'écran
+	Colonne de gauche : logo, rail flottant d'une icône ronde par écran
+	principal (l'écran actif sur un disque plein, qui glisse d'une icône à
+	l'autre ; nom de l'écran en info-bulle et pour les lecteurs d'écran),
+	bascule clair / sombre en bas.
+	inScreen     : écran actif
+	inOnScreen   : change d'écran
+	inDark       : mode sombre effectif
+	inOnAppearance : choisit l'apparence claire ou sombre
 */
 @Composable
 private fun Rail(
-	inScreen   : Screen,
-	inOnScreen : (Screen) -> Unit
+	inScreen       : Screen,
+	inOnScreen     : (Screen) -> Unit,
+	inDark         : Boolean,
+	inOnAppearance : (ThemeMode) -> Unit
 )
 {
-	val vColors = MaterialTheme.colorScheme										// palette courante
+	val vIndex  = Screen.entries.indexOf(inScreen)								// rang de l'écran actif
+	val vOffset by animateDpAsState(kRailStep * vIndex, tween(kRailMillis, easing = kEase), label = "disque")	// position du disque
 	Column(
-		modifier            = Modifier.fillMaxHeight().width(220.dp).padding(16.dp),
-		verticalArrangement = Arrangement.spacedBy(4.dp)
+		modifier            = Modifier.fillMaxHeight().width(92.dp).padding(vertical = 22.dp),
+		horizontalAlignment = Alignment.CenterHorizontally
 	) {
-		Row(Modifier.padding(start = 8.dp, top = 8.dp, bottom = 24.dp), verticalAlignment = Alignment.CenterVertically) {
-			PatrimoineLogo(32.dp)
-			Spacer(Modifier.width(12.dp))
-			Text("PatrimoinePlus", style = MaterialTheme.typography.titleMedium)
+		PatrimoineLogo(48.dp)
+		Spacer(Modifier.weight(1f))
+		FloatingSurface(RoundedCornerShape(50)) {
+			Box(Modifier.padding(6.dp)) {
+				Box(Modifier.offset(y = vOffset).size(kRailButton).clip(CircleShape).background(MaterialTheme.colorScheme.primary))	// disque de l'écran actif
+				Column(verticalArrangement = Arrangement.spacedBy(kRailGap)) {
+					Screen.entries.forEach { inEntry ->
+						RailButton(
+							inIcon   = screenIcon(inEntry),
+							inLabel  = inEntry.label,
+							inActive = inEntry == inScreen,
+							inRole   = Role.Tab,
+							inOnClick = { inOnScreen(inEntry) }
+						)
+					}
+				}
+			}
 		}
-		Screen.entries.forEach { inEntry ->
-			val vActive = inEntry == inScreen										// écran actif
-			Row(
-				modifier          = Modifier
-					.fillMaxWidth()
-					.clip(RoundedCornerShape(50))
-					.background(if (vActive) vColors.primary else vColors.surface)
-					.clickable(role = Role.Tab) { inOnScreen(inEntry) }
-					.semantics { selected = vActive }
-					.padding(horizontal = 16.dp, vertical = 10.dp),
-				verticalAlignment = Alignment.CenterVertically
-			) {
-				Icon(
-					imageVector        = when (inEntry) { Screen.DASHBOARD -> LineIcons.Home; Screen.GOALS -> LineIcons.Target; Screen.SEARCH -> LineIcons.Search; Screen.OPERATIONS -> LineIcons.Edit; Screen.BUDGET -> LineIcons.Wallet; Screen.PROJECTION -> LineIcons.Trend; Screen.REPORT -> LineIcons.Document; Screen.SETTINGS -> LineIcons.Sliders },
-					contentDescription = null,
-					tint               = if (vActive) vColors.onPrimary else vColors.onSurface,
-					modifier           = Modifier.size(20.dp)
-				)
-				Spacer(Modifier.width(12.dp))
-				Text(inEntry.label, style = MaterialTheme.typography.labelLarge, color = if (vActive) vColors.onPrimary else vColors.onSurface)
+		Spacer(Modifier.weight(1f))
+		FloatingSurface(RoundedCornerShape(50)) {
+			Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(kRailGap)) {
+				RailButton(LineIcons.Sun, "Apparence claire", !inDark, Role.RadioButton, inShowDisc = true) { inOnAppearance(ThemeMode.LIGHT) }
+				RailButton(LineIcons.Moon, "Apparence sombre", inDark, Role.RadioButton, inShowDisc = true) { inOnAppearance(ThemeMode.DARK) }
 			}
 		}
 	}
 }
 
 /*
+	Icône d'un écran principal.
+	inScreen : écran
+*/
+private fun screenIcon(inScreen: Screen): ImageVector =
+	when (inScreen)
+	{
+		Screen.DASHBOARD  -> LineIcons.Home
+		Screen.GOALS      -> LineIcons.Target
+		Screen.SEARCH     -> LineIcons.Search
+		Screen.OPERATIONS -> LineIcons.Edit
+		Screen.BUDGET     -> LineIcons.Wallet
+		Screen.PROJECTION -> LineIcons.Trend
+		Screen.REPORT     -> LineIcons.Document
+		Screen.SETTINGS   -> LineIcons.Sliders
+	}
+
+/*
+	Bouton rond du rail : icône seule, nom en info-bulle à droite et pour les
+	lecteurs d'écran ; teinte inversée quand il est actif (le disque est
+	dessiné par le rail, ou par le bouton avec inShowDisc).
+	inIcon     : icône
+	inLabel    : nom de l'action
+	inActive   : bouton actif
+	inRole     : rôle (onglet, choix)
+	inShowDisc : le bouton dessine lui-même son disque actif
+	inOnClick  : action
+*/
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun RailButton(
+	inIcon     : ImageVector,
+	inLabel    : String,
+	inActive   : Boolean,
+	inRole     : Role,
+	inShowDisc : Boolean = false,
+	inOnClick  : () -> Unit
+)
+{
+	val vColors  = MaterialTheme.colorScheme										// palette courante
+	val vSource  = remember { MutableInteractionSource() }						// survol
+	val vHovered by vSource.collectIsHoveredAsState()							// souris au-dessus
+	val vTint    by animateColorAsState(if (inActive) vColors.onPrimary else if (vHovered) vColors.onSurface else vColors.onSurfaceVariant, tween(kRailMillis), label = "teinte")	// teinte de l'icône
+	val vDisc    by animateColorAsState(
+		when
+		{
+			inActive && inShowDisc -> vColors.primary
+			!inActive && vHovered  -> vColors.surfaceContainer
+			else                   -> Color.Transparent
+		},
+		tween(kRailMillis / 2), label = "disque")										// fond du bouton
+	TooltipArea(
+		tooltip          = {
+			Surface(shape = RoundedCornerShape(50), color = vColors.inverseSurface, contentColor = vColors.inverseOnSurface, shadowElevation = 4.dp) {
+				Text(inLabel, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp))
+			}
+		},
+		delayMillis      = 350,
+		tooltipPlacement = TooltipPlacement.ComponentRect(anchor = Alignment.CenterEnd, alignment = Alignment.CenterEnd, offset = DpOffset(12.dp, 0.dp))
+	) {
+		Box(
+			modifier         = Modifier
+				.size(kRailButton)
+				.clip(CircleShape)
+				.background(vDisc)
+				.hoverable(vSource)
+				.clickable(interactionSource = vSource, indication = null, role = inRole, onClick = inOnClick)
+				.semantics { contentDescription = inLabel; selected = inActive },
+			contentAlignment = Alignment.Center
+		) {
+			Icon(inIcon, contentDescription = null, tint = vTint, modifier = Modifier.size(22.dp))
+		}
+	}
+}
+
+/*
+	Fond de l'appli : dégradé pastel lavande et bleu brume, rose poudré en bas
+	à gauche, halo bleu en haut à droite (sombre : nuit indigo et prune).
+	inDark : mode sombre
+*/
+private fun Modifier.deskGround(inDark: Boolean): Modifier =
+	drawBehind {
+		val vBase = if (inDark) listOf(Color(0xFF16162B), Color(0xFF121729), Color(0xFF181427)) else listOf(Color(0xFFE6E0FA), Color(0xFFDDE6F8), Color(0xFFE5E0F7))	// dégradé de fond
+		val vLow  = if (inDark) Color(0xFF3A2142).copy(alpha = 0.55f) else Color(0xFFF7DCE9)	// halo bas gauche
+		val vHigh = if (inDark) Color(0xFF223259).copy(alpha = 0.45f) else Color(0xFFD3E4FB)	// halo haut droit
+		val vSpan = maxOf(size.width, size.height)										// plus grande dimension
+		drawRect(Brush.linearGradient(vBase, start = Offset.Zero, end = Offset(size.width, size.height)))
+		drawRect(Brush.radialGradient(listOf(vLow, vLow.copy(alpha = 0f)), center = Offset(0f, size.height), radius = vSpan * 0.62f))
+		drawRect(Brush.radialGradient(listOf(vHigh, vHigh.copy(alpha = 0f)), center = Offset(size.width, 0f), radius = vSpan * 0.5f))
+	}
+
+/*
 	Bandeau d'état : source des données (démonstration, dossier et dernière
-	lecture, attente, fichier refusé), message ponctuel, nouvelle opération
-	et mode discret.
+	lecture, attente, fichier refusé), message ponctuel, puis, en pilules,
+	nouvelle opération, recherche (Ctrl+F) et mode discret.
 	inSpace      : données et état de la lecture
 	inNotice     : message ponctuel ; null sans message
 	inController : contrôleur
@@ -400,8 +534,9 @@ private fun StatusBar(
 		LoadStatus.Idle           -> ""
 	}
 	val vAlert  = inNotice == null && (inSpace.status is LoadStatus.Invalid || inSpace.status is LoadStatus.WriteFailed || inSpace.status is LoadStatus.Conflict)	// état anormal
+	val vHidden = LocalAmountsHidden.current									// mode discret actif
 	Row(
-		modifier          = Modifier.fillMaxWidth().height(60.dp).padding(start = 32.dp, end = 16.dp),
+		modifier          = Modifier.fillMaxWidth().height(84.dp).padding(start = 32.dp, end = 22.dp),
 		verticalAlignment = Alignment.CenterVertically
 	) {
 		Text(
@@ -416,12 +551,17 @@ private fun StatusBar(
 		{
 			TextButton(onClick = inController::clearNotice) { Text("OK") }
 		}
-		val vHidden = LocalAmountsHidden.current								// mode discret actif
-		Spacer(Modifier.width(8.dp))
-		Button(onClick = inController::newOperation) { Text("Nouvelle opération") }
-		Spacer(Modifier.width(8.dp))
-		TextButton(onClick = inController::toggleHidden) {
-			Text(if (vHidden) "Afficher les montants" else "Masquer les montants", style = MaterialTheme.typography.labelLarge)
+		Spacer(Modifier.width(16.dp))
+		FloatingSurface(RoundedCornerShape(50)) {
+			Row(Modifier.padding(6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+				Button(onClick = inController::newOperation, contentPadding = PaddingValues(start = 18.dp, end = 22.dp), modifier = Modifier.height(44.dp)) {
+					Icon(LineIcons.Plus, contentDescription = null, modifier = Modifier.size(18.dp))
+					Spacer(Modifier.width(8.dp))
+					Text("Nouvelle opération")
+				}
+				RailButton(LineIcons.Search, "Rechercher (Ctrl+F)", false, Role.Button) { inController.focusSearch() }
+				RailButton(if (vHidden) LineIcons.EyeOff else LineIcons.Eye, if (vHidden) "Afficher les montants" else "Masquer les montants", false, Role.Button) { inController.toggleHidden() }
+			}
 		}
 	}
 }

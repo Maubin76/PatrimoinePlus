@@ -25,7 +25,9 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 import java.time.Clock
 import java.time.Instant
-import java.time.ZoneId
+import java.time.ZoneId
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertIsNotSelected
 
 /*
 	Volet latéral du PC (sans écran) : huit entrées dans l'ordre voulu ;
@@ -73,14 +75,17 @@ class NavigationUiTest
 		assertEquals(listOf("Tableau de bord", "Objectifs", "Recherche", "Opérations", "Budget", "Projection", "Bilan", "Réglages"), Screen.entries.map { it.label })
 		val vApp = demo()																	// démonstration
 		fCompose.setContent { App(vApp) { null } }
-		Screen.entries.forEach { inScreen -> fCompose.onAllNodesWithText(inScreen.label)[0].assertExists() }
-		fCompose.onAllNodesWithText("Opérations")[0].performClick()
+		Screen.entries.forEach { inScreen -> fCompose.onNodeWithContentDescription(inScreen.label).assertExists() }	// rail d'icônes : nom en description
+		fCompose.onNodeWithContentDescription("Tableau de bord").assertIsSelected()
+		fCompose.onNodeWithContentDescription("Opérations").performClick()
 		fCompose.waitForIdle()
 		assertEquals(Screen.OPERATIONS, vApp.navigation.value.screen)
+		fCompose.onNodeWithContentDescription("Opérations").assertIsSelected()
+		fCompose.onNodeWithContentDescription("Tableau de bord").assertIsNotSelected()
 		fCompose.onNodeWithText("Saisie rapide").assertExists()
 		fCompose.onNodeWithText("Récurrences").assertExists()
 		capture(vApp, "22-operations")
-		fCompose.onAllNodesWithText("Bilan")[0].performClick()
+		fCompose.onNodeWithContentDescription("Bilan").performClick()
 		fCompose.waitForIdle()
 		fCompose.onNodeWithText("Bilan annuel").assertExists()
 		capture(vApp, "22-bilan-annuel")

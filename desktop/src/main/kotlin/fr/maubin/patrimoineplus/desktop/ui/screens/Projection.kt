@@ -53,7 +53,7 @@ import fr.maubin.patrimoineplus.ui.projection.projectWealth
 import fr.maubin.patrimoineplus.ui.components.smoothPath
 import fr.maubin.patrimoineplus.domain.format.formatEuros
 import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
-import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
+import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
 import fr.maubin.patrimoineplus.ui.components.flowAccent
 import fr.maubin.patrimoineplus.ui.components.flowColorOr
 import fr.maubin.patrimoineplus.ui.components.FlowAccent
@@ -84,7 +84,7 @@ fun ProjectionScreen(
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
 		Column {
-			Text("Projection", style = MaterialTheme.typography.headlineMedium)
+			Text("Projection", style = MaterialTheme.typography.displaySmall)
 			Text("Estimation du patrimoine selon vos hypothèses : comptes courants et biens (au prix d’achat) stables, crédits remboursés selon leur tableau d’amortissement (le capital de chaque mensualité est pris sur l’épargne mensuelle), épargne et bourse capitalisées chaque mois. Rendements constants, sans impôts ni inflation : un ordre de grandeur, pas une prévision.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		}
 		Inputs(vInput, vDefault) { inController.setProjection(it) }

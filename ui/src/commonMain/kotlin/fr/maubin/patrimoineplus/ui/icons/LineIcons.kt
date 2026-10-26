@@ -136,4 +136,24 @@ object LineIcons
 	// Objectifs : cible, deux anneaux et un point central.
 	val Target: ImageVector = lineIcon("Objectifs", circle(12f, 12f, 8.5f), circle(12f, 12f, 4.5f), circle(12f, 12f, 0.8f))
 
+	// Clair : soleil, disque et huit rayons courts.
+	val Sun: ImageVector = lineIcon(
+		"Clair",
+		circle(12f, 12f, 4f),
+		"M12 2.5 V4.5", "M12 19.5 V21.5", "M2.5 12 H4.5", "M19.5 12 H21.5",
+		"M5.3 5.3 L6.7 6.7", "M17.3 17.3 L18.7 18.7", "M5.3 18.7 L6.7 17.3", "M17.3 6.7 L18.7 5.3"
+	)
+
+	// Sombre : croissant de lune.
+	val Moon: ImageVector = lineIcon("Sombre", "M19.5 14.5 A8 8 0 1 1 9.5 4.5 A6.5 6.5 0 0 0 19.5 14.5 Z")
+
+	// Montants visibles : œil ouvert.
+	val Eye: ImageVector = lineIcon("Montants visibles", "M2.5 12 C5 7 8.5 5 12 5 C15.5 5 19 7 21.5 12 C19 17 15.5 19 12 19 C8.5 19 5 17 2.5 12 Z", circle(12f, 12f, 3f))
+
+	// Montants masqués : œil barré.
+	val EyeOff: ImageVector = lineIcon("Montants masqués", "M2.5 12 C5 7 8.5 5 12 5 C15.5 5 19 7 21.5 12 C19 17 15.5 19 12 19 C8.5 19 5 17 2.5 12 Z", "M4 20 L20 4")
+
+	// Ajouter : croix droite.
+	val Plus: ImageVector = lineIcon("Ajouter", "M12 5 V19", "M5 12 H19")
+
 }

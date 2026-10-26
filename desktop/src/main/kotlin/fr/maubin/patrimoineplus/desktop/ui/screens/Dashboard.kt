@@ -99,6 +99,7 @@ fun DashboardScreen(
 			EmptyDashboard(inController)
 			return@Column
 		}
+		Text("Tableau de bord", style = MaterialTheme.typography.displaySmall)
 		Figures(vState)
 		TileRow(
 			Cell(1f) { inMod -> EvolutionTile(vState, inMod) },

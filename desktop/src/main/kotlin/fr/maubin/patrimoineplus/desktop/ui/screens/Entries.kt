@@ -31,7 +31,7 @@ fun EntriesScreen(
 		verticalArrangement = Arrangement.spacedBy(32.dp)
 	) {
 		Column {
-			Text("Opérations", style = MaterialTheme.typography.headlineMedium)
+			Text("Opérations", style = MaterialTheme.typography.displaySmall)
 			Text("Saisie en série, puis les opérations qui se répètent et les mensualités des crédits.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		}
 		BatchSection(inSpace, inController)

@@ -32,7 +32,8 @@ import fr.maubin.patrimoineplus.ui.components.SectionHeader
 import fr.maubin.patrimoineplus.desktop.ui.components.TwoColumns
 import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
 import fr.maubin.patrimoineplus.ui.icons.LineIcons
-import fr.maubin.patrimoineplus.domain.model.CategoryKind
+import fr.maubin.patrimoineplus.domain.model.CategoryKind
+import fr.maubin.patrimoineplus.desktop.ui.components.FloatingCard
 
 /*
 	Catégories de dépense et de revenu, côte à côte : ajout, modification
@@ -91,7 +92,7 @@ private fun CategoryList(
 {
 	val vList  = inSpace.data.categories.filter { it.kind == inKind }.sortedBy { it.sortOrder }	// catégories de cette nature
 	val vUsage = inSpace.data.transactions.groupingBy { it.categoryId }.eachCount()				// opérations par catégorie
-	BorderedCard {
+	FloatingCard {
 		vList.forEachIndexed { inIndex, inCategory ->
 			if (inIndex > 0) HorizontalDivider(Modifier.padding(horizontal = 24.dp), color = MaterialTheme.colorScheme.outlineVariant)
 			Row(

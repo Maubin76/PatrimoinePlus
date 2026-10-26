@@ -356,10 +356,20 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   (icône, suppression avec réaffectation), relevés, cours saisis à la main,
   positions initiales, fiche d'un actif. Mêmes contrôles et mêmes règles que
   le téléphone (`:core` : `DataEditor`, logique de saisie partagée).
-- **Volet latéral du PC**, dans cet ordre : Tableau de bord, Objectifs,
+- **Apparence du PC** (`:ui`, `theme/DeskTheme.kt`) : fond en dégradé
+  pastel (lavande, bleu brume, rose poudré ; en sombre, nuit indigo et
+  prune), appli portée par un grand cadre arrondi, tuiles et panneau de
+  saisie en panneaux blancs flottants (ombre douce, sans bord), titre de
+  page en grand ; police géométrique **Outfit** (OFL, ressource Compose du
+  module `:ui`, licence dans `doc/licenses/`), chiffres tabulaires. Le
+  téléphone garde Hanken Grotesk et son apparence.
+- **Rail d'icônes du PC**, dans cet ordre : Tableau de bord, Objectifs,
   Recherche, Opérations (saisie rapide puis récurrences et mensualités),
   Budget, Projection, Bilan (onglets « Mois par mois » et « Bilan annuel »),
-  Réglages (avec la section Catégories).
+  Réglages (avec la section Catégories) ; nom de la page en info-bulle (et
+  pour les lecteurs d'écran), page active sur un disque plein qui glisse
+  d'une icône à l'autre ; bascule clair / sombre en bas du rail ; en haut,
+  « Nouvelle opération », recherche (Ctrl+F) et mode discret (œil).
 - **Thèmes de couleurs** (Réglages › Apparence › Thème, PC et téléphone,
   chacun en clair et en sombre) : **Monochrome** (tout en noir et blanc),
   **Minimal** (noir et blanc, hausses en vert et baisses en rouge),
@@ -367,7 +377,7 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   autres thèmes, encre et boutons bleu nuit — bleu ciel en sombre —, une
   couleur par type de compte (Courant bleu-vert, Épargne ambre, Bourse
   orange, Immobilier bleu nuit, Collection bleu ciel, Crédit ardoise)
-  portée par les tuiles du tableau de bord (fond teinté, bandeau, courbe),
+  portée par les tuiles du tableau de bord (aplat pastel, courbe),
   la répartition et les comptes du téléphone ; patrimoine net en tuile
   pleine ; pastilles des opérations en bleu-vert (entrées) ou orange
   (sorties) ; graphiques et cashflow aux couleurs de la palette ; hausses en
@@ -399,23 +409,23 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   corriger puis créer en une fois ; opérations de l'appli absentes du relevé.
   Rien n'est mémorisé (pas de pointage) ; le format exact de chaque banque reste
   à vérifier sur un vrai export.
-- **Bilan › Mois par mois** (barre latérale) : dépenses et revenus des douze derniers mois,
+- **Bilan › Mois par mois** (rail) : dépenses et revenus des douze derniers mois,
   tous comptes : moyennes (dépenses, revenus, taux d'épargne), plus fortes
   hausses du dernier mois, barres mois par mois, tableau catégories × mois
   (moyenne des mois complets, écart du dernier mois). Un clic sur une case
   ouvre ses opérations.
-- **Recherche** (barre latérale, Ctrl+F) : recherche dans toutes les
+- **Recherche** (rail, Ctrl+F) : recherche dans toutes les
   opérations (mots sans accents ni majuscules dans le libellé, les notes, la
   catégorie, les comptes ; montant exact ; filtres de compte, de catégorie, de
   période et de montant), total des résultats ; sélection multiple (cases,
   Ctrl+clic, Maj+clic, tout sélectionner) pour **changer la catégorie** de
   plusieurs dépenses ou revenus d'un coup, ou les **supprimer** (confirmé ;
   refusé si une vente devenait impossible).
-- **Opérations › Saisie rapide** (barre latérale ; la page continue avec les récurrences et les mensualités) : dépenses et revenus en série dans une
+- **Opérations › Saisie rapide** (rail ; la page continue avec les récurrences et les mensualités) : dépenses et revenus en série dans une
   grille au clavier (Tab, Entrée pour une nouvelle ligne, Ctrl+Entrée pour tout
   enregistrer) ; catégorie proposée d'après le libellé ; montant sans signe =
   dépense, « + » = entrée ; tout est contrôlé puis enregistré en une fois.
-- **Bilan › Bilan annuel** (barre latérale) : patrimoine au début et à la fin de
+- **Bilan › Bilan annuel** (rail) : patrimoine au début et à la fin de
   l'année (avoirs et crédits restant dus), comptes, revenus et dépenses par
   catégorie, taux d'épargne, intérêts, dividendes, plus-values réalisées par
   titre ; **biens** achetés, ajoutés (déjà possédés) et vendus (plus-values) ;
@@ -423,7 +433,7 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   d'après le tableau d'amortissement) ; **export PDF** A4
   prêt à imprimer (générateur PDF minimal écrit pour l'appli, polices
   standard, sans bibliothèque).
-- **Projection** (barre latérale) : patrimoine estimé à 5, 10, 20 ou 30 ans ;
+- **Projection** (rail) : patrimoine estimé à 5, 10, 20 ou 30 ans ;
   épargne mensuelle (par défaut la moyenne des douze derniers mois),
   rendements de l'épargne et de la bourse, part versée en bourse ; trois
   scénarios et courbe année par année. Comptes courants et biens (au prix
@@ -431,7 +441,7 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   le capital de chaque mensualité étant pris sur l'épargne mensuelle (crédits
   restant dus à l'horizon affichés). Une estimation, sans impôts ni
   inflation.
-- **Budget** (barre latérale) : page de **planification** d'un mois type
+- **Budget** (rail) : page de **planification** d'un mois type
   (le suivi se fait dans Objectifs), en lignes libres d'entrées, de
   dépenses et d'investissements (nom et montant) ; une dépense porte l'un
   des six **thèmes** Vie quotidienne, Plaisirs, Abonnements, Transports,
@@ -447,7 +457,7 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   étiquettes « Nom : montant » ; déficit visible. Enregistré sur le PC
   (`%APPDATA%\PatrimoinePlus\budget.json` ; `budget-demo.json` pour la démonstration), pas dans le fichier
   synchronisé.
-- **Objectifs** (barre latérale, PC), en deux sections. **Objectifs
+- **Objectifs** (rail, PC), en deux sections. **Objectifs
   globaux** : cibles suivies sur les données (patrimoine, compte, type de
   placement, épargne mensuelle, taux d'épargne), mises à jour à la main ou à
   cocher, avec rythme, date estimée et effort mensuel ; idées toutes prêtes

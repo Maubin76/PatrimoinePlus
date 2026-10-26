@@ -19,7 +19,8 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 import java.time.Clock
 import java.time.Instant
-import java.time.ZoneId
+import java.time.ZoneId
+import androidx.compose.ui.test.onNodeWithContentDescription
 
 /*
 	Tests de l'interface de l'appli PC : parcours complet en démonstration, et
@@ -61,7 +62,7 @@ class DesktopUiTest
 		fCompose.onNodeWithText("Dernières opérations").assertExists()
 		fCompose.onNodeWithText("Livret A").performScrollTo().performClick()
 		fCompose.onNodeWithText("Solde au jour").assertExists()
-		fCompose.onNodeWithText("Réglages").performClick()
+		fCompose.onNodeWithContentDescription("Réglages").performClick()					// rail d'icônes : nom de l'écran en description
 		fCompose.onNodeWithText("Fermer").performClick()
 		fCompose.onNodeWithText("Choisir le dossier synchronisé…").assertExists()
 	}

@@ -33,6 +33,8 @@ import fr.maubin.patrimoineplus.ui.components.SectionHeader
 import java.nio.file.Path
 import fr.maubin.patrimoineplus.desktop.data.WorkspaceState
 import fr.maubin.patrimoineplus.ui.theme.ColorTheme
+import fr.maubin.patrimoineplus.desktop.ui.panels.Choice
+import fr.maubin.patrimoineplus.desktop.ui.components.FloatingCard
 
 /*
 	Réglages de l'appli PC : source des données (dossier synchronisé,
@@ -51,11 +53,11 @@ fun SettingsScreen(
 	val vSettings by inController.settings.collectAsState()				// réglages
 	val vColors   = MaterialTheme.colorScheme									// palette courante
 	Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(40.dp).widthIn(max = 720.dp)) {
-		Text("Réglages", style = MaterialTheme.typography.headlineMedium)
+		Text("Réglages", style = MaterialTheme.typography.displaySmall)
 		Spacer(Modifier.height(32.dp))
 		SectionHeader(inTitle = "Données")
 		Spacer(Modifier.height(12.dp))
-		BorderedCard {
+		FloatingCard {
 			Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
 				Text(
 					text  = when (val vSource = vSettings.source)
@@ -79,53 +81,17 @@ fun SettingsScreen(
 		Spacer(Modifier.height(32.dp))
 		SectionHeader(inTitle = "Apparence")
 		Spacer(Modifier.height(12.dp))
-		SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-			ThemeMode.entries.forEachIndexed { inIndex, inEntry ->
-				SegmentedButton(
-					selected = inEntry == vSettings.appearance,
-					onClick  = { inController.setAppearance(inEntry) },
-					shape    = SegmentedButtonDefaults.itemShape(index = inIndex, count = ThemeMode.entries.size),
-					icon     = {},
-					colors   = SegmentedButtonDefaults.colors(
-						activeContainerColor   = vColors.primary,
-						activeContentColor     = vColors.onPrimary,
-						activeBorderColor      = vColors.primary,
-						inactiveContainerColor = vColors.surface,
-						inactiveContentColor   = vColors.onSurface,
-						inactiveBorderColor    = vColors.outlineVariant
-					),
-					label    = { Text(inEntry.label) }
-				)
-			}
-		}
+		Choice(ThemeMode.entries.map { it to it.label }, vSettings.appearance, inController::setAppearance)
 		Spacer(Modifier.height(16.dp))
 		Text("Thème", style = MaterialTheme.typography.titleMedium)
 		Spacer(Modifier.height(8.dp))
-		SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-			ColorTheme.entries.forEachIndexed { inIndex, inEntry ->
-				SegmentedButton(
-					selected = inEntry == vSettings.colors,
-					onClick  = { inController.setColorTheme(inEntry) },
-					shape    = SegmentedButtonDefaults.itemShape(index = inIndex, count = ColorTheme.entries.size),
-					icon     = {},
-					colors   = SegmentedButtonDefaults.colors(
-						activeContainerColor   = vColors.primary,
-						activeContentColor     = vColors.onPrimary,
-						activeBorderColor      = vColors.primary,
-						inactiveContainerColor = vColors.surface,
-						inactiveContentColor   = vColors.onSurface,
-						inactiveBorderColor    = vColors.outlineVariant
-					),
-					label    = { Text(inEntry.label) }
-				)
-			}
-		}
+		Choice(ColorTheme.entries.map { it to it.label }, vSettings.colors, inController::setColorTheme)
 		Spacer(Modifier.height(8.dp))
 		Text(vSettings.colors.detail, style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
 		Spacer(Modifier.height(32.dp))
 		SectionHeader(inTitle = "Confidentialité")
 		Spacer(Modifier.height(12.dp))
-		BorderedCard {
+		FloatingCard {
 			Row(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
 				Column(Modifier.weight(1f)) {
 					Text("Mode discret", style = MaterialTheme.typography.titleMedium)
