@@ -72,7 +72,12 @@ import fr.maubin.patrimoineplus.ui.components.ProportionStyle
 import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 import fr.maubin.patrimoineplus.ui.components.AppGround
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxSize
+import fr.maubin.patrimoineplus.data.demo.withDemoFamily
+import fr.maubin.patrimoineplus.domain.calc.scoped
+import fr.maubin.patrimoineplus.ui.shell.LocalViewChip
+import fr.maubin.patrimoineplus.ui.shell.ViewChip
+import fr.maubin.patrimoineplus.ui.settings.ProfilesActions
 
 private const val kOutDir = "build/outputs/roborazzi"						// dossier des captures
 
@@ -142,6 +147,46 @@ class ScreenshotTest
 				DefaultCatalog.categories().map { it.name }, { _, _, _ -> }, {}
 			)
 		}
+	}
+
+	/*
+		Profils : accueil de la vue Famille (sélecteur dans la barre du haut,
+		démonstration à deux profils), réglages avec la section Profils, et
+		feuille du compte joint avec une part par profil.
+	*/
+	@Test
+	fun profiles()
+	{
+		val vToday   = LocalDate.parse("2026-10-07")								// date de calcul
+		val vDemo    = withDemoFamily(buildDemoData(vToday))						// démonstration à deux profils
+		val vFamily  = vDemo.scoped(null)											// vue Famille
+		val vState   = buildHomeState(vFamily.accounts, vFamily.transactions, vFamily.prices, vToday, vFamily.loans)	// accueil de la famille
+		val vChip    = @Composable { ViewChip(vDemo.profiles, null, {}) }		// sélecteur sur la famille
+		captureRoboImage("$kOutDir/profils-accueil-famille.png", content = shell(false, false, TopLevelDestination.Home) {
+			CompositionLocalProvider(LocalViewChip provides vChip) { HomeContent(vState, {}, {}) }
+		})
+		captureRoboImage("$kOutDir/profils-reglages.png", content = shell(false, false, TopLevelDestination.Settings) {
+			SettingsScreen(ThemeMode.LIGHT, {}, false, {}, SafetyActions(true, "8 octobre 2026", "Documents/PatrimoinePlus", {}, {}, {}), null, null,
+				inProfiles = ProfilesActions(vDemo.profiles, "Ce profil est seul propriétaire d’un compte : donnez d’abord ce compte à un autre profil.", { _, _ -> }, { _, _ -> }, {}))
+		})
+	}
+
+	/*
+		Feuille du compte joint d'un couple : une part par profil.
+	*/
+	@Test
+	fun accountSheetOwners()
+	{
+		val vDemo = withDemoFamily(buildDemoData(LocalDate.parse("2026-10-07")))	// démonstration à deux profils
+		fCompose.setContent {
+			Themed(inDarkTheme = false) {
+				AccountsContent(demoAccounts(), {}, {}, {}, {})
+				AccountSheet(AccountForm(name = "Compte joint", institution = "Banque démo", opening = "1 200", openingDate = kToday, owners = vDemo.profiles.associate { it.id to "50" }),
+					null, false, { _, _ -> }, {}, {}, {}, inProfiles = vDemo.profiles)
+			}
+		}
+		fCompose.waitForIdle()
+		captureScreenRoboImage("$kOutDir/profils-compte-joint.png")
 	}
 
 	/*

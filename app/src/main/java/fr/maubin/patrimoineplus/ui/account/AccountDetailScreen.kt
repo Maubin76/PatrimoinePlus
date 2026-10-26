@@ -367,7 +367,8 @@ fun AccountDetailScreen(
 				vSheet    = null
 				vDeleting = true
 			},
-			inOnDismiss  = { vSheet = null }
+			inOnDismiss  = { vSheet = null },
+			inProfiles   = inAccounts.profiles.collectAsStateWithLifecycle().value.profiles
 		)
 	}
 

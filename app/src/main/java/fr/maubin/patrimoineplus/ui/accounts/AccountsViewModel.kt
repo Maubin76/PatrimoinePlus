@@ -24,7 +24,14 @@ import kotlinx.coroutines.launch
 import java.time.Clock
 import java.time.LocalDate
 import javax.inject.Inject
-import fr.maubin.patrimoineplus.data.repo.PlanningRepository
+import fr.maubin.patrimoineplus.data.repo.PlanningRepository
+import fr.maubin.patrimoineplus.data.repo.ProfileRepository
+import fr.maubin.patrimoineplus.data.DataSet
+import fr.maubin.patrimoineplus.domain.calc.scoped
+import fr.maubin.patrimoineplus.data.repo.ProfileView
+import fr.maubin.patrimoineplus.domain.model.Ownership
+import fr.maubin.patrimoineplus.ui.accounts.parseOwners
+import fr.maubin.patrimoineplus.domain.rules.ownersError
 
 /*
 	ViewModel de l'écran des comptes : liste avec valeurs, création,
@@ -40,21 +47,29 @@ class AccountsViewModel @Inject constructor(
 	inTransactions         : TransactionRepository,
 	inMarket               : MarketRepository,
 	private val inClock    : Clock,
-	inPlanning             : PlanningRepository
+	inPlanning             : PlanningRepository,
+	private val inProfiles : ProfileRepository
 ) : ViewModel()
 {
 	// État exposé à l'écran, recalculé à chaque changement de la base.
 	val uiState: StateFlow<AccountsUiState> =
-		combine(inAccounts.observeAccounts(), inTransactions.observeTransactions(), inMarket.observePrices(), inPlanning.observeLoans()) { inList, inTxs, inPrices, inLoans ->
-			buildAccountsState(inList, inTxs, inPrices, LocalDate.now(inClock), inLoans)
+		combine(inAccounts.observeAccounts(), inTransactions.observeTransactions(), inMarket.observePrices(), inPlanning.observeLoans(), inProfiles.observeView()) { inList, inTxs, inPrices, inLoans, inView ->
+			val vData = DataSet(inList, emptyList(), emptyList(), inTxs, inPrices, emptyList(), loans = inLoans, profiles = inView.profiles).scoped(inView.profile)	// données de la vue
+			buildAccountsState(vData.accounts, vData.transactions, vData.prices, LocalDate.now(inClock), vData.loans)
 		}
 			.flowOn(Dispatchers.Default)
 			.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AccountsUiState())
 
+	// Profils et vue affichée (propriétaires d'un compte).
+	val profiles: StateFlow<ProfileView> =
+		inProfiles.observeView().stateIn(viewModelScope, SharingStarted.Eagerly, ProfileView(listOf(ProfileRepository.kDefault), ProfileRepository.kDefault.id))
+
 	/*
-		Formulaire vide pour un nouveau compte (solde initial daté d'aujourd'hui).
+		Formulaire vide pour un nouveau compte (solde initial daté
+		d'aujourd'hui), au profil affiché (au premier pour la famille).
 	*/
-	fun newForm(): AccountForm = AccountForm(openingDate = LocalDate.now(inClock))
+	fun newForm(): AccountForm =
+		AccountForm(openingDate = LocalDate.now(inClock), owners = mapOf((profiles.value.profile ?: profiles.value.profiles.first().id) to "100"))
 
 	/*
 		Prépare le formulaire d'un compte existant (solde initial compris).
@@ -74,6 +89,7 @@ class AccountsViewModel @Inject constructor(
 					type        = inAccount.type,
 					institution = inAccount.institution.orEmpty(),
 					share       = inAccount.sharePercent.toString(),
+					owners      = inAccount.owners.ifEmpty { listOf(Ownership(profiles.value.profiles.first().id, inAccount.sharePercent)) }.associate { it.profileId to it.percent.toString() },
 					opening     = vOpening?.let { editableEuros(it.cents) }.orEmpty(),
 					openingDate = vOpening?.date ?: LocalDate.now(inClock)
 				)
@@ -93,10 +109,20 @@ class AccountsViewModel @Inject constructor(
 		inOnDone  : (AccountFormErrors) -> Unit
 	)
 	{
-		val vShare   = inForm.share.trim().toIntOrNull()							// part détenue lue
+		val vList    = profiles.value.profiles										// profils
+		val vMulti   = vList.size > 1												// parts par profil
+		val vOwners  = if (vMulti) parseOwners(inForm.owners) else inForm.share.trim().toIntOrNull()?.let { listOf(Ownership(vList.first().id, it)) }	// propriétaires lus
+		val vShare   = vOwners?.sumOf { it.percent }								// part comptée (total)
+		val vOwnErr  = when
+		{
+			!vMulti                -> null
+			vOwners == null        -> "Part illisible (1 à 100)."
+			vOwners.isEmpty()      -> "Indiquez la part d’au moins un propriétaire."
+			else                   -> ownersError(vOwners, vList.map { it.id }.toSet())?.replaceFirstChar { it.uppercase() }
+		}																		// erreur sur les propriétaires
 		val vCents   = if (inForm.opening.isBlank() || inForm.type.isProperty) 0L else parseEuros(inForm.opening)	// solde initial lu (aucun pour un compte de biens)
 		val vChecked = AccountFormErrors(
-			share   = if (vShare == null || vShare !in kMinShare..kMaxShare) "Entre $kMinShare et $kMaxShare %." else null,
+			share   = vOwnErr ?: if (vShare == null || vShare !in kMinShare..kMaxShare) "Entre $kMinShare et $kMaxShare %." else null,
 			opening = if (vCents == null) "Montant illisible (ex. 1 234,56)." else null
 		)																		// erreurs de lecture
 		if (!vChecked.isEmpty)
@@ -108,12 +134,12 @@ class AccountsViewModel @Inject constructor(
 			val vOpening = Opening(vCents!!, inForm.openingDate)				// solde initial
 			val vResult  = if (inEditing == null)
 			{
-				inAccounts.create(inForm.name, inForm.type, inForm.institution, vShare!!, vOpening)
+				inAccounts.create(inForm.name, inForm.type, inForm.institution, vShare!!, vOpening, vOwners!!)
 			}
 			else
 			{
 				if (inForm.type.isProperty && inForm.type != inEditing.type) inAccounts.setOpening(inEditing.id, Opening(0, inForm.openingDate))	// un compte de biens n'a pas de solde initial
-				inAccounts.update(inEditing.copy(name = inForm.name, type = inForm.type, institution = inForm.institution, sharePercent = vShare!!))
+				inAccounts.update(inEditing.copy(name = inForm.name, type = inForm.type, institution = inForm.institution, sharePercent = vShare!!, owners = vOwners!!))
 					.also { if (it is SaveResult.Saved) inAccounts.setOpening(inEditing.id, vOpening) }
 			}																	// résultat
 			inOnDone(toErrors(vResult))

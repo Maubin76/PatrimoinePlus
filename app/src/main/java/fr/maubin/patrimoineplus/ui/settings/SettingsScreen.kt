@@ -40,7 +40,15 @@ import fr.maubin.patrimoineplus.ui.shell.ScreenScaffold
 import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
 import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 import fr.maubin.patrimoineplus.ui.components.SegmentedChoice
-import fr.maubin.patrimoineplus.ui.components.PillChoice
+import fr.maubin.patrimoineplus.ui.components.PillChoice
+import fr.maubin.patrimoineplus.domain.model.Profile
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Button
+import fr.maubin.patrimoineplus.ui.icons.LineIcons
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 
 /*
 	Verrou et sauvegarde, vus par l'écran des réglages.
@@ -73,6 +81,7 @@ data class SafetyActions(
 	inOnColorTheme : change le thème de couleurs
 	inGlass        : effet verre actif
 	inOnGlass      : active ou retire l'effet verre
+	inProfiles     : profils de la famille ; null pour masquer la section
 */
 @Composable
 fun SettingsScreen(
@@ -86,7 +95,8 @@ fun SettingsScreen(
 	inColorTheme   : ColorTheme = ColorTheme.MONOCHROME,
 	inOnColorTheme : (ColorTheme) -> Unit = {},
 	inGlass        : Boolean = false,
-	inOnGlass      : (Boolean) -> Unit = {}
+	inOnGlass      : (Boolean) -> Unit = {},
+	inProfiles     : ProfilesActions? = null
 )
 {
 	ScreenScaffold(inTitle = "Réglages") { inPadding ->
@@ -140,6 +150,12 @@ fun SettingsScreen(
 					inChecked  = inSafety.lockEnabled,
 					inOnChange = inSafety.onLockChange
 				)
+			}
+			inProfiles?.let { inActions ->
+				Spacer(Modifier.height(32.dp))
+				SectionHeader(inTitle = "Profils")
+				Spacer(Modifier.height(8.dp))
+				ProfilesSection(inActions)
 			}
 			Spacer(Modifier.height(32.dp))
 			SectionHeader(inTitle = "Données")
@@ -351,3 +367,53 @@ private fun DemoSection(inDemo: DemoActions)
 		)
 	}
 }
+
+/*
+	Profils de la famille et leurs actions (section des réglages).
+	profiles : profils, dans l'ordre
+	error    : dernier refus ; null sans refus
+	onAdd    : ajoute un profil (nom), puis appelle la suite si réussi
+	onRename : renomme un profil (identifiant, nom)
+	onRemove : retire un profil (identifiant)
+*/
+data class ProfilesActions(
+	val profiles : List<Profile>,
+	val error    : String?,
+	val onAdd    : (String, () -> Unit) -> Unit,
+	val onRename : (String, String) -> Unit,
+	val onRemove : (String) -> Unit
+)
+
+/*
+	Section des profils : nom modifiable (✓ pour l'enregistrer), retrait,
+	puis ajout ; le dernier refus s'affiche dessous.
+	inActions : profils et actions
+*/
+@Composable
+private fun ProfilesSection(inActions: ProfilesActions)
+{
+	var vNew by remember { mutableStateOf("") }										// nom du profil à ajouter
+	BorderedCard {
+		Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+			inActions.profiles.forEach { inProfile ->
+				var vName by remember(inProfile.id, inProfile.name) { mutableStateOf(inProfile.name) }	// nom saisi
+				Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+					OutlinedTextField(vName, { vName = it }, singleLine = true, modifier = Modifier.weight(1f).semantics { contentDescription = "Nom du profil ${inProfile.name}" })
+					IconButton(onClick = { inActions.onRename(inProfile.id, vName) }, enabled = vName.trim() != inProfile.name) {
+						Icon(LineIcons.Check, contentDescription = "Renommer ${inProfile.name}")
+					}
+					IconButton(onClick = { inActions.onRemove(inProfile.id) }, enabled = inActions.profiles.size > 1) {
+						Icon(LineIcons.Close, contentDescription = "Retirer ${inProfile.name}")
+					}
+				}
+			}
+			Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+				OutlinedTextField(vNew, { vNew = it }, singleLine = true, placeholder = { Text("Nouveau profil (prénom)") }, modifier = Modifier.weight(1f).semantics { contentDescription = "Nom du nouveau profil" })
+				Spacer(Modifier.width(8.dp))
+				Button(onClick = { inActions.onAdd(vNew) { vNew = "" } }) { Text("Ajouter") }
+			}
+			inActions.error?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 8.dp)) }
+		}
+	}
+}
+

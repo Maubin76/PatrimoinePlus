@@ -56,9 +56,13 @@ import fr.maubin.patrimoineplus.ui.settings.SyncConflictDialog
 import fr.maubin.patrimoineplus.ui.shell.AppFrame
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
-import fr.maubin.patrimoineplus.domain.model.Frequency
+import fr.maubin.patrimoineplus.domain.model.Frequency
 import fr.maubin.patrimoineplus.ui.components.LocalProportionStyle
 import fr.maubin.patrimoineplus.ui.components.ProportionStyle
+import fr.maubin.patrimoineplus.ui.profiles.ProfilesViewModel
+import fr.maubin.patrimoineplus.ui.shell.LocalViewChip
+import fr.maubin.patrimoineplus.ui.shell.ViewChip
+import fr.maubin.patrimoineplus.ui.settings.ProfilesActions
 
 private const val kSlideMillis = 260									// entrée et sortie de la vue d'un compte
 
@@ -154,6 +158,9 @@ private fun MainTabs(
 	val vThemeMode by inAppViewModel.themeMode.collectAsStateWithLifecycle()	// apparence choisie
 	val vColors    by inAppViewModel.colorTheme.collectAsStateWithLifecycle()	// thème de couleurs
 	val vGlass     by inAppViewModel.glassEffect.collectAsStateWithLifecycle()	// effet verre
+	val vProfiles  = hiltViewModel<ProfilesViewModel>()							// profils et vue affichée
+	val vView      by vProfiles.view.collectAsStateWithLifecycle()				// vue affichée
+	val vProfError by vProfiles.error.collectAsStateWithLifecycle()				// dernier refus sur les profils
 	val vToggle    = inAppViewModel::toggleAmountsHidden					// bascule du mode discret
 	val vData      by inEntry.data.collectAsStateWithLifecycle()			// données de saisie
 	var vEntry     by remember { mutableStateOf<EntryForm?>(null) }		// saisie ouverte
@@ -171,6 +178,7 @@ private fun MainTabs(
 		vOpen(TopLevelDestination.Home)
 	}
 
+	CompositionLocalProvider(LocalViewChip provides { ViewChip(vView.profiles, vView.profile, vProfiles::setView) }) {
 	AppFrame(
 		inPosition = { pagerPosition(vPager) },
 		inSelected = TopLevelDestination.entries[vPager.currentPage],
@@ -202,10 +210,12 @@ private fun MainTabs(
 					inColorTheme  = vColors,
 					inOnColorTheme = inAppViewModel::setColorTheme,
 					inGlass        = vGlass,
-					inOnGlass      = inAppViewModel::setGlassEffect
+					inOnGlass      = inAppViewModel::setGlassEffect,
+					inProfiles     = ProfilesActions(vView.profiles, vProfError, vProfiles::add, vProfiles::rename, vProfiles::remove)
 				)
 			}
 		}
+	}
 	}
 
 	vEntry?.let { inForm ->

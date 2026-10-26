@@ -25,7 +25,8 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import fr.maubin.patrimoineplus.domain.calc.accountRemoval
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.first
+import fr.maubin.patrimoineplus.domain.model.Ownership
 
 
 /*
@@ -84,13 +85,15 @@ class AccountRepository @Inject constructor(
 		inInstitution : établissement, facultatif
 		inShare       : part détenue, en %
 		inOpening     : solde initial ; null ou montant nul pour aucun
+		inOwners      : propriétaires et leurs parts ; vide : le premier profil, pour inShare
 	*/
 	suspend fun create(
 		inName        : String,
 		inType        : AccountType,
 		inInstitution : String?  = null,
 		inShare       : Int      = 100,
-		inOpening     : Opening? = null
+		inOpening     : Opening? = null,
+		inOwners      : List<Ownership> = emptyList()
 	): SaveResult<SetupError>
 	{
 		val vErrors = validateAccount(inName, inShare)							// règles violées
@@ -110,7 +113,8 @@ class AccountRepository @Inject constructor(
 				type         = inType,
 				institution  = inInstitution?.trim()?.ifEmpty { null },
 				sharePercent = inShare,
-				sortOrder    = fDao.maxSortOrder() + 1
+				sortOrder    = fDao.maxSortOrder() + 1,
+				owners       = inOwners
 			)
 			fDao.insert(vAccount.toEntity(vNow, vNow))
 			if (inOpening != null && inOpening.cents != 0L)

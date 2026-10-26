@@ -15,7 +15,7 @@ import fr.maubin.patrimoineplus.desktop.Panel
 import fr.maubin.patrimoineplus.desktop.Screen
 import fr.maubin.patrimoineplus.desktop.data.DesktopConfig
 import fr.maubin.patrimoineplus.desktop.data.Workspace
-import fr.maubin.patrimoineplus.desktop.kFamilyView
+import fr.maubin.patrimoineplus.domain.calc.kFamilyView
 import fr.maubin.patrimoineplus.domain.calc.Ledger
 import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
 import fr.maubin.patrimoineplus.domain.calc.wealthAt

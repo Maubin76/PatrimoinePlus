@@ -31,12 +31,14 @@ import fr.maubin.patrimoineplus.ui.planning.LoanForm
 import fr.maubin.patrimoineplus.ui.planning.LoanErrors
 import fr.maubin.patrimoineplus.ui.planning.LoanFields
 import fr.maubin.patrimoineplus.ui.planning.checkLoan
-import fr.maubin.patrimoineplus.domain.calc.PropertyItem
+import fr.maubin.patrimoineplus.domain.calc.PropertyItem
+import fr.maubin.patrimoineplus.domain.model.Profile
 
 /*
 	Feuille de création ou de modification d'un compte : nom, type,
-	établissement, part détenue, solde initial et sa date ; en modification,
-	archivage et suppression.
+	établissement, part détenue (une part par profil à partir de deux
+	profils), solde initial et sa date ; en modification, archivage et
+	suppression.
 	inInitial     : saisie de départ
 	inEditing     : compte modifié ; null pour une création
 	inTypeLocked  : vrai si le type ne peut plus changer (le compte a des opérations)
@@ -47,6 +49,8 @@ import fr.maubin.patrimoineplus.domain.calc.PropertyItem
 	inAccounts    : comptes (compte payeur d'un crédit)
 	inCategories  : catégories (intérêts d'un crédit)
 	inOnSaveLoan  : crée un compte Crédit et son crédit ; reçoit le refus par rappel ; null : pas de création de crédit
+	inProperties  : biens (bien financé par un crédit)
+	inProfiles    : profils de la famille ; deux ou plus : une part par profil
 */
 @Composable
 fun AccountSheet(
@@ -60,7 +64,8 @@ fun AccountSheet(
 	inAccounts   : List<Account>  = emptyList(),
 	inCategories : List<Category> = emptyList(),
 	inOnSaveLoan : ((AccountForm, LoanForm, (String?) -> Unit) -> Unit)? = null,
-	inProperties : List<PropertyItem> = emptyList()
+	inProperties : List<PropertyItem> = emptyList(),
+	inProfiles   : List<Profile> = emptyList()
 )
 {
 	var vForm    by remember { mutableStateOf(inInitial) }						// saisie en cours
@@ -87,7 +92,24 @@ fun AccountSheet(
 			)
 		}
 		TextInput(vForm.institution, { vForm = vForm.copy(institution = it) }, if (vForm.type.isProperty) "Description (facultatif)" else "Établissement (facultatif)")
-		OutlinedTextField(
+		if (inProfiles.size > 1)
+		{
+			inProfiles.forEachIndexed { inIndex, inProfile ->
+				val vLast = inIndex == inProfiles.size - 1										// dernier champ : aide et erreur
+				OutlinedTextField(
+					value           = vForm.owners[inProfile.id].orEmpty(),
+					onValueChange   = { inText -> vForm = vForm.copy(owners = vForm.owners + (inProfile.id to inText.filter { it.isDigit() }.take(3))) },
+					label           = { Text("Part de ${inProfile.name}") },
+					suffix          = { Text("%") },
+					singleLine      = true,
+					isError         = vLast && vErrors.share != null,
+					supportingText  = if (vLast) { { Text(vErrors.share ?: "Vide : pas propriétaire. 50 et 50 pour un compte ou un bien du couple.") } } else null,
+					keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+					modifier        = Modifier.fillMaxWidth()
+				)
+			}
+		}
+		else OutlinedTextField(
 			value           = vForm.share,
 			onValueChange   = { inText -> vForm = vForm.copy(share = inText.filter { it.isDigit() }.take(3)) },
 			label           = { Text("Part détenue") },

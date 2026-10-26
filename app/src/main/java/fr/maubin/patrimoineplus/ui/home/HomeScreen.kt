@@ -51,7 +51,8 @@ import fr.maubin.patrimoineplus.ui.shell.ScreenScaffold
 import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
 import fr.maubin.patrimoineplus.ui.theme.PatrimoineTheme
 import fr.maubin.patrimoineplus.ui.components.ProportionChart
-import fr.maubin.patrimoineplus.ui.components.ProportionToggle
+import fr.maubin.patrimoineplus.ui.components.ProportionToggle
+import fr.maubin.patrimoineplus.ui.shell.LocalViewChip
 
 private const val kClearedDisplay = "– – –,– – €"						// afficheur vide : aucun compte
 
@@ -88,7 +89,7 @@ fun HomeContent(
 {
 	ScreenScaffold(
 		inTitle   = "Patrimoine",
-		inActions = { PrivacyAction(inOnToggleHidden) }
+		inActions = { LocalViewChip.current(); PrivacyAction(inOnToggleHidden) }
 	) { inPadding ->
 		LazyColumn(
 			contentPadding = PaddingValues(

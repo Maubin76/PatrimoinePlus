@@ -133,7 +133,7 @@ import fr.maubin.patrimoineplus.ui.components.isGlass
 import fr.maubin.patrimoineplus.ui.components.AppGround
 import fr.maubin.patrimoineplus.ui.components.FloatingSurface
 import fr.maubin.patrimoineplus.domain.calc.scoped
-import fr.maubin.patrimoineplus.desktop.scopeOf
+import fr.maubin.patrimoineplus.domain.calc.scopeOf
 import fr.maubin.patrimoineplus.domain.model.Profile
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem

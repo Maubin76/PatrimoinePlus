@@ -91,3 +91,22 @@ fun decodeShares(inText: String): List<Ownership> =
 		vPair.takeIf { it.size == 2 && it[0].isNotBlank() }?.let { inPair -> inPair[1].trim().toIntOrNull()?.let { Ownership(inPair[0].trim(), it) } }
 	}
 
+const val kFamilyView = "*"														// vue mémorisée de la famille
+
+/*
+	Profil d'une vue mémorisée : "" premier profil, "*" famille (null),
+	sinon le profil s'il existe encore (le premier sinon). Sans profils
+	encore lus : le profil « Moi ».
+	inView     : vue mémorisée
+	inProfiles : profils des données
+*/
+fun scopeOf(
+	inView     : String,
+	inProfiles : List<Profile>
+): String? =
+	when
+	{
+		inView == kFamilyView                  -> null
+		inProfiles.any { it.id == inView }     -> inView
+		else                                   -> inProfiles.firstOrNull()?.id ?: kDefaultProfileId
+	}

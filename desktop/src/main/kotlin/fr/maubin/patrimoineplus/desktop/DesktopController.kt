@@ -51,7 +51,9 @@ import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 import fr.maubin.patrimoineplus.ui.goals.planMonth
 import fr.maubin.patrimoineplus.ui.goals.withPlan
 import fr.maubin.patrimoineplus.domain.calc.scoped
-import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
+import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
+import fr.maubin.patrimoineplus.domain.calc.scopeOf
+import fr.maubin.patrimoineplus.domain.calc.kFamilyView
 
 private const val kDayCheckMillis = 60_000L										// contrôle du changement de jour
 
@@ -893,24 +895,3 @@ class DesktopController(
 		runCatching { inConfig.save(inSettings) }
 	}
 }
-
-const val kFamilyView = "*"														// vue mémorisée de la famille
-
-/*
-	Profil d'une vue mémorisée : "" premier profil, "*" famille (null),
-	sinon le profil s'il existe encore (le premier sinon). Sans profils
-	encore lus : le profil « Moi ».
-	inView     : vue mémorisée
-	inProfiles : profils des données
-*/
-fun scopeOf(
-	inView     : String,
-	inProfiles : List<fr.maubin.patrimoineplus.domain.model.Profile>
-): String? =
-	when
-	{
-		inView == kFamilyView                  -> null
-		inProfiles.any { it.id == inView }     -> inView
-		else                                   -> inProfiles.firstOrNull()?.id ?: kDefaultProfileId
-	}
-

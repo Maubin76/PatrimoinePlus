@@ -227,7 +227,11 @@ Détail complet : [`doc/SPEC.md` § 2](doc/SPEC.md#2-modèle-de-données).
   tous les comptes, chacun pour le total des parts de la famille. Sur le PC,
   sélecteur de vue en haut (à partir de deux profils), section Profils des
   réglages (ajout, renommage, retrait refusé pour le seul propriétaire d'un
-  compte), budget et objectifs propres à chaque vue. Données d'avant les
+  compte), budget et objectifs propres à chaque vue. Sur le téléphone,
+  même sélecteur dans la barre de l'accueil et des comptes, vue mémorisée
+  sur le téléphone, section Profils des réglages, une part par profil dans
+  la fiche d'un compte (un crédit créé sur le téléphone va au premier
+  profil ; ses parts se règlent ensuite dans sa fiche). Données d'avant les
   profils : un profil « Moi » pour la part détenue. Fichier d'échange au
   format 6 (onglet Profils, colonnes Propriétaires et Parts) : les deux
   applis doivent être à jour.

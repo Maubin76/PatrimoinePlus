@@ -63,7 +63,8 @@ import fr.maubin.patrimoineplus.ui.components.accountAccent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import fr.maubin.patrimoineplus.ui.shell.LocalViewChip
 
 /*
 	Onglet des comptes : liste réordonnable avec la valeur de chaque compte,
@@ -82,6 +83,7 @@ fun AccountsScreen(
 )
 {
 	val vState    by inViewModel.uiState.collectAsStateWithLifecycle()		// état à afficher
+	val vProfileView by inViewModel.profiles.collectAsStateWithLifecycle()		// profils (propriétaires d'un compte)
 	val vPlan     by inPlanning.state.collectAsStateWithLifecycle()			// récurrences et crédits
 	var vCreating by remember { mutableStateOf<AccountForm?>(null) }		// création ouverte
 	var vRec      by remember { mutableStateOf<RecurrenceForm?>(null) }		// récurrence ouverte
@@ -112,6 +114,7 @@ fun AccountsScreen(
 	vCreating?.let { inForm ->
 		AccountSheet(
 			inInitial    = inForm,
+			inProfiles   = vProfileView.profiles,
 			inEditing    = null,
 			inTypeLocked = false,
 			inOnSave     = { inSaved, inOnErrors -> inViewModel.save(inSaved, null) { if (it.isEmpty) vCreating = null else inOnErrors(it) } },
@@ -205,7 +208,7 @@ fun AccountsContent(
 	inExtra          : @Composable ColumnScope.() -> Unit = {}
 )
 {
-	ScreenScaffold(inTitle = "Comptes", inActions = { PrivacyAction(inOnToggleHidden) }) { inPadding ->
+	ScreenScaffold(inTitle = "Comptes", inActions = { LocalViewChip.current(); PrivacyAction(inOnToggleHidden) }) { inPadding ->
 		Column(
 			Modifier
 				.padding(top = inPadding.calculateTopPadding())
