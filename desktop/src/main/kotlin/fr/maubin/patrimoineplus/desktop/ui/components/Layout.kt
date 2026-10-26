@@ -46,7 +46,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
 import fr.maubin.patrimoineplus.ui.components.isGlass
-import fr.maubin.patrimoineplus.ui.components.glassPanel
+import fr.maubin.patrimoineplus.ui.components.glassPanel
+import fr.maubin.patrimoineplus.ui.components.glassWell
 
 val kTileGap = 20.dp																// espace entre deux tuiles
 
@@ -144,7 +145,7 @@ fun OperationLine(
 		verticalAlignment = Alignment.CenterVertically
 	) {
 		val vAccent = operationAccent(inCents)												// entrée ou sortie (thème Coloré)
-		Box(Modifier.size(32.dp).clip(CircleShape).background(vAccent?.first ?: vColors.surfaceContainer), contentAlignment = Alignment.Center) {
+		Box(Modifier.size(32.dp).clip(CircleShape).background(vAccent?.first ?: glassWell(vColors.surfaceContainer)), contentAlignment = Alignment.Center) {
 			Icon(CategoryIcons.of(inIcon), contentDescription = null, tint = vAccent?.second ?: LocalContentColor.current, modifier = Modifier.size(18.dp))
 		}
 		Spacer(Modifier.width(14.dp))

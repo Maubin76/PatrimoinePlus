@@ -63,7 +63,8 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.semantics.Role
 import fr.maubin.patrimoineplus.ui.components.isGlass
-import fr.maubin.patrimoineplus.ui.components.glassPanel
+import fr.maubin.patrimoineplus.ui.components.glassPanel
+import fr.maubin.patrimoineplus.ui.components.glassWell
 
 val kPanelWidth = 440.dp																// largeur du panneau latéral
 
@@ -253,7 +254,7 @@ fun <T> Choice(
 {
 	val vColors = MaterialTheme.colorScheme										// palette courante
 	Row(
-		modifier              = Modifier.fillMaxWidth().clip(RoundedCornerShape(50)).background(vColors.surfaceContainer).padding(4.dp).selectableGroup(),
+		modifier              = Modifier.fillMaxWidth().clip(RoundedCornerShape(50)).background(glassWell(vColors.surfaceContainer)).padding(4.dp).selectableGroup(),
 		horizontalArrangement = Arrangement.spacedBy(4.dp)
 	) {
 		inOptions.forEach { (inValue, inText) ->

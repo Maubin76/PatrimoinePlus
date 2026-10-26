@@ -31,7 +31,8 @@ import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.data.edit.EditResult
 import fr.maubin.patrimoineplus.desktop.DesktopController
 import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
-import fr.maubin.patrimoineplus.domain.model.CategoryKind
+import fr.maubin.patrimoineplus.domain.model.CategoryKind
+import fr.maubin.patrimoineplus.ui.components.glassWell
 
 /*
 	Création ou modification d'une catégorie : nom, nature (à la création),
@@ -96,7 +97,7 @@ fun CategoryPanel(
 					modifier         = Modifier
 						.size(40.dp)
 						.clip(CircleShape)
-						.background(if (vOn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer)
+						.background(if (vOn) MaterialTheme.colorScheme.primary else glassWell(MaterialTheme.colorScheme.surfaceContainer))
 						.clickable { vIcon = inKey }
 						.semantics { selected = vOn; contentDescription = inKey },
 					contentAlignment = Alignment.Center

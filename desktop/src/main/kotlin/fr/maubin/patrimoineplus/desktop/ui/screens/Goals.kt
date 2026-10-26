@@ -96,7 +96,9 @@ import fr.maubin.patrimoineplus.ui.components.SectionHeader
 import fr.maubin.patrimoineplus.ui.components.MonthSwitcher
 import fr.maubin.patrimoineplus.desktop.Screen
 import java.time.YearMonth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.heightIn
+import fr.maubin.patrimoineplus.ui.components.glassRaised
+import fr.maubin.patrimoineplus.ui.components.glassWell
 
 private const val kBarMillis = 420														// remplissage de la barre d'avancement
 
@@ -419,7 +421,7 @@ private fun ProgressBar(
 	val vFill by animateFloatAsState(inPercent / 100f, tween(kBarMillis), label = "avancement")	// part remplie
 	Row(inModifier, verticalAlignment = Alignment.CenterVertically) {
 		Box(
-			Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(4.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest)
+			Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(4.dp)).background(glassWell(MaterialTheme.colorScheme.surfaceContainerHighest))
 				.semantics { contentDescription = "Avancement $inPercent %" }
 		) {
 			Box(Modifier.fillMaxWidth(vFill).height(8.dp).clip(RoundedCornerShape(4.dp)).background(inColor.takeIf { it != Color.Unspecified } ?: MaterialTheme.colorScheme.onSurface))
@@ -453,7 +455,7 @@ private fun StatusPill(inStatus: GoalStatus)
 		color    = if (vFull) vColors.onPrimary else if (inStatus == GoalStatus.BEHIND || inStatus == GoalStatus.OVERDUE) vColors.onSurface else vColors.onSurfaceVariant,
 		modifier = Modifier
 			.clip(RoundedCornerShape(50))
-			.background(if (vFull) vColors.primary else vColors.surface)
+			.background(if (vFull) vColors.primary else glassRaised(vColors.surface))
 			.border(1.dp, if (vFull) vColors.primary else if (inStatus == GoalStatus.BEHIND || inStatus == GoalStatus.OVERDUE) vColors.onSurface else vColors.outlineVariant, RoundedCornerShape(50))
 			.padding(horizontal = 10.dp, vertical = 3.dp)
 	)
@@ -754,7 +756,7 @@ private fun MonthPill(inStatus: MonthGoalStatus)
 		color    = if (vGood) vColors.onPrimary else if (vBad) vColors.error else vColors.onSurfaceVariant,
 		modifier = Modifier
 			.clip(RoundedCornerShape(50))
-			.background(if (vGood) vColors.primary else vColors.surface)
+			.background(if (vGood) vColors.primary else glassRaised(vColors.surface))
 			.border(1.dp, if (vGood) vColors.primary else if (vBad) vColors.error else vColors.outlineVariant, RoundedCornerShape(50))
 			.padding(horizontal = 10.dp, vertical = 3.dp)
 	)

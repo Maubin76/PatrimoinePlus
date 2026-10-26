@@ -66,6 +66,12 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import fr.maubin.patrimoineplus.ui.components.operationAccent
 import androidx.compose.material3.LocalContentColor
+import fr.maubin.patrimoineplus.ui.components.glassWell
+import fr.maubin.patrimoineplus.ui.components.glassRaised
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.layout.height
 
 private val kRowDate   = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)	// date d'une ligne
 private const val kShown = 500														// lignes affichées au plus
@@ -233,8 +239,16 @@ private fun <T> Dropdown(
 {
 	var vOpen by remember { mutableStateOf(false) }									// menu ouvert
 	Box(inModifier) {
-		OutlinedButton(onClick = { vOpen = true }, modifier = Modifier.fillMaxWidth()) {
-			Text(inOptions.firstOrNull { it.first == inSelected }?.second ?: inLabel, maxLines = 1, overflow = TextOverflow.Ellipsis)
+		OutlinedButton(
+			onClick        = { vOpen = true },
+			modifier       = Modifier.fillMaxWidth().height(56.dp),
+			shape          = MaterialTheme.shapes.extraSmall,
+			border         = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+			contentPadding = PaddingValues(start = 16.dp, end = 12.dp),
+			colors         = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
+		) {																			// même allure que les champs voisins (dates, montants)
+			Text(inOptions.firstOrNull { it.first == inSelected }?.second ?: inLabel, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+			Icon(LineIcons.ChevronDown, contentDescription = null, modifier = Modifier.size(18.dp))
 		}
 		DropdownMenu(expanded = vOpen, onDismissRequest = { vOpen = false }) {
 			inOptions.forEach { (inValue, inText) -> DropdownMenuItem(text = { Text(inText) }, onClick = { vOpen = false; inOnSelect(inValue) }) }
@@ -268,7 +282,7 @@ private fun HitRow(
 			.fillMaxWidth()
 			.heightIn(min = 52.dp)
 			.clip(MaterialTheme.shapes.small)
-			.background(if (inSelected) vColors.surfaceContainerHigh else vColors.surface)
+			.background(if (inSelected) glassWell(vColors.surfaceContainerHigh) else glassRaised(vColors.surface))
 			.onClick(keyboardModifiers = { isShiftPressed }, onClick = inOnRange)
 			.onClick(keyboardModifiers = { isCtrlPressed }, onClick = inOnToggle)
 			.onClick(onClick = inOnOpen)
@@ -277,7 +291,7 @@ private fun HitRow(
 	) {
 		Checkbox(checked = inSelected, onCheckedChange = { inOnToggle() })
 		val vBadge = operationAccent(inHit.amount)										// entrée ou sortie (thème Coloré)
-		Box(Modifier.size(32.dp).clip(CircleShape).background(vBadge?.first ?: vColors.surfaceContainer), contentAlignment = Alignment.Center) {
+		Box(Modifier.size(32.dp).clip(CircleShape).background(vBadge?.first ?: glassWell(vColors.surfaceContainer)), contentAlignment = Alignment.Center) {
 			Icon(CategoryIcons.of(inHit.icon), contentDescription = null, tint = vBadge?.second ?: LocalContentColor.current, modifier = Modifier.size(18.dp))
 		}
 		Spacer(Modifier.width(14.dp))
@@ -316,7 +330,7 @@ private fun SelectionBar(
 	var vMenu    by remember { mutableStateOf(false) }								// menu des catégories
 	var vConfirm by remember { mutableStateOf(false) }								// confirmation de suppression
 	Row(
-		modifier              = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surfaceContainer).padding(horizontal = 16.dp, vertical = 8.dp),
+		modifier              = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).background(glassWell(MaterialTheme.colorScheme.surfaceContainer)).padding(horizontal = 16.dp, vertical = 8.dp),
 		verticalAlignment     = Alignment.CenterVertically,
 		horizontalArrangement = Arrangement.spacedBy(12.dp)
 	) {

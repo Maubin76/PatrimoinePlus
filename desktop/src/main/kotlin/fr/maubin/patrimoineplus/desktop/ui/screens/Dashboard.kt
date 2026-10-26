@@ -70,7 +70,8 @@ import fr.maubin.patrimoineplus.ui.components.isColorful
 import fr.maubin.patrimoineplus.ui.components.accountAccent
 import androidx.compose.ui.graphics.Color
 import fr.maubin.patrimoineplus.ui.theme.colorfulMain
-import fr.maubin.patrimoineplus.ui.components.heroFilled
+import fr.maubin.patrimoineplus.ui.components.heroFilled
+import fr.maubin.patrimoineplus.ui.components.glassWell
 
 private val kShortDay   = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date courte
 private val kAccountMin = 300.dp													// largeur minimale d'une tuile de compte
@@ -508,7 +509,7 @@ fun MiniBar(
 )
 {
 	ProportionBar(
-		inSegments    = listOf(BarSegment((inFraction.coerceIn(0f, 1f) * 1000).toLong(), if (isColorful()) colorfulMain() else MaterialTheme.colorScheme.primary), BarSegment(((1f - inFraction.coerceIn(0f, 1f)) * 1000).toLong(), MaterialTheme.colorScheme.surfaceContainerHigh)),
+		inSegments    = listOf(BarSegment((inFraction.coerceIn(0f, 1f) * 1000).toLong(), if (isColorful()) colorfulMain() else MaterialTheme.colorScheme.primary), BarSegment(((1f - inFraction.coerceIn(0f, 1f)) * 1000).toLong(), glassWell(MaterialTheme.colorScheme.surfaceContainerHigh))),
 		inDescription = "${(inFraction * 100).toInt()} %",
 		inModifier    = inModifier
 	)

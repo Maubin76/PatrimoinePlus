@@ -53,7 +53,9 @@ import fr.maubin.patrimoineplus.ui.components.accountAccent
 import fr.maubin.patrimoineplus.ui.components.isColorful
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import androidx.compose.ui.graphics.Color
-import fr.maubin.patrimoineplus.ui.components.heroFilled
+import fr.maubin.patrimoineplus.ui.components.heroFilled
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 private val kLongDay = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)	// date en toutes lettres
 
@@ -116,7 +118,14 @@ private fun AnnualReportSection(
 		Row(verticalAlignment = Alignment.CenterVertically) {
 			Spacer(Modifier.weight(1f))														// années et export à droite
 			vYears.forEach { inYear ->
-				FilterChip(selected = inYear == vYear, onClick = { vYear = inYear }, label = { Text("$inYear") }, modifier = Modifier.padding(end = 8.dp))
+				FilterChip(
+					selected = inYear == vYear,
+					onClick  = { vYear = inYear },
+					label    = { Text("$inYear") },
+					shape    = RoundedCornerShape(50),
+					colors   = FilterChipDefaults.filterChipColors(containerColor = Color.Transparent, selectedContainerColor = MaterialTheme.colorScheme.primary, selectedLabelColor = MaterialTheme.colorScheme.onPrimary),
+					modifier = Modifier.padding(end = 8.dp)
+				)																	// année choisie en pilule pleine, comme les choix voisins
 			}
 			Spacer(Modifier.width(8.dp))
 			Button(onClick = { vPick("bilan-patrimoineplus-$vYear.pdf")?.let { vError = inController.exportReport(vYear, it) } }) { Text("Exporter en PDF…") }

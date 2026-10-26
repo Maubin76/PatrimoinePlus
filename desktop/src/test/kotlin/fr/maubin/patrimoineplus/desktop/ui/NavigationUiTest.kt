@@ -191,6 +191,12 @@ class NavigationUiTest
 		assertEquals(true, DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")).load().glass)
 		fCompose.onNodeWithContentDescription("Effet verre").assertIsOn()
 		capture(vApp, "27-reglages-verre")
+		vApp.show(Screen.REPORT); vApp.showReportTab(ReportTab.MONTHLY)
+		capture(vApp, "27-bilan-mois-verre")
+		vApp.showReportTab(ReportTab.ANNUAL)
+		capture(vApp, "27-bilan-annuel-verre")
+		vApp.show(Screen.SEARCH)
+		capture(vApp, "27-recherche-verre")
 		vApp.show(Screen.DASHBOARD)
 		capture(vApp, "27-tableau-de-bord-verre")
 		vApp.setAppearance(ThemeMode.DARK)
@@ -202,6 +208,12 @@ class NavigationUiTest
 		capture(vApp, "27-tableau-de-bord-verre-sombre-colore")
 		vApp.newOperation()
 		capture(vApp, "27-saisie-verre-sombre")
+		vApp.show(Screen.SETTINGS)
+		capture(vApp, "27-reglages-verre-sombre")
+		vApp.show(Screen.REPORT); vApp.showReportTab(ReportTab.MONTHLY)
+		capture(vApp, "27-bilan-mois-verre-sombre")
+		vApp.show(Screen.SEARCH)
+		capture(vApp, "27-recherche-verre-sombre")
 	}
 
 	/*

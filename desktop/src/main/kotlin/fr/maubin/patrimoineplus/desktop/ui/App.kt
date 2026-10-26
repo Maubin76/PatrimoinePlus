@@ -507,7 +507,7 @@ private fun RailButton(
 private fun GlassBackdrop(inDark: Boolean)
 {
 	Box(Modifier.fillMaxSize().background(if (inDark) Color(0xFF07070B) else Color(0xFFE9E4FA))) {
-		Canvas(Modifier.fillMaxSize().blur(if (inDark) 18.dp else 70.dp, BlurredEdgeTreatment.Rectangle)) {
+		Canvas(Modifier.fillMaxSize().blur(if (inDark) 40.dp else 90.dp, BlurredEdgeTreatment.Rectangle)) {
 			val vW = size.width															// largeur
 			val vH = size.height															// hauteur
 			val vM = maxOf(vW, vH)															// plus grande dimension
@@ -520,22 +520,22 @@ private fun GlassBackdrop(inDark: Boolean)
 						close()
 					}, inColor)
 				}																		// facette, en fractions de l'écran
-				vFacet(Color(0xFF14141C), listOf(0f to 0f, 0.42f to 0f, 0.18f to 0.55f, 0f to 0.4f))
-				vFacet(Color(0xFF1C1C26), listOf(0.42f to 0f, 0.78f to 0f, 0.5f to 0.38f, 0.18f to 0.55f))
-				vFacet(Color(0xFF101017), listOf(0.78f to 0f, 1f to 0f, 1f to 0.48f, 0.5f to 0.38f))
-				vFacet(Color(0xFF191922), listOf(0f to 0.4f, 0.18f to 0.55f, 0.36f to 1f, 0f to 1f))
-				vFacet(Color(0xFF0C0C12), listOf(0.18f to 0.55f, 0.5f to 0.38f, 0.7f to 1f, 0.36f to 1f))
-				vFacet(Color(0xFF1F1F2A), listOf(0.5f to 0.38f, 1f to 0.48f, 1f to 1f, 0.7f to 1f))
-				drawCircle(Brush.radialGradient(listOf(Color(0xFF5B4BE0).copy(alpha = 0.42f), Color.Transparent), center = Offset(0.82f * vW, 0.12f * vH), radius = 0.45f * vM), radius = 0.45f * vM, center = Offset(0.82f * vW, 0.12f * vH))
-				drawCircle(Brush.radialGradient(listOf(Color(0xFF2A3A8C).copy(alpha = 0.30f), Color.Transparent), center = Offset(0.12f * vW, 0.92f * vH), radius = 0.4f * vM), radius = 0.4f * vM, center = Offset(0.12f * vW, 0.92f * vH))
+				vFacet(Color(0xFF101017), listOf(0f to 0f, 0.42f to 0f, 0.18f to 0.55f, 0f to 0.4f))
+				vFacet(Color(0xFF15151D), listOf(0.42f to 0f, 0.78f to 0f, 0.5f to 0.38f, 0.18f to 0.55f))
+				vFacet(Color(0xFF0D0D13), listOf(0.78f to 0f, 1f to 0f, 1f to 0.48f, 0.5f to 0.38f))
+				vFacet(Color(0xFF13131A), listOf(0f to 0.4f, 0.18f to 0.55f, 0.36f to 1f, 0f to 1f))
+				vFacet(Color(0xFF0B0B10), listOf(0.18f to 0.55f, 0.5f to 0.38f, 0.7f to 1f, 0.36f to 1f))
+				vFacet(Color(0xFF17171F), listOf(0.5f to 0.38f, 1f to 0.48f, 1f to 1f, 0.7f to 1f))
+				drawCircle(Brush.radialGradient(listOf(Color(0xFF5B4BE0).copy(alpha = 0.30f), Color.Transparent), center = Offset(0.82f * vW, 0.12f * vH), radius = 0.45f * vM), radius = 0.45f * vM, center = Offset(0.82f * vW, 0.12f * vH))
+				drawCircle(Brush.radialGradient(listOf(Color(0xFF2A3A8C).copy(alpha = 0.20f), Color.Transparent), center = Offset(0.12f * vW, 0.92f * vH), radius = 0.4f * vM), radius = 0.4f * vM, center = Offset(0.12f * vW, 0.92f * vH))
 			}
 			else
 			{
 				drawRect(Brush.linearGradient(listOf(Color(0xFFE6E0FA), Color(0xFFDDE6F8), Color(0xFFE5E0F7)), start = Offset.Zero, end = Offset(vW, vH)))
-				drawCircle(Color(0xFFC3B2FF).copy(alpha = 0.75f), radius = 0.26f * vM, center = Offset(0.2f * vW, 0.18f * vH))
-				drawCircle(Color(0xFFFFBFD8).copy(alpha = 0.70f), radius = 0.28f * vM, center = Offset(0.06f * vW, 0.86f * vH))
-				drawCircle(Color(0xFF9FCBFF).copy(alpha = 0.65f), radius = 0.27f * vM, center = Offset(0.86f * vW, 0.34f * vH))
-				drawCircle(Color(0xFFFFD9B8).copy(alpha = 0.50f), radius = 0.2f * vM, center = Offset(0.6f * vW, 0.98f * vH))
+				drawCircle(Color(0xFFC3B2FF).copy(alpha = 0.50f), radius = 0.26f * vM, center = Offset(0.2f * vW, 0.18f * vH))
+				drawCircle(Color(0xFFFFBFD8).copy(alpha = 0.45f), radius = 0.28f * vM, center = Offset(0.06f * vW, 0.86f * vH))
+				drawCircle(Color(0xFF9FCBFF).copy(alpha = 0.42f), radius = 0.27f * vM, center = Offset(0.86f * vW, 0.34f * vH))
+				drawCircle(Color(0xFFFFD9B8).copy(alpha = 0.32f), radius = 0.2f * vM, center = Offset(0.6f * vW, 0.98f * vH))
 			}
 		}
 	}
