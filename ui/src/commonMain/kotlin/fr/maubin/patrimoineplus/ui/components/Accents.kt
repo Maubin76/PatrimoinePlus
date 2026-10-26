@@ -13,7 +13,8 @@ import fr.maubin.patrimoineplus.ui.theme.kDeepSpace
 import fr.maubin.patrimoineplus.ui.theme.kSkyBlue
 import fr.maubin.patrimoineplus.ui.theme.kTiger
 import androidx.compose.runtime.staticCompositionLocalOf
-import fr.maubin.patrimoineplus.ui.theme.colorfulMain
+import fr.maubin.patrimoineplus.ui.theme.colorfulMain
+import fr.maubin.patrimoineplus.ui.theme.LocalPalette
 
 // Couleurs d'accent du thème Coloré, posées sur le contenu (tuiles, pastilles)
 // et pas sur les fonds, qui restent ceux des autres thèmes.
@@ -43,6 +44,17 @@ fun accountAccent(inType: AccountType): Color
 {
 	if (!isColorful()) return Color.Unspecified
 	val vDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f					// fond sombre
+	LocalPalette.current?.let { inPalette ->
+		return when (inType)
+		{
+			AccountType.CHECKING    -> inPalette.rise
+			AccountType.SAVINGS     -> inPalette.invest
+			AccountType.BROKERAGE   -> inPalette.fall
+			AccountType.REAL_ESTATE -> inPalette.main
+			AccountType.COLLECTIBLE -> inPalette.second
+			AccountType.LOAN        -> if (vDark) kLoanDark else kLoanLight
+		}
+	}																					// thème personnalisé
 	return when (inType)
 	{
 		AccountType.CHECKING    -> kBlueGreen
@@ -66,6 +78,10 @@ fun operationAccent(inCents: Long): Pair<Color, Color>?
 {
 	if (!isColorful() || inCents == 0L) return null
 	val vDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f					// fond sombre
+	LocalPalette.current?.let { inPalette ->
+		val vTint = if (inCents > 0) inPalette.rise else inPalette.fall					// teinte du sens
+		return vTint.copy(alpha = if (vDark) 0.28f else 0.16f) to vTint
+	}																					// thème personnalisé
 	val vBase = if (inCents > 0) kBlueGreen else kTiger									// teinte du sens
 	return if (vDark) vBase.copy(alpha = 0.28f) to (if (inCents > 0) Color(0xFF4CC3E0) else Color(0xFFFFB066))
 		else vBase.copy(alpha = 0.16f) to (if (inCents > 0) kRiseInk else kFallInk)
@@ -93,9 +109,9 @@ fun flowAccent(inKind: FlowAccent): Color =
 	if (!isColorful()) Color.Unspecified
 	else when (inKind)
 	{
-		FlowAccent.INFLOW  -> kBlueGreen
-		FlowAccent.OUTFLOW -> kTiger
-		FlowAccent.INVEST  -> kAmber
+		FlowAccent.INFLOW  -> LocalPalette.current?.rise ?: kBlueGreen
+		FlowAccent.OUTFLOW -> LocalPalette.current?.fall ?: kTiger
+		FlowAccent.INVEST  -> LocalPalette.current?.invest ?: kAmber
 		FlowAccent.MAIN    -> colorfulMain()
 	}
 

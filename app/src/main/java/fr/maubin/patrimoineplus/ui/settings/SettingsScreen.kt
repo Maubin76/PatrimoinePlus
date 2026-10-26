@@ -50,7 +50,13 @@ import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import fr.maubin.patrimoineplus.ui.profiles.PendingRemoval
-import fr.maubin.patrimoineplus.ui.components.ProfileRemovalDialog
+import fr.maubin.patrimoineplus.ui.components.ProfileRemovalDialog
+import fr.maubin.patrimoineplus.domain.model.CustomTheme
+import fr.maubin.patrimoineplus.ui.components.ThemeSwatches
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
 
 /*
 	Verrou et sauvegarde, vus par l'écran des réglages.
@@ -84,6 +90,7 @@ data class SafetyActions(
 	inGlass        : effet verre actif
 	inOnGlass      : active ou retire l'effet verre
 	inProfiles     : profils de la famille ; null pour masquer la section
+	inThemes       : thèmes personnalisés et leurs actions ; null pour masquer la liste
 */
 @Composable
 fun SettingsScreen(
@@ -98,7 +105,8 @@ fun SettingsScreen(
 	inOnColorTheme : (ColorTheme) -> Unit = {},
 	inGlass        : Boolean = false,
 	inOnGlass      : (Boolean) -> Unit = {},
-	inProfiles     : ProfilesActions? = null
+	inProfiles     : ProfilesActions? = null,
+	inThemes       : ThemesActions? = null
 )
 {
 	ScreenScaffold(inTitle = "Réglages") { inPadding ->
@@ -114,14 +122,19 @@ fun SettingsScreen(
 			Spacer(Modifier.height(16.dp))
 			Text("Thème", style = MaterialTheme.typography.titleMedium)
 			Spacer(Modifier.height(8.dp))
+			val vCustom = inThemes?.let { inActions -> inActions.themes.firstOrNull { it.id == inActions.selected } }	// thème personnalisé choisi ; null sans
 			SegmentedChoice(
-				inOptions  = ColorTheme.entries,
-				inSelected = inColorTheme,
-				inLabel    = { it.label },
-				inOnSelect = inOnColorTheme
+				inOptions  = ColorTheme.entries.map<ColorTheme, ColorTheme?> { it },
+				inSelected = if (vCustom != null) null else inColorTheme,
+				inLabel    = { it?.label.orEmpty() },
+				inOnSelect = { it?.let(inOnColorTheme) }
 			)
 			Spacer(Modifier.height(8.dp))
-			Text(inColorTheme.detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+			Text(vCustom?.let { "Thème personnalisé « ${it.name} » : ses cinq couleurs prennent les rôles du thème Coloré." } ?: inColorTheme.detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+			inThemes?.let { inActions ->
+				Spacer(Modifier.height(12.dp))
+				CustomThemes(inActions)
+			}
 			Spacer(Modifier.height(16.dp))
 			BorderedCard {
 				SwitchRow(
@@ -424,5 +437,66 @@ private fun ProfilesSection(inActions: ProfilesActions)
 		}
 	}
 	inActions.pending?.let { inPending -> ProfileRemovalDialog(inPending.name, inPending.plan, inActions.onConfirm, inActions.onCancel) }
+}
+
+/*
+	Thèmes personnalisés et leurs actions (réglages).
+	themes   : thèmes créés
+	selected : thème choisi sur ce téléphone ; vide sans
+	onSelect : choisit un thème
+	onSave   : crée (identifiant null) ou modifie un thème ; refus par rappel
+	onDelete : supprime un thème
+*/
+data class ThemesActions(
+	val themes   : List<CustomTheme>,
+	val selected : String,
+	val onSelect : (String) -> Unit,
+	val onSave   : (String?, String, List<String>, (String?) -> Unit) -> Unit,
+	val onDelete : (String) -> Unit
+)
+
+/*
+	Liste des thèmes personnalisés : une ligne par thème (pastilles, nom ; un
+	toucher le choisit, le crayon l'ouvre), puis « Créer un thème ».
+	inActions : thèmes et actions
+*/
+@Composable
+private fun CustomThemes(inActions: ThemesActions)
+{
+	var vEditing by remember { mutableStateOf<CustomTheme?>(null) }					// thème ouvert
+	var vCreating by remember { mutableStateOf(false) }								// création en cours
+	val vColors  = MaterialTheme.colorScheme											// palette courante
+	BorderedCard {
+		Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+			inActions.themes.forEach { inTheme ->
+				val vOn = inTheme.id == inActions.selected											// thème choisi
+				Row(
+					modifier          = Modifier
+						.fillMaxWidth()
+						.clip(RoundedCornerShape(16.dp))
+						.background(if (vOn) vColors.surfaceContainerHigh else androidx.compose.ui.graphics.Color.Transparent)
+						.selectable(selected = vOn, role = Role.RadioButton) { inActions.onSelect(inTheme.id) }
+						.padding(horizontal = 8.dp, vertical = 4.dp),
+					verticalAlignment = Alignment.CenterVertically
+				) {
+					ThemeSwatches(inTheme.colors, 16.dp)
+					Spacer(Modifier.width(12.dp))
+					Text(inTheme.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+					IconButton(onClick = { vEditing = inTheme }) { Icon(LineIcons.Edit, contentDescription = "Modifier le thème ${inTheme.name}") }
+				}
+			}
+			OutlinedButton(onClick = { vCreating = true }) { Text("Créer un thème") }
+		}
+	}
+	if (vCreating || vEditing != null)
+	{
+		val vTheme = vEditing																	// thème modifié ; null pour une création
+		ThemeSheet(
+			inTheme     = vTheme,
+			inOnSave    = { inName, inColorsTyped, inOnRefusal -> inActions.onSave(vTheme?.id, inName, inColorsTyped) { inRefusal -> if (inRefusal == null) { vCreating = false; vEditing = null } else inOnRefusal(inRefusal) } },
+			inOnDelete  = { vTheme?.let { inActions.onDelete(it.id) }; vEditing = null },
+			inOnDismiss = { vCreating = false; vEditing = null }
+		)
+	}
 }
 

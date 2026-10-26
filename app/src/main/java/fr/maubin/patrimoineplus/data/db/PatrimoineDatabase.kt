@@ -38,6 +38,7 @@ class Converters
 	Version 5 : bien financé par un crédit (colonne ajoutée, migration automatique).
 	Version 6 : profils et propriétaires des comptes (table et colonne ajoutées,
 	migration automatique ; base d'avant : un profil « Moi » à la lecture).
+	Version 7 : thèmes de couleurs personnalisés (table ajoutée, migration automatique).
 */
 @Database(
 	entities     = [
@@ -51,11 +52,12 @@ class Converters
 		AssetPriceEntity::class,
 		RecurrenceEntity::class,
 		LoanEntity::class,
-		ProfileEntity::class
+		ProfileEntity::class,
+		ThemeEntity::class
 	],
-	version       = 6,
+	version       = 7,
 	exportSchema  = true,
-	autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5), AutoMigration(from = 5, to = 6)]
+	autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5), AutoMigration(from = 5, to = 6), AutoMigration(from = 6, to = 7)]
 )
 @TypeConverters(Converters::class)
 abstract class PatrimoineDatabase : RoomDatabase()

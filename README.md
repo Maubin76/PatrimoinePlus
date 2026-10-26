@@ -382,6 +382,16 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   Apparence, mémorisé) : panneaux translucides à liseré lumineux sur un fond
   de formes floues (halos pastel en clair ; en sombre, noir profond, facettes
   fumées, lueur violette, coque et chiffre mis en avant en violet).
+- **Thèmes personnalisés** (Réglages › Apparence › Thème, PC et téléphone) :
+  « Créer un thème », un nom et cinq couleurs en hexadécimal (#RRGGBB, ou
+  #RGB), une par rôle comme le thème Coloré : principale (chiffre mis en
+  avant, immobilier), hausses et entrées (courant), investissements
+  (épargne), baisses et sorties (bourse), secondaire (collection) ; pastille
+  et alerte si une couleur est peu lisible sur le fond clair ou sombre
+  (contraste < 3:1), aperçu en direct. Les thèmes voyagent dans le fichier
+  d'échange (format 7, onglet Thèmes ; base du téléphone v7) ; le thème
+  choisi reste propre à chaque appareil. Supprimer le thème choisi ramène
+  au thème Coloré.
 - **Tutoriels du PC** (visites guidées) : au premier lancement, celle du
   tableau de bord (avec la coque : saisie, recherche, mode discret, rail) ;
   à la première venue sur chaque autre page (et sur la vue d'un compte), la

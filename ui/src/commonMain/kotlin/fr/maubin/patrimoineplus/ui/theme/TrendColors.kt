@@ -30,8 +30,11 @@ fun trendColor(inCents: Long): Color
 		return Color.Unspecified
 	}
 	val vDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f				// fond sombre
+	val vOwn  = LocalPalette.current													// thème personnalisé ; null sans
 	return when
 	{
+		vOwn != null && inCents > 0                  -> vOwn.rise
+		vOwn != null                                 -> vOwn.fall
 		vTheme == ColorTheme.COLORFUL && inCents > 0 -> if (vDark) kRiseDark else kRiseLight
 		vTheme == ColorTheme.COLORFUL                -> if (vDark) kFallDark else kFallLight
 		inCents > 0                                  -> if (vDark) kGainDark else kGainLight

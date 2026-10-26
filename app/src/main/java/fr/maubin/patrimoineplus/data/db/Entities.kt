@@ -31,6 +31,17 @@ data class AccountEntity(
 )
 
 /*
+	Table des thèmes de couleurs créés par l'utilisateur (version 7).
+*/
+@Entity(tableName = "theme")
+data class ThemeEntity(
+	@PrimaryKey val id   : String,											// identifiant
+	val name             : String,											// nom choisi
+	val colors           : String,											// cinq couleurs « #RRGGBB », séparées par « ; »
+	val sortOrder        : Int												// ordre d'affichage
+)
+
+/*
 	Table des profils, membres de la famille (version 6).
 */
 @Entity(tableName = "profile")

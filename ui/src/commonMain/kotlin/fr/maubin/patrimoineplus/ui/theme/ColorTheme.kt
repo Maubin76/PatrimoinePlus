@@ -4,7 +4,9 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.luminance
+import fr.maubin.patrimoineplus.domain.calc.parseHexColor
+import fr.maubin.patrimoineplus.domain.calc.kThemeColors
 
 /*
 	Thème de couleurs de l'application (téléphone et PC), indépendant de
@@ -33,12 +35,52 @@ val kAmber      = Color(0xFFFFB703)												// ambre
 val kTiger      = Color(0xFFFB8500)												// orange
 
 /*
-	Accent principal du thème Coloré (bleu nuit, bleu ciel sur fond sombre) :
-	chiffre mis en avant, courbes ; indépendant de l'encre des boutons.
+	Palette d'un thème personnalisé : une couleur par rôle (voir
+	kThemeRoles), utilisée comme celle du thème Coloré, en clair comme en
+	sombre.
+	main   : principale (chiffre mis en avant, immobilier, courbes)
+	rise   : hausses et entrées (comptes courants)
+	invest : investissements (épargne)
+	fall   : baisses et sorties (bourse)
+	second : secondaire (collection)
+*/
+data class Palette(
+	val main   : Color,
+	val rise   : Color,
+	val invest : Color,
+	val fall   : Color,
+	val second : Color
+)
+{
+	// Teintes des répartitions, dans l'ordre des rangs (comme le thème Coloré).
+	val ranks: List<Color>
+		get() = listOf(main, invest, rise, fall, second)
+
+	companion object
+	{
+		/*
+			Palette tirée des cinq couleurs d'un thème ; null si l'une est illisible.
+			inColors : couleurs « #RRGGBB », dans l'ordre des rôles
+		*/
+		fun of(inColors: List<String>): Palette?
+		{
+			val vColors = inColors.map { parseHexColor(it)?.let { inArgb -> Color(inArgb.toInt()) } ?: return null }	// couleurs lues
+			return if (vColors.size == kThemeColors) Palette(vColors[0], vColors[1], vColors[2], vColors[3], vColors[4]) else null
+		}
+	}
+}
+
+// Palette d'un thème personnalisé actif ; null : palette du thème Coloré.
+val LocalPalette = staticCompositionLocalOf<Palette?> { null }
+
+/*
+	Accent principal du thème Coloré (bleu nuit, bleu ciel sur fond sombre) ou
+	du thème personnalisé : chiffre mis en avant, courbes ; indépendant de
+	l'encre des boutons.
 */
 @Composable
 fun colorfulMain(): Color =
-	if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) kSkyBlue else kDeepSpace
+	LocalPalette.current?.main ?: if (MaterialTheme.colorScheme.surface.luminance() < 0.5f) kSkyBlue else kDeepSpace
 
 // Teintes de répartition du thème Coloré, dans l'ordre des rangs (la plus grosse
 // part d'abord) ; validées : voisins séparés (ΔE ≥ 15, daltonisme compris), les

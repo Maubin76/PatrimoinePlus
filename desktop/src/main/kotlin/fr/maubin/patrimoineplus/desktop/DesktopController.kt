@@ -185,6 +185,13 @@ sealed interface Panel
 		token : numéro d'ouverture
 	*/
 	data class Recurring(val form: RecurrenceForm, override val token: Long = 0) : Panel
+
+	/*
+		Thème de couleurs personnalisé, nouveau ou modifié.
+		themeId : thème modifié ; null pour en créer un
+		token   : numéro d'ouverture
+	*/
+	data class ThemeSheet(val themeId: String?, override val token: Long = 0) : Panel
 }
 
 /*
@@ -372,7 +379,39 @@ class DesktopController(
 		Choisit le thème de couleurs (mémorisé).
 		inTheme : thème
 	*/
-	fun setColorTheme(inTheme: ColorTheme) = update(fSettings.value.copy(colors = inTheme))
+	fun setColorTheme(inTheme: ColorTheme) = update(fSettings.value.copy(colors = inTheme, palette = ""))
+
+	/*
+		Choisit un thème personnalisé (mémorisé sur ce PC).
+		inId : thème
+	*/
+	fun setCustomTheme(inId: String) = update(fSettings.value.copy(palette = inId))
+
+	/*
+		Crée ou modifie un thème personnalisé ; un thème créé devient le thème
+		choisi.
+		inId     : thème modifié ; null pour en créer un
+		inName   : nom
+		inColors : couleurs tapées, dans l'ordre des rôles
+	*/
+	fun saveTheme(
+		inId     : String?,
+		inName   : String,
+		inColors : List<String>
+	): EditResult =
+		edit { editor.saveTheme(it, inId, inName, inColors) }.also { inResult ->
+			if (inResult is EditResult.Done && inId == null) inResult.id?.let(::setCustomTheme)
+		}
+
+	/*
+		Supprime un thème personnalisé ; s'il était choisi, ce PC revient au
+		thème Coloré.
+		inId : thème
+	*/
+	fun deleteTheme(inId: String): EditResult =
+		edit { editor.deleteTheme(it, inId) }.also { inResult ->
+			if (inResult is EditResult.Done && fSettings.value.palette == inId) update(fSettings.value.copy(palette = "", colors = ColorTheme.COLORFUL))
+		}
 
 	private val fTour = MutableStateFlow<ActiveTour?>(null)						// visite guidée affichée
 
@@ -590,6 +629,7 @@ class DesktopController(
 			is Panel.Purchase        -> inPanel.copy(token = vToken)
 			is Panel.Sale            -> inPanel.copy(token = vToken)
 			is Panel.Recurring       -> inPanel.copy(token = vToken)
+			is Panel.ThemeSheet      -> inPanel.copy(token = vToken)
 		}
 	}
 
@@ -651,6 +691,7 @@ class DesktopController(
 			is Panel.Purchase        -> vPanel.form.id != null && vData.transactions.none { it.id == vPanel.form.id }
 			is Panel.Sale            -> vData.transactions.none { it.id == vPanel.form.purchaseId } || (vPanel.form.id != null && vData.transactions.none { it.id == vPanel.form.id })
 			is Panel.Recurring       -> vPanel.form.id != null && vData.recurrences.none { it.id == vPanel.form.id }
+			is Panel.ThemeSheet      -> vPanel.themeId != null && vData.themes.none { it.id == vPanel.themeId }
 		}
 		if (vStale)
 		{

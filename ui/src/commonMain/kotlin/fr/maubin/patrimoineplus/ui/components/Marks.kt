@@ -39,7 +39,8 @@ import androidx.compose.ui.graphics.lerp
 import fr.maubin.patrimoineplus.ui.theme.LocalColorTheme
 import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 import fr.maubin.patrimoineplus.ui.theme.kColorfulDark
-import fr.maubin.patrimoineplus.ui.theme.kColorfulLight
+import fr.maubin.patrimoineplus.ui.theme.kColorfulLight
+import fr.maubin.patrimoineplus.ui.theme.LocalPalette
 
 private val kCardShape = RoundedCornerShape(24.dp)							// coins des cartes : panneau flottant
 
@@ -213,7 +214,7 @@ const val kAllocationSlots = 4													// teintes de r√©partition (la derni√
 fun allocationColor(inRank: Int): Color
 {
 	val vDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f					// fond sombre
-	if (LocalColorTheme.current == ColorTheme.COLORFUL) return (if (vDark) kColorfulDark else kColorfulLight)[inRank.coerceIn(0, kAllocationSlots - 1)]
+	if (LocalColorTheme.current == ColorTheme.COLORFUL) return (LocalPalette.current?.ranks ?: if (vDark) kColorfulDark else kColorfulLight)[inRank.coerceIn(0, kAllocationSlots - 1)]
 	return (if (vDark) kAllocationDark else kAllocationLight)[inRank.coerceIn(0, kAllocationSlots - 1)]
 }
 
@@ -233,7 +234,7 @@ fun rankColor(
 	val vDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f					// fond sombre
 	if (LocalColorTheme.current == ColorTheme.COLORFUL)
 	{
-		val vPalette = if (vDark) kColorfulDark else kColorfulLight						// teintes de la palette, dans l'ordre des rangs
+		val vPalette = LocalPalette.current?.ranks ?: if (vDark) kColorfulDark else kColorfulLight	// teintes de la palette, dans l'ordre des rangs
 		return vPalette[inRank.coerceIn(0, vPalette.lastIndex)]
 	}
 	val vRamp = if (vDark) kAllocationDark else kAllocationLight					// rampe du mode

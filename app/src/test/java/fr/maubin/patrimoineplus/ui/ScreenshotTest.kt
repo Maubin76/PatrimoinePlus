@@ -81,7 +81,9 @@ import fr.maubin.patrimoineplus.ui.settings.ProfilesActions
 import fr.maubin.patrimoineplus.ui.components.ProfileRemovalDialog
 import fr.maubin.patrimoineplus.domain.calc.profileRemoval
 import fr.maubin.patrimoineplus.data.demo.kDemoPartnerId
-import fr.maubin.patrimoineplus.domain.model.Ownership
+import fr.maubin.patrimoineplus.domain.model.Ownership
+import fr.maubin.patrimoineplus.ui.theme.Palette
+import fr.maubin.patrimoineplus.ui.settings.ThemeSheet
 
 private const val kOutDir = "build/outputs/roborazzi"						// dossier des captures
 
@@ -192,6 +194,36 @@ class ScreenshotTest
 		}
 		fCompose.waitForIdle()
 		captureScreenRoboImage("$kOutDir/profils-suppression.png")
+	}
+
+	/*
+		Thème personnalisé : accueil aux couleurs d'une palette violette, et
+		feuille d'édition d'un thème (rôles, alertes, aperçu).
+	*/
+	@Test
+	fun customTheme()
+	{
+		val vToday   = LocalDate.parse("2026-10-07")								// date de calcul
+		val vDemo    = buildDemoData(vToday)										// démonstration
+		val vState   = buildHomeState(vDemo.accounts, vDemo.transactions, vDemo.prices, vToday, vDemo.loans)	// accueil
+		val vPalette = Palette.of(listOf("#7B6CF6", "#1F9D8B", "#E9A23B", "#E5603A", "#8ECAE6"))!!	// palette violette
+		captureRoboImage("$kOutDir/theme-perso-accueil.png", content = {
+			PatrimoineTheme(inDarkTheme = false, inPalette = vPalette) {
+				Box(Modifier.fillMaxSize()) {
+					AppGround(false, false)
+					CompositionLocalProvider(LocalAmountsHidden provides false) {
+						AppFrame(inPosition = { 0f }, inSelected = TopLevelDestination.Home, inOnSelect = {}, inSnackbar = remember { SnackbarHostState() }) { HomeContent(vState, {}, {}) }
+					}
+				}
+			}
+		})
+		fCompose.setContent {
+			Themed(inDarkTheme = false) {
+				ThemeSheet(null, { _, _, _ -> }, {}, {})
+			}
+		}
+		fCompose.waitForIdle()
+		captureScreenRoboImage("$kOutDir/theme-perso-editeur.png")
 	}
 
 	/*

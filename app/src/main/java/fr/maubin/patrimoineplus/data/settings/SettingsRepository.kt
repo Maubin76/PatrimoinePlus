@@ -46,6 +46,15 @@ interface SettingsRepository
 	// Effet verre (désactivé par défaut).
 	val glassEffect: Flow<Boolean>
 
+	// Thème personnalisé choisi (identifiant) ; vide : le thème de couleurs.
+	val customTheme: Flow<String>
+
+	/*
+		Choisit un thème personnalisé.
+		inId : thème ; vide pour revenir au thème de couleurs
+	*/
+	suspend fun setCustomTheme(inId: String)
+
 	// Vue affichée : "" premier profil, "*" famille, sinon identifiant du profil.
 	val viewProfile: Flow<String>
 
@@ -135,6 +144,7 @@ class DataStoreSettingsRepository @Inject constructor(
 	private val kColorThemeKey    = stringPreferencesKey("color_theme")		// clé du thème de couleurs
 	private val kGlassKey         = booleanPreferencesKey("glass_effect")	// clé de l'effet verre
 	private val kViewKey          = stringPreferencesKey("view_profile")	// clé de la vue affichée
+	private val kCustomThemeKey   = stringPreferencesKey("custom_theme")	// clé du thème personnalisé choisi
 	private val kPieChartsKey     = stringSetPreferencesKey("pie_chart_keys")	// clé des répartitions affichées en cercle
 	private val kOnboardingKey    = booleanPreferencesKey("onboarding_done")	// clé du premier lancement
 	private val kLastAccountKey   = stringPreferencesKey("last_account")	// clé du dernier compte utilisé
@@ -179,6 +189,18 @@ class DataStoreSettingsRepository @Inject constructor(
 	override suspend fun setGlassEffect(inGlass: Boolean)
 	{
 		inDataStore.edit { inPreferences -> inPreferences[kGlassKey] = inGlass }
+	}
+
+	override val customTheme: Flow<String> =
+		inDataStore.data.map { inPreferences -> inPreferences[kCustomThemeKey].orEmpty() }
+
+	/*
+		Enregistre le thème personnalisé choisi.
+		inId : thème ; vide pour aucun
+	*/
+	override suspend fun setCustomTheme(inId: String)
+	{
+		inDataStore.edit { inPreferences -> inPreferences[kCustomThemeKey] = inId }
 	}
 
 	override val viewProfile: Flow<String> =

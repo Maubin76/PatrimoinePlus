@@ -254,7 +254,7 @@ fun <T> Choice(
 	inEnabled  : Boolean = true
 )
 {
-	PillChoice(inOptions, inOptions.firstOrNull { it.first == inSelected } ?: inOptions.first(), { it.second }, { inOnSelect(it.first) }, inEnabled)
+	PillChoice(inOptions, inOptions.firstOrNull { it.first == inSelected } ?: (inSelected to ""), { it.second }, { inOnSelect(it.first) }, inEnabled)	// valeur hors liste : aucun choix en avant
 }
 
 /*

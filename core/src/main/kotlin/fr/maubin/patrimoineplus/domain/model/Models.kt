@@ -245,3 +245,17 @@ data class AssetPrice(
 )
 
 const val kOpeningLabel = "Solde initial"										// libellé des soldes initiaux
+
+/*
+	Thème de couleurs créé par l'utilisateur : cinq couleurs, une par rôle
+	(voir kThemeRoles), partagé par le fichier d'échange.
+	id     : identifiant
+	name   : nom choisi
+	colors : couleurs « #RRGGBB », dans l'ordre des rôles
+*/
+data class CustomTheme(
+	val id     : String,
+	val name   : String,
+	val colors : List<String>
+)
+

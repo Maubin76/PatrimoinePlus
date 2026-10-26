@@ -144,7 +144,9 @@ import fr.maubin.patrimoineplus.desktop.ui.tour.LocalTourAnchors
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import fr.maubin.patrimoineplus.desktop.ui.tour.kTourAccount
 import kotlinx.coroutines.delay
-import fr.maubin.patrimoineplus.desktop.ActiveTour
+import fr.maubin.patrimoineplus.desktop.ActiveTour
+import fr.maubin.patrimoineplus.ui.theme.Palette
+import fr.maubin.patrimoineplus.desktop.ui.panels.ThemePanel
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -185,7 +187,8 @@ fun App(
 	val vSpace    by inController.workspace.collectAsState()				// données
 	val vPending  by inController.pending.collectAsState()					// action retenue
 	val vDark     = vSettings.appearance.isDark()									// mode sombre effectif
-	DeskTheme(inDarkTheme = vDark, inColorTheme = vSettings.colors, inGlass = vSettings.glass) {
+	val vPalette  = vSpace.data.themes.firstOrNull { it.id == vSettings.palette }?.let { Palette.of(it.colors) }	// thème personnalisé choisi ; null sans
+	DeskTheme(inDarkTheme = vDark, inColorTheme = vSettings.colors, inGlass = vSettings.glass, inPalette = vPalette) {
 		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie), LocalTourAnchors provides remember { TourAnchors() }) {
 			AppGround(vDark, vSettings.glass)												// fond pastel, ou formes floues derrière le verre
 			Surface(Modifier.fillMaxSize(), color = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSurface) {
@@ -317,6 +320,7 @@ private fun Shell(
 						is Panel.Purchase        -> PurchasePanel(inController, inPanel.form)
 						is Panel.Sale            -> SalePanel(inController, inPanel.form)
 						is Panel.Recurring       -> RecurrencePanel(inController, inPanel.form)
+						is Panel.ThemeSheet      -> ThemePanel(inController, inPanel.themeId)
 					}
 				}
 			}

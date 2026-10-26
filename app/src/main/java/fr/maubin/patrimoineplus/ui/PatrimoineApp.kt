@@ -62,7 +62,8 @@ import fr.maubin.patrimoineplus.ui.components.ProportionStyle
 import fr.maubin.patrimoineplus.ui.profiles.ProfilesViewModel
 import fr.maubin.patrimoineplus.ui.shell.LocalViewChip
 import fr.maubin.patrimoineplus.ui.shell.ViewChip
-import fr.maubin.patrimoineplus.ui.settings.ProfilesActions
+import fr.maubin.patrimoineplus.ui.settings.ProfilesActions
+import fr.maubin.patrimoineplus.ui.settings.ThemesActions
 
 private const val kSlideMillis = 260									// entrée et sortie de la vue d'un compte
 
@@ -162,6 +163,8 @@ private fun MainTabs(
 	val vView      by vProfiles.view.collectAsStateWithLifecycle()				// vue affichée
 	val vProfError by vProfiles.error.collectAsStateWithLifecycle()				// dernier refus sur les profils
 	val vPending   by vProfiles.pending.collectAsStateWithLifecycle()			// retrait de profil à confirmer
+	val vThemes    by inAppViewModel.themes.collectAsStateWithLifecycle()		// thèmes créés
+	val vCustom    by inAppViewModel.customTheme.collectAsStateWithLifecycle()	// thème personnalisé choisi
 	val vToggle    = inAppViewModel::toggleAmountsHidden					// bascule du mode discret
 	val vData      by inEntry.data.collectAsStateWithLifecycle()			// données de saisie
 	var vEntry     by remember { mutableStateOf<EntryForm?>(null) }		// saisie ouverte
@@ -212,7 +215,8 @@ private fun MainTabs(
 					inOnColorTheme = inAppViewModel::setColorTheme,
 					inGlass        = vGlass,
 					inOnGlass      = inAppViewModel::setGlassEffect,
-					inProfiles     = ProfilesActions(vView.profiles, vProfError, vProfiles::add, vProfiles::rename, vProfiles::askRemove, vPending, vProfiles::confirmRemove, vProfiles::cancelRemove)
+					inProfiles     = ProfilesActions(vView.profiles, vProfError, vProfiles::add, vProfiles::rename, vProfiles::askRemove, vPending, vProfiles::confirmRemove, vProfiles::cancelRemove),
+					inThemes       = ThemesActions(vThemes, vCustom, inAppViewModel::setCustomTheme, inAppViewModel::saveTheme, inAppViewModel::deleteTheme)
 				)
 			}
 		}

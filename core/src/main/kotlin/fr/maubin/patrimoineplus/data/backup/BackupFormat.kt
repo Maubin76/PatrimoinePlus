@@ -24,10 +24,11 @@ import fr.maubin.patrimoineplus.domain.calc.kMaxTradeCents
 import fr.maubin.patrimoineplus.domain.model.Ownership
 import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
 import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileName
-import fr.maubin.patrimoineplus.domain.rules.ownersError
+import fr.maubin.patrimoineplus.domain.rules.ownersError
+import fr.maubin.patrimoineplus.domain.calc.themeError
 
 const val kBackupFormat  = "patrimoineplus"										// signature du fichier
-const val kBackupVersion = 6													// version du format (2 : symbole de cotation des actifs ; 3 : comptes de biens ; 4 : opérations récurrentes et crédits ; 5 : mensualités en une opération, bien financé ; 6 : profils et propriétaires des comptes)
+const val kBackupVersion = 7													// version du format (2 : symbole de cotation des actifs ; 3 : comptes de biens ; 4 : opérations récurrentes et crédits ; 5 : mensualités en une opération, bien financé ; 6 : profils et propriétaires des comptes ; 7 : thèmes de couleurs)
 
 private val kJson = Json { prettyPrint = true; ignoreUnknownKeys = false }		// lecteur et écrivain JSON
 
@@ -55,6 +56,17 @@ data class AccountDto(
 data class OwnerDto(
 	val profileId : String,
 	val percent   : Int
+)
+
+/*
+	Thème de couleurs créé par l'utilisateur, exporté.
+*/
+@Serializable
+data class ThemeDto(
+	val id        : String,
+	val name      : String,
+	val colors    : List<String>,
+	val sortOrder : Int
 )
 
 /*
@@ -212,7 +224,8 @@ data class BackupFile(
 	val prices       : List<PriceDto>,
 	val recurrences  : List<RecurrenceDto> = emptyList(),
 	val loans        : List<LoanDto>       = emptyList(),
-	val profiles     : List<ProfileDto>    = emptyList()
+	val profiles     : List<ProfileDto>    = emptyList(),
+	val themes       : List<ThemeDto>      = emptyList()
 )
 {
 	// Contenu en nombres d'éléments (fenêtre de conflit : la date d'export n'y a pas de sens).
@@ -309,6 +322,10 @@ fun validateBackup(inFile: BackupFile): BackupRead
 		return BackupRead.Invalid("Compte « ${it.name} » invalide : nom vide ou part détenue hors de 1 à 100 %.")
 	}
 	if (vFile.profiles.any { it.name.isBlank() }) return BackupRead.Invalid("Profil sans nom dans le fichier.")
+	vFile.themes.firstOrNull { inTheme -> themeError(inTheme.name, inTheme.colors, vFile.themes.filter { it.id != inTheme.id }.map { it.name }) != null }?.let {
+		return BackupRead.Invalid("Thème « ${it.name} » invalide : ${themeError(it.name, it.colors, vFile.themes.filter { inOther -> inOther.id != it.id }.map { inOther -> inOther.name })}")
+	}
+	if (vFile.themes.map { it.id }.let { it.size != it.toSet().size }) return BackupRead.Invalid("Identifiants en double dans le fichier.")
 	if (vFile.profiles.map { it.id }.let { it.size != it.toSet().size }) return BackupRead.Invalid("Identifiants en double dans le fichier.")
 	val vProfileIds = vFile.profiles.map { it.id }.toSet()						// profils connus
 	vFile.accounts.firstOrNull { inAccount -> inAccount.owners.isNotEmpty() && ownersError(inAccount.owners.map { Ownership(it.profileId, it.percent) }, vProfileIds) != null }?.let {

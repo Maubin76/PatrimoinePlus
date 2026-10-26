@@ -46,7 +46,11 @@ import fr.maubin.patrimoineplus.domain.model.Ownership
 import fr.maubin.patrimoineplus.data.backup.OwnerDto
 import fr.maubin.patrimoineplus.data.backup.ProfileDto
 import fr.maubin.patrimoineplus.data.backup.withProfiles
-import fr.maubin.patrimoineplus.domain.rules.ownersError
+import fr.maubin.patrimoineplus.domain.rules.ownersError
+import fr.maubin.patrimoineplus.data.backup.ThemeDto
+import fr.maubin.patrimoineplus.domain.calc.themeError
+import fr.maubin.patrimoineplus.domain.calc.hexOf
+import fr.maubin.patrimoineplus.domain.calc.parseHexColor
 
 private const val kPositiveValues = "Quantité et cours doivent être positifs."		// refus d'une valeur nulle ou négative
 
@@ -193,6 +197,45 @@ class DataEditor(
 		)																			// compte modifié
 		return EditResult.Done(vBase.copy(accounts = vBase.accounts.map { if (it.id == vOld.id) vNew else it }), vOld.id)
 	}
+
+	/*
+		Crée ou modifie un thème de couleurs : nom libre et non vide, cinq
+		couleurs en hexadécimal (enregistrées « #RRGGBB »).
+		inFile   : contenu
+		inId     : thème modifié ; null pour en créer un
+		inName   : nom
+		inColors : couleurs tapées, dans l'ordre des rôles
+	*/
+	fun saveTheme(
+		inFile   : BackupFile,
+		inId     : String?,
+		inName   : String,
+		inColors : List<String>
+	): EditResult
+	{
+		themeError(inName, inColors, inFile.themes.filter { it.id != inId }.map { it.name })?.let { return EditResult.Refused(listOf(it)) }
+		val vColors = inColors.map { hexOf(parseHexColor(it)!!) }						// couleurs normalisées
+		if (inId == null)
+		{
+			val vTheme = ThemeDto(inNewId(), inName.trim(), vColors, (inFile.themes.maxOfOrNull { it.sortOrder } ?: -1) + 1)	// nouveau thème
+			return EditResult.Done(inFile.copy(themes = inFile.themes + vTheme), vTheme.id)
+		}
+		if (inFile.themes.none { it.id == inId }) return refused(SetupError.NotFound)
+		return EditResult.Done(inFile.copy(themes = inFile.themes.map { if (it.id == inId) it.copy(name = inName.trim(), colors = vColors) else it }), inId)
+	}
+
+	/*
+		Supprime un thème de couleurs (les appareils qui l'utilisaient
+		reviennent au thème Coloré).
+		inFile : contenu
+		inId   : thème
+	*/
+	fun deleteTheme(
+		inFile : BackupFile,
+		inId   : String
+	): EditResult =
+		if (inFile.themes.none { it.id == inId }) refused(SetupError.NotFound)
+		else EditResult.Done(inFile.copy(themes = inFile.themes.filter { it.id != inId }), inId)
 
 	/*
 		Ajoute un profil (membre de la famille) en fin de liste ; il ne possède

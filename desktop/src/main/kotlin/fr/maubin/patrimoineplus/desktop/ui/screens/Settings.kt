@@ -53,7 +53,16 @@ import fr.maubin.patrimoineplus.ui.components.ProfileRemovalDialog
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import androidx.compose.foundation.layout.Box
 import fr.maubin.patrimoineplus.desktop.ui.tour.Tours
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextButton
+import fr.maubin.patrimoineplus.domain.model.CustomTheme
+import fr.maubin.patrimoineplus.desktop.Panel
+import fr.maubin.patrimoineplus.ui.components.ThemeSwatches
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
 
 /*
 	Réglages de l'appli PC : source des données (dossier synchronisé,
@@ -104,9 +113,12 @@ fun SettingsScreen(
 		Spacer(Modifier.height(16.dp))
 		Text("Thème", style = MaterialTheme.typography.titleMedium)
 		Spacer(Modifier.height(8.dp))
-		Choice(ColorTheme.entries.map { it to it.label }, vSettings.colors, inController::setColorTheme)
+		val vCustom = inSpace.data.themes.firstOrNull { it.id == vSettings.palette }	// thème personnalisé choisi ; null sans
+		Choice(ColorTheme.entries.map { it as ColorTheme? to it.label }, if (vCustom != null) null else vSettings.colors, { it?.let(inController::setColorTheme) })
 		Spacer(Modifier.height(8.dp))
-		Text(vSettings.colors.detail, style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+		Text(vCustom?.let { "Thème personnalisé « ${it.name} » : ses cinq couleurs prennent les rôles du thème Coloré." } ?: vSettings.colors.detail, style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+		Spacer(Modifier.height(12.dp))
+		CustomThemes(inSpace.data.themes, vCustom?.id, inController)
 		Spacer(Modifier.height(16.dp))
 		FloatingCard {
 			Row(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -238,6 +250,49 @@ private fun ToursSection(
 			}
 			Spacer(Modifier.height(8.dp))
 			OutlinedButton(onClick = inController::resetTours, enabled = inOff || inSeen.isNotEmpty()) { Text("Réactiver tous les tutoriels") }
+		}
+	}
+}
+
+/*
+	Thèmes personnalisés : une ligne par thème (pastilles, nom ; un clic le
+	choisit, le crayon l'ouvre), puis « Créer un thème ». Partagés avec le
+	téléphone par le fichier d'échange ; le thème choisi reste propre à ce PC.
+	inThemes     : thèmes créés
+	inSelected   : thème choisi ; null sans
+	inController : contrôleur
+*/
+@Composable
+private fun CustomThemes(
+	inThemes     : List<CustomTheme>,
+	inSelected   : String?,
+	inController : DesktopController
+)
+{
+	val vColors = MaterialTheme.colorScheme												// palette courante
+	FloatingCard {
+		Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+			inThemes.forEach { inTheme ->
+				val vOn = inTheme.id == inSelected													// thème choisi
+				Row(
+					modifier          = Modifier
+						.fillMaxWidth()
+						.clip(RoundedCornerShape(16.dp))
+						.background(if (vOn) vColors.surfaceContainerHigh else androidx.compose.ui.graphics.Color.Transparent)
+						.selectable(selected = vOn, role = Role.RadioButton) { inController.setCustomTheme(inTheme.id) }
+						.padding(horizontal = 10.dp, vertical = 6.dp),
+					verticalAlignment = Alignment.CenterVertically
+				) {
+					ThemeSwatches(inTheme.colors, 18.dp)
+					Spacer(Modifier.width(14.dp))
+					Text(inTheme.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+					if (vOn) Text("Choisi", style = MaterialTheme.typography.labelLarge, color = vColors.onSurfaceVariant)
+					IconButton(onClick = { inController.openPanel(Panel.ThemeSheet(inTheme.id)) }) {
+						Icon(LineIcons.Edit, contentDescription = "Modifier le thème ${inTheme.name}", modifier = Modifier.size(18.dp))
+					}
+				}
+			}
+			OutlinedButton(onClick = { inController.openPanel(Panel.ThemeSheet(null)) }, modifier = Modifier.padding(top = if (inThemes.isEmpty()) 0.dp else 8.dp)) { Text("Créer un thème") }
 		}
 	}
 }

@@ -239,6 +239,7 @@ private val kDeskShapes = Shapes(
 	inDarkTheme  : mode sombre
 	inColorTheme : thème de couleurs
 	inGlass      : effet verre (panneaux translucides ; en sombre, noir profond et violet)
+	inPalette    : palette d'un thème personnalisé (traité comme le thème Coloré) ; null sans
 	inContent    : contenu
 */
 @Composable
@@ -246,10 +247,12 @@ fun DeskTheme(
 	inDarkTheme  : Boolean,
 	inColorTheme : ColorTheme,
 	inGlass      : Boolean = false,
+	inPalette    : Palette? = null,
 	inContent    : @Composable () -> Unit
 )
 {
-	MaterialTheme(colorScheme = deskColors(inDarkTheme, inColorTheme, inGlass), typography = deskTypography(), shapes = kDeskShapes) {
-		CompositionLocalProvider(LocalColorTheme provides inColorTheme, LocalGlass provides inGlass, LocalContentColor provides MaterialTheme.colorScheme.onSurface, content = inContent)	// encre par défaut : écrans transparents sur le fond
+	val vTheme = if (inPalette != null) ColorTheme.COLORFUL else inColorTheme			// thème personnalisé : comme Coloré
+	MaterialTheme(colorScheme = deskColors(inDarkTheme, vTheme, inGlass), typography = deskTypography(), shapes = kDeskShapes) {
+		CompositionLocalProvider(LocalColorTheme provides vTheme, LocalPalette provides inPalette, LocalGlass provides inGlass, LocalContentColor provides MaterialTheme.colorScheme.onSurface, content = inContent)	// encre par défaut : écrans transparents sur le fond
 	}
 }

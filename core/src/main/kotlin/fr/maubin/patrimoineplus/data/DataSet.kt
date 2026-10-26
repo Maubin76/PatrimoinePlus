@@ -19,7 +19,8 @@ import fr.maubin.patrimoineplus.domain.model.Recurrence
 import fr.maubin.patrimoineplus.data.backup.toDomain
 import fr.maubin.patrimoineplus.domain.model.Ownership
 import fr.maubin.patrimoineplus.domain.model.Profile
-import fr.maubin.patrimoineplus.domain.calc.withProfiles
+import fr.maubin.patrimoineplus.domain.calc.withProfiles
+import fr.maubin.patrimoineplus.domain.model.CustomTheme
 
 /*
 	Toutes les données de l'appli, en modèles du domaine : ce que lisent les
@@ -34,6 +35,7 @@ import fr.maubin.patrimoineplus.domain.calc.withProfiles
 	recurrences  : opérations récurrentes
 	loans        : crédits
 	profiles     : membres de la famille (vide : données d'avant les profils, voir withProfiles)
+	themes       : thèmes de couleurs créés par l'utilisateur
 */
 data class DataSet(
 	val accounts     : List<Account>,
@@ -44,7 +46,8 @@ data class DataSet(
 	val statements   : List<AccountStatement>,
 	val recurrences  : List<Recurrence> = emptyList(),
 	val loans        : List<Loan>       = emptyList(),
-	val profiles     : List<Profile>    = emptyList()
+	val profiles     : List<Profile>    = emptyList(),
+	val themes       : List<CustomTheme> = emptyList()
 )
 {
 	companion object
@@ -63,6 +66,7 @@ fun BackupFile.toDataSet(): DataSet =
 	DataSet(
 		accounts     = accounts.sortedBy { it.sortOrder }.map { Account(it.id, it.name, AccountType.valueOf(it.type), it.institution, it.sharePercent, it.sortOrder, it.archived, it.owners.map { inOwner -> Ownership(inOwner.profileId, inOwner.percent) }) },
 		profiles     = profiles.sortedBy { it.sortOrder }.map { Profile(it.id, it.name, it.sortOrder) },
+		themes       = themes.sortedBy { it.sortOrder }.map { CustomTheme(it.id, it.name, it.colors) },
 		categories   = categories.sortedBy { it.sortOrder }.map { Category(it.id, it.name, it.icon, CategoryKind.valueOf(it.kind), it.sortOrder, it.archived) },
 		assets       = assets.map { Asset(it.id, it.name, it.isin, it.archived, it.ticker) },
 		transactions = transactions.map { inTx ->

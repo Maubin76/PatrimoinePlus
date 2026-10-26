@@ -20,7 +20,8 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import fr.maubin.patrimoineplus.domain.model.Frequency
+import fr.maubin.patrimoineplus.domain.model.Frequency
+import fr.maubin.patrimoineplus.domain.calc.kThemeRoles
 
 // Intitulés des colonnes : ils servent aussi de clés à la lecture (l'ordre des colonnes est libre).
 private const val kDate        = "Date"										// date
@@ -73,6 +74,8 @@ private const val kSheetFile       = "Fichier"									// onglet de signature
 private const val kSheetRecurring  = "Récurrences"								// onglet des opérations récurrentes (format 4)
 private const val kSheetLoans      = "Crédits"									// onglet des crédits (format 4)
 private const val kSheetProfiles   = "Profils"									// onglet des profils (format 6)
+private const val kSheetThemes     = "Thèmes"										// onglet des thèmes de couleurs (format 7)
+private const val kThemeId         = "ID thème"									// identifiant du thème (format 7)
 private const val kProperty        = "Bien financé"								// bien financé par un crédit (format 5)
 private const val kPropertyId      = "ID bien"									// identifiant de l'achat du bien financé (format 5)
 private const val kTo           = "Vers"											// compte d'arrivée d'un virement
@@ -263,6 +266,11 @@ internal fun backupSheets(inFile: BackupFile): List<Sheet>
 			kSheetProfiles,
 			listOf(Column(kName, 28.0)) + tech(kProfileId, kSortOrder),
 			inFile.profiles.sortedBy { it.sortOrder }.map { inProfile -> listOf(text(inProfile.name), techText(inProfile.id), techNumber(inProfile.sortOrder.toLong())) }
+		),
+		Sheet(
+			kSheetThemes,
+			listOf(Column(kName, 24.0)) + kThemeRoles.map { Column(it, 16.0) } + tech(kThemeId, kSortOrder),
+			inFile.themes.sortedBy { it.sortOrder }.map { inTheme -> listOf(text(inTheme.name)) + inTheme.colors.map { text(it) } + listOf(techText(inTheme.id), techNumber(inTheme.sortOrder.toLong())) }
 		),
 		Sheet(
 			kSheetFile,
@@ -492,6 +500,9 @@ internal fun backupFromSheets(inSheets: List<ReadSheet>): BackupFile
 		},
 		profiles     = vByName[kSheetProfiles]?.also { requireColumns(it, kName, kProfileId) }?.rows.orEmpty().map { inRow ->
 			ProfileDto(inRow.req(kProfileId), inRow.req(kName), inRow.opt(kSortOrder)?.let { decimal(it).toInt() } ?: 0)
+		},
+		themes       = vByName[kSheetThemes]?.also { requireColumns(it, kName, kThemeId) }?.rows.orEmpty().map { inRow ->
+			ThemeDto(inRow.req(kThemeId), inRow.req(kName), kThemeRoles.map { inRow[it].orEmpty() }, inRow.opt(kSortOrder)?.let { decimal(it).toInt() } ?: 0)
 		}
 	)
 }

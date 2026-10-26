@@ -26,7 +26,9 @@ import fr.maubin.patrimoineplus.data.backup.OwnerDto
 import fr.maubin.patrimoineplus.data.backup.ProfileDto
 import fr.maubin.patrimoineplus.data.backup.withProfiles
 import fr.maubin.patrimoineplus.data.db.ProfileEntity
-import fr.maubin.patrimoineplus.domain.model.Ownership
+import fr.maubin.patrimoineplus.domain.model.Ownership
+import fr.maubin.patrimoineplus.data.backup.ThemeDto
+import fr.maubin.patrimoineplus.data.db.ThemeEntity
 
 /*
 	Export et import de toute la base, sous forme de fichier JSON versionné.
@@ -54,6 +56,7 @@ class BackupRepository @Inject constructor(
 				exportedAt   = Instant.now(inClock).toString(),
 				accounts     = fDao.accounts().map { AccountDto(it.id, it.name, it.type, it.institution, it.sharePercent, it.sortOrder, it.archived, it.createdAt, it.updatedAt, decodeShares(it.owners).map { inOwner -> OwnerDto(inOwner.profileId, inOwner.percent) }) },
 				profiles     = fDao.profiles().map { ProfileDto(it.id, it.name, it.sortOrder) },
+				themes       = fDao.themes().map { ThemeDto(it.id, it.name, it.colors.split(";"), it.sortOrder) },
 				categories   = fDao.categories().map { CategoryDto(it.id, it.name, it.icon, it.kind, it.sortOrder, it.archived, it.createdAt, it.updatedAt) },
 				assets       = fDao.assets().map { AssetDto(it.id, it.name, it.isin, it.archived, it.createdAt, it.updatedAt, it.ticker) },
 				transactions = inDb.transactionDao().getAll().map { inTx ->
@@ -84,6 +87,7 @@ class BackupRepository @Inject constructor(
 			if (inExpected != null && syncFingerprint(snapshot()) != inExpected) return@withTransaction false	// données modifiées entre-temps : rien n'est remplacé
 			fDao.deleteAll()
 			fDao.insertProfiles(inFile.profiles.map { ProfileEntity(it.id, it.name, it.sortOrder) })
+			fDao.insertThemes(inFile.themes.map { ThemeEntity(it.id, it.name, it.colors.joinToString(";"), it.sortOrder) })
 			fDao.insertAccounts(inFile.accounts.map { AccountEntity(it.id, it.name, it.type, it.institution, it.sharePercent, it.sortOrder, it.archived, it.createdAt, it.updatedAt, encodeShares(it.owners.map { inOwner -> Ownership(inOwner.profileId, inOwner.percent) })) })
 			inDb.categoryDao().insertAll(inFile.categories.map { CategoryEntity(it.id, it.name, it.icon, it.kind, it.sortOrder, it.archived, it.createdAt, it.updatedAt) })
 			inDb.assetDao().insertAll(inFile.assets.map { AssetEntity(it.id, it.name, it.isin, it.archived, it.createdAt, it.updatedAt, it.ticker) })

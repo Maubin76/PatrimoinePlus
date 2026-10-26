@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 	inDarkTheme  : force le mode sombre ou clair
 	inColorTheme : thème de couleurs
 	inGlass      : effet verre
+	inPalette    : palette d'un thème personnalisé ; null sans
 	inContent    : contenu affiché sous ce thème
 */
 @Composable
@@ -19,8 +20,9 @@ fun PatrimoineTheme(
 	inDarkTheme  : Boolean    = isSystemInDarkTheme(),
 	inColorTheme : ColorTheme = ColorTheme.MONOCHROME,
 	inGlass      : Boolean    = false,
+	inPalette    : Palette?   = null,
 	inContent    : @Composable () -> Unit
 )
 {
-	DeskTheme(inDarkTheme = inDarkTheme, inColorTheme = inColorTheme, inGlass = inGlass, inContent = inContent)
+	DeskTheme(inDarkTheme = inDarkTheme, inColorTheme = inColorTheme, inGlass = inGlass, inPalette = inPalette, inContent = inContent)
 }

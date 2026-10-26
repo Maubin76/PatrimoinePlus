@@ -71,7 +71,7 @@ class BackupWorkbookTest
 	{
 		val vFile   = demoBackupFile()											// démonstration
 		val vSheets = readXlsx(ByteArrayInputStream(workbook(vFile)))			// onglets relus
-		assertEquals(listOf("Courant", "Épargne", "Bourse", "Immobilier", "Collection", "Crédit", "Comptes", "Catégories", "Actifs", "Cours", "Relevés", "Récurrences", "Crédits", "Profils", "Fichier"), vSheets.map { it.name })
+		assertEquals(listOf("Courant", "Épargne", "Bourse", "Immobilier", "Collection", "Crédit", "Comptes", "Catégories", "Actifs", "Cours", "Relevés", "Récurrences", "Crédits", "Profils", "Thèmes", "Fichier"), vSheets.map { it.name })
 		val vTypes    = vFile.accounts.associate { it.id to it.type }			// type de chaque compte
 		val vTransfer = vFile.transactions.first { inTx -> inTx.kind == "TRANSFER" && inTx.postings.map { vTypes[it.accountId] }.toSet() == setOf("CHECKING", "SAVINGS") }	// virement Courant → Épargne
 		val vOnSheets = vSheets.filter { inSheet -> inSheet.rows.any { it["ID opération"] == vTransfer.id } }.map { it.name }	// onglets qui le montrent

@@ -158,4 +158,21 @@ class MigrationTest
 		assertEquals(listOf(vFile.profiles.single().id to 50), vFile.accounts.single().owners.map { it.profileId to it.percent })
 		vDb.close()
 	}
+
+	/*
+		Version 6 → 7 : la table des thèmes est ajoutée, vide ; le profil
+		existant est conservé.
+	*/
+	@Test
+	fun version6To7AddsThemes() = runTest {
+		val vContext = ApplicationProvider.getApplicationContext<Context>()		// contexte
+		oldDatabase(
+			6, "migration-test-7.db",
+			"INSERT INTO profile (id, name, sortOrder) VALUES ('p1', 'Julie', 0)"
+		)
+		val vDb = Room.databaseBuilder(vContext, PatrimoineDatabase::class.java, "migration-test-7.db").allowMainThreadQueries().build()	// version actuelle
+		assertEquals(0, vDb.backupDao().themes().size)
+		assertEquals(listOf("Julie"), vDb.backupDao().profiles().map { it.name })
+		vDb.close()
+	}
 }

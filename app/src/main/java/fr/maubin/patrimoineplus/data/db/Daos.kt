@@ -374,6 +374,29 @@ interface BackupDao
 	@Query("DELETE FROM profile")
 	suspend fun deleteProfiles()
 
+	// Tous les thèmes de couleurs.
+	@Query("SELECT * FROM theme ORDER BY sortOrder")
+	suspend fun themes(): List<ThemeEntity>
+
+	// Thèmes de couleurs, suivis.
+	@Query("SELECT * FROM theme ORDER BY sortOrder")
+	fun observeThemes(): kotlinx.coroutines.flow.Flow<List<ThemeEntity>>
+
+	/*
+		Enregistre des thèmes.
+		inThemes : thèmes
+	*/
+	@androidx.room.Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE)
+	suspend fun insertThemes(inThemes: List<ThemeEntity>)
+
+	// Efface un thème.
+	@Query("DELETE FROM theme WHERE id = :inId")
+	suspend fun deleteTheme(inId: String)
+
+	// Efface les thèmes.
+	@Query("DELETE FROM theme")
+	suspend fun deleteThemes()
+
 	/*
 		Efface toutes les données, dans l'ordre qu'imposent les clés étrangères.
 	*/
@@ -391,6 +414,7 @@ interface BackupDao
 		deleteCategories()
 		deleteAccounts()
 		deleteProfiles()
+		deleteThemes()
 	}
 
 	// Efface les opérations récurrentes.

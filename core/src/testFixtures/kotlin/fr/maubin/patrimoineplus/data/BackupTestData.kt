@@ -16,7 +16,8 @@ import java.time.LocalDate
 import fr.maubin.patrimoineplus.data.backup.toDto
 import fr.maubin.patrimoineplus.data.backup.OwnerDto
 import fr.maubin.patrimoineplus.data.backup.ProfileDto
-import fr.maubin.patrimoineplus.data.backup.withProfiles
+import fr.maubin.patrimoineplus.data.backup.withProfiles
+import fr.maubin.patrimoineplus.data.backup.ThemeDto
 
 /*
 	Fichier d'export construit à partir des données de démonstration.
@@ -46,6 +47,7 @@ fun backupFileOf(inData: DataSet): BackupFile
 		prices       = vDemo.prices.map { PriceDto(it.id, it.assetId, it.date.toString(), it.unitPrice) },
 		recurrences  = vDemo.recurrences.map { it.toDto() },
 		loans        = vDemo.loans.map { it.toDto() },
-		profiles     = vDemo.profiles.map { ProfileDto(it.id, it.name, it.sortOrder) }
+		profiles     = vDemo.profiles.map { ProfileDto(it.id, it.name, it.sortOrder) },
+		themes       = vDemo.themes.mapIndexed { inIndex, inTheme -> ThemeDto(inTheme.id, inTheme.name, inTheme.colors, inIndex) }
 	).withProfiles()																// comme relu : profils et propriétaires complétés
 }

@@ -44,6 +44,7 @@ sealed interface Source
 	view       : vue affichée : "" premier profil, "*" famille, sinon identifiant du profil
 	toursSeen  : visites guidées déjà vues ou passées (nom de la page)
 	toursOff   : vrai si l'utilisateur a coupé les visites guidées
+	palette    : thème personnalisé choisi (identifiant) ; vide : le thème de couleurs
 */
 data class DesktopSettings(
 	val source     : Source    = Source.None,
@@ -54,7 +55,8 @@ data class DesktopSettings(
 	val glass      : Boolean   = false,
 	val view       : String    = "",
 	val toursSeen  : Set<String> = emptySet(),
-	val toursOff   : Boolean   = false
+	val toursOff   : Boolean   = false,
+	val palette    : String    = ""
 )
 
 /*
@@ -92,7 +94,8 @@ class DesktopConfig(private val inFile: Path)
 			glass      = vProps.getProperty("glass") == "true",
 			view       = vProps.getProperty("view").orEmpty(),
 			toursSeen  = vProps.getProperty("tours_seen").orEmpty().split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet(),
-			toursOff   = vProps.getProperty("tours_off") == "true"
+			toursOff   = vProps.getProperty("tours_off") == "true",
+			palette    = vProps.getProperty("palette").orEmpty()
 		)
 	}
 
@@ -122,6 +125,7 @@ class DesktopConfig(private val inFile: Path)
 		vProps.setProperty("view", inSettings.view)
 		vProps.setProperty("tours_seen", inSettings.toursSeen.sorted().joinToString(","))
 		vProps.setProperty("tours_off", inSettings.toursOff.toString())
+		vProps.setProperty("palette", inSettings.palette)
 		inFile.parent?.let { Files.createDirectories(it) }
 		val vTemp = inFile.resolveSibling("${inFile.fileName}.tmp")				// écriture provisoire
 		Files.newBufferedWriter(vTemp, Charsets.UTF_8).use { vProps.store(it, "Réglages de PatrimoinePlus (PC)") }
