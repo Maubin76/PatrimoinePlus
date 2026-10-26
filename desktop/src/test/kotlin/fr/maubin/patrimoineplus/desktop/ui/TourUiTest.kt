@@ -72,9 +72,9 @@ class TourUiTest
 	private fun capture(inApp: DesktopController, inName: String)
 	{
 		val vScene = ImageComposeScene(width = 1440, height = 1000, density = Density(1f)) { App(inApp) { null } }	// scène hors écran
-		vScene.render()
+		listOf(0L, 100L, 300L, 600L, 1_000L).forEach { vScene.render(it * 1_000_000L) }	// plusieurs images : animations terminées
 		File("build/captures-desktop").mkdirs()
-		File("build/captures-desktop/$inName.png").writeBytes(vScene.render(1_000_000_000L).encodeToData(EncodedImageFormat.PNG)!!.bytes)
+		File("build/captures-desktop/$inName.png").writeBytes(vScene.render(1_500_000_000L).encodeToData(EncodedImageFormat.PNG)!!.bytes)
 		vScene.close()
 	}
 
@@ -90,7 +90,7 @@ class TourUiTest
 		fCompose.waitUntil(5_000) { vApp.tour.value != null }
 		assertEquals(Screen.DASHBOARD.name, vApp.tour.value!!.key)
 		fCompose.onNodeWithText("Votre patrimoine net").assertExists()
-		fCompose.onNodeWithText("1 / 6").assertExists()
+		fCompose.onNodeWithContentDescription("Étape 1 sur 6").assertExists()
 		capture(vApp, "29-tutoriel-tableau-de-bord")
 		fCompose.onNodeWithText("Suivant").performClick()
 		fCompose.waitForIdle()

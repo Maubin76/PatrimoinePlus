@@ -385,7 +385,8 @@ bord** de pilotage plutôt qu'une suite d'écrans.
 - **Tutoriels du PC** (visites guidées) : au premier lancement, celle du
   tableau de bord (avec la coque : saisie, recherche, mode discret, rail) ;
   à la première venue sur chaque autre page (et sur la vue d'un compte), la
-  sienne. La page s'assombrit sauf l'élément présenté, une bulle l'explique
+  sienne. La page s'assombrit sauf l'élément présenté (découpe animée qui
+  glisse d'un élément à l'autre, halo), une bulle l'explique en le suivant
   (Précédent, Suivant, Passer ; Échap passe, flèches pour changer
   d'étape) ; « Passer » ne vaut que pour la page, « Ne plus afficher les
   tutoriels » les coupe tous. Réglages › Tutoriels : « Revoir » la visite

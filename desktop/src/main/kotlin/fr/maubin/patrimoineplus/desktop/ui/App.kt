@@ -143,7 +143,8 @@ import fr.maubin.patrimoineplus.desktop.ui.tour.TourAnchors
 import fr.maubin.patrimoineplus.desktop.ui.tour.LocalTourAnchors
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import fr.maubin.patrimoineplus.desktop.ui.tour.kTourAccount
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.delay
+import fr.maubin.patrimoineplus.desktop.ActiveTour
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -201,14 +202,18 @@ fun App(
 				}
 				vPending?.let { inAction -> UnsavedDialog(inAction, inController, inOnPickSaveFile) }
 				val vTour by inController.tour.collectAsState()							// visite guidée affichée
-				vTour?.let { inTour ->
-					TourOverlay(
-						inSteps     = Tours.steps(inTour.key),
-						inStep      = inTour.step,
-						inOnStep    = inController::setTourStep,
-						inOnFinish  = inController::finishTour,
-						inOnStopAll = inController::stopAllTours
-					)
+				val vLastTour = remember { mutableStateOf<ActiveTour?>(null) }			// dernière visite (gardée pendant sa disparition)
+				vTour?.let { vLastTour.value = it }
+				AnimatedVisibility(visible = vTour != null, enter = fadeIn(tween(260)), exit = fadeOut(tween(220))) {
+					vLastTour.value?.let { inTour ->
+						TourOverlay(
+							inSteps     = Tours.steps(inTour.key),
+							inStep      = inTour.step,
+							inOnStep    = inController::setTourStep,
+							inOnFinish  = inController::finishTour,
+							inOnStopAll = inController::stopAllTours
+						)
+					}
 				}
 			}
 		}
