@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Icône de l'écran de démarrage : disque noir et pastille blanche, sans les chevrons,
+<!-- Icône de l'écran de démarrage : disque noir bleuté et pastille violette, sans les chevrons,
 	qui arrivent ensuite par l'animation. 288 × 288 dp, contenu dans le cercle central de 192 dp. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
 	android:width="288dp"
@@ -8,8 +8,8 @@
 	android:viewportHeight="288">
 	<path
 		android:pathData="M48,144 a96,96 0 1,0 192,0 a96,96 0 1,0 -192,0 Z"
-		android:fillColor="#FF0A0A0A" />
+		android:fillColor="#FF16161C" />
 	<path
 		android:pathData="M72,144 a72,72 0 1,0 144,0 a72,72 0 1,0 -144,0 Z"
-		android:fillColor="#FFFFFFFF" />
+		android:fillColor="#FF796AF4" />
 </vector>

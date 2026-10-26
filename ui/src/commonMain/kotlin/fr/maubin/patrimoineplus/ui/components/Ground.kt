@@ -90,3 +90,24 @@ fun Modifier.deskGround(inDark: Boolean): Modifier =
 		drawRect(Brush.radialGradient(listOf(vLow, vLow.copy(alpha = 0f)), center = Offset(0f, size.height), radius = vSpan * 0.62f))
 		drawRect(Brush.radialGradient(listOf(vHigh, vHigh.copy(alpha = 0f)), center = Offset(size.width, 0f), radius = vSpan * 0.5f))
 	}
+
+/*
+	Couleur de la barre de titre de la fenêtre (PC) : celle du haut du fond
+	de l'appli, pour que la fenêtre forme un seul bloc ; le titre à l'encre
+	du thème.
+	inDark  : mode sombre
+	inGlass : effet verre
+	Retour : fond de la barre et couleur du titre
+*/
+fun titleBarColors(
+	inDark  : Boolean,
+	inGlass : Boolean
+): Pair<Color, Color> =
+	when
+	{
+		inDark && inGlass -> Color(0xFF07070B) to Color(0xFFF3F3F7)
+		inDark            -> Color(0xFF16162B) to Color(0xFFF1EFF8)
+		inGlass           -> Color(0xFFE9E4FA) to Color(0xFF16151F)
+		else              -> Color(0xFFE6E0FA) to Color(0xFF16151F)
+	}
+

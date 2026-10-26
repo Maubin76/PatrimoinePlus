@@ -32,7 +32,12 @@ import kotlin.system.exitProcess
 import java.nio.file.Path
 import java.time.Clock
 import javax.swing.JFileChooser
-import javax.swing.UIManager
+import javax.swing.UIManager
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import fr.maubin.patrimoineplus.ui.components.titleBarColors
+import fr.maubin.patrimoineplus.ui.theme.isDark
 
 /*
 	Point d'entrée de l'appli PC : fenêtre unique, réglages mémorisés dans
@@ -64,6 +69,12 @@ fun main(inArgs: Array<String>)
 			}
 		) {
 			window.minimumSize = Dimension(980, 640)
+			val vSettings by vController.settings.collectAsState()					// réglages (apparence)
+			val vDark     = vSettings.appearance.isDark()								// mode sombre effectif
+			LaunchedEffect(vDark, vSettings.glass) {
+				val (vCaption, vText) = titleBarColors(vDark, vSettings.glass)			// couleurs de la barre de titre
+				TitleBar.apply(window, vCaption, vText, vDark)
+			}
 			App(vController, inOnPickSaveFile = ::pickSaveFile, inOnPickBankFile = ::pickBankFile, inOnPickSave = ::pickSave, inOnPickFolder = ::pickFolder)
 		}
 	}

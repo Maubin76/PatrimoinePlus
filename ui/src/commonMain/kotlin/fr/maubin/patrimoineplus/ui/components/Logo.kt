@@ -14,8 +14,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 
-private val kInk   = Color(0xFF0A0A0A)											// encre du logo (fixe, comme l'icône)
-private val kPaper = Color.White												// pastille du logo
+private val kInk   = Color(0xFF16161C)											// encre du logo (noir bleuté, fixe, comme l’icône)
+private val kPaper = Color(0xFF796AF4)											// pastille du logo (violet)
 
 /*
 	Logo dessiné : disque noir, pastille blanche, deux chevrons qui s'emboîtent

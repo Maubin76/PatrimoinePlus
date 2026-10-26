@@ -27,6 +27,7 @@ dependencies {
 	implementation(compose.desktop.currentOs)
 	implementation(libs.compose.desktop.material3)
 	implementation(libs.kotlinx.coroutines.swing)
+	implementation(libs.jna.platform)												// barre de titre aux couleurs du thème (Windows 11, DWM)
 
 	testImplementation(testFixtures(project(":core")))
 	testImplementation(libs.junit)
