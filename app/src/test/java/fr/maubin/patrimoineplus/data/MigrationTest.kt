@@ -137,4 +137,25 @@ class MigrationTest
 		assertEquals(null, vLoan.propertyId)
 		vDb.close()
 	}
+
+	/*
+		Version 5 → 6 : la table des profils et la colonne des propriétaires
+		sont ajoutées, vides ; l'instantané (fichier d'échange) présente le
+		profil « Moi », propriétaire du compte joint pour sa part de 50 %.
+	*/
+	@Test
+	fun version5To6AddsProfiles() = runTest {
+		val vContext = ApplicationProvider.getApplicationContext<Context>()		// contexte
+		oldDatabase(
+			5, "migration-test-6.db",
+			"INSERT INTO account (id, name, type, institution, sharePercent, sortOrder, archived, createdAt, updatedAt) VALUES ('j1', 'Joint', 'CHECKING', NULL, 50, 0, 0, 1, 2)"
+		)
+		val vDb   = Room.databaseBuilder(vContext, PatrimoineDatabase::class.java, "migration-test-6.db").allowMainThreadQueries().build()	// version actuelle
+		assertEquals("", vDb.backupDao().accounts().single().owners)
+		assertEquals(0, vDb.backupDao().profiles().size)
+		val vFile = fr.maubin.patrimoineplus.data.backup.BackupRepository(vDb, java.time.Clock.systemUTC()).snapshot()	// instantané
+		assertEquals(listOf("Moi"), vFile.profiles.map { it.name })
+		assertEquals(listOf(vFile.profiles.single().id to 50), vFile.accounts.single().owners.map { it.profileId to it.percent })
+		vDb.close()
+	}
 }

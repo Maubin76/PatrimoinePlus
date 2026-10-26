@@ -13,7 +13,10 @@ import fr.maubin.patrimoineplus.data.backup.kBackupFormat
 import fr.maubin.patrimoineplus.data.backup.kBackupVersion
 import fr.maubin.patrimoineplus.data.demo.buildDemoData
 import java.time.LocalDate
-import fr.maubin.patrimoineplus.data.backup.toDto
+import fr.maubin.patrimoineplus.data.backup.toDto
+import fr.maubin.patrimoineplus.data.backup.OwnerDto
+import fr.maubin.patrimoineplus.data.backup.ProfileDto
+import fr.maubin.patrimoineplus.data.backup.withProfiles
 
 /*
 	Fichier d'export construit à partir des données de démonstration.
@@ -31,7 +34,7 @@ fun backupFileOf(inData: DataSet): BackupFile
 		format       = kBackupFormat,
 		version      = kBackupVersion,
 		exportedAt   = "2026-10-08T10:00:00Z",
-		accounts     = vDemo.accounts.map { AccountDto(it.id, it.name, it.type.name, it.institution, it.sharePercent, it.sortOrder, it.archived, 1, 2) },
+		accounts     = vDemo.accounts.map { AccountDto(it.id, it.name, it.type.name, it.institution, it.sharePercent, it.sortOrder, it.archived, 1, 2, it.owners.map { inOwner -> OwnerDto(inOwner.profileId, inOwner.percent) }) },
 		categories   = vDemo.categories.map { CategoryDto(it.id, it.name, it.icon, it.kind.name, it.sortOrder, it.archived, 1, 2) },
 		assets       = vDemo.assets.map { AssetDto(it.id, it.name, it.isin, it.archived, 1, 2, it.ticker) },
 		transactions = vDemo.transactions.map { inTx ->
@@ -42,6 +45,7 @@ fun backupFileOf(inData: DataSet): BackupFile
 		statements   = vDemo.statements.map { StatementDto(it.id, it.accountId, it.date.toString(), it.balanceCents) },
 		prices       = vDemo.prices.map { PriceDto(it.id, it.assetId, it.date.toString(), it.unitPrice) },
 		recurrences  = vDemo.recurrences.map { it.toDto() },
-		loans        = vDemo.loans.map { it.toDto() }
-	)
+		loans        = vDemo.loans.map { it.toDto() },
+		profiles     = vDemo.profiles.map { ProfileDto(it.id, it.name, it.sortOrder) }
+	).withProfiles()																// comme relu : profils et propriétaires complétés
 }

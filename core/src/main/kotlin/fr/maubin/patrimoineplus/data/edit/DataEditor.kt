@@ -41,7 +41,12 @@ import fr.maubin.patrimoineplus.domain.calc.remainingAt
 import fr.maubin.patrimoineplus.domain.calc.dueOperations
 import fr.maubin.patrimoineplus.ui.budget.ExpenseTheme
 import fr.maubin.patrimoineplus.ui.budget.themeOfCategory
-import fr.maubin.patrimoineplus.domain.calc.accountRemoval
+import fr.maubin.patrimoineplus.domain.calc.accountRemoval
+import fr.maubin.patrimoineplus.domain.model.Ownership
+import fr.maubin.patrimoineplus.data.backup.OwnerDto
+import fr.maubin.patrimoineplus.data.backup.ProfileDto
+import fr.maubin.patrimoineplus.data.backup.withProfiles
+import fr.maubin.patrimoineplus.domain.rules.ownersError
 
 private const val kPositiveValues = "Quantité et cours doivent être positifs."		// refus d'une valeur nulle ou négative
 
@@ -102,8 +107,9 @@ class DataEditor(
 		inName        : nom
 		inType        : type
 		inInstitution : établissement, facultatif
-		inShare       : part détenue, en %
+		inShare       : part détenue, en % (propriétaires non précisés : premier profil)
 		inOpening     : solde initial ; null ou nul pour aucun
+		inOwners      : propriétaires et leurs parts ; null : le premier profil, pour inShare
 	*/
 	fun createAccount(
 		inFile        : BackupFile,
@@ -111,10 +117,14 @@ class DataEditor(
 		inType        : AccountType,
 		inInstitution : String?,
 		inShare       : Int,
-		inOpening     : OpeningBalance?
+		inOpening     : OpeningBalance?,
+		inOwners      : List<Ownership>? = null
 	): EditResult
 	{
-		validateAccount(inName, inShare).refusal()?.let { return it }
+		val vBase   = inFile.withProfiles()												// profils assurés
+		val vOwners = inOwners ?: listOf(Ownership(vBase.profiles.minBy { it.sortOrder }.id, inShare))	// propriétaires
+		validateAccount(inName, vOwners.sumOf { it.percent }.coerceAtMost(1000)).refusal()?.let { return it }
+		ownersError(vOwners, vBase.profiles.map { it.id }.toSet())?.let { return refused(SetupError.Owners(it)) }
 		if (inType.isProperty && inOpening != null && inOpening.cents != 0L) return refused(SetupError.PropertyOpening)
 		val vNow     = now()														// horodatage
 		val vAccount = AccountDto(
@@ -122,13 +132,14 @@ class DataEditor(
 			name         = inName.trim(),
 			type         = inType.name,
 			institution  = inInstitution?.trim()?.ifEmpty { null },
-			sharePercent = inShare,
+			sharePercent = vOwners.sumOf { it.percent },
 			sortOrder    = (inFile.accounts.maxOfOrNull { it.sortOrder } ?: -1) + 1,
 			archived     = false,
 			createdAt    = vNow,
-			updatedAt    = vNow
+			updatedAt    = vNow,
+			owners       = vOwners.map { OwnerDto(it.profileId, it.percent) }
 		)																			// nouveau compte
-		var vFile = inFile.copy(accounts = inFile.accounts + vAccount)			// contenu avec le compte
+		var vFile = vBase.copy(accounts = vBase.accounts + vAccount)				// contenu avec le compte
 		if (inOpening != null && inOpening.cents != 0L)
 		{
 			vFile = vFile.copy(transactions = vFile.transactions + newOpening(vAccount.id, inOpening, vNow))
@@ -137,8 +148,10 @@ class DataEditor(
 	}
 
 	/*
-		Modifie un compte (nom, établissement, part, archivage ; type tant qu'il
-		n'a pas d'autre opération que son solde initial).
+		Modifie un compte (nom, établissement, propriétaires et parts, archivage ;
+		type tant qu'il n'a pas d'autre opération que son solde initial). Sans
+		propriétaires précisés, la part modifiée est celle de l'unique
+		propriétaire (appli d'avant les profils).
 		inFile    : contenu
 		inAccount : compte modifié
 	*/
@@ -147,8 +160,16 @@ class DataEditor(
 		inAccount : Account
 	): EditResult
 	{
-		validateAccount(inAccount.name, inAccount.sharePercent).refusal()?.let { return it }
-		val vOld = inFile.accounts.firstOrNull { it.id == inAccount.id } ?: return refused(SetupError.NotFound)	// version actuelle
+		val vBase = inFile.withProfiles()												// profils assurés
+		val vOld = vBase.accounts.firstOrNull { it.id == inAccount.id } ?: return refused(SetupError.NotFound)	// version actuelle
+		val vOwners = when
+		{
+			inAccount.owners.isNotEmpty() -> inAccount.owners.map { OwnerDto(it.profileId, it.percent) }
+			vOld.owners.size == 1         -> listOf(vOld.owners.single().copy(percent = inAccount.sharePercent))
+			else                          -> vOld.owners
+		}																			// propriétaires après modification
+		validateAccount(inAccount.name, vOwners.sumOf { it.percent }.coerceAtMost(1000)).refusal()?.let { return it }
+		ownersError(vOwners.map { Ownership(it.profileId, it.percent) }, vBase.profiles.map { it.id }.toSet())?.let { return refused(SetupError.Owners(it)) }
 		if (vOld.type != inAccount.type.name && operationCount(inFile, inAccount.id) > 0)
 		{
 			return refused(SetupError.TypeLocked)
@@ -165,11 +186,74 @@ class DataEditor(
 			name         = inAccount.name.trim(),
 			type         = inAccount.type.name,
 			institution  = inAccount.institution?.trim()?.ifEmpty { null },
-			sharePercent = inAccount.sharePercent,
+			sharePercent = vOwners.sumOf { it.percent },
 			archived     = inAccount.archived,
-			updatedAt    = now()
+			updatedAt    = now(),
+			owners       = vOwners
 		)																			// compte modifié
-		return EditResult.Done(inFile.copy(accounts = inFile.accounts.map { if (it.id == vOld.id) vNew else it }), vOld.id)
+		return EditResult.Done(vBase.copy(accounts = vBase.accounts.map { if (it.id == vOld.id) vNew else it }), vOld.id)
+	}
+
+	/*
+		Ajoute un profil (membre de la famille) en fin de liste ; il ne possède
+		encore aucun compte.
+		inFile : contenu
+		inName : nom du profil
+	*/
+	fun addProfile(
+		inFile : BackupFile,
+		inName : String
+	): EditResult
+	{
+		val vBase = inFile.withProfiles()												// profils assurés
+		val vName = inName.trim()														// nom saisi
+		if (vName.isEmpty()) return refused(SetupError.BlankName)
+		if (vBase.profiles.any { it.name.equals(vName, ignoreCase = true) }) return refused(SetupError.ProfileTaken)
+		val vProfile = ProfileDto(inNewId(), vName, (vBase.profiles.maxOfOrNull { it.sortOrder } ?: -1) + 1)	// nouveau profil
+		return EditResult.Done(vBase.copy(profiles = vBase.profiles + vProfile), vProfile.id)
+	}
+
+	/*
+		Renomme un profil.
+		inFile : contenu
+		inId   : profil
+		inName : nouveau nom
+	*/
+	fun renameProfile(
+		inFile : BackupFile,
+		inId   : String,
+		inName : String
+	): EditResult
+	{
+		val vBase = inFile.withProfiles()												// profils assurés
+		val vName = inName.trim()														// nom saisi
+		if (vName.isEmpty()) return refused(SetupError.BlankName)
+		if (vBase.profiles.none { it.id == inId }) return refused(SetupError.NotFound)
+		if (vBase.profiles.any { it.id != inId && it.name.equals(vName, ignoreCase = true) }) return refused(SetupError.ProfileTaken)
+		return EditResult.Done(vBase.copy(profiles = vBase.profiles.map { if (it.id == inId) it.copy(name = vName) else it }), inId)
+	}
+
+	/*
+		Supprime un profil : il disparaît des propriétaires des comptes qu'il
+		partage (leur part comptée baisse d'autant). Refusé pour le dernier
+		profil, ou si le profil est seul propriétaire d'un compte.
+		inFile : contenu
+		inId   : profil
+	*/
+	fun removeProfile(
+		inFile : BackupFile,
+		inId   : String
+	): EditResult
+	{
+		val vBase = inFile.withProfiles()												// profils assurés
+		if (vBase.profiles.none { it.id == inId }) return refused(SetupError.NotFound)
+		if (vBase.profiles.size == 1) return refused(SetupError.LastProfile)
+		if (vBase.accounts.any { inAccount -> inAccount.owners.singleOrNull()?.profileId == inId }) return refused(SetupError.ProfileOwnsAlone)
+		val vAccounts = vBase.accounts.map { inAccount ->
+			if (inAccount.owners.none { it.profileId == inId }) inAccount
+			else inAccount.owners.filter { it.profileId != inId }.let { inOwners -> inAccount.copy(owners = inOwners, sharePercent = inOwners.sumOf { it.percent }, updatedAt = now()) }
+		}																			// comptes sans ce profil
+		return EditResult.Done(vBase.copy(profiles = vBase.profiles.filter { it.id != inId }, accounts = vAccounts), inId)
 	}
 
 	/*

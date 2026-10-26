@@ -38,7 +38,10 @@ private const val kNotes       = "Notes"										// notes
 private const val kName        = "Nom"											// nom
 private const val kType        = "Type"											// type de compte
 private const val kInstitution = "Établissement"								// établissement
-private const val kShare       = "Part détenue (%)"							// part détenue
+private const val kShare       = "Part détenue (%)"							// part détenue (total des propriétaires)
+private const val kOwners      = "Propriétaires"								// propriétaires et leur part, en clair (format 6)
+private const val kShares      = "Parts"										// parts par identifiant de profil, « id=50;id=50 » (format 6)
+private const val kProfileId   = "ID profil"									// identifiant du profil (format 6)
 private const val kArchived    = "Archivé"										// archivé (Oui / Non)
 private const val kKind        = "Nature"										// nature d'une catégorie
 private const val kIcon        = "Icône"										// icône d'une catégorie
@@ -69,6 +72,7 @@ private const val kSheetStatements = "Relevés"									// onglet des relevés
 private const val kSheetFile       = "Fichier"									// onglet de signature
 private const val kSheetRecurring  = "Récurrences"								// onglet des opérations récurrentes (format 4)
 private const val kSheetLoans      = "Crédits"									// onglet des crédits (format 4)
+private const val kSheetProfiles   = "Profils"									// onglet des profils (format 6)
 private const val kProperty        = "Bien financé"								// bien financé par un crédit (format 5)
 private const val kPropertyId      = "ID bien"									// identifiant de l'achat du bien financé (format 5)
 private const val kTo           = "Vers"											// compte d'arrivée d'un virement
@@ -171,13 +175,16 @@ internal fun backupSheets(inFile: BackupFile): List<Sheet>
 	return AccountType.entries.map { inType -> Sheet(inType.label, operationColumns(inType), vByType.getValue(inType)) } + listOf(
 		Sheet(
 			kSheetAccounts,
-			listOf(Column(kName, 28.0), Column(kType, 12.0), Column(kInstitution, 22.0), Column(kShare, 16.0), Column(kArchived, 10.0)) +
-				tech(kAccountId, kSortOrder, kCreated, kUpdated),
+			listOf(Column(kName, 28.0), Column(kType, 12.0), Column(kInstitution, 22.0), Column(kShare, 16.0), Column(kOwners, 30.0), Column(kArchived, 10.0)) +
+				tech(kAccountId, kSortOrder, kCreated, kUpdated, kShares),
 			inFile.accounts.sortedBy { it.sortOrder }.map { inAccount ->
 				listOf(
 					text(inAccount.name), text(AccountType.valueOf(inAccount.type).label), text(inAccount.institution.orEmpty()),
-					Cell.Number(BigDecimal(inAccount.sharePercent)), text(yesNo(inAccount.archived)),
-					techText(inAccount.id), techNumber(inAccount.sortOrder.toLong()), techNumber(inAccount.createdAt), techNumber(inAccount.updatedAt)
+					Cell.Number(BigDecimal(inAccount.sharePercent)),
+					text(inAccount.owners.joinToString(", ") { inOwner -> "${inFile.profiles.firstOrNull { it.id == inOwner.profileId }?.name ?: "?"} ${inOwner.percent} %" }),
+					text(yesNo(inAccount.archived)),
+					techText(inAccount.id), techNumber(inAccount.sortOrder.toLong()), techNumber(inAccount.createdAt), techNumber(inAccount.updatedAt),
+					techText(inAccount.owners.joinToString(";") { "${it.profileId}=${it.percent}" })
 				)
 			}
 		),
@@ -251,6 +258,11 @@ internal fun backupSheets(inFile: BackupFile): List<Sheet>
 					techText(inLoan.id), techText(inLoan.accountId), techText(inLoan.payFrom), techText(inLoan.categoryId), techText(inLoan.propertyId.orEmpty())
 				)
 			}
+		),
+		Sheet(
+			kSheetProfiles,
+			listOf(Column(kName, 28.0)) + tech(kProfileId, kSortOrder),
+			inFile.profiles.sortedBy { it.sortOrder }.map { inProfile -> listOf(text(inProfile.name), techText(inProfile.id), techNumber(inProfile.sortOrder.toLong())) }
 		),
 		Sheet(
 			kSheetFile,
@@ -408,7 +420,12 @@ internal fun backupFromSheets(inSheets: List<ReadSheet>): BackupFile
 				sortOrder    = inRow.opt(kSortOrder)?.let { decimal(it).toInt() } ?: 0,
 				archived     = yes(inRow[kArchived]),
 				createdAt    = inRow.opt(kCreated)?.let { decimal(it).toLong() } ?: 0L,
-				updatedAt    = inRow.opt(kUpdated)?.let { decimal(it).toLong() } ?: 0L
+				updatedAt    = inRow.opt(kUpdated)?.let { decimal(it).toLong() } ?: 0L,
+				owners       = inRow.opt(kShares)?.split(";")?.filter { it.isNotBlank() }?.map { inPart ->
+					val vPair = inPart.split("=")												// identifiant et part
+					if (vPair.size != 2) throw WorkbookException("Parts illisibles pour le compte « ${inRow[kName]} » : $inPart")
+					OwnerDto(vPair[0].trim(), decimal(vPair[1]).intValueExact())
+				}.orEmpty()
 			)
 		},
 		categories   = vCategories.rows.map { inRow ->
@@ -472,6 +489,9 @@ internal fun backupFromSheets(inSheets: List<ReadSheet>): BackupFile
 				last       = inRow.opt(kLast)?.let { date(it).toString() },
 				propertyId = inRow.opt(kPropertyId)
 			)
+		},
+		profiles     = vByName[kSheetProfiles]?.also { requireColumns(it, kName, kProfileId) }?.rows.orEmpty().map { inRow ->
+			ProfileDto(inRow.req(kProfileId), inRow.req(kName), inRow.opt(kSortOrder)?.let { decimal(it).toInt() } ?: 0)
 		}
 	)
 }

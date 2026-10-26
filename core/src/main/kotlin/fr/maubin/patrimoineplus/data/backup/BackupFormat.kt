@@ -20,10 +20,14 @@ import java.time.LocalDate
 import fr.maubin.patrimoineplus.domain.model.Frequency
 import fr.maubin.patrimoineplus.domain.model.Loan
 import fr.maubin.patrimoineplus.domain.model.Recurrence
-import fr.maubin.patrimoineplus.domain.calc.kMaxTradeCents
+import fr.maubin.patrimoineplus.domain.calc.kMaxTradeCents
+import fr.maubin.patrimoineplus.domain.model.Ownership
+import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
+import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileName
+import fr.maubin.patrimoineplus.domain.rules.ownersError
 
 const val kBackupFormat  = "patrimoineplus"										// signature du fichier
-const val kBackupVersion = 5													// version du format (2 : symbole de cotation des actifs ; 3 : comptes de biens ; 4 : opérations récurrentes et crédits ; 5 : mensualités en une opération, bien financé)
+const val kBackupVersion = 6													// version du format (2 : symbole de cotation des actifs ; 3 : comptes de biens ; 4 : opérations récurrentes et crédits ; 5 : mensualités en une opération, bien financé ; 6 : profils et propriétaires des comptes)
 
 private val kJson = Json { prettyPrint = true; ignoreUnknownKeys = false }		// lecteur et écrivain JSON
 
@@ -40,7 +44,27 @@ data class AccountDto(
 	val sortOrder    : Int,
 	val archived     : Boolean,
 	val createdAt    : Long,
-	val updatedAt    : Long
+	val updatedAt    : Long,
+	val owners       : List<OwnerDto> = emptyList()
+)
+
+/*
+	Part d'un profil dans un compte exporté.
+*/
+@Serializable
+data class OwnerDto(
+	val profileId : String,
+	val percent   : Int
+)
+
+/*
+	Profil (membre de la famille) exporté.
+*/
+@Serializable
+data class ProfileDto(
+	val id        : String,
+	val name      : String,
+	val sortOrder : Int
 )
 
 /*
@@ -187,7 +211,8 @@ data class BackupFile(
 	val statements   : List<StatementDto>,
 	val prices       : List<PriceDto>,
 	val recurrences  : List<RecurrenceDto> = emptyList(),
-	val loans        : List<LoanDto>       = emptyList()
+	val loans        : List<LoanDto>       = emptyList(),
+	val profiles     : List<ProfileDto>    = emptyList()
 )
 {
 	// Contenu en nombres d'éléments (fenêtre de conflit : la date d'export n'y a pas de sens).
@@ -283,6 +308,12 @@ fun validateBackup(inFile: BackupFile): BackupRead
 	vDomain.accounts.firstOrNull { validateAccount(it.name, it.sharePercent).isNotEmpty() }?.let {
 		return BackupRead.Invalid("Compte « ${it.name} » invalide : nom vide ou part détenue hors de 1 à 100 %.")
 	}
+	if (vFile.profiles.any { it.name.isBlank() }) return BackupRead.Invalid("Profil sans nom dans le fichier.")
+	if (vFile.profiles.map { it.id }.let { it.size != it.toSet().size }) return BackupRead.Invalid("Identifiants en double dans le fichier.")
+	val vProfileIds = vFile.profiles.map { it.id }.toSet()						// profils connus
+	vFile.accounts.firstOrNull { inAccount -> inAccount.owners.isNotEmpty() && ownersError(inAccount.owners.map { Ownership(it.profileId, it.percent) }, vProfileIds) != null }?.let {
+		return BackupRead.Invalid("Compte « ${it.name} » : ${ownersError(it.owners.map { inOwner -> Ownership(inOwner.profileId, inOwner.percent) }, vProfileIds)}")
+	}
 	val vAccounts   = vDomain.accounts.associateBy { it.id }					// comptes connus
 	val vCategories = vDomain.categories.associateBy { it.id }				// catégories connues
 	val vAssets     = vDomain.assets.associateBy { it.id }						// actifs connus
@@ -313,7 +344,25 @@ fun validateBackup(inFile: BackupFile): BackupRead
 		}
 		vDone += inTx
 	}
-	return BackupRead.Valid(vFile)
+	return BackupRead.Valid(vFile.withProfiles())
+}
+
+/*
+	Fichier complété pour les profils : au moins un profil (« Moi » pour un
+	fichier d'avant les profils), chaque compte avec ses propriétaires (le
+	premier profil, pour la part détenue) et une part égale à leur total.
+*/
+fun BackupFile.withProfiles(): BackupFile
+{
+	val vProfiles = profiles.ifEmpty { listOf(ProfileDto(kDefaultProfileId, kDefaultProfileName, 0)) }	// profils
+	val vFirst    = vProfiles.minBy { it.sortOrder }.id								// premier profil
+	return copy(
+		profiles = vProfiles,
+		accounts = accounts.map { inAccount ->
+			val vOwners = inAccount.owners.ifEmpty { listOf(OwnerDto(vFirst, inAccount.sharePercent)) }	// propriétaires
+			inAccount.copy(owners = vOwners, sharePercent = vOwners.sumOf { it.percent }.coerceIn(1, 100))
+		}
+	)
 }
 
 /*

@@ -13,10 +13,13 @@ import fr.maubin.patrimoineplus.domain.model.Trade
 import fr.maubin.patrimoineplus.domain.model.TradeSide
 import fr.maubin.patrimoineplus.domain.model.Transaction
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
-import java.time.LocalDate
+import java.time.LocalDate
 import fr.maubin.patrimoineplus.domain.model.Loan
 import fr.maubin.patrimoineplus.domain.model.Recurrence
 import fr.maubin.patrimoineplus.data.backup.toDomain
+import fr.maubin.patrimoineplus.domain.model.Ownership
+import fr.maubin.patrimoineplus.domain.model.Profile
+import fr.maubin.patrimoineplus.domain.calc.withProfiles
 
 /*
 	Toutes les données de l'appli, en modèles du domaine : ce que lisent les
@@ -30,6 +33,7 @@ import fr.maubin.patrimoineplus.data.backup.toDomain
 	statements   : relevés de solde
 	recurrences  : opérations récurrentes
 	loans        : crédits
+	profiles     : membres de la famille (vide : données d'avant les profils, voir withProfiles)
 */
 data class DataSet(
 	val accounts     : List<Account>,
@@ -39,7 +43,8 @@ data class DataSet(
 	val prices       : List<AssetPrice>,
 	val statements   : List<AccountStatement>,
 	val recurrences  : List<Recurrence> = emptyList(),
-	val loans        : List<Loan>       = emptyList()
+	val loans        : List<Loan>       = emptyList(),
+	val profiles     : List<Profile>    = emptyList()
 )
 {
 	companion object
@@ -56,7 +61,8 @@ data class DataSet(
 */
 fun BackupFile.toDataSet(): DataSet =
 	DataSet(
-		accounts     = accounts.sortedBy { it.sortOrder }.map { Account(it.id, it.name, AccountType.valueOf(it.type), it.institution, it.sharePercent, it.sortOrder, it.archived) },
+		accounts     = accounts.sortedBy { it.sortOrder }.map { Account(it.id, it.name, AccountType.valueOf(it.type), it.institution, it.sharePercent, it.sortOrder, it.archived, it.owners.map { inOwner -> Ownership(inOwner.profileId, inOwner.percent) }) },
+		profiles     = profiles.sortedBy { it.sortOrder }.map { Profile(it.id, it.name, it.sortOrder) },
 		categories   = categories.sortedBy { it.sortOrder }.map { Category(it.id, it.name, it.icon, CategoryKind.valueOf(it.kind), it.sortOrder, it.archived) },
 		assets       = assets.map { Asset(it.id, it.name, it.isin, it.archived, it.ticker) },
 		transactions = transactions.map { inTx ->
@@ -77,4 +83,4 @@ fun BackupFile.toDataSet(): DataSet =
 		statements   = statements.map { AccountStatement(it.id, it.accountId, LocalDate.parse(it.date), it.balanceCents) },
 		recurrences  = recurrences.map { it.toDomain() },
 		loans        = loans.map { it.toDomain() }
-	)
+	).withProfiles()

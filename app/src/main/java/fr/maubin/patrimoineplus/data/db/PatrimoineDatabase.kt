@@ -35,6 +35,9 @@ class Converters
 	Version 2 : symbole de cotation des actifs (colonne ajoutée, migration automatique).
 	Version 3 : opération liée (vente d'un bien → son achat ; colonne ajoutée, migration automatique).
 	Version 4 : opérations récurrentes et crédits (tables ajoutées, migration automatique).
+	Version 5 : bien financé par un crédit (colonne ajoutée, migration automatique).
+	Version 6 : profils et propriétaires des comptes (table et colonne ajoutées,
+	migration automatique ; base d'avant : un profil « Moi » à la lecture).
 */
 @Database(
 	entities     = [
@@ -47,11 +50,12 @@ class Converters
 		AccountStatementEntity::class,
 		AssetPriceEntity::class,
 		RecurrenceEntity::class,
-		LoanEntity::class
+		LoanEntity::class,
+		ProfileEntity::class
 	],
-	version       = 5,
+	version       = 6,
 	exportSchema  = true,
-	autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5)]
+	autoMigrations = [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4), AutoMigration(from = 4, to = 5), AutoMigration(from = 5, to = 6)]
 )
 @TypeConverters(Converters::class)
 abstract class PatrimoineDatabase : RoomDatabase()

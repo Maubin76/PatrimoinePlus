@@ -6,7 +6,8 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.Relation
-import java.time.LocalDate
+import java.time.LocalDate
+import androidx.room.ColumnInfo
 
 // Tables Room. Aucune ne stocke de solde ni de total : tout se recalcule
 // dans la couche domain. Énumérations stockées par leur nom (texte).
@@ -24,7 +25,19 @@ data class AccountEntity(
 	val sortOrder        : Int,												// ordre d'affichage
 	val archived         : Boolean,											// archivé
 	val createdAt        : Long,											// création, ms epoch
-	val updatedAt        : Long												// modification, ms epoch
+	val updatedAt        : Long,											// modification, ms epoch
+	@ColumnInfo(defaultValue = "")
+	val owners           : String = ""										// propriétaires « id=50;id=50 » (version 6) ; vide : avant les profils
+)
+
+/*
+	Table des profils, membres de la famille (version 6).
+*/
+@Entity(tableName = "profile")
+data class ProfileEntity(
+	@PrimaryKey val id   : String,											// identifiant
+	val name             : String,											// nom affiché
+	val sortOrder        : Int												// ordre d'affichage
 )
 
 /*

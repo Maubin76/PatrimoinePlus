@@ -19,7 +19,14 @@ import fr.maubin.patrimoineplus.data.backup.toDto
 import fr.maubin.patrimoineplus.data.backup.toDomain
 import fr.maubin.patrimoineplus.data.db.toDomain
 import fr.maubin.patrimoineplus.data.db.toEntity
-import fr.maubin.patrimoineplus.data.sync.syncFingerprint
+import fr.maubin.patrimoineplus.data.sync.syncFingerprint
+import fr.maubin.patrimoineplus.domain.calc.decodeShares
+import fr.maubin.patrimoineplus.domain.calc.encodeShares
+import fr.maubin.patrimoineplus.data.backup.OwnerDto
+import fr.maubin.patrimoineplus.data.backup.ProfileDto
+import fr.maubin.patrimoineplus.data.backup.withProfiles
+import fr.maubin.patrimoineplus.data.db.ProfileEntity
+import fr.maubin.patrimoineplus.domain.model.Ownership
 
 /*
 	Export et import de toute la base, sous forme de fichier JSON versionné.
@@ -45,7 +52,8 @@ class BackupRepository @Inject constructor(
 				format       = kBackupFormat,
 				version      = kBackupVersion,
 				exportedAt   = Instant.now(inClock).toString(),
-				accounts     = fDao.accounts().map { AccountDto(it.id, it.name, it.type, it.institution, it.sharePercent, it.sortOrder, it.archived, it.createdAt, it.updatedAt) },
+				accounts     = fDao.accounts().map { AccountDto(it.id, it.name, it.type, it.institution, it.sharePercent, it.sortOrder, it.archived, it.createdAt, it.updatedAt, decodeShares(it.owners).map { inOwner -> OwnerDto(inOwner.profileId, inOwner.percent) }) },
+				profiles     = fDao.profiles().map { ProfileDto(it.id, it.name, it.sortOrder) },
 				categories   = fDao.categories().map { CategoryDto(it.id, it.name, it.icon, it.kind, it.sortOrder, it.archived, it.createdAt, it.updatedAt) },
 				assets       = fDao.assets().map { AssetDto(it.id, it.name, it.isin, it.archived, it.createdAt, it.updatedAt, it.ticker) },
 				transactions = inDb.transactionDao().getAll().map { inTx ->
@@ -61,7 +69,7 @@ class BackupRepository @Inject constructor(
 				prices       = fDao.prices().map { PriceDto(it.id, it.assetId, it.date.toString(), it.unitPrice) },
 				recurrences  = inDb.planningDao().recurrences().map { it.toDomain().toDto() },
 				loans        = inDb.planningDao().loans().map { it.toDomain().toDto() }
-			)
+			).withProfiles()														// base d'avant les profils : profil « Moi »
 		}
 
 	/*
@@ -75,7 +83,8 @@ class BackupRepository @Inject constructor(
 		inDb.withTransaction {
 			if (inExpected != null && syncFingerprint(snapshot()) != inExpected) return@withTransaction false	// données modifiées entre-temps : rien n'est remplacé
 			fDao.deleteAll()
-			fDao.insertAccounts(inFile.accounts.map { AccountEntity(it.id, it.name, it.type, it.institution, it.sharePercent, it.sortOrder, it.archived, it.createdAt, it.updatedAt) })
+			fDao.insertProfiles(inFile.profiles.map { ProfileEntity(it.id, it.name, it.sortOrder) })
+			fDao.insertAccounts(inFile.accounts.map { AccountEntity(it.id, it.name, it.type, it.institution, it.sharePercent, it.sortOrder, it.archived, it.createdAt, it.updatedAt, encodeShares(it.owners.map { inOwner -> Ownership(inOwner.profileId, inOwner.percent) })) })
 			inDb.categoryDao().insertAll(inFile.categories.map { CategoryEntity(it.id, it.name, it.icon, it.kind, it.sortOrder, it.archived, it.createdAt, it.updatedAt) })
 			inDb.assetDao().insertAll(inFile.assets.map { AssetEntity(it.id, it.name, it.isin, it.archived, it.createdAt, it.updatedAt, it.ticker) })
 			fDao.insertTransactions(inFile.transactions.map { TransactionEntity(it.id, LocalDate.parse(it.date), it.kind, it.label, it.categoryId, it.assetId, it.notes, it.createdAt, it.updatedAt, it.linkedId) })

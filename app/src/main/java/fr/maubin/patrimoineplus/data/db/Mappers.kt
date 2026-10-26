@@ -14,7 +14,9 @@ import fr.maubin.patrimoineplus.domain.model.Transaction
 import fr.maubin.patrimoineplus.domain.model.TransactionKind
 import fr.maubin.patrimoineplus.domain.model.Frequency
 import fr.maubin.patrimoineplus.domain.model.Loan
-import fr.maubin.patrimoineplus.domain.model.Recurrence
+import fr.maubin.patrimoineplus.domain.model.Recurrence
+import fr.maubin.patrimoineplus.domain.calc.decodeShares
+import fr.maubin.patrimoineplus.domain.calc.encodeShares
 
 // Conversions entre les tables Room et les modèles du domaine.
 
@@ -22,10 +24,11 @@ import fr.maubin.patrimoineplus.domain.model.Recurrence
 	Compte de la base vers le domaine.
 */
 fun AccountEntity.toDomain(): Account =
-	Account(id, name, AccountType.valueOf(type), institution, sharePercent, sortOrder, archived)
+	Account(id, name, AccountType.valueOf(type), institution, sharePercent, sortOrder, archived, decodeShares(owners))
 
 /*
-	Compte du domaine vers la base.
+	Compte du domaine vers la base. Un seul propriétaire : sa part suit la part
+	modifiée ; plusieurs : la part est le total des leurs.
 	inCreatedAt : horodatage de création
 	inUpdatedAt : horodatage de modification
 */
@@ -33,7 +36,9 @@ fun Account.toEntity(
 	inCreatedAt : Long,
 	inUpdatedAt : Long
 ): AccountEntity =
-	AccountEntity(id, name, type.name, institution, sharePercent, sortOrder, archived, inCreatedAt, inUpdatedAt)
+	(if (owners.size == 1) listOf(owners.single().copy(percent = sharePercent)) else owners).let { inOwners ->
+		AccountEntity(id, name, type.name, institution, if (inOwners.size > 1) inOwners.sumOf { it.percent } else sharePercent, sortOrder, archived, inCreatedAt, inUpdatedAt, encodeShares(inOwners))
+	}
 
 /*
 	Catégorie de la base vers le domaine.

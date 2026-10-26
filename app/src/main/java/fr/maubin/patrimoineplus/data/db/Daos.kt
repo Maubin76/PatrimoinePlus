@@ -355,6 +355,25 @@ interface BackupDao
 	@Query("SELECT * FROM asset_price")
 	suspend fun prices(): List<AssetPriceEntity>
 
+	// Tous les profils.
+	@Query("SELECT * FROM profile ORDER BY sortOrder")
+	suspend fun profiles(): List<ProfileEntity>
+
+	// Profils, suivis.
+	@Query("SELECT * FROM profile ORDER BY sortOrder")
+	fun observeProfiles(): kotlinx.coroutines.flow.Flow<List<ProfileEntity>>
+
+	/*
+		Enregistre des profils.
+		inProfiles : profils
+	*/
+	@androidx.room.Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE)
+	suspend fun insertProfiles(inProfiles: List<ProfileEntity>)
+
+	// Efface les profils.
+	@Query("DELETE FROM profile")
+	suspend fun deleteProfiles()
+
 	/*
 		Efface toutes les données, dans l'ordre qu'imposent les clés étrangères.
 	*/
@@ -371,6 +390,7 @@ interface BackupDao
 		deleteAssets()
 		deleteCategories()
 		deleteAccounts()
+		deleteProfiles()
 	}
 
 	// Efface les opérations récurrentes.

@@ -30,9 +30,11 @@ enum class AccountType(val label: String)
 	name         : nom choisi par l'utilisateur
 	type         : Courant, Épargne ou Bourse
 	institution  : établissement (banque, courtier), facultatif
-	sharePercent : part détenue, de 1 à 100 (50 pour un compte joint)
+	sharePercent : part comptée, de 1 à 100 : dans toutes les données, total des parts de la
+	               famille ; dans la vue d'un profil, la part de ce profil (voir scoped)
 	sortOrder    : ordre d'affichage
 	archived     : masqué des saisies, conservé dans l'historique et le patrimoine
+	owners       : profils propriétaires et leur part (vide : données d'avant les profils)
 */
 data class Account(
 	val id           : String,
@@ -41,7 +43,31 @@ data class Account(
 	val institution  : String?  = null,
 	val sharePercent : Int      = 100,
 	val sortOrder    : Int      = 0,
-	val archived     : Boolean  = false
+	val archived     : Boolean  = false,
+	val owners       : List<Ownership> = emptyList()
+)
+
+/*
+	Membre de la famille : chacun suit son patrimoine, la vue Famille
+	rassemble tous les comptes.
+	id        : identifiant
+	name      : prénom ou nom affiché
+	sortOrder : ordre d'affichage
+*/
+data class Profile(
+	val id        : String,
+	val name      : String,
+	val sortOrder : Int = 0
+)
+
+/*
+	Part d'un profil dans un compte (50 et 50 pour un compte joint d'un couple).
+	profileId : profil propriétaire
+	percent   : part détenue, de 1 à 100
+*/
+data class Ownership(
+	val profileId : String,
+	val percent   : Int
 )
 
 /*

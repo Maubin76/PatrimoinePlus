@@ -1,6 +1,7 @@
 package fr.maubin.patrimoineplus.domain.rules
 
-import fr.maubin.patrimoineplus.domain.model.Category
+import fr.maubin.patrimoineplus.domain.model.Category
+import fr.maubin.patrimoineplus.domain.model.Ownership
 
 /*
 	Violation d'une règle de saisie d'un compte ou d'une catégorie.
@@ -13,6 +14,18 @@ sealed class SetupError(val message: String)
 
 	// La part détenue sort de 1 à 100 %.
 	data object InvalidShare : SetupError("La part détenue doit être comprise entre 1 et 100 %.")
+
+	// Propriétaires d'un compte invalides.
+	data class Owners(val detail: String) : SetupError("Propriétaires : $detail")
+
+	// Nom de profil déjà pris.
+	data object ProfileTaken : SetupError("Un profil porte déjà ce nom.")
+
+	// Le dernier profil ne peut pas être supprimé.
+	data object LastProfile : SetupError("Il faut garder au moins un profil.")
+
+	// Le profil est seul propriétaire d'un compte.
+	data object ProfileOwnsAlone : SetupError("Ce profil est seul propriétaire d’un compte : donnez d’abord ce compte à un autre profil.")
 
 	// Une catégorie ne peut être réaffectée qu'à une autre catégorie de même nature.
 	data object KindMismatch : SetupError("Choisissez une catégorie de même nature (dépense ou revenu).")
@@ -78,3 +91,25 @@ fun validateReassignment(
 			add(SetupError.KindMismatch)
 		}
 	}
+
+/*
+	Vérifie les propriétaires d'un compte : au moins un, chacun connu et une
+	seule fois, part de 1 à 100 %, total au plus 100 %.
+	inOwners   : propriétaires
+	inProfiles : identifiants des profils connus
+	Retour : message d'erreur ; null si valide
+*/
+fun ownersError(
+	inOwners   : List<Ownership>,
+	inProfiles : Set<String>
+): String? =
+	when
+	{
+		inOwners.isEmpty()                                           -> "aucun propriétaire."
+		inOwners.any { it.profileId !in inProfiles }                 -> "propriétaire inconnu."
+		inOwners.map { it.profileId }.toSet().size != inOwners.size  -> "propriétaire en double."
+		inOwners.any { it.percent !in kMinShare..kMaxShare }         -> "part hors de 1 à 100 %."
+		inOwners.sumOf { it.percent } > kMaxShare                    -> "les parts dépassent 100 % au total."
+		else                                                         -> null
+	}
+
