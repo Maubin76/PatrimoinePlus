@@ -43,6 +43,15 @@ interface SettingsRepository
 	// Clés des diagrammes de répartition affichés en cercle (barre par défaut).
 	val pieCharts: Flow<Set<String>>
 
+	// Effet verre (désactivé par défaut).
+	val glassEffect: Flow<Boolean>
+
+	/*
+		Active ou retire l'effet verre.
+		inGlass : vrai pour l'effet verre
+	*/
+	suspend fun setGlassEffect(inGlass: Boolean)
+
 	/*
 		Choisit la forme d'un diagramme de répartition (mémorisée pour lui seul).
 		inKey : clé du diagramme
@@ -115,6 +124,7 @@ class DataStoreSettingsRepository @Inject constructor(
 	private val kThemeModeKey     = stringPreferencesKey("theme_mode")		// clé de l'apparence
 	private val kTrendColorsKey   = booleanPreferencesKey("trend_colors")	// ancienne clé des couleurs de hausse et de baisse (lue pour la reprise)
 	private val kColorThemeKey    = stringPreferencesKey("color_theme")		// clé du thème de couleurs
+	private val kGlassKey         = booleanPreferencesKey("glass_effect")	// clé de l'effet verre
 	private val kPieChartsKey     = stringSetPreferencesKey("pie_chart_keys")	// clé des répartitions affichées en cercle
 	private val kOnboardingKey    = booleanPreferencesKey("onboarding_done")	// clé du premier lancement
 	private val kLastAccountKey   = stringPreferencesKey("last_account")	// clé du dernier compte utilisé
@@ -147,6 +157,18 @@ class DataStoreSettingsRepository @Inject constructor(
 	override suspend fun setColorTheme(inTheme: ColorTheme)
 	{
 		inDataStore.edit { inPreferences -> inPreferences[kColorThemeKey] = inTheme.name }
+	}
+
+	override val glassEffect: Flow<Boolean> =
+		inDataStore.data.map { inPreferences -> inPreferences[kGlassKey] ?: false }
+
+	/*
+		Enregistre l'effet verre.
+		inGlass : vrai pour l'effet verre
+	*/
+	override suspend fun setGlassEffect(inGlass: Boolean)
+	{
+		inDataStore.edit { inPreferences -> inPreferences[kGlassKey] = inGlass }
 	}
 
 	override val pieCharts: Flow<Set<String>> =

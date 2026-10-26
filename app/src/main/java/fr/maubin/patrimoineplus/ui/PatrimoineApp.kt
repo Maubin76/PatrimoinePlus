@@ -126,7 +126,7 @@ private fun MainOrOnboarding(
 			inOnSkip        = inOnboarding::skip
 		)
 		false -> MainTabs(inAppViewModel, inOnOpenAccount)
-		null  -> Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface))
+		null  -> Box(Modifier.fillMaxSize())
 	}
 }
 
@@ -153,6 +153,7 @@ private fun MainTabs(
 	val vHidden    by inAppViewModel.amountsHidden.collectAsStateWithLifecycle()	// mode discret
 	val vThemeMode by inAppViewModel.themeMode.collectAsStateWithLifecycle()	// apparence choisie
 	val vColors    by inAppViewModel.colorTheme.collectAsStateWithLifecycle()	// thème de couleurs
+	val vGlass     by inAppViewModel.glassEffect.collectAsStateWithLifecycle()	// effet verre
 	val vToggle    = inAppViewModel::toggleAmountsHidden					// bascule du mode discret
 	val vData      by inEntry.data.collectAsStateWithLifecycle()			// données de saisie
 	var vEntry     by remember { mutableStateOf<EntryForm?>(null) }		// saisie ouverte
@@ -199,7 +200,9 @@ private fun MainTabs(
 					inSync        = rememberSyncActions(vSnackbar),
 					inDemo        = demoActions(vSnackbar),
 					inColorTheme  = vColors,
-					inOnColorTheme = inAppViewModel::setColorTheme
+					inOnColorTheme = inAppViewModel::setColorTheme,
+					inGlass        = vGlass,
+					inOnGlass      = inAppViewModel::setGlassEffect
 				)
 			}
 		}

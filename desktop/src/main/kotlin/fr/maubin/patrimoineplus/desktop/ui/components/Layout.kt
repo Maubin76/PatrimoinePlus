@@ -47,7 +47,8 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
 import fr.maubin.patrimoineplus.ui.components.isGlass
 import fr.maubin.patrimoineplus.ui.components.glassPanel
-import fr.maubin.patrimoineplus.ui.components.glassWell
+import fr.maubin.patrimoineplus.ui.components.glassWell
+import fr.maubin.patrimoineplus.ui.components.FloatingSurface
 
 val kTileGap = 20.dp																// espace entre deux tuiles
 
@@ -237,36 +238,6 @@ fun MenuCell(
 			inOptions.forEach { (inValue, inLabel) -> androidx.compose.material3.DropdownMenuItem(text = { Text(inLabel) }, onClick = { vOpen = false; inOnSelect(inValue) }) }
 		}
 	}
-}
-
-private val kShadowTint = Color(0xFF5B4E9E)											// teinte des ombres (lavande)
-
-/*
-	Surface flottante de l'appli PC : fond des panneaux, sans bord, posée sur
-	le fond par une ombre douce teintée de lavande (noire en sombre) ; avec
-	l'effet verre, panneau de verre translucide.
-	inShape    : forme
-	inModifier : modificateur appliqué
-	inContent  : contenu
-*/
-@Composable
-fun FloatingSurface(
-	inShape    : Shape    = RoundedCornerShape(28.dp),
-	inModifier : Modifier = Modifier,
-	inContent  : @Composable () -> Unit
-)
-{
-	val vDark  = MaterialTheme.colorScheme.surface.luminance() < 0.5f				// fond sombre
-	val vShade = if (vDark) Color.Black else kShadowTint								// teinte de l'ombre
-	val vGlass = isGlass()															// effet verre
-	Surface(
-		modifier     = if (vGlass) inModifier.glassPanel(inShape, vDark) else inModifier.shadow(12.dp, inShape, ambientColor = vShade.copy(alpha = if (vDark) 0.5f else 0.10f), spotColor = vShade.copy(alpha = if (vDark) 0.6f else 0.16f)),
-		shape        = inShape,
-		color        = if (vGlass) Color.Transparent else MaterialTheme.colorScheme.surface,
-		contentColor = MaterialTheme.colorScheme.onSurface,
-		border       = if (vDark && !vGlass) BorderStroke(1.dp, Color.White.copy(alpha = 0.05f)) else null,
-		content      = inContent
-	)
 }
 
 /*

@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.ui.navigation.TopLevelDestination
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import fr.maubin.patrimoineplus.ui.components.FloatingSurface
 
 private val kPillClearance  = 96.dp										// pilule (64) + marges (12 + 20)
 private val kEntryClearance = 72.dp										// bouton de saisie (56) + écart (16)
@@ -86,7 +87,7 @@ fun AppFrame(
 {
 	val vShowEntry = inSelected.hasEntry									// bouton de saisie visible
 	val vClearance = kPillClearance + if (vShowEntry) kEntryClearance else 0.dp	// place à laisser au contenu
-	Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+	Box(Modifier.fillMaxSize()) {																// fond de l'appli dessous (pastel ou verre)
 		CompositionLocalProvider(LocalBottomClearance provides vClearance) {
 			inContent()
 		}
@@ -115,9 +116,9 @@ fun AppFrame(
 }
 
 /*
-	Pilule de navigation flottante : capsule à ombre douce (liseré en mode
-	sombre, où l'ombre ne se voit pas), icônes au trait fin. Un indicateur
-	unique, capsule pleine à l'encre, glisse sous les onglets en épousant la
+	Pilule de navigation flottante : surface flottante (verre avec l'effet
+	verre), icônes au trait fin. Un indicateur unique, capsule pleine à
+	l'encre de la coque (violet en verre sombre), glisse sous les onglets en épousant la
 	largeur de l'onglet actif, qui s'élargit pour afficher son nom. Tout
 	découle de la position du pager, lue aux phases de mise en page et de
 	dessin : la capsule suit le doigt, sans recomposition par image. Chaque
@@ -134,17 +135,11 @@ fun FloatingNavBar(
 )
 {
 	val vColors    = MaterialTheme.colorScheme							// palette courante
-	val vDark      = vColors.surface.luminance() < 0.5f					// mode sombre : l'ombre ne se voit pas
-	val vIndicator = vColors.onSurface									// couleur de l'indicateur
+	val vIndicator = vColors.primary										// couleur de l'indicateur : encre de la coque
 	val vLeft      = remember { mutableFloatStateOf(0f) }					// bord gauche de l'indicateur
 	val vRight     = remember { mutableFloatStateOf(0f) }					// bord droit de l'indicateur
 	val vCoverage  = remember { List(TopLevelDestination.entries.size) { mutableFloatStateOf(0f) } }	// part de chaque icône sous l'indicateur
-	Surface(
-		shape           = CircleShape,
-		color           = vColors.surfaceBright,
-		shadowElevation = 10.dp,
-		border          = if (vDark) BorderStroke(1.dp, vColors.outlineVariant) else null
-	) {
+	FloatingSurface(CircleShape, inSolid = true) {
 		Layout(
 			modifier = Modifier
 				.padding(6.dp)
@@ -233,7 +228,7 @@ private fun NavTab(
 		Text(
 			text     = inDestination.label,
 			style    = MaterialTheme.typography.labelLarge,
-			color    = MaterialTheme.colorScheme.surface,
+			color    = MaterialTheme.colorScheme.onPrimary,
 			maxLines = 1,
 			softWrap = false,
 			modifier = Modifier
@@ -246,7 +241,7 @@ private fun NavTab(
 
 /*
 	Icône d'onglet : deux exemplaires superposés (gris hors de l'indicateur,
-	couleur du fond dessous) dont l'opacité suit la part recouverte par
+	inversée dessous) dont l'opacité suit la part recouverte par
 	l'indicateur, pour garder le contraste sans recomposer.
 	inDestination : onglet représenté
 	inCoverage    : part de l'icône sous l'indicateur (0 à 1), lue à la demande
@@ -267,7 +262,7 @@ private fun TabIcon(
 		Icon(
 			imageVector        = inDestination.icon,
 			contentDescription = null,
-			tint               = MaterialTheme.colorScheme.surface,
+			tint               = MaterialTheme.colorScheme.onPrimary,
 			modifier           = Modifier.graphicsLayer { alpha = inCoverage() }
 		)
 	}
@@ -293,7 +288,8 @@ private fun Modifier.tabWidth(inProgress: () -> Float): Modifier =
 	}
 
 /*
-	Bouton de saisie : rond noir (blanc en mode sombre), sans ombre.
+	Bouton de saisie : rond à l'encre de la coque (blanc en sombre, violet en
+	verre sombre), sans ombre.
 	inOnClick : action du bouton
 */
 @Composable
@@ -302,8 +298,8 @@ fun EntryFab(inOnClick: () -> Unit)
 	FloatingActionButton(
 		onClick        = inOnClick,
 		shape          = CircleShape,
-		containerColor = MaterialTheme.colorScheme.primaryContainer,
-		contentColor   = MaterialTheme.colorScheme.onPrimaryContainer,
+		containerColor = MaterialTheme.colorScheme.primary,
+		contentColor   = MaterialTheme.colorScheme.onPrimary,
 		elevation      = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp)
 	) {
 		Icon(Icons.Rounded.Add, contentDescription = "Nouvelle opération")

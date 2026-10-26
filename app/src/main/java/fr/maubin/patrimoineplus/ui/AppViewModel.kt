@@ -56,6 +56,19 @@ class AppViewModel @Inject constructor(
 		viewModelScope.launch { inSettings.setColorTheme(inTheme) }
 	}
 
+	// Effet verre choisi.
+	val glassEffect: StateFlow<Boolean> =
+		inSettings.glassEffect.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+	/*
+		Active ou retire l'effet verre.
+		inGlass : vrai pour l'effet verre
+	*/
+	fun setGlassEffect(inGlass: Boolean)
+	{
+		viewModelScope.launch { inSettings.setGlassEffect(inGlass) }
+	}
+
 	// Clés des diagrammes de répartition affichés en cercle.
 	val pieCharts: StateFlow<Set<String>> =
 		inSettings.pieCharts.stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())

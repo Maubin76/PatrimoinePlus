@@ -34,14 +34,14 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.lerp
 import fr.maubin.patrimoineplus.ui.theme.LocalColorTheme
 import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 import fr.maubin.patrimoineplus.ui.theme.kColorfulDark
 import fr.maubin.patrimoineplus.ui.theme.kColorfulLight
 
-private val kCardShape = RoundedCornerShape(16.dp)							// coins des cartes
+private val kCardShape = RoundedCornerShape(24.dp)							// coins des cartes : panneau flottant
 
 /*
 	Point identifiant une série (un type de compte), en niveau de gris.
@@ -131,7 +131,7 @@ fun SectionHeader(
 }
 
 /*
-	Carte bordée de 1 dp, sans ombre ni teinte : regroupe des lignes liées.
+	Carte flottante (sans bord, ombre douce ; verre avec l’effet verre) : regroupe des lignes liées.
 	inModifier : modificateur appliqué
 	inContent  : lignes de la carte
 */
@@ -141,12 +141,7 @@ fun BorderedCard(
 	inContent  : @Composable ColumnScope.() -> Unit
 )
 {
-	Surface(
-		modifier = inModifier.fillMaxWidth(),
-		shape    = kCardShape,
-		color    = MaterialTheme.colorScheme.surface,
-		border   = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-	) {
+	FloatingSurface(kCardShape, inModifier.fillMaxWidth()) {
 		Column(content = inContent)
 	}
 }

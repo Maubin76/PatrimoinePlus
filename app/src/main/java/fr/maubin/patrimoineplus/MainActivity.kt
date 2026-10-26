@@ -35,7 +35,9 @@ import fr.maubin.patrimoineplus.ui.lock.LockScreen
 import fr.maubin.patrimoineplus.ui.lock.LockState
 import fr.maubin.patrimoineplus.ui.lock.authenticate
 import fr.maubin.patrimoineplus.ui.theme.PatrimoineTheme
-import javax.inject.Inject
+import javax.inject.Inject
+import fr.maubin.patrimoineplus.ui.theme.DeskTheme
+import fr.maubin.patrimoineplus.ui.components.AppGround
 
 private const val kSplashMaxMillis = 1_500L									// attente maximale sous l'écran de démarrage système
 private const val kFadeMillis      = 320										// effacement de l'écran de connexion
@@ -77,6 +79,7 @@ class MainActivity : FragmentActivity()
 		setContent {
 			val vMode    by fAppViewModel.themeMode.collectAsStateWithLifecycle()	// apparence choisie
 			val vColors  by fAppViewModel.colorTheme.collectAsStateWithLifecycle()	// thème de couleurs
+			val vGlass   by fAppViewModel.glassEffect.collectAsStateWithLifecycle()	// effet verre
 			val vLock    by fAppLock.state.collectAsStateWithLifecycle()			// état du verrou
 			val vAuth    by fAppLock.authRequired.collectAsStateWithLifecycle()		// verrou activé
 			val vIntro   by fAppLock.introPending.collectAsStateWithLifecycle()		// animation du lancement à jouer
@@ -92,8 +95,9 @@ class MainActivity : FragmentActivity()
 				setRecentsScreenshotEnabled(!vAuth)
 				onDispose {}
 			}
-			PatrimoineTheme(inDarkTheme = vDark, inColorTheme = vColors) {
-				Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
+			DeskTheme(inDarkTheme = vDark, inColorTheme = vColors, inGlass = vGlass) {
+				Box(Modifier.fillMaxSize()) {
+					AppGround(vDark, vGlass)												// fond pastel, ou formes floues derrière le verre
 					if (vLock == LockState.UNLOCKED)
 					{
 						vKept.SaveableStateProvider("contenu") {

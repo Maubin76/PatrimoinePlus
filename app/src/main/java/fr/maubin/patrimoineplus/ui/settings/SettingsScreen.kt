@@ -39,7 +39,8 @@ import fr.maubin.patrimoineplus.ui.components.SectionHeader
 import fr.maubin.patrimoineplus.ui.shell.ScreenScaffold
 import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
 import fr.maubin.patrimoineplus.ui.theme.ColorTheme
-import fr.maubin.patrimoineplus.ui.components.SegmentedChoice
+import fr.maubin.patrimoineplus.ui.components.SegmentedChoice
+import fr.maubin.patrimoineplus.ui.components.PillChoice
 
 /*
 	Verrou et sauvegarde, vus par l'écran des réglages.
@@ -70,6 +71,8 @@ data class SafetyActions(
 	inSync        : synchronisation avec le PC ; null pour masquer la section
 	inColorTheme   : thème de couleurs choisi
 	inOnColorTheme : change le thème de couleurs
+	inGlass        : effet verre actif
+	inOnGlass      : active ou retire l'effet verre
 */
 @Composable
 fun SettingsScreen(
@@ -81,7 +84,9 @@ fun SettingsScreen(
 	inDemo        : DemoActions? = null,
 	inSync        : SyncActions? = null,
 	inColorTheme   : ColorTheme = ColorTheme.MONOCHROME,
-	inOnColorTheme : (ColorTheme) -> Unit = {}
+	inOnColorTheme : (ColorTheme) -> Unit = {},
+	inGlass        : Boolean = false,
+	inOnGlass      : (Boolean) -> Unit = {}
 )
 {
 	ScreenScaffold(inTitle = "Réglages") { inPadding ->
@@ -105,6 +110,15 @@ fun SettingsScreen(
 			)
 			Spacer(Modifier.height(8.dp))
 			Text(inColorTheme.detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+			Spacer(Modifier.height(16.dp))
+			BorderedCard {
+				SwitchRow(
+					inTitle    = "Effet verre",
+					inDetail   = "Panneaux translucides sur un fond de formes floues ; en sombre, noir profond et accent violet.",
+					inChecked  = inGlass,
+					inOnChange = inOnGlass
+				)
+			}
 			Spacer(Modifier.height(32.dp))
 			SectionHeader(inTitle = "Confidentialité")
 			Spacer(Modifier.height(8.dp))
@@ -283,27 +297,7 @@ private fun ThemeModeSelector(
 	inOnSelect : (ThemeMode) -> Unit
 )
 {
-	val vColors  = MaterialTheme.colorScheme								// palette courante
-	val vEntries = ThemeMode.entries										// choix proposés
-	SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-		vEntries.forEachIndexed { inIndex, inEntry ->
-			SegmentedButton(
-				selected = inEntry == inMode,
-				onClick  = { inOnSelect(inEntry) },
-				shape    = SegmentedButtonDefaults.itemShape(index = inIndex, count = vEntries.size),
-				icon     = {},
-				colors   = SegmentedButtonDefaults.colors(
-					activeContainerColor   = vColors.primary,
-					activeContentColor     = vColors.onPrimary,
-					activeBorderColor      = vColors.primary,
-					inactiveContainerColor = vColors.surface,
-					inactiveContentColor   = vColors.onSurface,
-					inactiveBorderColor    = vColors.outlineVariant
-				),
-				label    = { Text(inEntry.label) }
-			)
-		}
-	}
+	PillChoice(ThemeMode.entries, inMode, { it.label }, inOnSelect)
 }
 
 /*

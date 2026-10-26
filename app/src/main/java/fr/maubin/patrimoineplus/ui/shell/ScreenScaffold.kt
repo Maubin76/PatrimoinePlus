@@ -27,6 +27,8 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
+import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.ui.graphics.Color
 
 // Hauteur laissée libre en bas du contenu pour la pilule de navigation (et le bouton de saisie).
 val LocalBottomClearance = staticCompositionLocalOf { 0.dp }
@@ -35,9 +37,10 @@ val LocalBottomClearance = staticCompositionLocalOf { 0.dp }
 val kScreenMargin: Dp = 20.dp
 
 /*
-	Gabarit commun des écrans : titre centré sur le fond ; un filet apparaît
-	sous la barre dès que le contenu défile (ni ombre ni teinte). Les marges
-	transmises au contenu incluent la place de la pilule flottante.
+	Gabarit commun des écrans, sur le fond de l'appli : grand titre à gauche
+	qui se replie en barre quand le contenu défile (la barre repliée prend
+	le fond, avec un filet). Les marges transmises au contenu incluent la
+	place de la pilule flottante.
 	inTitle   : titre de l'écran
 	inActions : actions de la barre du haut
 	inContent : contenu, qui reçoit les marges à respecter
@@ -50,23 +53,23 @@ fun ScreenScaffold(
 	inContent : @Composable (PaddingValues) -> Unit
 )
 {
-	val vScroll    = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())	// suivi du défilement
-	val vScrolled  = vScroll.state.overlappedFraction > 0f				// le contenu passe sous la barre
-	val vSurface   = MaterialTheme.colorScheme.surface					// fond de l'écran
+	val vScroll    = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())	// grand titre replié au défilement
+	val vScrolled  = vScroll.state.collapsedFraction > 0.99f				// titre replié : le contenu passe sous la barre
+	val vBar       = MaterialTheme.colorScheme.background.copy(alpha = 0.94f)	// barre repliée, sur le fond
 	val vClearance = LocalBottomClearance.current							// place de la pilule
 	val vDirection = LocalLayoutDirection.current							// sens de lecture
 	Scaffold(
 		modifier       = Modifier.nestedScroll(vScroll.nestedScrollConnection),
-		containerColor = vSurface,
+		containerColor = Color.Transparent,
 		topBar         = {
 			Column {
-				CenterAlignedTopAppBar(
-					title          = { Text(inTitle, style = MaterialTheme.typography.titleMedium) },
+				LargeTopAppBar(
+					title          = { Text(inTitle) },
 					actions        = inActions,
 					scrollBehavior = vScroll,
 					colors         = TopAppBarDefaults.topAppBarColors(
-						containerColor         = vSurface,
-						scrolledContainerColor = vSurface
+						containerColor         = Color.Transparent,
+						scrolledContainerColor = vBar
 					)
 				)
 				if (vScrolled)

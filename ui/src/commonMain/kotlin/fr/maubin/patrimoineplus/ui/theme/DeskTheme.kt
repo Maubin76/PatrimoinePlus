@@ -21,6 +21,7 @@ import androidx.compose.material3.Shapes
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.ui.components.LocalGlass
+import androidx.compose.material3.LocalContentColor
 
 // Neutres de l'appli PC, légèrement teintés de lavande (fond pastel).
 private val kDeskInk          = Color(0xFF16151F)								// encre
@@ -249,6 +250,6 @@ fun DeskTheme(
 )
 {
 	MaterialTheme(colorScheme = deskColors(inDarkTheme, inColorTheme, inGlass), typography = deskTypography(), shapes = kDeskShapes) {
-		CompositionLocalProvider(LocalColorTheme provides inColorTheme, LocalGlass provides inGlass, content = inContent)
+		CompositionLocalProvider(LocalColorTheme provides inColorTheme, LocalGlass provides inGlass, LocalContentColor provides MaterialTheme.colorScheme.onSurface, content = inContent)	// encre par défaut : écrans transparents sur le fond
 	}
 }

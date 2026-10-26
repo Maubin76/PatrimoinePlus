@@ -65,6 +65,8 @@ import androidx.compose.ui.semantics.Role
 import fr.maubin.patrimoineplus.ui.components.isGlass
 import fr.maubin.patrimoineplus.ui.components.glassPanel
 import fr.maubin.patrimoineplus.ui.components.glassWell
+import fr.maubin.patrimoineplus.ui.components.FloatingSurface
+import fr.maubin.patrimoineplus.ui.components.PillChoice
 
 val kPanelWidth = 440.dp																// largeur du panneau latéral
 
@@ -252,33 +254,7 @@ fun <T> Choice(
 	inEnabled  : Boolean = true
 )
 {
-	val vColors = MaterialTheme.colorScheme										// palette courante
-	Row(
-		modifier              = Modifier.fillMaxWidth().clip(RoundedCornerShape(50)).background(glassWell(vColors.surfaceContainer)).padding(4.dp).selectableGroup(),
-		horizontalArrangement = Arrangement.spacedBy(4.dp)
-	) {
-		inOptions.forEach { (inValue, inText) ->
-			val vActive = inValue == inSelected										// choix actif
-			val vFill   by animateColorAsState(if (vActive) vColors.primary else Color.Transparent, tween(180), label = "choix")	// fond de la pilule
-			Box(
-				modifier         = Modifier
-					.weight(1f)
-					.height(38.dp)
-					.clip(RoundedCornerShape(50))
-					.background(vFill)
-					.selectable(selected = vActive, enabled = inEnabled, role = Role.RadioButton) { inOnSelect(inValue) },
-				contentAlignment = Alignment.Center
-			) {
-				Text(
-					text     = inText,
-					style    = if (inOptions.size > 4) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,	// cinq choix : texte plus petit
-					color    = when { vActive -> vColors.onPrimary; inEnabled -> vColors.onSurface; else -> vColors.onSurface.copy(alpha = 0.38f) },
-					maxLines = 1,
-					softWrap = false
-				)
-			}
-		}
-	}
+	PillChoice(inOptions, inOptions.firstOrNull { it.first == inSelected } ?: inOptions.first(), { it.second }, { inOnSelect(it.first) }, inEnabled)
 }
 
 /*

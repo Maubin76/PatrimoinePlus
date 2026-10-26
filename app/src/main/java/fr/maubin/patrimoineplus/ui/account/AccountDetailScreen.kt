@@ -457,7 +457,7 @@ fun AccountDetailContent(
 	val vColors   = MaterialTheme.colorScheme									// palette courante
 	val vSelecting = inSelection.isNotEmpty()									// mode sélection
 	Scaffold(
-		containerColor       = vColors.surface,
+		containerColor       = Color.Transparent,
 		snackbarHost         = { SnackbarHost(inSnackbar) },
 		topBar               = {
 			TopAppBar(
@@ -490,7 +490,7 @@ fun AccountDetailContent(
 						IconButton(onClick = inActions.onEdit) { Icon(LineIcons.Edit, contentDescription = "Modifier le compte") }
 					}
 				},
-				colors         = TopAppBarDefaults.topAppBarColors(containerColor = vColors.surface, scrolledContainerColor = vColors.surface)
+				colors         = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent, scrolledContainerColor = vColors.background.copy(alpha = 0.94f))
 			)
 		},
 		floatingActionButton = {

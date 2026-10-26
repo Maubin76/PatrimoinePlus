@@ -59,17 +59,20 @@ import fr.maubin.patrimoineplus.ui.theme.PatrimoineTheme
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import org.robolectric.annotation.GraphicsMode
+import org.robolectric.annotation.GraphicsMode
 import fr.maubin.patrimoineplus.ui.planning.RecurrencesSection
 import fr.maubin.patrimoineplus.ui.accounts.buildAccountsState
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.Modifier
-import fr.maubin.patrimoineplus.ui.entry.newEntryForm
-import fr.maubin.patrimoineplus.ui.home.buildHomeState
+import androidx.compose.ui.Modifier
+import fr.maubin.patrimoineplus.ui.entry.newEntryForm
+import fr.maubin.patrimoineplus.ui.home.buildHomeState
 import fr.maubin.patrimoineplus.ui.components.LocalProportionStyle
-import fr.maubin.patrimoineplus.ui.components.ProportionStyle
+import fr.maubin.patrimoineplus.ui.components.ProportionStyle
 import fr.maubin.patrimoineplus.ui.theme.ColorTheme
+import fr.maubin.patrimoineplus.ui.components.AppGround
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 
 private const val kOutDir = "build/outputs/roborazzi"						// dossier des captures
 
@@ -119,11 +122,11 @@ class ScreenshotTest
 	{
 		listOf(0f to "1-debut", 0.3f to "2-chevrons", 0.66f to "3-remontee", 1f to "4-pose").forEach { (inProgress, inName) ->
 			captureRoboImage("$kOutDir/lancement-$inName.png") {
-				PatrimoineTheme(inDarkTheme = false) { LockContent(inProgress, inAuth = true, inMessage = null, inOnUnlock = {}) }
+				Themed(inDarkTheme = false) { LockContent(inProgress, inAuth = true, inMessage = null, inOnUnlock = {}) }
 			}
 		}
 		captureRoboImage("$kOutDir/lancement-sans-verrou-sombre.png") {
-			PatrimoineTheme(inDarkTheme = true) { LockContent(1f, inAuth = false, inMessage = null, inOnUnlock = {}) }
+			Themed(inDarkTheme = true) { LockContent(1f, inAuth = false, inMessage = null, inOnUnlock = {}) }
 		}
 	}
 
@@ -132,7 +135,7 @@ class ScreenshotTest
 	*/
 	@Test
 	fun onboarding() = captureRoboImage("$kOutDir/onboarding.png") {
-		PatrimoineTheme(inDarkTheme = false) {
+		Themed(inDarkTheme = false) {
 			OnboardingScreen(
 				listOf(ProposedAccount("Compte courant", AccountType.CHECKING, opening = "2 450,12"), ProposedAccount("Livret A", AccountType.SAVINGS),
 					ProposedAccount("LDDS", AccountType.SAVINGS, selected = false), ProposedAccount("PEA", AccountType.BROKERAGE)),
@@ -148,7 +151,7 @@ class ScreenshotTest
 	fun accountSheet()
 	{
 		fCompose.setContent {
-			PatrimoineTheme(inDarkTheme = false) {
+			Themed(inDarkTheme = false) {
 				AccountsContent(demoAccounts(), {}, {}, {}, {})
 				AccountSheet(AccountForm(name = "Compte joint", institution = "Banque démo", share = "50", opening = "1 200", openingDate = kToday),
 					null, false, { _, _ -> }, {}, {}, {})
@@ -159,12 +162,38 @@ class ScreenshotTest
 	}
 
 	/*
+		Thème de l'appli et son fond (pastel, ou formes floues avec le verre),
+		comme dans l'appli.
+		inDarkTheme  : mode sombre
+		inColorTheme : thème de couleurs
+		inGlass      : effet verre
+		inContent    : contenu
+	*/
+	@Composable
+	private fun Themed(
+		inDarkTheme  : Boolean,
+		inColorTheme : ColorTheme = ColorTheme.MONOCHROME,
+		inGlass      : Boolean    = false,
+		inContent    : @Composable () -> Unit
+	)
+	{
+		PatrimoineTheme(inDarkTheme = inDarkTheme, inColorTheme = inColorTheme, inGlass = inGlass) {
+			Box(Modifier.fillMaxSize()) {
+				AppGround(inDarkTheme, inGlass)
+				inContent()
+			}
+		}
+	}
+
+	/*
 		Enveloppe un écran dans le thème et le cadre réel (pilule, bouton de saisie).
 		inDark     : mode sombre
 		inHidden   : mode discret
 		inSelected : onglet courant
 		inScreen   : écran à afficher
 		inPosition : position du pager ; par défaut, l'onglet courant
+		inColors   : thème de couleurs
+		inGlass    : effet verre
 	*/
 	private fun shell(
 		inDark     : Boolean,
@@ -172,9 +201,10 @@ class ScreenshotTest
 		inSelected : TopLevelDestination,
 		inPosition : Float = inSelected.ordinal.toFloat(),
 		inColors   : ColorTheme = ColorTheme.MONOCHROME,
+		inGlass    : Boolean    = false,
 		inScreen   : @Composable () -> Unit
 	): @Composable () -> Unit = {
-		PatrimoineTheme(inDarkTheme = inDark, inColorTheme = inColors) {
+		Themed(inDarkTheme = inDark, inColorTheme = inColors, inGlass = inGlass) {
 			CompositionLocalProvider(LocalAmountsHidden provides inHidden) {
 				AppFrame(
 					inPosition = { inPosition },
@@ -250,7 +280,7 @@ class ScreenshotTest
 	fun recurrenceSheet()
 	{
 		fCompose.setContent {
-			PatrimoineTheme(inDarkTheme = false) {
+			Themed(inDarkTheme = false) {
 				AccountsContent(demoAccounts(), {}, {}, {}, {})
 				RecurrenceSheet(editRecurrenceForm(kDemo.recurrences.first(), kDemo.categories).copy(end = kToday.plusYears(1)), kDemo.accounts, kDemo.categories, { _, _ -> }, {}, {})
 			}
@@ -266,7 +296,7 @@ class ScreenshotTest
 	@Test
 	@Config(qualifiers = "w360dp-h2000dp-xxhdpi")
 	fun loanDetail() = captureRoboImage("$kOutDir/account-credit.png") {
-		PatrimoineTheme(inDarkTheme = false) {
+		Themed(inDarkTheme = false) {
 			AccountDetailContent(demoDetail(7), demoExtras(7), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
 		}
 	}
@@ -365,6 +395,23 @@ class ScreenshotTest
 	}
 
 	/*
+		Effet verre : accueil en clair et en sombre (noir profond, violet),
+		réglages en verre sombre avec l'interrupteur actif.
+	*/
+	@Test
+	fun glassEffect()
+	{
+		val vToday = LocalDate.parse("2026-10-07")								// date de calcul
+		val vDemo  = buildDemoData(vToday)										// démonstration
+		val vState = buildHomeState(vDemo.accounts, vDemo.transactions, vDemo.prices, vToday, vDemo.loans)	// état calculé, en net
+		captureRoboImage("$kOutDir/home-verre.png", content = shell(false, false, TopLevelDestination.Home, inGlass = true) { HomeContent(vState, {}, {}) })
+		captureRoboImage("$kOutDir/home-verre-sombre.png", content = shell(true, false, TopLevelDestination.Home, inGlass = true) { HomeContent(vState, {}, {}) })
+		captureRoboImage("$kOutDir/settings-verre-sombre.png", content = shell(true, false, TopLevelDestination.Settings, inGlass = true) {
+			SettingsScreen(ThemeMode.DARK, {}, false, {}, SafetyActions(true, "8 octobre 2026", "Documents/PatrimoinePlus", {}, {}, {}), null, null, inGlass = true)
+		})
+	}
+
+	/*
 		Accueil de démonstration avec les répartitions en cercle (réglage
 		basculé par l'icône) : anneau dans l'ordre et les teintes de la légende.
 	*/
@@ -397,7 +444,7 @@ class ScreenshotTest
 	@Test
 	@Config(qualifiers = "w360dp-h2200dp-xxhdpi")
 	fun accountDetail() = captureRoboImage("$kOutDir/account-detail.png") {
-		PatrimoineTheme(inDarkTheme = false) {
+		Themed(inDarkTheme = false) {
 			AccountDetailContent(demoDetail(), demoExtras(), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
 		}
 	}
@@ -411,7 +458,7 @@ class ScreenshotTest
 		val vState = demoDetail()												// état du mois
 		val vIds   = vState.days.first().items.take(1).map { it.transaction.id } + vState.days[1].items.take(1).map { it.transaction.id }	// sélection
 		captureRoboImage("$kOutDir/account-detail-selection.png") {
-			PatrimoineTheme(inDarkTheme = true) {
+			Themed(inDarkTheme = true) {
 				AccountDetailContent(vState.copy(), demoExtras(), vIds.toSet(), remember { SnackbarHostState() }, AccountDetailActions())
 			}
 		}
@@ -425,7 +472,7 @@ class ScreenshotTest
 	{
 		val vCats = kDemo.categories.sortedBy { it.sortOrder }					// catégories
 		fCompose.setContent {
-			PatrimoineTheme(inDarkTheme = false) {
+			Themed(inDarkTheme = false) {
 				AccountDetailContent(demoDetail(), demoExtras(), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
 				TransactionSheet(
 					EntryForm(amount = "42,90", accountId = kDemo.accounts.first().id, categoryId = vCats.first { it.name == "Alimentation" }.id, label = "Su", date = kToday),
@@ -443,7 +490,7 @@ class ScreenshotTest
 	@Test
 	@Config(qualifiers = "w360dp-h2000dp-xxhdpi")
 	fun brokerageDetail() = captureRoboImage("$kOutDir/account-bourse.png") {
-		PatrimoineTheme(inDarkTheme = false) {
+		Themed(inDarkTheme = false) {
 			AccountDetailContent(demoDetail(4), demoExtras(4), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
 		}
 	}
@@ -454,7 +501,7 @@ class ScreenshotTest
 	@Test
 	@Config(qualifiers = "w360dp-h1600dp-xxhdpi")
 	fun savingsDetail() = captureRoboImage("$kOutDir/account-livret.png") {
-		PatrimoineTheme(inDarkTheme = false) {
+		Themed(inDarkTheme = false) {
 			AccountDetailContent(demoDetail(2), demoExtras(2), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
 		}
 	}
@@ -466,7 +513,7 @@ class ScreenshotTest
 	@Test
 	@Config(qualifiers = "w360dp-h1800dp-xxhdpi")
 	fun collectionDetail() = captureRoboImage("$kOutDir/account-collection.png") {
-		PatrimoineTheme(inDarkTheme = false) {
+		Themed(inDarkTheme = false) {
 			AccountDetailContent(demoDetail(6), demoExtras(6), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
 		}
 	}
@@ -480,7 +527,7 @@ class ScreenshotTest
 	{
 		val vPea = kDemo.accounts[4]											// compte Bourse
 		fCompose.setContent {
-			PatrimoineTheme(inDarkTheme = false) {
+			Themed(inDarkTheme = false) {
 				TransactionSheet(
 					EntryForm(mode = EntryMode.TRADE, accountId = vPea.id, assetId = kDemo.assets.first().id, side = TradeSide.SELL, quantity = "10", price = "94,50", fees = "1,99", date = kToday),
 					EntryData(kDemo.accounts, kDemo.categories, kDemo.assets, kDemo.prices, kDemo.transactions), { emptyList() }, { _, _ -> }, {}, {}
@@ -501,7 +548,7 @@ class ScreenshotTest
 	{
 		val vData = EntryData(kDemo.accounts.filterNot { it.type.isProperty }, kDemo.categories, kDemo.assets, kDemo.prices, kDemo.transactions, loans = kDemo.loans)	// données de saisie
 		fCompose.setContent {
-			PatrimoineTheme(inDarkTheme = false) {
+			Themed(inDarkTheme = false) {
 				TransactionSheet(newEntryForm(vData, kDemo.accounts[7].id, kToday), vData, { emptyList() }, { _, _ -> }, {}, {})
 			}
 		}
@@ -516,7 +563,7 @@ class ScreenshotTest
 	@Test
 	@Config(qualifiers = "w360dp-h2000dp-xxhdpi")
 	fun mortgageDetail() = captureRoboImage("$kOutDir/account-pret-immobilier.png") {
-		PatrimoineTheme(inDarkTheme = false) {
+		Themed(inDarkTheme = false) {
 			AccountDetailContent(demoDetail(8), demoExtras(8), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
 		}
 	}
@@ -527,7 +574,7 @@ class ScreenshotTest
 	@Test
 	@Config(qualifiers = "w360dp-h1400dp-xxhdpi")
 	fun financedHome() = captureRoboImage("$kOutDir/account-residence.png") {
-		PatrimoineTheme(inDarkTheme = false) {
+		Themed(inDarkTheme = false) {
 			AccountDetailContent(demoDetail(5), demoExtras(5), emptySet(), remember { SnackbarHostState() }, AccountDetailActions())
 		}
 	}
@@ -539,7 +586,7 @@ class ScreenshotTest
 	fun transferSheet()
 	{
 		fCompose.setContent {
-			PatrimoineTheme(inDarkTheme = false) {
+			Themed(inDarkTheme = false) {
 				TransactionSheet(
 					EntryForm(mode = EntryMode.TRANSFER, amount = "300", accountId = kDemo.accounts[0].id, toAccountId = kDemo.accounts[2].id, date = kToday),
 					EntryData(kDemo.accounts, kDemo.categories, kDemo.assets, kDemo.prices, kDemo.transactions), { emptyList() }, { _, _ -> }, {}, {}

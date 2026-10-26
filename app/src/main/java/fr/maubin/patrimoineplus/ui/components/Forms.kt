@@ -44,8 +44,9 @@ import java.util.Locale
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.foundation.layout.PaddingValues
+import fr.maubin.patrimoineplus.ui.components.PillChoice
 
 private val kDateFormat = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)	// date affichée dans les champs
 
@@ -187,7 +188,7 @@ fun DateInput(
 }
 
 /*
-	Choix exclusif en boutons segmentés monochromes.
+	Choix exclusif en pilules (composant partagé PillChoice, comme sur le PC).
 	inOptions  : options, dans l'ordre
 	inSelected : option choisie
 	inLabel    : libellé d'une option
@@ -203,41 +204,7 @@ fun <T> SegmentedChoice(
 	inEnabled  : Boolean = true
 )
 {
-	val vColors = MaterialTheme.colorScheme									// palette courante
-	SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-		inOptions.forEachIndexed { inIndex, inOption ->
-			SegmentedButton(
-				selected = inOption == inSelected,
-				onClick  = { inOnSelect(inOption) },
-				enabled  = inEnabled,
-				shape    = SegmentedButtonDefaults.itemShape(index = inIndex, count = inOptions.size),
-				icon     = {},
-				contentPadding = if (inOptions.size > 4) PaddingValues(horizontal = 4.dp) else SegmentedButtonDefaults.ContentPadding,	// cinq choix : marges réduites pour garder les libellés entiers
-				colors   = SegmentedButtonDefaults.colors(
-					activeContainerColor           = vColors.primary,
-					activeContentColor             = vColors.onPrimary,
-					activeBorderColor              = vColors.primary,
-					inactiveContainerColor         = vColors.surface,
-					inactiveContentColor           = vColors.onSurface,
-					inactiveBorderColor            = vColors.outlineVariant,
-					disabledActiveContainerColor   = vColors.onSurfaceVariant,
-					disabledActiveContentColor     = vColors.surface,
-					disabledActiveBorderColor      = vColors.onSurfaceVariant,
-					disabledInactiveContainerColor = vColors.surface,
-					disabledInactiveContentColor   = vColors.onSurfaceVariant,
-					disabledInactiveBorderColor    = vColors.outlineVariant
-				),
-				label    = {
-					Text(
-						text     = inLabel(inOption),
-						style    = if (inOptions.size > 3) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
-						maxLines = 1,
-						softWrap = false
-					)
-				}
-			)
-		}
-	}
+	PillChoice(inOptions, inSelected, inLabel, inOnSelect, inEnabled)
 }
 
 /*

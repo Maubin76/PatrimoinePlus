@@ -143,8 +143,10 @@ inspirée de deux maquettes de référence fournies le 2026-10-07.
   réservé aux montants négatifs. Option « Hausses en vert, baisses en rouge »
   (Réglages › Apparence, téléphone et PC) : variations et plus-values
   colorées, signe toujours écrit. Les couleurs dynamiques Material You sont écartées.
-- Police unique Hanken Grotesk (OFL, ressource Compose du module `:ui`, licence dans
-  `doc/licenses/`) ; titres et total en demi-gras ; chiffres à chasse fixe.
+- Apparence commune au PC (`:ui`, `theme/DeskTheme.kt`) : fond pastel (ou
+  effet verre, Réglages › Apparence), cartes flottantes, grand titre à gauche
+  qui se replie au défilement, choix en pilules, police Outfit (OFL, licence
+  dans `doc/licenses/`) à chiffres tabulaires.
 - Accueil : total centré en très grand, variation du mois, pastille « Calculé
   au … », courbe d'évolution du patrimoine (12 mois au plus), répartition par
   type en niveaux de gris dont chaque ligne ouvre l'onglet Comptes (la liste des
@@ -362,7 +364,7 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   saisie en panneaux blancs flottants (ombre douce, sans bord), titre de
   page en grand ; police géométrique **Outfit** (OFL, ressource Compose du
   module `:ui`, licence dans `doc/licenses/`), chiffres tabulaires. Le
-  téléphone garde Hanken Grotesk et son apparence. **Effet verre** (Réglages ›
+  téléphone a la même apparence (fond, cartes flottantes, Outfit, pilules). **Effet verre** (Réglages ›
   Apparence, mémorisé) : panneaux translucides à liseré lumineux sur un fond
   de formes floues (halos pastel en clair ; en sombre, noir profond, facettes
   fumées, lueur violette, coque et chiffre mis en avant en violet).

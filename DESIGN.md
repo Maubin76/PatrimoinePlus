@@ -377,7 +377,7 @@ components:
 
 # Design System: PatrimoinePlus
 
-> **Deux mondes.** Les sections qui suivent, jusqu'à « Do's and Don'ts », décrivent l'appli **Android** (« Le Solde à l'encre »), toujours en service. L'appli **PC** (Compose Desktop) a son propre monde, « Pastel flottant », décrit dans la section « Bureau (PC) » en fin de document, avec les jetons préfixés `desk-` et `colorful-`. Les règles Android (aucun dégradé, une seule ombre, Hanken Grotesk) ne s'appliquent pas au PC, et inversement.
+> **Un seul monde depuis la refonte UI.** Le téléphone et le PC partagent le monde « Pastel flottant » décrit dans la section « Bureau (PC) » en fin de document (jetons `desk-` et `colorful-`) : fond pastel ou verre, panneaux flottants, Outfit, pilules à l'encre de la coque, effet verre en option. Les sections qui suivent, jusqu'à « Do's and Don'ts », décrivent l'ancien monde Android (« Le Solde à l'encre ») : ses couleurs, sa police Hanken Grotesk et ses cartes bordées ne s'appliquent plus ; restent valables la structure des écrans du téléphone (total centré, pilule de navigation flottante à indicateur glissant, bouton de saisie, mode discret).
 
 ## Overview
 
