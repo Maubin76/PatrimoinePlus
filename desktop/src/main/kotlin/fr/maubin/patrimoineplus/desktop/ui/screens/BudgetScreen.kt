@@ -67,7 +67,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
-import fr.maubin.patrimoineplus.domain.format.kCurrencySeparator
+import fr.maubin.patrimoineplus.domain.format.kCurrencySeparator
 import fr.maubin.patrimoineplus.ui.components.heroFilled
 
 private const val kNameWeight   = 2.4f											// largeur relative de la colonne du nom
@@ -99,7 +99,6 @@ fun BudgetScreen(
 	) {
 		Column {
 			Text("Budget prévisionnel", style = MaterialTheme.typography.displaySmall)
-			Text("Un mois type : vos entrées, vos dépenses par thème et vos investissements. Fixez-en les objectifs du mois : leur suivi se fait dans la page Objectifs. Enregistré sur ce PC.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		}
 		Figures(vBudget)
 		MonthGoalsBar(vMonth, { vMonth = it }, inSpace, inController, vBudget)
@@ -323,17 +322,14 @@ private fun MonthGoalsBar(
 			Column(Modifier.weight(1f)) {
 				val vName = monthTitle(inMonth).lowercase()										// mois, en minuscules
 				Text("Objectifs ${if (vName.first() in "aeiouyàâéèêîôû") "d’" else "de "}$vName", style = MaterialTheme.typography.titleMedium)
-				Text(
-					text  = when
-					{
-						vPlan != null -> "Fixés le ${formatFrenchDate(LocalDate.parse(vPlan.confirmed))} : ${vPlan.goals.size} objectif(s), suivis dans la page Objectifs." + if (vPast) "" else " Mettez-les à jour si le budget a changé."
-						vPast         -> "Mois écoulé : aucun objectif n’avait été fixé."
-						vEmpty        -> "Ajoutez des dépenses ou des investissements au budget pour en faire les objectifs du mois."
-						else          -> "Le cashflow prévu devient les objectifs du mois : une dépense maximale par thème, et l’épargne des investissements prévus."
-					},
-					style = MaterialTheme.typography.bodyMedium,
-					color = MaterialTheme.colorScheme.onSurfaceVariant
-				)
+				val vState = when
+				{
+					vPlan != null -> "Fixés le ${formatFrenchDate(LocalDate.parse(vPlan.confirmed))} : ${vPlan.goals.size} objectif(s), suivis dans la page Objectifs." + if (vPast) "" else " Mettez-les à jour si le budget a changé."
+					vPast         -> "Mois écoulé : aucun objectif n’avait été fixé."
+					vEmpty        -> "Ajoutez des dépenses ou des investissements au budget pour en faire les objectifs du mois."
+					else          -> null
+				}																		// état du mois ; rien à dire avant de fixer les objectifs
+				vState?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
 			}
 			Spacer(Modifier.width(16.dp))
 			Box(Modifier.width(260.dp)) { MonthSwitcher(inMonth, YearMonth.from(inSpace.today), YearMonth.from(inSpace.today).plusMonths(1), inOnMonth) }

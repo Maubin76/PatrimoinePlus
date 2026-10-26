@@ -157,13 +157,11 @@ fun GoalsScreen(
 			Row(verticalAlignment = Alignment.CenterVertically) {
 				Column(Modifier.weight(1f)) {
 					Text("Objectifs", style = MaterialTheme.typography.displaySmall)
-					Text("Vos grands objectifs, et ceux de chaque mois fixés depuis le budget. Tout est suivi sur vos opérations et enregistré sur ce PC.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 				}
 				Spacer(Modifier.width(24.dp))
 				Button(onClick = { vOpen(Draft(null, GoalKind.WEALTH)) }) { Text("Nouvel objectif") }
 			}
 			SectionHeader(inTitle = "Objectifs globaux")
-			Text("Matelas de sécurité, plafond d’un livret ou du PEA, apport pour un achat… : des cibles à moyen terme, suivies sur vos comptes. Le rythme se lit sur les douze derniers mois.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			if (vViews.isEmpty())
 			{
 				Suggestions(inSpace, vOpen)
@@ -648,7 +646,6 @@ private fun MonthSection(
 		Box(Modifier.weight(1f)) { SectionHeader(inTitle = "Objectifs du mois") }
 		Box(Modifier.width(300.dp)) { MonthSwitcher(vMonth, vFirst, vLast, { vMonth = it }) }
 	}
-	Text("Fixés depuis le budget (« Fixer les objectifs du mois ») : une dépense maximale par thème et l’épargne prévue. Suivis automatiquement sur les opérations saisies.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 	if (vPlan == null)
 	{
 		Tile {

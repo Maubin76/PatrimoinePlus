@@ -75,7 +75,6 @@ fun RecurringSection(
 		Row(verticalAlignment = Alignment.CenterVertically) {
 			Column(Modifier.weight(1f)) {
 				Text("Récurrences", style = MaterialTheme.typography.headlineSmall)
-				Text("Salaire, loyer, abonnements, versements : chaque échéance crée l’opération toute seule, à sa date. Une opération créée se modifie ou se supprime comme les autres ; supprimée, elle n’est pas recréée.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			}
 			Spacer(Modifier.width(24.dp))
 			Button(onClick = { inController.openPanel(Panel.Recurring(RecurrenceForm(start = vToday.plusDays(1), accountId = vData.accounts.firstOrNull { !it.archived && !it.type.isProperty }?.id))) }) { Text("Nouvelle récurrence") }

@@ -81,7 +81,6 @@ fun ReportScreen(
 		Row(verticalAlignment = Alignment.CenterVertically) {
 			Column(Modifier.weight(1f)) {
 				Text("Bilan", style = MaterialTheme.typography.displaySmall)
-				Text("Le passé en chiffres : dépenses et revenus mois par mois, ou l’année entière avec son export PDF.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			}
 			Spacer(Modifier.width(24.dp))
 			Box(Modifier.width(360.dp)) { Choice(ReportTab.entries.map { it to it.label }, vTab, inController::showReportTab) }

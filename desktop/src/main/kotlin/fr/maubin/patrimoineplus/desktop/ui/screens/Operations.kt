@@ -106,7 +106,6 @@ fun SearchScreen(
 	) {
 		Column {
 			Text("Recherche", style = MaterialTheme.typography.displaySmall)
-			Text("Recherche dans toutes les opérations (Ctrl+F) ; sélection multiple avec les cases, Ctrl+clic ou Maj+clic.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		}
 		Filters(inSpace, vQuery, vFocus, inController::setQuery)
 		Tile(

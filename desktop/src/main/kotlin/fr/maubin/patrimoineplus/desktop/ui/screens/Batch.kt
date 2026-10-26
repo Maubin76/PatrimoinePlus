@@ -110,7 +110,7 @@ fun BatchSection(
 	) {
 		Column {
 			Text("Saisie rapide", style = MaterialTheme.typography.headlineSmall)
-			Text("Dépenses et revenus en série. Tab : case suivante · Entrée : nouvelle ligne · Ctrl+Entrée : tout enregistrer. Montant sans signe = dépense ; « + » devant = entrée (revenu, remboursement).", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+			Text("Tab : case suivante · Entrée : nouvelle ligne · Ctrl+Entrée : tout enregistrer. Montant sans signe = dépense ; « + » devant = entrée (revenu, remboursement).", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		}
 		Tile(
 			inTitle  = "${vFilled.size} ligne(s) à enregistrer",

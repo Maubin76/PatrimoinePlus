@@ -32,7 +32,6 @@ fun EntriesScreen(
 	) {
 		Column {
 			Text("Opérations", style = MaterialTheme.typography.displaySmall)
-			Text("Saisie en série, puis les opérations qui se répètent et les mensualités des crédits.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		}
 		BatchSection(inSpace, inController)
 		RecurringSection(inSpace, inController)

@@ -114,8 +114,6 @@ fun SettingsScreen(
 		}
 		Spacer(Modifier.height(32.dp))
 		SectionHeader(inTitle = "Catégories")
-		Spacer(Modifier.height(4.dp))
-		Text("Dépenses et revenus : ajout, modification (clic), ordre (flèches).", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
 		Spacer(Modifier.height(12.dp))
 		CategoriesSection(inSpace, inController)
 	}

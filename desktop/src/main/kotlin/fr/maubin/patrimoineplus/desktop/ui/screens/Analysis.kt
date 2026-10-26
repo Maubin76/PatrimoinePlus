@@ -112,7 +112,6 @@ fun AnalysisSection(
 			MonthBars(vTable)
 		}
 		Tile(inTitle = "Par catégorie") {
-			Hint("Un clic sur un montant montre ses opérations. Écart : dernier mois complet comparé à la moyenne des mois précédents.")
 			Spacer(Modifier.height(8.dp))
 			Table(vTable) { inCategory, inMonth ->
 				inController.openSearch(SearchQuery(categoryId = inCategory.id, from = inMonth.atDay(1), to = inMonth.atEndOfMonth()))
