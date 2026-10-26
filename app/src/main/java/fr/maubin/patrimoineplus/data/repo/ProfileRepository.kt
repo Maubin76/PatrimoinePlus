@@ -20,6 +20,10 @@ import java.time.Clock
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import fr.maubin.patrimoineplus.domain.calc.ProfileRemoval
+import fr.maubin.patrimoineplus.domain.calc.profileRemoval
+import fr.maubin.patrimoineplus.data.DataSet
+import fr.maubin.patrimoineplus.data.db.toDomain
 
 /*
 	Vue affichée : profils de la famille et profil choisi.
@@ -39,12 +43,14 @@ data class ProfileView(
 	inDb       : base locale
 	inSettings : réglages (vue choisie)
 	inClock    : horloge (horodatage des comptes modifiés)
+	inAccounts : dépôt des comptes (suppression définitive)
 */
 @Singleton
 class ProfileRepository @Inject constructor(
 	private val inDb       : PatrimoineDatabase,
 	private val inSettings : SettingsRepository,
-	private val inClock    : Clock
+	private val inClock    : Clock,
+	private val inAccounts : AccountRepository
 )
 {
 	private val fDao = inDb.backupDao()											// profils et comptes en bloc
@@ -117,9 +123,22 @@ class ProfileRepository @Inject constructor(
 		}
 
 	/*
-		Retire un profil : il disparaît des propriétaires des comptes qu'il
-		partage. Refusé pour le dernier profil ou le seul propriétaire d'un
-		compte.
+		Récapitulatif de la suppression d'un profil : comptes dont il est seul
+		propriétaire (supprimés, opérations comprises), comptes partagés dont
+		sa part est retirée.
+		inId : profil
+	*/
+	suspend fun removal(inId: String): ProfileRemoval =
+		profileRemoval(
+			DataSet(fDao.accounts().map { it.toDomain() }, emptyList(), emptyList(), inDb.transactionDao().getAll().map { it.toDomain() }, emptyList(), emptyList(), profiles = current()),
+			inId
+		)
+
+	/*
+		Retire un profil (voir removal) : les comptes dont il est seul
+		propriétaire sont supprimés définitivement, avec leurs opérations ; il
+		disparaît des propriétaires des comptes qu'il partage. Refusé pour le
+		dernier profil.
 		inId : profil
 		Retour : refus ; null si retiré
 	*/
@@ -132,9 +151,9 @@ class ProfileRepository @Inject constructor(
 			{
 				vProfiles.none { it.id == inId }                                  -> SetupError.NotFound
 				vProfiles.size == 1                                               -> SetupError.LastProfile
-				vAccounts.any { (_, inOwners) -> inOwners.singleOrNull()?.profileId == inId } -> SetupError.ProfileOwnsAlone
 				else                                                              ->
 				{
+					vAccounts.filter { (_, inOwners) -> inOwners.singleOrNull()?.profileId == inId }.forEach { (inEntity, _) -> inAccounts.deletePermanently(inEntity.id) }
 					vAccounts.filter { (_, inOwners) -> inOwners.any { it.profileId == inId } }.forEach { (inEntity, inOwners) ->
 						val vKept = inOwners.filter { it.profileId != inId }								// propriétaires restants
 						inDb.accountDao().update(inEntity.copy(owners = encodeShares(vKept), sharePercent = vKept.sumOf { it.percent }, updatedAt = inClock.millis()))

@@ -111,9 +111,10 @@ class ProfilesUiTest
 	}
 
 	/*
-		Réglages : profil ajouté puis renommé ; retrait de « Moi » refusé (seul
-		propriétaire de comptes), message affiché. Panneau du compte joint :
-		une part par profil.
+		Réglages : profil ajouté puis renommé ; retrait de « Moi » : récapitulatif
+		(comptes supprimés, parts retirées), annulé sans effet. Panneau du
+		compte joint : une part par profil. Retrait d'un profil sans compte :
+		immédiat ; d'Alex, confirmé : sa part du compte joint disparaît.
 	*/
 	@Test
 	fun settingsAndOwners()
@@ -132,7 +133,12 @@ class ProfilesUiTest
 		assertEquals("Sam B.", vApp.workspace.value.data.profiles.last().name)
 		fCompose.onNodeWithContentDescription("Retirer Moi").performClick()
 		fCompose.waitForIdle()
-		fCompose.onNodeWithText("Ce profil est seul propriétaire d’un compte : donnez d’abord ce compte à un autre profil.").assertExists()
+		fCompose.onNodeWithText("Supprimer le profil « Moi » ?").assertExists()
+		fCompose.onNodeWithText("• Compte joint : compté pour 50 % au lieu de 100 % (part de 50 % retirée)").assertExists()
+		capture(vApp, "28-suppression-profil")
+		fCompose.onNodeWithText("Annuler").performClick()
+		fCompose.waitForIdle()
+		assertEquals(3, vApp.workspace.value.data.profiles.size)
 		capture(vApp, "28-reglages-profils")
 		val vJoint = vApp.workspace.value.data.accounts.first { it.name == "Compte joint" }	// compte du couple
 		vApp.openPanel(Panel.AccountSheet(vJoint.id))
@@ -140,5 +146,15 @@ class ProfilesUiTest
 		fCompose.onNodeWithText("Part de Alex (%)").assertExists()
 		fCompose.onNodeWithText("Part de Sam B. (%)").assertExists()
 		capture(vApp, "28-compte-joint-parts")
+		vApp.closePanel()
+		fCompose.waitForIdle()
+		fCompose.onNodeWithContentDescription("Retirer Sam B.").performScrollTo().performClick()		// aucun compte : sans confirmation
+		fCompose.waitForIdle()
+		assertEquals(listOf("Moi", "Alex"), vApp.workspace.value.data.profiles.map { it.name })
+		fCompose.onNodeWithContentDescription("Retirer Alex").performClick()
+		fCompose.onNodeWithText("Supprimer le profil").performClick()
+		fCompose.waitForIdle()
+		assertEquals(listOf("Moi"), vApp.workspace.value.data.profiles.map { it.name })
+		assertEquals(50, vApp.workspace.value.data.accounts.first { it.name == "Compte joint" }.sharePercent)
 	}
 }

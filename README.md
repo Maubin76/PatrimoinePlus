@@ -226,8 +226,9 @@ Détail complet : [`doc/SPEC.md` § 2](doc/SPEC.md#2-modèle-de-données).
   chaque profil voit ses comptes à sa part ; la vue **Famille** rassemble
   tous les comptes, chacun pour le total des parts de la famille. Sur le PC,
   sélecteur de vue en haut (à partir de deux profils), section Profils des
-  réglages (ajout, renommage, retrait refusé pour le seul propriétaire d'un
-  compte), budget et objectifs propres à chaque vue. Sur le téléphone,
+  réglages (ajout, renommage, retrait après un récapitulatif à confirmer :
+  ses comptes seuls supprimés avec leurs opérations, sa part des comptes
+  partagés retirée), budget et objectifs propres à chaque vue. Sur le téléphone,
   même sélecteur dans la barre de l'accueil et des comptes, vue mémorisée
   sur le téléphone, section Profils des réglages, une part par profil dans
   la fiche d'un compte (un crédit créé sur le téléphone va au premier

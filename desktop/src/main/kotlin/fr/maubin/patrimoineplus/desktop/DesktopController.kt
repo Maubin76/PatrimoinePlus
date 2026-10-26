@@ -53,7 +53,9 @@ import fr.maubin.patrimoineplus.ui.goals.withPlan
 import fr.maubin.patrimoineplus.domain.calc.scoped
 import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
 import fr.maubin.patrimoineplus.domain.calc.scopeOf
-import fr.maubin.patrimoineplus.domain.calc.kFamilyView
+import fr.maubin.patrimoineplus.domain.calc.kFamilyView
+import fr.maubin.patrimoineplus.domain.calc.ProfileRemoval
+import fr.maubin.patrimoineplus.domain.calc.profileRemoval
 
 private const val kDayCheckMillis = 60_000L										// contrôle du changement de jour
 
@@ -405,7 +407,15 @@ class DesktopController(
 	): EditResult = edit { editor.renameProfile(it, inId, inName) }
 
 	/*
-		Supprime un profil ; s'il était affiché, la vue revient au premier profil.
+		Récapitulatif de la suppression d'un profil (comptes supprimés, parts
+		retirées), à confirmer.
+		inId : profil
+	*/
+	fun profileRemoval(inId: String): ProfileRemoval = profileRemoval(workspace.value.data, inId)
+
+	/*
+		Supprime un profil, avec ses comptes seuls et sa part des comptes
+		partagés ; s'il était affiché, la vue revient au premier profil.
 		inId : profil
 	*/
 	fun removeProfile(inId: String): EditResult =

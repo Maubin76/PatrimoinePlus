@@ -161,6 +161,7 @@ private fun MainTabs(
 	val vProfiles  = hiltViewModel<ProfilesViewModel>()							// profils et vue affichée
 	val vView      by vProfiles.view.collectAsStateWithLifecycle()				// vue affichée
 	val vProfError by vProfiles.error.collectAsStateWithLifecycle()				// dernier refus sur les profils
+	val vPending   by vProfiles.pending.collectAsStateWithLifecycle()			// retrait de profil à confirmer
 	val vToggle    = inAppViewModel::toggleAmountsHidden					// bascule du mode discret
 	val vData      by inEntry.data.collectAsStateWithLifecycle()			// données de saisie
 	var vEntry     by remember { mutableStateOf<EntryForm?>(null) }		// saisie ouverte
@@ -211,7 +212,7 @@ private fun MainTabs(
 					inOnColorTheme = inAppViewModel::setColorTheme,
 					inGlass        = vGlass,
 					inOnGlass      = inAppViewModel::setGlassEffect,
-					inProfiles     = ProfilesActions(vView.profiles, vProfError, vProfiles::add, vProfiles::rename, vProfiles::remove)
+					inProfiles     = ProfilesActions(vView.profiles, vProfError, vProfiles::add, vProfiles::rename, vProfiles::askRemove, vPending, vProfiles::confirmRemove, vProfiles::cancelRemove)
 				)
 			}
 		}

@@ -32,6 +32,8 @@ import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
 import fr.maubin.patrimoineplus.data.sync.syncFingerprint
+import fr.maubin.patrimoineplus.domain.calc.profileRemoval
+import fr.maubin.patrimoineplus.data.edit.OpeningBalance
 
 /*
 	Profils : reprise des données d'avant les profils (tout au profil
@@ -98,8 +100,10 @@ class ProfilesTest
 	/*
 		Édition : profil sans nom ou en double refusé ; renommage ; création
 		d'un compte à deux propriétaires ; parts au-delà de 100 % ou profil
-		inconnu refusés ; suppression refusée pour le dernier profil ou le
-		seul propriétaire d'un compte, acceptée sinon (sa part disparaît).
+		inconnu refusés ; récapitulatif de suppression (comptes supprimés,
+		parts retirées) ; suppression : ses comptes seuls supprimés avec leurs
+		opérations, sa part retirée des comptes partagés ; dernier profil
+		refusé.
 	*/
 	@Test
 	fun editing()
@@ -120,8 +124,15 @@ class ProfilesTest
 		val vJoint  = vEditor.createAccount(vFile, "Joint", AccountType.CHECKING, null, 100, null, listOf(Ownership(kDefaultProfileId, 50), Ownership(vJulie, 50))) as EditResult.Done	// compte joint
 		vFile = vJoint.file
 		assertEquals(100, vFile.accounts.single { it.id == vJoint.id }.sharePercent)
-		assertTrue(vEditor.removeProfile(vFile, kDefaultProfileId) is EditResult.Refused)	// seul propriétaire du compte courant
+		val vPlan   = profileRemoval(vFile.toDataSet(), kDefaultProfileId)					// récapitulatif pour « Moi »
+		assertEquals(listOf(kChecking.id), vPlan.removed.map { it.account.id })
+		assertEquals(listOf(Triple(50, 100, 50)), vPlan.reduced.map { Triple(it.share, it.before, it.after) })
+		val vOwn    = vEditor.createAccount(vFile, "Livret de Julie", AccountType.SAVINGS, null, 100, OpeningBalance(eur(500.0), d("2026-09-01")), listOf(Ownership(vJulie, 100))) as EditResult.Done	// compte de Julie seule
+		vFile = vOwn.file
+		assertEquals(listOf(1), profileRemoval(vFile.toDataSet(), vJulie).removed.map { it.operations })
 		vFile = (vEditor.removeProfile(vFile, vJulie) as EditResult.Done).file
+		assertTrue(vFile.accounts.none { it.id == vOwn.id })								// son livret supprimé
+		assertTrue(vFile.transactions.none { inTx -> inTx.postings.any { it.accountId == vOwn.id } })	// avec son solde initial
 		assertEquals(listOf(kDefaultProfileId), vFile.accounts.single { it.id == vJoint.id }.owners.map { it.profileId })
 		assertEquals(50, vFile.accounts.single { it.id == vJoint.id }.sharePercent)
 		assertTrue(decodeBackup(encodeBackup(vFile)) is BackupRead.Valid)

@@ -110,3 +110,68 @@ fun scopeOf(
 		inProfiles.any { it.id == inView }     -> inView
 		else                                   -> inProfiles.firstOrNull()?.id ?: kDefaultProfileId
 	}
+
+/*
+	Compte supprimé définitivement avec un profil, dont il était le seul
+	propriétaire.
+	account    : compte
+	operations : opérations qui le touchent (supprimées avec lui)
+*/
+data class RemovedAccount(
+	val account    : Account,
+	val operations : Int
+)
+
+/*
+	Compte partagé dont la part d'un profil retiré disparaît.
+	account : compte
+	share   : part retirée, en %
+	before  : part comptée avant, en %
+	after   : part comptée après, en %
+*/
+data class ReducedAccount(
+	val account : Account,
+	val share   : Int,
+	val before  : Int,
+	val after   : Int
+)
+
+/*
+	Ce que deviennent les comptes d'un profil qu'on supprime.
+	removed : comptes dont il est seul propriétaire, supprimés définitivement
+	reduced : comptes partagés, dont sa part est retirée
+*/
+data class ProfileRemoval(
+	val removed : List<RemovedAccount>,
+	val reduced : List<ReducedAccount>
+)
+{
+	// Aucun compte concerné : la suppression se fait sans confirmation.
+	val isEmpty: Boolean
+		get() = removed.isEmpty() && reduced.isEmpty()
+}
+
+/*
+	Récapitulatif de la suppression d'un profil : comptes supprimés (il en
+	est seul propriétaire, opérations comprises) et comptes partagés dont sa
+	part disparaît (part comptée avant et après).
+	inData      : données
+	inProfileId : profil supprimé
+*/
+fun profileRemoval(
+	inData      : DataSet,
+	inProfileId : String
+): ProfileRemoval
+{
+	val vData = inData.withProfiles()													// propriétaires complétés
+	val vMine = vData.accounts.filter { inAccount -> inAccount.owners.any { it.profileId == inProfileId } }	// comptes du profil
+	return ProfileRemoval(
+		removed = vMine.filter { it.owners.size == 1 }.map { inAccount -> RemovedAccount(inAccount, vData.transactions.count { inTx -> inTx.postings.any { it.accountId == inAccount.id } }) },
+		reduced = vMine.filter { it.owners.size > 1 }.map { inAccount ->
+			val vShare = inAccount.owners.first { it.profileId == inProfileId }.percent		// part retirée
+			val vTotal = inAccount.owners.sumOf { it.percent }								// part comptée avant
+			ReducedAccount(inAccount, vShare, vTotal, vTotal - vShare)
+		}
+	)
+}
+

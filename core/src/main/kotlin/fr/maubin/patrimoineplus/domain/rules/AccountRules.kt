@@ -24,9 +24,6 @@ sealed class SetupError(val message: String)
 	// Le dernier profil ne peut pas être supprimé.
 	data object LastProfile : SetupError("Il faut garder au moins un profil.")
 
-	// Le profil est seul propriétaire d'un compte.
-	data object ProfileOwnsAlone : SetupError("Ce profil est seul propriétaire d’un compte : donnez d’abord ce compte à un autre profil.")
-
 	// Une catégorie ne peut être réaffectée qu'à une autre catégorie de même nature.
 	data object KindMismatch : SetupError("Choisissez une catégorie de même nature (dépense ou revenu).")
 

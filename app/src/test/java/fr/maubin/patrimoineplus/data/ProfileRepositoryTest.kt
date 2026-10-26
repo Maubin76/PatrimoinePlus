@@ -30,13 +30,16 @@ import org.robolectric.annotation.Config
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
+import fr.maubin.patrimoineplus.data.repo.Opening
 
 /*
 	Profils sur le téléphone (Room en mémoire, Robolectric) : une base
 	d'avant les profils présente « Moi » ; le premier ajout l'enregistre ;
-	nom vide ou en double refusé ; retrait refusé pour le seul propriétaire
-	d'un compte, accepté pour un profil qui partage (sa part disparaît) ; vue
-	choisie mémorisée (famille : null) ; instantané au format des profils.
+	nom vide ou en double refusé ; récapitulatif de retrait (comptes seuls
+	supprimés, parts retirées) ; retrait : ses comptes seuls supprimés avec
+	leurs opérations, sa part des comptes partagés retirée ; dernier profil
+	refusé ; vue choisie mémorisée (famille : null) ; instantané au format
+	des profils.
 */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35])
@@ -83,8 +86,8 @@ class ProfileRepositoryTest
 	*/
 	@Test
 	fun profiles() = runTest {
-		val vProfiles = ProfileRepository(fDb, DataStoreSettingsRepository(MemoryStore()), kClock)	// profils
 		val vAccounts = AccountRepository(fDb, kClock)									// comptes
+		val vProfiles = ProfileRepository(fDb, DataStoreSettingsRepository(MemoryStore()), kClock, vAccounts)	// profils
 		assertEquals(listOf("Moi"), vProfiles.observeProfiles().first().map { it.name })
 		val vMine     = (vAccounts.create("Courant", AccountType.CHECKING) as SaveResult.Saved).id	// compte d'avant les profils
 		assertEquals(SetupError.BlankName, vProfiles.add(" "))
@@ -93,7 +96,11 @@ class ProfileRepositoryTest
 		val vJulie    = vProfiles.observeProfiles().first().single { it.name == "Julie" }.id	// second profil
 		assertEquals(listOf(kDefaultProfileId, vJulie), vProfiles.observeProfiles().first().map { it.id })
 		val vJoint    = (vAccounts.create("Joint", AccountType.CHECKING, null, 100, null, listOf(Ownership(kDefaultProfileId, 50), Ownership(vJulie, 50))) as SaveResult.Saved).id	// compte du couple
-		assertEquals(SetupError.ProfileOwnsAlone, vProfiles.remove(kDefaultProfileId))	// seul propriétaire du courant
+		val vPlan     = vProfiles.removal(kDefaultProfileId)								// récapitulatif pour « Moi »
+		assertEquals(listOf(vMine), vPlan.removed.map { it.account.id })
+		assertEquals(listOf(Triple(vJoint, 100, 50)), vPlan.reduced.map { Triple(it.account.id, it.before, it.after) })
+		val vHers     = (vAccounts.create("Livret de Julie", AccountType.SAVINGS, null, 100, Opening(50_000, java.time.LocalDate.parse("2026-09-01")), listOf(Ownership(vJulie, 100))) as SaveResult.Saved).id	// compte de Julie seule
+		assertEquals(listOf(1), vProfiles.removal(vJulie).removed.map { it.operations })
 		assertEquals(kDefaultProfileId, vProfiles.observeView().first().profile)
 		vProfiles.setView(null)
 		assertNull(vProfiles.observeView().first().profile)
@@ -103,6 +110,7 @@ class ProfileRepositoryTest
 		assertEquals(listOf("Moi", "Julie"), vFile.profiles.map { it.name })
 		assertEquals(listOf(50, 50), vFile.accounts.single { it.id == vJoint }.owners.map { it.percent })
 		assertNull(vProfiles.remove(vJulie))
+		assertNull(fDb.accountDao().getById(vHers))										// son livret supprimé
 		assertEquals(listOf(kDefaultProfileId to 50), fDb.accountDao().getById(vJoint)!!.let { fr.maubin.patrimoineplus.domain.calc.decodeShares(it.owners) }.map { it.profileId to it.percent })
 		assertEquals(kDefaultProfileId, vProfiles.observeView().first().profile)		// profil disparu : premier profil
 		assertEquals(SetupError.LastProfile, vProfiles.remove(kDefaultProfileId))

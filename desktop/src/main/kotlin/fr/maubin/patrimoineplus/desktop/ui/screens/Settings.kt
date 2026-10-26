@@ -48,7 +48,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.width
-import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.contentDescription
+import fr.maubin.patrimoineplus.ui.components.ProfileRemovalDialog
 
 /*
 	Réglages de l'appli PC : source des données (dossier synchronisé,
@@ -137,8 +138,9 @@ fun SettingsScreen(
 
 /*
 	Profils de la famille : nom modifiable (✓ pour l'enregistrer), retrait
-	(refusé pour le dernier profil ou le seul propriétaire d'un compte), puis
-	ajout. Chaque profil a sa vue ; la vue Famille rassemble tous les comptes.
+	(récapitulatif à confirmer s'il a des comptes : ceux dont il est seul
+	propriétaire sont supprimés, sa part des autres est retirée), puis ajout.
+	Chaque profil a sa vue ; la vue Famille rassemble tous les comptes.
 	inProfiles   : profils
 	inController : contrôleur
 */
@@ -150,6 +152,7 @@ private fun ProfilesSection(
 {
 	var vError by remember { mutableStateOf<String?>(null) }						// refus affiché
 	var vNew   by remember { mutableStateOf("") }									// nom du profil à ajouter
+	var vAsk   by remember { mutableStateOf<Profile?>(null) }						// profil dont la suppression est à confirmer
 	val vShow  = { inResult: EditResult -> vError = (inResult as? EditResult.Refused)?.messages?.joinToString(" ") }	// affiche un refus
 	FloatingCard {
 		Column(Modifier.padding(horizontal = 24.dp, vertical = 12.dp)) {
@@ -166,7 +169,7 @@ private fun ProfilesSection(
 					IconButton(onClick = { vShow(inController.renameProfile(inProfile.id, vName)) }, enabled = vName.trim() != inProfile.name) {
 						Icon(LineIcons.Check, contentDescription = "Renommer ${inProfile.name}")
 					}
-					IconButton(onClick = { vShow(inController.removeProfile(inProfile.id)) }, enabled = inProfiles.size > 1) {
+					IconButton(onClick = { if (inController.profileRemoval(inProfile.id).isEmpty) vShow(inController.removeProfile(inProfile.id)) else vAsk = inProfile }, enabled = inProfiles.size > 1) {
 						Icon(LineIcons.Close, contentDescription = "Retirer ${inProfile.name}")
 					}
 				}
@@ -188,6 +191,14 @@ private fun ProfilesSection(
 			}
 			vError?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp)) }
 		}
+	}
+	vAsk?.let { inProfile ->
+		ProfileRemovalDialog(
+			inName      = inProfile.name,
+			inPlan      = inController.profileRemoval(inProfile.id),
+			inOnConfirm = { vShow(inController.removeProfile(inProfile.id)); vAsk = null },
+			inOnDismiss = { vAsk = null }
+		)
 	}
 }
 

@@ -48,7 +48,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Button
 import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.contentDescription
+import fr.maubin.patrimoineplus.ui.profiles.PendingRemoval
+import fr.maubin.patrimoineplus.ui.components.ProfileRemovalDialog
 
 /*
 	Verrou et sauvegarde, vus par l'écran des réglages.
@@ -374,14 +376,20 @@ private fun DemoSection(inDemo: DemoActions)
 	error    : dernier refus ; null sans refus
 	onAdd    : ajoute un profil (nom), puis appelle la suite si réussi
 	onRename : renomme un profil (identifiant, nom)
-	onRemove : retire un profil (identifiant)
+	onRemove  : demande le retrait d'un profil (identifiant) ; récapitulatif s'il a des comptes
+	pending   : retrait à confirmer ; null sans demande
+	onConfirm : confirme le retrait demandé
+	onCancel  : annule le retrait demandé
 */
 data class ProfilesActions(
-	val profiles : List<Profile>,
-	val error    : String?,
-	val onAdd    : (String, () -> Unit) -> Unit,
-	val onRename : (String, String) -> Unit,
-	val onRemove : (String) -> Unit
+	val profiles  : List<Profile>,
+	val error     : String?,
+	val onAdd     : (String, () -> Unit) -> Unit,
+	val onRename  : (String, String) -> Unit,
+	val onRemove  : (String) -> Unit,
+	val pending   : PendingRemoval? = null,
+	val onConfirm : () -> Unit = {},
+	val onCancel  : () -> Unit = {}
 )
 
 /*
@@ -415,5 +423,6 @@ private fun ProfilesSection(inActions: ProfilesActions)
 			inActions.error?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 8.dp)) }
 		}
 	}
+	inActions.pending?.let { inPending -> ProfileRemovalDialog(inPending.name, inPending.plan, inActions.onConfirm, inActions.onCancel) }
 }
 

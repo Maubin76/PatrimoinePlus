@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import fr.maubin.patrimoineplus.domain.calc.ProfileRemoval
 
 /*
 	ViewModel des profils : vue affichée (sélecteur de la barre du haut) et
@@ -30,6 +31,11 @@ class ProfilesViewModel @Inject constructor(
 
 	// Dernier refus d'une modification ; null après une réussite.
 	val error: StateFlow<String?> = fError
+
+	private val fPending = MutableStateFlow<PendingRemoval?>(null)				// suppression à confirmer
+
+	// Suppression d'un profil à confirmer (récapitulatif) ; null sans demande.
+	val pending: StateFlow<PendingRemoval?> = fPending
 
 	/*
 		Change de vue.
@@ -67,10 +73,41 @@ class ProfilesViewModel @Inject constructor(
 	}
 
 	/*
+		Demande le retrait d'un profil : sans compte, il est retiré tout de
+		suite ; sinon le récapitulatif attend la confirmation.
+		inId : profil
+	*/
+	fun askRemove(inId: String)
+	{
+		viewModelScope.launch {
+			val vPlan = inProfiles.removal(inId)											// ce que deviennent ses comptes
+			val vName = view.value.profiles.firstOrNull { it.id == inId }?.name.orEmpty()	// nom affiché
+			if (vPlan.isEmpty) remove(inId) else fPending.value = PendingRemoval(inId, vName, vPlan)
+		}
+	}
+
+	/*
+		Confirme le retrait demandé.
+	*/
+	fun confirmRemove()
+	{
+		fPending.value?.let { remove(it.id) }
+		fPending.value = null
+	}
+
+	/*
+		Annule le retrait demandé.
+	*/
+	fun cancelRemove()
+	{
+		fPending.value = null
+	}
+
+	/*
 		Retire un profil ; s'il était affiché, la vue revient au premier.
 		inId : profil
 	*/
-	fun remove(inId: String)
+	private fun remove(inId: String)
 	{
 		viewModelScope.launch {
 			fError.value = inProfiles.remove(inId)?.message
@@ -78,3 +115,15 @@ class ProfilesViewModel @Inject constructor(
 		}
 	}
 }
+
+/*
+	Suppression d'un profil en attente de confirmation.
+	id   : profil
+	name : nom affiché
+	plan : ce que deviennent ses comptes
+*/
+data class PendingRemoval(
+	val id   : String,
+	val name : String,
+	val plan : ProfileRemoval
+)

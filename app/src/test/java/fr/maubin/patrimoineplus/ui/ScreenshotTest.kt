@@ -77,7 +77,11 @@ import fr.maubin.patrimoineplus.data.demo.withDemoFamily
 import fr.maubin.patrimoineplus.domain.calc.scoped
 import fr.maubin.patrimoineplus.ui.shell.LocalViewChip
 import fr.maubin.patrimoineplus.ui.shell.ViewChip
-import fr.maubin.patrimoineplus.ui.settings.ProfilesActions
+import fr.maubin.patrimoineplus.ui.settings.ProfilesActions
+import fr.maubin.patrimoineplus.ui.components.ProfileRemovalDialog
+import fr.maubin.patrimoineplus.domain.calc.profileRemoval
+import fr.maubin.patrimoineplus.data.demo.kDemoPartnerId
+import fr.maubin.patrimoineplus.domain.model.Ownership
 
 private const val kOutDir = "build/outputs/roborazzi"						// dossier des captures
 
@@ -169,6 +173,25 @@ class ScreenshotTest
 			SettingsScreen(ThemeMode.LIGHT, {}, false, {}, SafetyActions(true, "8 octobre 2026", "Documents/PatrimoinePlus", {}, {}, {}), null, null,
 				inProfiles = ProfilesActions(vDemo.profiles, "Ce profil est seul propriétaire d’un compte : donnez d’abord ce compte à un autre profil.", { _, _ -> }, { _, _ -> }, {}))
 		})
+	}
+
+	/*
+		Confirmation de la suppression d'un profil qui a des comptes :
+		récapitulatif (compte supprimé avec ses opérations, part retirée du
+		compte joint).
+	*/
+	@Test
+	fun profileRemovalDialog()
+	{
+		val vDemo = withDemoFamily(buildDemoData(LocalDate.parse("2026-10-07")))	// démonstration à deux profils
+		val vMine = vDemo.copy(accounts = vDemo.accounts + vDemo.accounts.first().copy(id = "livret-alex", name = "Livret d’Alex", owners = listOf(Ownership(kDemoPartnerId, 100))))	// Alex a aussi son livret
+		fCompose.setContent {
+			Themed(inDarkTheme = false) {
+				ProfileRemovalDialog("Alex", profileRemoval(vMine, kDemoPartnerId), {}, {})
+			}
+		}
+		fCompose.waitForIdle()
+		captureScreenRoboImage("$kOutDir/profils-suppression.png")
 	}
 
 	/*

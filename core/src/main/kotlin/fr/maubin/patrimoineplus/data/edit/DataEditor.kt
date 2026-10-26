@@ -234,9 +234,11 @@ class DataEditor(
 	}
 
 	/*
-		Supprime un profil : il disparaît des propriétaires des comptes qu'il
-		partage (leur part comptée baisse d'autant). Refusé pour le dernier
-		profil, ou si le profil est seul propriétaire d'un compte.
+		Supprime un profil (voir profileRemoval pour le récapitulatif à
+		confirmer) : les comptes dont il est seul propriétaire sont supprimés
+		définitivement, avec leurs opérations ; il disparaît des propriétaires
+		des comptes qu'il partage (leur part comptée baisse d'autant). Refusé
+		pour le dernier profil.
 		inFile : contenu
 		inId   : profil
 	*/
@@ -248,12 +250,19 @@ class DataEditor(
 		val vBase = inFile.withProfiles()												// profils assurés
 		if (vBase.profiles.none { it.id == inId }) return refused(SetupError.NotFound)
 		if (vBase.profiles.size == 1) return refused(SetupError.LastProfile)
-		if (vBase.accounts.any { inAccount -> inAccount.owners.singleOrNull()?.profileId == inId }) return refused(SetupError.ProfileOwnsAlone)
-		val vAccounts = vBase.accounts.map { inAccount ->
+		var vFile = vBase																// contenu sans ses comptes
+		vBase.accounts.filter { inAccount -> inAccount.owners.singleOrNull()?.profileId == inId }.forEach { inAccount ->
+			when (val vDeleted = deleteAccount(vFile, inAccount.id, inPermanent = true))
+			{
+				is EditResult.Done    -> vFile = vDeleted.file
+				is EditResult.Refused -> return vDeleted
+			}
+		}
+		val vAccounts = vFile.accounts.map { inAccount ->
 			if (inAccount.owners.none { it.profileId == inId }) inAccount
 			else inAccount.owners.filter { it.profileId != inId }.let { inOwners -> inAccount.copy(owners = inOwners, sharePercent = inOwners.sumOf { it.percent }, updatedAt = now()) }
 		}																			// comptes sans ce profil
-		return EditResult.Done(vBase.copy(profiles = vBase.profiles.filter { it.id != inId }, accounts = vAccounts), inId)
+		return EditResult.Done(vFile.copy(profiles = vFile.profiles.filter { it.id != inId }, accounts = vAccounts), inId)
 	}
 
 	/*
