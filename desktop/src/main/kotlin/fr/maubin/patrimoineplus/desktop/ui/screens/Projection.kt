@@ -58,7 +58,9 @@ import fr.maubin.patrimoineplus.ui.components.flowAccent
 import fr.maubin.patrimoineplus.ui.components.flowColorOr
 import fr.maubin.patrimoineplus.ui.components.FlowAccent
 import fr.maubin.patrimoineplus.ui.components.isColorful
-import fr.maubin.patrimoineplus.ui.components.heroFilled
+import fr.maubin.patrimoineplus.ui.components.heroFilled
+import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
+import androidx.compose.foundation.layout.Box
 
 private val kHorizons = listOf(5, 10, 20, 30)											// horizons proposés, en années
 
@@ -87,27 +89,29 @@ fun ProjectionScreen(
 		Column {
 			Text("Projection", style = MaterialTheme.typography.displaySmall)
 		}
-		Inputs(vInput, vDefault) { inController.setProjection(it) }
-		TileRow(
-			Cell(1f) { inMod -> Tile(inModifier = inMod) { TileFigure("Aujourd’hui") { AmountText(inCents = vResult.start, inStyle = MaterialTheme.typography.headlineSmall) } } },
-			Cell(1f) { inMod -> Tile(inModifier = inMod, inAccent = flowAccent(FlowAccent.INFLOW)) { TileFigure("Dans ${vInput.years} ans, prudent") { AmountText(inCents = vResult.last.prudent, inStyle = MaterialTheme.typography.headlineSmall) } } },
-			Cell(1.2f) { inMod -> Tile(inModifier = inMod, inFilled = heroFilled()) { TileFigure("Dans ${vInput.years} ans, central") { AmountText(inCents = vResult.last.central, inStyle = MaterialTheme.typography.headlineMedium) } } },
-			Cell(1f) { inMod -> Tile(inModifier = inMod, inAccent = flowAccent(FlowAccent.INFLOW)) { TileFigure("Dans ${vInput.years} ans, favorable") { AmountText(inCents = vResult.last.optimistic, inStyle = MaterialTheme.typography.headlineSmall) } } },
-			Cell(1f) { inMod ->
-				Tile(inModifier = inMod) {
-					TileFigure("Dont versements") { AmountText(inCents = vResult.last.contributed - vResult.start, inStyle = MaterialTheme.typography.headlineSmall) }
-					Spacer(Modifier.height(10.dp))
-					TileFigure("Gain des rendements") { AmountText(inCents = vResult.last.central - vResult.last.contributed, inStyle = MaterialTheme.typography.titleMedium, inShowPlusSign = true) }
-					if (vResult.points.first().debt > 0)
-					{
+		Box(Modifier.tourAnchor("projection.inputs")) { Inputs(vInput, vDefault) { inController.setProjection(it) } }
+		Box(Modifier.tourAnchor("projection.result")) {
+			TileRow(
+				Cell(1f) { inMod -> Tile(inModifier = inMod) { TileFigure("Aujourd’hui") { AmountText(inCents = vResult.start, inStyle = MaterialTheme.typography.headlineSmall) } } },
+				Cell(1f) { inMod -> Tile(inModifier = inMod, inAccent = flowAccent(FlowAccent.INFLOW)) { TileFigure("Dans ${vInput.years} ans, prudent") { AmountText(inCents = vResult.last.prudent, inStyle = MaterialTheme.typography.headlineSmall) } } },
+				Cell(1.2f) { inMod -> Tile(inModifier = inMod, inFilled = heroFilled()) { TileFigure("Dans ${vInput.years} ans, central") { AmountText(inCents = vResult.last.central, inStyle = MaterialTheme.typography.headlineMedium) } } },
+				Cell(1f) { inMod -> Tile(inModifier = inMod, inAccent = flowAccent(FlowAccent.INFLOW)) { TileFigure("Dans ${vInput.years} ans, favorable") { AmountText(inCents = vResult.last.optimistic, inStyle = MaterialTheme.typography.headlineSmall) } } },
+				Cell(1f) { inMod ->
+					Tile(inModifier = inMod) {
+						TileFigure("Dont versements") { AmountText(inCents = vResult.last.contributed - vResult.start, inStyle = MaterialTheme.typography.headlineSmall) }
 						Spacer(Modifier.height(10.dp))
-						TileFigure("Crédits restant dus") { AmountText(inCents = vResult.last.debt, inStyle = MaterialTheme.typography.titleMedium) }
-						Hint("${if (LocalAmountsHidden.current) kMaskedAmount else formatEuros(vResult.points.first().debt)} aujourd’hui")
+						TileFigure("Gain des rendements") { AmountText(inCents = vResult.last.central - vResult.last.contributed, inStyle = MaterialTheme.typography.titleMedium, inShowPlusSign = true) }
+						if (vResult.points.first().debt > 0)
+						{
+							Spacer(Modifier.height(10.dp))
+							TileFigure("Crédits restant dus") { AmountText(inCents = vResult.last.debt, inStyle = MaterialTheme.typography.titleMedium) }
+							Hint("${if (LocalAmountsHidden.current) kMaskedAmount else formatEuros(vResult.points.first().debt)} aujourd’hui")
+						}
 					}
-				}
-			},
-			inMinWidth = 1000.dp
-		)
+				},
+				inMinWidth = 1000.dp
+			)
+		}
 		Tile(inTitle = "Année par année") {
 			Chart(vResult)
 		}

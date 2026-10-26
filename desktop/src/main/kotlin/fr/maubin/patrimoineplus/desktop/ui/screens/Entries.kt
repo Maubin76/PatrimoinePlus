@@ -12,7 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.desktop.DesktopController
-import fr.maubin.patrimoineplus.desktop.data.WorkspaceState
+import fr.maubin.patrimoineplus.desktop.data.WorkspaceState
+import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
+import androidx.compose.foundation.layout.Box
 
 /*
 	Écran Opérations : saisie rapide en grille, puis opérations récurrentes et
@@ -33,7 +35,7 @@ fun EntriesScreen(
 		Column {
 			Text("Opérations", style = MaterialTheme.typography.displaySmall)
 		}
-		BatchSection(inSpace, inController)
-		RecurringSection(inSpace, inController)
+		Box(Modifier.tourAnchor("ops.batch")) { BatchSection(inSpace, inController) }
+		Box(Modifier.tourAnchor("ops.recurring")) { RecurringSection(inSpace, inController) }
 	}
 }

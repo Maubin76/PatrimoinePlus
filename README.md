@@ -382,6 +382,15 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   Apparence, mémorisé) : panneaux translucides à liseré lumineux sur un fond
   de formes floues (halos pastel en clair ; en sombre, noir profond, facettes
   fumées, lueur violette, coque et chiffre mis en avant en violet).
+- **Tutoriels du PC** (visites guidées) : au premier lancement, celle du
+  tableau de bord (avec la coque : saisie, recherche, mode discret, rail) ;
+  à la première venue sur chaque autre page (et sur la vue d'un compte), la
+  sienne. La page s'assombrit sauf l'élément présenté, une bulle l'explique
+  (Précédent, Suivant, Passer ; Échap passe, flèches pour changer
+  d'étape) ; « Passer » ne vaut que pour la page, « Ne plus afficher les
+  tutoriels » les coupe tous. Réglages › Tutoriels : « Revoir » la visite
+  d'une page, ou « Réactiver tous les tutoriels ». Pages vues mémorisées
+  sur le PC.
 - **Rail d'icônes du PC**, dans cet ordre : Tableau de bord, Objectifs,
   Recherche, Opérations (saisie rapide puis récurrences et mensualités),
   Budget, Projection, Bilan (onglets « Mois par mois » et « Bilan annuel »),

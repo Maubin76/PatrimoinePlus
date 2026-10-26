@@ -71,7 +71,9 @@ import fr.maubin.patrimoineplus.ui.components.accountAccent
 import androidx.compose.ui.graphics.Color
 import fr.maubin.patrimoineplus.ui.theme.colorfulMain
 import fr.maubin.patrimoineplus.ui.components.heroFilled
-import fr.maubin.patrimoineplus.ui.components.glassWell
+import fr.maubin.patrimoineplus.ui.components.glassWell
+import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
+import androidx.compose.foundation.layout.Box
 
 private val kShortDay   = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date courte
 private val kAccountMin = 300.dp													// largeur minimale d'une tuile de compte
@@ -103,12 +105,14 @@ fun DashboardScreen(
 			return@Column
 		}
 		Text("Tableau de bord", style = MaterialTheme.typography.displaySmall)
-		Figures(vState)
-		TileRow(
-			Cell(1f) { inMod -> EvolutionTile(vState, inMod) },
-			Cell(1f) { inMod -> RepartitionTile(vState, inMod) }
-		)
-		Row(Modifier.fillMaxWidth().padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+		Box(Modifier.tourAnchor("dashboard.hero")) { Figures(vState) }
+		Box(Modifier.tourAnchor("dashboard.charts")) {
+			TileRow(
+				Cell(1f) { inMod -> EvolutionTile(vState, inMod) },
+				Cell(1f) { inMod -> RepartitionTile(vState, inMod) }
+			)
+		}
+		Row(Modifier.fillMaxWidth().padding(top = 12.dp).tourAnchor("dashboard.accounts"), verticalAlignment = Alignment.CenterVertically) {
 			Text("Comptes", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
 			if (vState.tiles.size > 1)
 			{

@@ -136,7 +136,14 @@ import fr.maubin.patrimoineplus.domain.calc.scoped
 import fr.maubin.patrimoineplus.domain.calc.scopeOf
 import fr.maubin.patrimoineplus.domain.model.Profile
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenuItem
+import fr.maubin.patrimoineplus.desktop.ui.tour.TourOverlay
+import fr.maubin.patrimoineplus.desktop.ui.tour.Tours
+import fr.maubin.patrimoineplus.desktop.ui.tour.TourAnchors
+import fr.maubin.patrimoineplus.desktop.ui.tour.LocalTourAnchors
+import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
+import fr.maubin.patrimoineplus.desktop.ui.tour.kTourAccount
+import kotlinx.coroutines.delay
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -149,6 +156,7 @@ val kContentMaxWidth    = 1600.dp													// largeur maximale du contenu
 private const val kPageMillis  = 280													// transition entre écrans
 private const val kPanelMillis = 240													// arrivée du panneau de saisie
 private const val kRailMillis  = 260													// glissement du disque du rail
+private const val kTourDelay   = 450L													// attente avant la visite d'une page (transition, mise en place)
 private val kRailButton = 48.dp														// diamètre d'un bouton du rail
 private val kRailGap    = 6.dp														// écart entre deux boutons du rail
 private val kRailStep   = kRailButton + kRailGap										// pas du rail
@@ -177,7 +185,7 @@ fun App(
 	val vPending  by inController.pending.collectAsState()					// action retenue
 	val vDark     = vSettings.appearance.isDark()									// mode sombre effectif
 	DeskTheme(inDarkTheme = vDark, inColorTheme = vSettings.colors, inGlass = vSettings.glass) {
-		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie)) {
+		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie), LocalTourAnchors provides remember { TourAnchors() }) {
 			AppGround(vDark, vSettings.glass)												// fond pastel, ou formes floues derrière le verre
 			Surface(Modifier.fillMaxSize(), color = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSurface) {
 				if (vSpace.source == Source.None)
@@ -192,6 +200,16 @@ fun App(
 					Shell(inController, vSpace, inOnPickFolder, vDark)
 				}
 				vPending?.let { inAction -> UnsavedDialog(inAction, inController, inOnPickSaveFile) }
+				val vTour by inController.tour.collectAsState()							// visite guidée affichée
+				vTour?.let { inTour ->
+					TourOverlay(
+						inSteps     = Tours.steps(inTour.key),
+						inStep      = inTour.step,
+						inOnStep    = inController::setTourStep,
+						inOnFinish  = inController::finishTour,
+						inOnStopAll = inController::stopAllTours
+					)
+				}
 			}
 		}
 	}
@@ -224,6 +242,10 @@ private fun Shell(
 	val vFocus  = remember { FocusRequester() }									// focus clavier de secours (raccourcis)
 	LaunchedEffect(Unit) { vFocus.requestFocus() }
 	LaunchedEffect(inSpace.data) { inController.dropStalePanel() }
+	LaunchedEffect(vNav.screen, vNav.accountId) {
+		delay(kTourDelay)																// page arrivée et éléments placés
+		inController.showTourIfNew(if (vNav.accountId != null) kTourAccount else vNav.screen.name)
+	}
 	val vFrame  = RoundedCornerShape(36.dp)										// forme du cadre
 	Row(
 		Modifier
@@ -403,7 +425,7 @@ private fun Rail(
 	) {
 		PatrimoineLogo(48.dp)
 		Spacer(Modifier.weight(1f))
-		FloatingSurface(RoundedCornerShape(50)) {
+		FloatingSurface(RoundedCornerShape(50), Modifier.tourAnchor("shell.rail")) {
 			Box(Modifier.padding(6.dp)) {
 				Box(Modifier.offset(y = vOffset).size(kRailButton).clip(CircleShape).background(MaterialTheme.colorScheme.primary))	// disque de l'écran actif
 				Column(verticalArrangement = Arrangement.spacedBy(kRailGap)) {
@@ -561,13 +583,15 @@ private fun StatusBar(
 		}
 		FloatingSurface(RoundedCornerShape(50)) {
 			Row(Modifier.padding(6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-				Button(onClick = inController::newOperation, contentPadding = PaddingValues(start = 18.dp, end = 22.dp), modifier = Modifier.height(44.dp)) {
+				Button(onClick = inController::newOperation, contentPadding = PaddingValues(start = 18.dp, end = 22.dp), modifier = Modifier.height(44.dp).tourAnchor("shell.newop")) {
 					Icon(LineIcons.Plus, contentDescription = null, modifier = Modifier.size(18.dp))
 					Spacer(Modifier.width(8.dp))
 					Text("Nouvelle opération")
 				}
-				RailButton(LineIcons.Search, "Rechercher (Ctrl+F)", false, Role.Button) { inController.focusSearch() }
-				RailButton(if (vHidden) LineIcons.EyeOff else LineIcons.Eye, if (vHidden) "Afficher les montants" else "Masquer les montants", false, Role.Button) { inController.toggleHidden() }
+				Row(Modifier.tourAnchor("shell.privacy"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+					RailButton(LineIcons.Search, "Rechercher (Ctrl+F)", false, Role.Button) { inController.focusSearch() }
+					RailButton(if (vHidden) LineIcons.EyeOff else LineIcons.Eye, if (vHidden) "Afficher les montants" else "Masquer les montants", false, Role.Button) { inController.toggleHidden() }
+				}
 			}
 		}
 	}

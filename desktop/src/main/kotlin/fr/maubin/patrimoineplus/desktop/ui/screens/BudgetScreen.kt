@@ -68,7 +68,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import fr.maubin.patrimoineplus.domain.format.kCurrencySeparator
-import fr.maubin.patrimoineplus.ui.components.heroFilled
+import fr.maubin.patrimoineplus.ui.components.heroFilled
+import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 
 private const val kNameWeight   = 2.4f											// largeur relative de la colonne du nom
 private const val kAmountWeight = 1.2f											// largeur relative de la colonne du montant
@@ -100,9 +101,9 @@ fun BudgetScreen(
 		Column {
 			Text("Budget prévisionnel", style = MaterialTheme.typography.displaySmall)
 		}
-		Figures(vBudget)
-		MonthGoalsBar(vMonth, { vMonth = it }, inSpace, inController, vBudget)
-		Tile(inTitle = "Cashflow") {
+		Box(Modifier.tourAnchor("budget.figures")) { Figures(vBudget) }
+		Box(Modifier.tourAnchor("budget.goals")) { MonthGoalsBar(vMonth, { vMonth = it }, inSpace, inController, vBudget) }
+		Tile(inTitle = "Cashflow", inModifier = Modifier.tourAnchor("budget.cashflow")) {
 			if (vDiagram.total <= 0L)
 			{
 				Hint("Ajoutez des entrées et des dépenses ci-dessous pour voir le schéma.")
@@ -113,11 +114,13 @@ fun BudgetScreen(
 				if (vDiagram.deficit) Hint("Les sorties dépassent les entrées : le déficit apparaît comme une entrée, à gauche.")
 			}
 		}
-		TileRow(
-			Cell(1f) { inMod -> SectionTile(BudgetSection.INCOME, vView, vBudget, vUpdate, inMod) },
-			Cell(1f) { inMod -> SectionTile(BudgetSection.INVESTMENT, vView, vBudget, vUpdate, inMod) },
-			inMinWidth = 760.dp
-		)																					// entrées et investissements côte à côte
+		Box(Modifier.tourAnchor("budget.lines")) {
+			TileRow(
+				Cell(1f) { inMod -> SectionTile(BudgetSection.INCOME, vView, vBudget, vUpdate, inMod) },
+				Cell(1f) { inMod -> SectionTile(BudgetSection.INVESTMENT, vView, vBudget, vUpdate, inMod) },
+				inMinWidth = 760.dp
+			)																				// entrées et investissements côte à côte
+		}
 		SectionTile(BudgetSection.EXPENSE, vView, vBudget, vUpdate)
 	}
 }

@@ -94,7 +94,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 
 private val kDayTitle = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANCE)	// en-tête d'un jour
 private val kShortDay = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date d'une opération
@@ -147,7 +148,7 @@ fun AccountScreen(
 				Box(Modifier.width(6.dp).height(44.dp).clip(RoundedCornerShape(3.dp)).background(vAccent))	// marque du type
 				Spacer(Modifier.width(14.dp))
 			}
-			Column(Modifier.weight(1f)) {
+			Column(Modifier.weight(1f).tourAnchor("account.header")) {
 				Text(vAccount.name, style = MaterialTheme.typography.displaySmall)
 				Text(accountDetail(vAccount), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			}
@@ -182,7 +183,7 @@ private fun CheckingView(
 )
 {
 	Row(Modifier.width(420.dp)) {
-		MonthSwitcher(inState.month, inState.firstMonth, inState.lastMonth, inController::showMonth)
+		Box(Modifier.tourAnchor("account.month")) { MonthSwitcher(inState.month, inState.firstMonth, inState.lastMonth, inController::showMonth) }
 	}
 	inState.summary?.let { inSummary ->
 		val vCells = buildList {
@@ -208,7 +209,7 @@ private fun CheckingView(
 	)
 	TileRow(
 		Cell(1.6f) { inMod ->
-			Tile(inModifier = inMod, inTitle = "Opérations de ${monthTitle(inState.month).lowercase()}") {
+			Tile(inModifier = inMod.tourAnchor("account.operations"), inTitle = "Opérations de ${monthTitle(inState.month).lowercase()}") {
 				if (inState.upcoming.isEmpty() && inState.days.isEmpty()) Hint("Aucune opération ce mois-ci.")
 				if (inState.upcoming.isNotEmpty()) OperationsGroup("À venir", inState.upcoming, true, inOnOpen)
 				inState.days.forEach { inDay -> OperationsGroup(inDay.date.format(kDayTitle).replaceFirstChar { it.uppercase() }, inDay.items, false, inOnOpen) }

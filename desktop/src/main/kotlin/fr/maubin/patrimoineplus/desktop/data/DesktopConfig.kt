@@ -42,6 +42,8 @@ sealed interface Source
 	pies       : clés des diagrammes de répartition affichés en cercle (barre par défaut)
 	glass      : effet verre (désactivé par défaut)
 	view       : vue affichée : "" premier profil, "*" famille, sinon identifiant du profil
+	toursSeen  : visites guidées déjà vues ou passées (nom de la page)
+	toursOff   : vrai si l'utilisateur a coupé les visites guidées
 */
 data class DesktopSettings(
 	val source     : Source    = Source.None,
@@ -50,7 +52,9 @@ data class DesktopSettings(
 	val colors     : ColorTheme = ColorTheme.MONOCHROME,
 	val pies       : Set<String> = emptySet(),
 	val glass      : Boolean   = false,
-	val view       : String    = ""
+	val view       : String    = "",
+	val toursSeen  : Set<String> = emptySet(),
+	val toursOff   : Boolean   = false
 )
 
 /*
@@ -86,7 +90,9 @@ class DesktopConfig(private val inFile: Path)
 				?: if (vProps.getProperty("trend") == "true") ColorTheme.MINIMAL else ColorTheme.MONOCHROME,	// ancien réglage vert et rouge : thème Minimal
 			pies       = vProps.getProperty("pies").orEmpty().split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet(),
 			glass      = vProps.getProperty("glass") == "true",
-			view       = vProps.getProperty("view").orEmpty()
+			view       = vProps.getProperty("view").orEmpty(),
+			toursSeen  = vProps.getProperty("tours_seen").orEmpty().split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet(),
+			toursOff   = vProps.getProperty("tours_off") == "true"
 		)
 	}
 
@@ -114,6 +120,8 @@ class DesktopConfig(private val inFile: Path)
 		vProps.setProperty("pies", inSettings.pies.sorted().joinToString(","))
 		vProps.setProperty("glass", inSettings.glass.toString())
 		vProps.setProperty("view", inSettings.view)
+		vProps.setProperty("tours_seen", inSettings.toursSeen.sorted().joinToString(","))
+		vProps.setProperty("tours_off", inSettings.toursOff.toString())
 		inFile.parent?.let { Files.createDirectories(it) }
 		val vTemp = inFile.resolveSibling("${inFile.fileName}.tmp")				// écriture provisoire
 		Files.newBufferedWriter(vTemp, Charsets.UTF_8).use { vProps.store(it, "Réglages de PatrimoinePlus (PC)") }

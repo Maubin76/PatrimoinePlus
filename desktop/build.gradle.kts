@@ -72,7 +72,10 @@ tasks.register<Zip>("packageZip") {
 	destinationDirectory.set(layout.buildDirectory.dir("distributions"))
 }
 
-// Tests sans écran, comme sur la CI (Linux) : une fenêtre AWT y serait refusée.
+// Tests sans écran, comme sur la CI (Linux) : une fenêtre AWT y serait refusée ;
+// les visites guidées ne s'ouvrent pas d'elles-mêmes (elles bloqueraient les clics
+// des tests) ; le test des visites les réactive pour lui.
 tasks.withType<Test>().configureEach {
 	systemProperty("java.awt.headless", "true")
+	systemProperty("patrimoineplus.tours", "off")
 }

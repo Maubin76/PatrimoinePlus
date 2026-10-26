@@ -55,7 +55,8 @@ import fr.maubin.patrimoineplus.domain.model.AccountType
 import androidx.compose.ui.graphics.Color
 import fr.maubin.patrimoineplus.ui.components.heroFilled
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 
 private val kLongDay = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)	// date en toutes lettres
 
@@ -83,12 +84,14 @@ fun ReportScreen(
 				Text("Bilan", style = MaterialTheme.typography.displaySmall)
 			}
 			Spacer(Modifier.width(24.dp))
-			Box(Modifier.width(360.dp)) { Choice(ReportTab.entries.map { it to it.label }, vTab, inController::showReportTab) }
+			Box(Modifier.width(360.dp).tourAnchor("report.tabs")) { Choice(ReportTab.entries.map { it to it.label }, vTab, inController::showReportTab) }
 		}
-		when (vTab)
-		{
-			ReportTab.MONTHLY -> AnalysisSection(inSpace, inController)
-			ReportTab.ANNUAL  -> AnnualReportSection(inSpace, inController)
+		Box(Modifier.tourAnchor("report.content")) {
+			when (vTab)
+			{
+				ReportTab.MONTHLY -> AnalysisSection(inSpace, inController)
+				ReportTab.ANNUAL  -> AnnualReportSection(inSpace, inController)
+			}
 		}
 	}
 }

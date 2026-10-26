@@ -71,7 +71,8 @@ import fr.maubin.patrimoineplus.ui.components.glassRaised
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.height
+import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 
 private val kRowDate   = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)	// date d'une ligne
 private const val kShown = 500														// lignes affichées au plus
@@ -107,8 +108,9 @@ fun SearchScreen(
 		Column {
 			Text("Recherche", style = MaterialTheme.typography.displaySmall)
 		}
-		Filters(inSpace, vQuery, vFocus, inController::setQuery)
+		Box(Modifier.tourAnchor("search.filters")) { Filters(inSpace, vQuery, vFocus, inController::setQuery) }
 		Tile(
+			inModifier = Modifier.tourAnchor("search.results"),
 			inTitle  = if (vResult.badQuery != null) "Recherche" else "${vResult.hits.size} opération(s)",
 			inAction = {
 				if (vResult.hits.isNotEmpty() && vResult.badQuery == null)

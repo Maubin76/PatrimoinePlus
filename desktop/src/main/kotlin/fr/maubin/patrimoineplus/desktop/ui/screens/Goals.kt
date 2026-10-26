@@ -98,7 +98,8 @@ import fr.maubin.patrimoineplus.desktop.Screen
 import java.time.YearMonth
 import androidx.compose.foundation.layout.heightIn
 import fr.maubin.patrimoineplus.ui.components.glassRaised
-import fr.maubin.patrimoineplus.ui.components.glassWell
+import fr.maubin.patrimoineplus.ui.components.glassWell
+import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 
 private const val kBarMillis = 420														// remplissage de la barre d'avancement
 
@@ -159,9 +160,9 @@ fun GoalsScreen(
 					Text("Objectifs", style = MaterialTheme.typography.displaySmall)
 				}
 				Spacer(Modifier.width(24.dp))
-				Button(onClick = { vOpen(Draft(null, GoalKind.WEALTH)) }) { Text("Nouvel objectif") }
+				Button(onClick = { vOpen(Draft(null, GoalKind.WEALTH)) }, modifier = Modifier.tourAnchor("goals.new")) { Text("Nouvel objectif") }
 			}
-			SectionHeader(inTitle = "Objectifs globaux")
+			SectionHeader(inTitle = "Objectifs globaux", inModifier = Modifier.tourAnchor("goals.global"))
 			if (vViews.isEmpty())
 			{
 				Suggestions(inSpace, vOpen)
@@ -643,7 +644,7 @@ private fun MonthSection(
 	val vPlan   = inGoals.plan(vMonth)													// objectifs du mois affiché
 	val vViews  = remember(vPlan, inSpace.data, vBudget, inSpace.today) { vPlan?.let { evaluateMonth(it, inSpace.data, vBudget, inSpace.today) }.orEmpty() }	// objectifs évalués
 	Row(verticalAlignment = Alignment.CenterVertically) {
-		Box(Modifier.weight(1f)) { SectionHeader(inTitle = "Objectifs du mois") }
+		Box(Modifier.weight(1f)) { SectionHeader(inTitle = "Objectifs du mois", inModifier = Modifier.tourAnchor("goals.month")) }
 		Box(Modifier.width(300.dp)) { MonthSwitcher(vMonth, vFirst, vLast, { vMonth = it }) }
 	}
 	if (vPlan == null)

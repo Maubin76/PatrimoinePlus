@@ -49,7 +49,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.semantics.contentDescription
-import fr.maubin.patrimoineplus.ui.components.ProfileRemovalDialog
+import fr.maubin.patrimoineplus.ui.components.ProfileRemovalDialog
+import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
+import androidx.compose.foundation.layout.Box
+import fr.maubin.patrimoineplus.desktop.ui.tour.Tours
+import androidx.compose.material3.TextButton
 
 /*
 	Réglages de l'appli PC : source des données (dossier synchronisé,
@@ -70,7 +74,7 @@ fun SettingsScreen(
 	Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(40.dp).widthIn(max = 720.dp)) {
 		Text("Réglages", style = MaterialTheme.typography.displaySmall)
 		Spacer(Modifier.height(32.dp))
-		SectionHeader(inTitle = "Données")
+		SectionHeader(inTitle = "Données", inModifier = Modifier.tourAnchor("settings.data"))
 		Spacer(Modifier.height(12.dp))
 		FloatingCard {
 			Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -94,7 +98,7 @@ fun SettingsScreen(
 			}
 		}
 		Spacer(Modifier.height(32.dp))
-		SectionHeader(inTitle = "Apparence")
+		SectionHeader(inTitle = "Apparence", inModifier = Modifier.tourAnchor("settings.appearance"))
 		Spacer(Modifier.height(12.dp))
 		Choice(ThemeMode.entries.map { it to it.label }, vSettings.appearance, inController::setAppearance)
 		Spacer(Modifier.height(16.dp))
@@ -126,9 +130,13 @@ fun SettingsScreen(
 			}
 		}
 		Spacer(Modifier.height(32.dp))
-		SectionHeader(inTitle = "Profils")
+		SectionHeader(inTitle = "Profils", inModifier = Modifier.tourAnchor("settings.profiles"))
 		Spacer(Modifier.height(12.dp))
 		ProfilesSection(inSpace.data.profiles, inController)
+		Spacer(Modifier.height(32.dp))
+		SectionHeader(inTitle = "Tutoriels", inModifier = Modifier.tourAnchor("settings.tours"))
+		Spacer(Modifier.height(12.dp))
+		ToursSection(vSettings.toursSeen, vSettings.toursOff, inController)
 		Spacer(Modifier.height(32.dp))
 		SectionHeader(inTitle = "Catégories")
 		Spacer(Modifier.height(12.dp))
@@ -199,6 +207,38 @@ private fun ProfilesSection(
 			inOnConfirm = { vShow(inController.removeProfile(inProfile.id)); vAsk = null },
 			inOnDismiss = { vAsk = null }
 		)
+	}
+}
+
+/*
+	Tutoriels : une ligne par page, avec son état (vu ou à venir) et
+	« Revoir », qui ouvre la page et lance sa visite tout de suite ;
+	« Réactiver tous les tutoriels » les fait réapparaître à la prochaine
+	venue sur chaque page.
+	inSeen       : visites vues ou passées
+	inOff        : visites coupées
+	inController : contrôleur
+*/
+@Composable
+private fun ToursSection(
+	inSeen       : Set<String>,
+	inOff        : Boolean,
+	inController : DesktopController
+)
+{
+	FloatingCard {
+		Column(Modifier.padding(horizontal = 24.dp, vertical = 12.dp)) {
+			Tours.keys.forEach { inKey ->
+				Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+					Text(Tours.label(inKey), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+					Text(if (inOff || inKey in inSeen) "Vu" else "À la prochaine visite", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+					Spacer(Modifier.width(12.dp))
+					TextButton(onClick = { inController.replayTour(inKey) }, modifier = Modifier.semantics { contentDescription = "Revoir le tutoriel ${Tours.label(inKey)}" }) { Text("Revoir") }
+				}
+			}
+			Spacer(Modifier.height(8.dp))
+			OutlinedButton(onClick = inController::resetTours, enabled = inOff || inSeen.isNotEmpty()) { Text("Réactiver tous les tutoriels") }
+		}
 	}
 }
 

@@ -49,13 +49,18 @@ import fr.maubin.patrimoineplus.ui.property.editSaleForm
 import fr.maubin.patrimoineplus.ui.planning.RecurrenceForm
 import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 import fr.maubin.patrimoineplus.ui.goals.planMonth
-import fr.maubin.patrimoineplus.ui.goals.withPlan
+import fr.maubin.patrimoineplus.ui.goals.withPlan
+
 import fr.maubin.patrimoineplus.domain.calc.scoped
-import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
+import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
+
 import fr.maubin.patrimoineplus.domain.calc.scopeOf
-import fr.maubin.patrimoineplus.domain.calc.kFamilyView
+import fr.maubin.patrimoineplus.domain.calc.kFamilyView
+
 import fr.maubin.patrimoineplus.domain.calc.ProfileRemoval
-import fr.maubin.patrimoineplus.domain.calc.profileRemoval
+import fr.maubin.patrimoineplus.domain.calc.profileRemoval
+import fr.maubin.patrimoineplus.desktop.ui.tour.Tours
+import fr.maubin.patrimoineplus.desktop.ui.tour.kTourAccount
 
 private const val kDayCheckMillis = 60_000L										// contrôle du changement de jour
 
@@ -368,6 +373,72 @@ class DesktopController(
 		inTheme : thème
 	*/
 	fun setColorTheme(inTheme: ColorTheme) = update(fSettings.value.copy(colors = inTheme))
+
+	private val fTour = MutableStateFlow<ActiveTour?>(null)						// visite guidée affichée
+
+	// Visite guidée affichée ; null sans visite.
+	val tour: StateFlow<ActiveTour?> = fTour
+
+	/*
+		Lance la visite d'une page à sa première venue (ni vue, ni passée, ni
+		visites coupées) ; rien si une visite est déjà affichée, ni sous les
+		tests automatiques (propriété patrimoineplus.tours=off).
+		inKey : visite (nom de l'écran, ou kTourAccount)
+	*/
+	fun showTourIfNew(inKey: String)
+	{
+		val vSet = fSettings.value													// réglages
+		if (vSet.toursOff || inKey in vSet.toursSeen || fTour.value != null || Tours.steps(inKey).isEmpty() || System.getProperty("patrimoineplus.tours") == "off") return
+		fTour.value = ActiveTour(inKey, 0)
+	}
+
+	/*
+		Change d'étape dans la visite affichée.
+		inStep : étape
+	*/
+	fun setTourStep(inStep: Int)
+	{
+		fTour.value = fTour.value?.copy(step = inStep)
+	}
+
+	/*
+		Visite terminée ou passée : elle est marquée vue (cette page seulement).
+	*/
+	fun finishTour()
+	{
+		fTour.value?.let { inTour -> update(fSettings.value.copy(toursSeen = fSettings.value.toursSeen + inTour.key)) }
+		fTour.value = null
+	}
+
+	/*
+		Coupe toutes les visites guidées (réactivables dans les réglages).
+	*/
+	fun stopAllTours()
+	{
+		finishTour()
+		update(fSettings.value.copy(toursOff = true))
+	}
+
+	/*
+		Réactive toutes les visites : chacune réapparaîtra à la prochaine venue
+		sur sa page.
+	*/
+	fun resetTours() = update(fSettings.value.copy(toursSeen = emptySet(), toursOff = false))
+
+	/*
+		Revoit la visite d'une page tout de suite : ouvre la page (la vue d'un
+		compte : le premier compte) et lance sa visite.
+		inKey : visite
+	*/
+	fun replayTour(inKey: String)
+	{
+		when
+		{
+			inKey == kTourAccount -> workspace.value.data.accounts.firstOrNull { !it.archived }?.let { openAccount(it.id) } ?: return
+			else                  -> Screen.entries.firstOrNull { it.name == inKey }?.let { show(it) } ?: return
+		}
+		fTour.value = ActiveTour(inKey, 0)
+	}
 
 	/*
 		Profil de la vue affichée ; null pour la famille.
@@ -905,3 +976,14 @@ class DesktopController(
 		runCatching { inConfig.save(inSettings) }
 	}
 }
+
+/*
+	Visite guidée affichée.
+	key  : visite (nom de l'écran, ou kTourAccount)
+	step : étape affichée
+*/
+data class ActiveTour(
+	val key  : String,
+	val step : Int
+)
+
