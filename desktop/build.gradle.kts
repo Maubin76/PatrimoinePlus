@@ -71,3 +71,8 @@ tasks.register<Zip>("packageZip") {
 	archiveFileName.set("PatrimoinePlus-$kVersion-windows.zip")
 	destinationDirectory.set(layout.buildDirectory.dir("distributions"))
 }
+
+// Tests sans écran, comme sur la CI (Linux) : une fenêtre AWT y serait refusée.
+tasks.withType<Test>().configureEach {
+	systemProperty("java.awt.headless", "true")
+}
