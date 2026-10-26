@@ -51,6 +51,8 @@ import fr.maubin.patrimoineplus.ui.theme.colorfulMain
 import androidx.compose.runtime.CompositionLocalProvider
 import fr.maubin.patrimoineplus.ui.theme.LocalColorTheme
 import fr.maubin.patrimoineplus.ui.theme.ColorTheme
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.text.style.TextAlign
 
 private val kTileShape = RoundedCornerShape(28.dp)								// forme d'une tuile : panneau très arrondi
 private val kShadowTint = Color(0xFF5B4E9E)										// ombre teintée de lavande (clair)
@@ -73,6 +75,7 @@ private const val kPressMillis = 90												// enfoncement au clic
 	             pastel de cette couleur ; non précisée : tuile neutre
 	inFilled   : tuile pleine, à la couleur principale, texte inversé (chiffre mis en avant)
 	inTitleStyle : style du titre ; null : titre de tuile ordinaire
+	inFooter   : mention en petit, en bas au milieu de la tuile (même si une voisine la rend plus haute) ; null sans
 	inContent  : contenu
 */
 @Composable
@@ -85,6 +88,7 @@ fun Tile(
 	inAccent     : Color                             = Color.Unspecified,
 	inFilled     : Boolean                           = false,
 	inTitleStyle : TextStyle?                        = null,
+	inFooter     : String?                           = null,
 	inContent    : @Composable ColumnScope.() -> Unit
 )
 {
@@ -133,7 +137,7 @@ fun Tile(
 		MaterialTheme(colorScheme = vColors) {
 			CompositionLocalProvider(LocalColorTheme provides if (inFilled) ColorTheme.MONOCHROME else LocalColorTheme.current) {	// tuile pleine : variations à l'encre de la tuile (lisibles sur l'aplat), signe écrit
 				Column {
-					Column(Modifier.padding(26.dp)) {
+					Column(if (inFooter != null) Modifier.fillMaxHeight().padding(26.dp) else Modifier.padding(26.dp)) {
 						if (inTitle != null || inAction != null)
 						{
 							Row(Modifier.fillMaxWidth().heightIn(min = 32.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -149,6 +153,11 @@ fun Tile(
 							androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
 						}
 						inContent()
+					inFooter?.let { inText ->
+						androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
+						androidx.compose.foundation.layout.Spacer(Modifier.height(14.dp))
+						Text(inText, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
+					}
 					}
 				}
 			}

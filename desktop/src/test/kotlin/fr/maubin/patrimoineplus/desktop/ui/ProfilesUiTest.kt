@@ -33,6 +33,7 @@ import java.io.File
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
+import androidx.compose.ui.test.onAllNodesWithText
 
 /*
 	Profils sur le PC (sans écran), sur la démonstration à deux profils
@@ -99,11 +100,14 @@ class ProfilesUiTest
 		assertEquals(kFamilyView, DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")).load().view)
 		assertTrue(vApp.budget.value.lines.isEmpty())									// budget de la famille, distinct
 		val vFamily = wealth(vApp)															// patrimoine de la famille
+		assertTrue(fCompose.onAllNodesWithText("Titulaire : Moi").fetchSemanticsNodes().isNotEmpty())	// comptes à 100 % à « Moi » : titulaire en bas de la tuile
+		assertTrue(fCompose.onAllNodesWithText("Titulaire : Alex").fetchSemanticsNodes().isEmpty())	// Alex ne détient seul aucun compte
 		capture(vApp, "28-tableau-de-bord-famille")
 		fCompose.onNodeWithContentDescription("Vue : Famille").performClick()
 		fCompose.onNodeWithText("Alex").performClick()
 		fCompose.waitForIdle()
 		assertEquals(kDemoPartnerId, vApp.viewProfile())
+		assertTrue(fCompose.onAllNodesWithText("Titulaire : Moi").fetchSemanticsNodes().isEmpty())	// vue d'un profil : pas de titulaire
 		assertTrue(kotlin.math.abs(vFamily - (vMine + wealth(vApp))) <= 3)			// parts de 50 % arrondies au centime : un centime au plus par compte partagé (3)
 		capture(vApp, "28-tableau-de-bord-alex")
 		vApp.setView(kDefaultProfileId)

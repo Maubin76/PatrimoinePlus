@@ -68,10 +68,10 @@ import fr.maubin.patrimoineplus.ui.home.HomeGroup
 import fr.maubin.patrimoineplus.ui.components.ProportionToggle
 import fr.maubin.patrimoineplus.ui.components.isColorful
 import fr.maubin.patrimoineplus.ui.components.accountAccent
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color
 import fr.maubin.patrimoineplus.ui.theme.colorfulMain
-import fr.maubin.patrimoineplus.ui.components.heroFilled
-import fr.maubin.patrimoineplus.ui.components.glassWell
+import fr.maubin.patrimoineplus.ui.components.heroFilled
+import fr.maubin.patrimoineplus.ui.components.glassWell
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import androidx.compose.foundation.layout.Box
 
@@ -121,6 +121,9 @@ fun DashboardScreen(
 			}
 			OutlinedButton(onClick = { inController.openPanel(Panel.AccountSheet(null)) }) { Text("Ajouter un compte") }
 		}
+		val vHolders = if (inController.viewProfile() == null && inSpace.data.profiles.size > 1)
+			inSpace.data.accounts.associate { inAccount -> inAccount.id to inAccount.owners.singleOrNull()?.takeIf { it.percent == 100 }?.let { inOwner -> inSpace.data.profiles.firstOrNull { it.id == inOwner.profileId }?.name } }
+		else emptyMap()																	// vue Famille : titulaire de chaque compte détenu à 100 % par un profil
 		TileGrid(vState.tiles, kAccountMin) { inTile, inMod ->
 			AccountTileView(
 				inTile     = inTile,
@@ -128,7 +131,8 @@ fun DashboardScreen(
 				inOnOpen   = if (vReorder) null else { { inController.openAccount(inTile.account.id) } },
 				inMove     = if (vReorder) { inStep -> move(inController, vState, inTile, inStep) } else null,
 				inIndex    = vState.tiles.indexOf(inTile),
-				inCount    = vState.tiles.size
+				inCount    = vState.tiles.size,
+				inHolder   = vHolders[inTile.account.id]
 			)
 		}
 		if (vState.archived.isNotEmpty())
@@ -300,6 +304,7 @@ private fun RepartitionLegend(inGroups: List<HomeGroup>)
 	inMove     : déplacement d'un rang (−1 / +1) ; null hors réorganisation
 	inIndex    : rang du compte
 	inCount    : nombre de comptes
+	inHolder   : titulaire (vue Famille, compte détenu à 100 % par un profil), en petit en bas ; null sans
 */
 @Composable
 private fun AccountTileView(
@@ -308,12 +313,13 @@ private fun AccountTileView(
 	inOnOpen   : (() -> Unit)?,
 	inMove     : ((Int) -> Unit)?,
 	inIndex    : Int,
-	inCount    : Int
+	inCount    : Int,
+	inHolder   : String? = null
 )
 {
 	val vMuted = MaterialTheme.colorScheme.onSurfaceVariant							// texte secondaire
 	val vAccent = accountAccent(inTile.account.type)									// couleur du type (thème Coloré)
-	Tile(inModifier = inModifier, inOnClick = inOnOpen, inClickLabel = "Ouvrir ${inTile.account.name}", inAccent = vAccent) {
+	Tile(inModifier = inModifier, inOnClick = inOnOpen, inClickLabel = "Ouvrir ${inTile.account.name}", inAccent = vAccent, inFooter = inHolder?.let { "Titulaire : $it" }) {
 		Row(verticalAlignment = Alignment.Top) {
 			Column(Modifier.weight(1f)) {
 				Text(inTile.account.name, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
