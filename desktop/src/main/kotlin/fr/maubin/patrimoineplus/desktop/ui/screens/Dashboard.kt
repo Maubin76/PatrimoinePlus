@@ -68,7 +68,8 @@ import fr.maubin.patrimoineplus.ui.home.HomeGroup
 import fr.maubin.patrimoineplus.ui.components.ProportionToggle
 import fr.maubin.patrimoineplus.ui.components.isColorful
 import fr.maubin.patrimoineplus.ui.components.accountAccent
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color
+import fr.maubin.patrimoineplus.ui.theme.colorfulMain
 
 private val kShortDay   = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date courte
 private val kAccountMin = 300.dp													// largeur minimale d'une tuile de compte
@@ -494,7 +495,8 @@ fun CategoryBar(
 }
 
 /*
-	Petite barre de proportion (rail et part remplie).
+	Petite barre de proportion (rail et part remplie) ; part remplie à
+	l'accent du thème Coloré, sinon à l'encre.
 	inFraction : part remplie, de 0 à 1
 	inModifier : place de la barre
 */
@@ -505,7 +507,7 @@ fun MiniBar(
 )
 {
 	ProportionBar(
-		inSegments    = listOf(BarSegment((inFraction.coerceIn(0f, 1f) * 1000).toLong(), MaterialTheme.colorScheme.primary), BarSegment(((1f - inFraction.coerceIn(0f, 1f)) * 1000).toLong(), MaterialTheme.colorScheme.surfaceContainerHigh)),
+		inSegments    = listOf(BarSegment((inFraction.coerceIn(0f, 1f) * 1000).toLong(), if (isColorful()) colorfulMain() else MaterialTheme.colorScheme.primary), BarSegment(((1f - inFraction.coerceIn(0f, 1f)) * 1000).toLong(), MaterialTheme.colorScheme.surfaceContainerHigh)),
 		inDescription = "${(inFraction * 100).toInt()} %",
 		inModifier    = inModifier
 	)
