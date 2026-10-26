@@ -31,7 +31,8 @@ import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import fr.maubin.patrimoineplus.data.backup.toDto
-import fr.maubin.patrimoineplus.data.edit.DataEditor
+import fr.maubin.patrimoineplus.data.edit.DataEditor
+import fr.maubin.patrimoineplus.data.demo.withDemoFamily
 
 private const val kPollMillis  = 2_000L											// intervalle de surveillance du fichier
 private const val kFlushMillis = 1_500L											// délai entre une modification et l'écriture
@@ -470,13 +471,14 @@ class Workspace(private val inClock: Clock)
 	*/
 	private fun demoFile(inToday: LocalDate): BackupFile
 	{
-		val vDemo = buildDemoData(inToday)											// démonstration
+		val vDemo = withDemoFamily(buildDemoData(inToday))							// démonstration, à deux profils
 		val vNow  = inClock.millis()												// horodatage
 		return BackupFile(
 			format       = kBackupFormat,
 			version      = kBackupVersion,
 			exportedAt   = "",
-			accounts     = vDemo.accounts.map { fr.maubin.patrimoineplus.data.backup.AccountDto(it.id, it.name, it.type.name, it.institution, it.sharePercent, it.sortOrder, it.archived, vNow, vNow) },
+			accounts     = vDemo.accounts.map { fr.maubin.patrimoineplus.data.backup.AccountDto(it.id, it.name, it.type.name, it.institution, it.sharePercent, it.sortOrder, it.archived, vNow, vNow, it.owners.map { inOwner -> fr.maubin.patrimoineplus.data.backup.OwnerDto(inOwner.profileId, inOwner.percent) }) },
+			profiles     = vDemo.profiles.map { fr.maubin.patrimoineplus.data.backup.ProfileDto(it.id, it.name, it.sortOrder) },
 			categories   = vDemo.categories.map { CategoryDto(it.id, it.name, it.icon, it.kind.name, it.sortOrder, it.archived, vNow, vNow) },
 			assets       = vDemo.assets.map { fr.maubin.patrimoineplus.data.backup.AssetDto(it.id, it.name, it.isin, it.archived, vNow, vNow, it.ticker) },
 			transactions = vDemo.transactions.map { inTx ->

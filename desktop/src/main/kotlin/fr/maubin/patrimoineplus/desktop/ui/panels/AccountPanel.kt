@@ -25,8 +25,10 @@ import fr.maubin.patrimoineplus.ui.planning.checkLoan
 import fr.maubin.patrimoineplus.ui.planning.buildLoan
 import fr.maubin.patrimoineplus.ui.planning.loanPreview
 import fr.maubin.patrimoineplus.domain.format.formatEuros
-import fr.maubin.patrimoineplus.domain.model.CategoryKind
+import fr.maubin.patrimoineplus.domain.model.CategoryKind
 import fr.maubin.patrimoineplus.domain.calc.propertyItems
+import fr.maubin.patrimoineplus.ui.accounts.parseOwners
+import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
 
 /*
 	Création ou modification d'un compte dans le panneau latéral : nom, type
@@ -54,7 +56,9 @@ fun AccountPanel(
 				institution = vAccount?.institution.orEmpty(),
 				share       = (vAccount?.sharePercent ?: 100).toString(),
 				opening     = vOpening?.cents?.takeIf { it != 0L }?.let(::editableEuros).orEmpty(),
-				openingDate = vOpening?.date ?: inController.today()
+				openingDate = vOpening?.date ?: inController.today(),
+				owners      = vAccount?.owners?.associate { it.profileId to it.percent.toString() }
+					?: mapOf((inController.viewProfile() ?: vSpace.data.profiles.firstOrNull()?.id ?: kDefaultProfileId) to "100")	// nouveau compte : au profil affiché
 			)
 		)
 	}																			// saisie
@@ -71,11 +75,13 @@ fun AccountPanel(
 	fun save()
 	{
 		if (inController.panel.value == null) return						// panneau déjà fermé (double clic pendant sa disparition)
-		val vShare   = vForm.share.trim().toIntOrNull()							// part détenue lue
+		val vOwners  = parseOwners(vForm.owners)									// propriétaires lus
+		val vShare   = vOwners?.sumOf { it.percent }								// part comptée (total des propriétaires)
 		val vCents   = if (vForm.opening.isBlank() || vForm.type.isProperty || (vAccount == null && vForm.type == AccountType.LOAN)) 0L else parseEuros(vForm.opening)	// solde initial lu (aucun pour un compte de biens ou un crédit à créer)
 		vError = when
 		{
-			vShare == null -> "Part détenue illisible (1 à 100)."
+			vOwners == null    -> "Part illisible (1 à 100)."
+			vOwners.isEmpty()  -> "Indiquez la part d’au moins un propriétaire."
 			vCents == null -> "Solde initial illisible (ex. 1 250,00)."
 			vDateBad && !vForm.type.isProperty && !vNewLoan -> kBadDate
 			else           -> null
@@ -85,7 +91,7 @@ fun AccountPanel(
 		{
 			vLoanErr = checkLoan(vLoan, vSpace.data.accounts)
 			if (!vLoanErr.isEmpty) return
-			when (val vResult = inController.edit { inController.editor.createLoan(it, vForm.name, vForm.institution, vShare!!, buildLoan(vLoan), inController.today()) })
+			when (val vResult = inController.edit { inController.editor.createLoan(it, vForm.name, vForm.institution, vShare!!, buildLoan(vLoan), inController.today(), vOwners) })
 			{
 				is EditResult.Done    -> inController.closePanel()
 				is EditResult.Refused -> vError = vResult.messages.joinToString(" ")
@@ -96,12 +102,12 @@ fun AccountPanel(
 		val vResult  = inController.edit { inFile ->
 			if (vAccount == null)
 			{
-				inController.editor.createAccount(inFile, vForm.name, vForm.type, vForm.institution, vShare!!, vBalance)
+				inController.editor.createAccount(inFile, vForm.name, vForm.type, vForm.institution, vShare!!, vBalance, vOwners)
 			}
 			else
 			{
 				val vBase = if (vForm.type.isProperty) (inController.editor.setOpening(inFile, vAccount.id, OpeningBalance(0, vForm.openingDate)) as? EditResult.Done)?.file ?: inFile else inFile	// un compte de biens n'a pas de solde initial
-				when (val vUpdated = inController.editor.updateAccount(vBase, vAccount.copy(name = vForm.name, type = vForm.type, institution = vForm.institution, sharePercent = vShare!!)))
+				when (val vUpdated = inController.editor.updateAccount(vBase, vAccount.copy(name = vForm.name, type = vForm.type, institution = vForm.institution, sharePercent = vShare!!, owners = vOwners!!)))
 				{
 					is EditResult.Done    -> inController.editor.setOpening(vUpdated.file, vAccount.id, vBalance)
 					is EditResult.Refused -> vUpdated
@@ -136,7 +142,16 @@ fun AccountPanel(
 		Picker("Type", AccountType.entries.map { it to typeChoice(it) }, vForm.type, { vForm = vForm.copy(type = it) }, inEnabled = vOps == 0)
 		if (vOps > 0) Text("Le type ne change plus : le compte a des opérations.")
 		FormField(vForm.institution, { vForm = vForm.copy(institution = it) }, if (vForm.type.isProperty) "Description (facultatif)" else "Établissement (facultatif)")
-		FormField(vForm.share, { vForm = vForm.copy(share = it) }, "Part détenue (%)", inSupport = if (vForm.type.isProperty) "50 pour des biens détenus à deux (indivision, couple)." else "50 pour un compte joint à deux.", inNumeric = true)
+		val vProfiles = vSpace.data.profiles												// propriétaires possibles
+		vProfiles.forEachIndexed { inIndex, inProfile ->
+			FormField(
+				inValue    = vForm.owners[inProfile.id].orEmpty(),
+				inOnChange = { inText -> vForm = vForm.copy(owners = vForm.owners + (inProfile.id to inText)) },
+				inLabel    = if (vProfiles.size == 1) "Part détenue (%)" else "Part de ${inProfile.name} (%)",
+				inSupport  = if (inIndex < vProfiles.size - 1) null else if (vProfiles.size == 1) (if (vForm.type.isProperty) "50 pour des biens détenus à deux (indivision, couple)." else "50 pour un compte joint à deux.") else "Vide : pas propriétaire. 50 et 50 pour un compte ou un bien du couple.",
+				inNumeric  = true
+			)
+		}
 		if (vNewLoan)
 		{
 			FormField(vLoan.principal, { vLoan = vLoan.copy(principal = it) }, "Montant emprunté (€)", vLoanErr.principal, inNumeric = true)

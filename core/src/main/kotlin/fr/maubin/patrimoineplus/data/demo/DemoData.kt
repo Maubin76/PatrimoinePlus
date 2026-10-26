@@ -24,7 +24,12 @@ import fr.maubin.patrimoineplus.domain.calc.amortization
 import fr.maubin.patrimoineplus.domain.calc.remainingAt
 import fr.maubin.patrimoineplus.domain.calc.dueOperations
 import java.time.LocalDate
-import java.util.UUID
+import java.util.UUID
+import fr.maubin.patrimoineplus.domain.model.Profile
+import fr.maubin.patrimoineplus.domain.model.Ownership
+import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
+import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileName
+import fr.maubin.patrimoineplus.domain.calc.withProfiles
 
 private const val kMonths = 6													// mois d'historique générés
 
@@ -235,3 +240,22 @@ private fun newId(): String = UUID.randomUUID().toString()
 	inKey : clé lisible (« compte:livret-a »)
 */
 private fun stableId(inKey: String): String = UUID.nameUUIDFromBytes("patrimoineplus-demo:$inKey".toByteArray(Charsets.UTF_8)).toString()
+
+const val kDemoPartnerId = "profil:demo-alex"									// second profil de la démonstration
+
+/*
+	Démonstration d'une famille : le profil « Moi » et « Alex », qui
+	partagent à parts égales le compte joint, la résidence principale et son
+	crédit ; les autres comptes sont à « Moi ». La vue de « Moi » est la
+	démonstration habituelle.
+	inData : démonstration
+*/
+fun withDemoFamily(inData: DataSet): DataSet =
+	inData.copy(
+		profiles = listOf(Profile(kDefaultProfileId, kDefaultProfileName, 0), Profile(kDemoPartnerId, "Alex", 1)),
+		accounts = inData.accounts.map { inAccount ->
+			if (inAccount.sharePercent < 100) inAccount.copy(owners = listOf(Ownership(kDefaultProfileId, inAccount.sharePercent), Ownership(kDemoPartnerId, 100 - inAccount.sharePercent)))
+			else inAccount.copy(owners = listOf(Ownership(kDefaultProfileId, 100)))
+		}
+	).withProfiles()
+

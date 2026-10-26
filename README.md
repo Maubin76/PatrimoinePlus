@@ -220,8 +220,17 @@ Détail complet : [`doc/SPEC.md` § 2](doc/SPEC.md#2-modèle-de-données).
 - **Comptes** créés dans l'application, six types : Courant, Épargne, Bourse,
   deux comptes de biens, **Immobilier** et **Collection** (objets de
   collection), et **Crédit** (solde négatif : capital restant dû, déduit du
-  patrimoine) ; établissement et part détenue (compte joint, indivision)
-  facultatifs.
+  patrimoine) ; établissement facultatif ; **propriétaires** : la part de
+  chaque profil (50 et 50 pour un compte joint du couple).
+- **Profils** (membres de la famille, un seul fichier synchronisé pour tous) :
+  chaque profil voit ses comptes à sa part ; la vue **Famille** rassemble
+  tous les comptes, chacun pour le total des parts de la famille. Sur le PC,
+  sélecteur de vue en haut (à partir de deux profils), section Profils des
+  réglages (ajout, renommage, retrait refusé pour le seul propriétaire d'un
+  compte), budget et objectifs propres à chaque vue. Données d'avant les
+  profils : un profil « Moi » pour la part détenue. Fichier d'échange au
+  format 6 (onglet Profils, colonnes Propriétaires et Parts) : les deux
+  applis doivent être à jour.
 - **Opérations récurrentes** : dépense, revenu ou virement répété chaque
   mois, trimestre ou année, à partir d'une première échéance (fin
   facultative ; un 31 devient le dernier jour des mois plus courts). Chaque

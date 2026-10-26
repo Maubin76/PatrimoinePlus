@@ -131,7 +131,12 @@ import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.graphics.Path as DrawPath
 import fr.maubin.patrimoineplus.ui.components.isGlass
 import fr.maubin.patrimoineplus.ui.components.AppGround
-import fr.maubin.patrimoineplus.ui.components.FloatingSurface
+import fr.maubin.patrimoineplus.ui.components.FloatingSurface
+import fr.maubin.patrimoineplus.domain.calc.scoped
+import fr.maubin.patrimoineplus.desktop.scopeOf
+import fr.maubin.patrimoineplus.domain.model.Profile
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -214,6 +219,8 @@ private fun Shell(
 	val vPanel  by inController.panel.collectAsState()						// panneau de saisie ouvert
 	val vNotice by inController.notice.collectAsState()						// message ponctuel
 	val vBank   by inController.bank.collectAsState()							// relevé en cours de rapprochement
+	val vSet    by inController.settings.collectAsState()						// réglages (vue affichée)
+	val vView   = remember(inSpace, vSet.view) { inSpace.copy(data = inSpace.data.scoped(scopeOf(vSet.view, inSpace.data.profiles))) }	// données de la vue (profil ou famille)
 	val vFocus  = remember { FocusRequester() }									// focus clavier de secours (raccourcis)
 	LaunchedEffect(Unit) { vFocus.requestFocus() }
 	LaunchedEffect(inSpace.data) { inController.dropStalePanel() }
@@ -237,7 +244,7 @@ private fun Shell(
 	) {
 		Rail(vNav.screen, inController::show, inDark, inController::setAppearance)
 		Column(Modifier.weight(1f).fillMaxHeight()) {
-			StatusBar(inSpace, vNotice, inController)
+			StatusBar(inSpace, vNotice, inController, scopeOf(vSet.view, inSpace.data.profiles))
 			Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
 				Box(Modifier.widthIn(max = kContentMaxWidth).fillMaxSize()) {
 					AnimatedContent(
@@ -247,16 +254,16 @@ private fun Shell(
 					) { (inScreen, inAccountId) ->
 						when
 						{
-							inAccountId?.endsWith("#relevé") == true -> vBank?.let { ReconcileScreen(inSpace, inController, it) }
-							inAccountId != null              -> AccountScreen(inSpace, inController, inAccountId, vNav.month)
-							inScreen == Screen.DASHBOARD     -> DashboardScreen(inSpace, inController)
-							inScreen == Screen.SEARCH        -> SearchScreen(inSpace, inController)
-							inScreen == Screen.OPERATIONS    -> EntriesScreen(inSpace, inController)
-							inScreen == Screen.REPORT        -> ReportScreen(inSpace, inController)
-							inScreen == Screen.PROJECTION    -> ProjectionScreen(inSpace, inController)
-							inScreen == Screen.BUDGET        -> BudgetScreen(inSpace, inController)
-							inScreen == Screen.GOALS         -> GoalsScreen(inSpace, inController)
-							else                             -> SettingsScreen(inSpace, inController, inOnPickFolder)
+							inAccountId?.endsWith("#relevé") == true -> vBank?.let { ReconcileScreen(vView, inController, it) }
+							inAccountId != null              -> AccountScreen(vView, inController, inAccountId, vNav.month)
+							inScreen == Screen.DASHBOARD     -> DashboardScreen(vView, inController)
+							inScreen == Screen.SEARCH        -> SearchScreen(vView, inController)
+							inScreen == Screen.OPERATIONS    -> EntriesScreen(vView, inController)
+							inScreen == Screen.REPORT        -> ReportScreen(vView, inController)
+							inScreen == Screen.PROJECTION    -> ProjectionScreen(vView, inController)
+							inScreen == Screen.BUDGET        -> BudgetScreen(vView, inController)
+							inScreen == Screen.GOALS         -> GoalsScreen(vView, inController)
+							else                             -> SettingsScreen(vView, inController, inOnPickFolder)
 						}
 					}
 				}
@@ -506,12 +513,14 @@ private fun RailButton(
 	inSpace      : données et état de la lecture
 	inNotice     : message ponctuel ; null sans message
 	inController : contrôleur
+	inProfile    : profil affiché ; null pour la famille
 */
 @Composable
 private fun StatusBar(
 	inSpace      : WorkspaceState,
 	inNotice     : String?,
-	inController : DesktopController
+	inController : DesktopController,
+	inProfile    : String?
 )
 {
 	val vColors = MaterialTheme.colorScheme										// palette courante
@@ -545,6 +554,11 @@ private fun StatusBar(
 			TextButton(onClick = inController::clearNotice) { Text("OK") }
 		}
 		Spacer(Modifier.width(16.dp))
+		if (inSpace.data.profiles.size > 1)
+		{
+			ViewSwitcher(inSpace.data.profiles, inProfile, inController::setView)
+			Spacer(Modifier.width(12.dp))
+		}
 		FloatingSurface(RoundedCornerShape(50)) {
 			Row(Modifier.padding(6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
 				Button(onClick = inController::newOperation, contentPadding = PaddingValues(start = 18.dp, end = 22.dp), modifier = Modifier.height(44.dp)) {
@@ -558,3 +572,74 @@ private fun StatusBar(
 		}
 	}
 }
+
+/*
+	Sélecteur de vue : pilule flottante avec l'initiale et le nom du profil
+	affiché (ou « Famille ») ; un clic ouvre la liste des profils, puis la
+	famille, qui rassemble tous les comptes.
+	inProfiles : profils
+	inProfile  : profil affiché ; null pour la famille
+	inOnView   : change de vue
+*/
+@Composable
+private fun ViewSwitcher(
+	inProfiles : List<Profile>,
+	inProfile  : String?,
+	inOnView   : (String?) -> Unit
+)
+{
+	var vOpen  by remember { mutableStateOf(false) }								// liste ouverte
+	val vName  = inProfiles.firstOrNull { it.id == inProfile }?.name ?: "Famille"	// vue affichée
+	Box {
+		FloatingSurface(RoundedCornerShape(50)) {
+			Row(
+				modifier          = Modifier
+					.clip(RoundedCornerShape(50))
+					.clickable(onClickLabel = "Changer de vue") { vOpen = true }
+					.semantics { contentDescription = "Vue : $vName" }
+					.padding(start = 6.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
+				verticalAlignment = Alignment.CenterVertically
+			) {
+				Initial(vName, inProfile == null)
+				Spacer(Modifier.width(10.dp))
+				Text(vName, style = MaterialTheme.typography.labelLarge)
+				Spacer(Modifier.width(6.dp))
+				Icon(LineIcons.ChevronDown, contentDescription = null, modifier = Modifier.size(16.dp))
+			}
+		}
+		DropdownMenu(expanded = vOpen, onDismissRequest = { vOpen = false }) {
+			inProfiles.forEach { inEntry ->
+				DropdownMenuItem(
+					text        = { Text(inEntry.name) },
+					leadingIcon = { Initial(inEntry.name) },
+					onClick     = { vOpen = false; inOnView(inEntry.id) }
+				)
+			}
+			HorizontalDivider()
+			DropdownMenuItem(
+				text        = { Text("Famille : tous les comptes") },
+				leadingIcon = { Initial("Famille", true) },
+				onClick     = { vOpen = false; inOnView(null) }
+			)
+		}
+	}
+}
+
+/*
+	Pastille ronde à l'encre de la coque avec l'initiale d'un nom, ou
+	l'icône de la famille.
+	inName   : nom
+	inFamily : vue de la famille
+*/
+@Composable
+private fun Initial(
+	inName   : String,
+	inFamily : Boolean = false
+)
+{
+	Box(Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary), contentAlignment = Alignment.Center) {
+		if (inFamily) Icon(LineIcons.Family, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(18.dp))
+		else Text(inName.take(1).uppercase(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimary)
+	}
+}
+

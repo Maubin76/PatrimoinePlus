@@ -49,7 +49,9 @@ import fr.maubin.patrimoineplus.ui.property.editSaleForm
 import fr.maubin.patrimoineplus.ui.planning.RecurrenceForm
 import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 import fr.maubin.patrimoineplus.ui.goals.planMonth
-import fr.maubin.patrimoineplus.ui.goals.withPlan
+import fr.maubin.patrimoineplus.ui.goals.withPlan
+import fr.maubin.patrimoineplus.domain.calc.scoped
+import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
 
 private const val kDayCheckMillis = 60_000L										// contrôle du changement de jour
 
@@ -231,8 +233,8 @@ class DesktopController(
 	private val fBatch      = MutableStateFlow<List<BatchRow>>(emptyList())	// lignes de la saisie en grille
 	private val fReportTab  = MutableStateFlow(ReportTab.ANNUAL)				// onglet affiché du bilan
 	private val fProjection = MutableStateFlow<ProjectionInput?>(null)			// hypothèses de la projection ; null : par défaut
-	private val fBudget     = MutableStateFlow(inConfig.loadBudget(fSettings.value.source))	// budget prévisionnel de la source
-	private val fGoals      = MutableStateFlow(inConfig.loadGoals(fSettings.value.source))		// objectifs de la source
+	private val fBudget     = MutableStateFlow(inConfig.loadBudget(fSettings.value.source, scopeOf(fSettings.value.view, emptyList())))	// budget prévisionnel de la vue
+	private val fGoals      = MutableStateFlow(inConfig.loadGoals(fSettings.value.source, scopeOf(fSettings.value.view, emptyList())))		// objectifs de la vue
 	private var fRowKeys    = 0L												// identifiants des lignes de la grille
 	private var fTokens     = 0L												// numéros d'ouverture des panneaux
 
@@ -362,6 +364,61 @@ class DesktopController(
 		inTheme : thème
 	*/
 	fun setColorTheme(inTheme: ColorTheme) = update(fSettings.value.copy(colors = inTheme))
+
+	/*
+		Profil de la vue affichée ; null pour la famille.
+	*/
+	fun viewProfile(): String? = scopeOf(fSettings.value.view, workspace.value.data.profiles)
+
+	/*
+		Données vues par la vue affichée (profil ou famille).
+	*/
+	fun viewData(): fr.maubin.patrimoineplus.data.DataSet = workspace.value.data.scoped(viewProfile())
+
+	/*
+		Change de vue (mémorisée) : profil, ou famille ; le budget et les
+		objectifs sont ceux de la vue.
+		inProfile : profil ; null pour la famille
+	*/
+	fun setView(inProfile: String?)
+	{
+		update(fSettings.value.copy(view = inProfile ?: kFamilyView))
+		reloadPlans()
+	}
+
+	/*
+		Ajoute un profil (membre de la famille).
+		inName : nom
+	*/
+	fun addProfile(inName: String): EditResult = edit { editor.addProfile(it, inName) }
+
+	/*
+		Renomme un profil.
+		inId   : profil
+		inName : nouveau nom
+	*/
+	fun renameProfile(
+		inId   : String,
+		inName : String
+	): EditResult = edit { editor.renameProfile(it, inId, inName) }
+
+	/*
+		Supprime un profil ; s'il était affiché, la vue revient au premier profil.
+		inId : profil
+	*/
+	fun removeProfile(inId: String): EditResult =
+		edit { editor.removeProfile(it, inId) }.also { inResult ->
+			if (inResult is EditResult.Done && fSettings.value.view == inId) setView(workspace.value.data.profiles.firstOrNull()?.id)
+		}
+
+	/*
+		Relit le budget et les objectifs de la vue affichée.
+	*/
+	private fun reloadPlans()
+	{
+		fBudget.value = inConfig.loadBudget(fSettings.value.source, viewProfile())
+		fGoals.value  = inConfig.loadGoals(fSettings.value.source, viewProfile())
+	}
 
 	/*
 		Active ou retire l'effet verre (mémorisé).
@@ -638,7 +695,7 @@ class DesktopController(
 		remplacés.
 		inMonth : mois
 	*/
-	fun confirmMonthGoals(inMonth: YearMonth) = setGoals(goals.value.withPlan(planMonth(budget.value, workspace.value.data, inMonth, today())))
+	fun confirmMonthGoals(inMonth: YearMonth) = setGoals(goals.value.withPlan(planMonth(budget.value, viewData(), inMonth, today())))
 
 	/*
 		Remplace le budget et l'enregistre.
@@ -647,7 +704,7 @@ class DesktopController(
 	fun setBudget(inBudget: Budget)
 	{
 		fBudget.value = inBudget
-		runCatching { inConfig.saveBudget(fSettings.value.source, inBudget) }.onFailure { fNotice.value = "Budget non enregistré : ${it.message}" }
+		runCatching { inConfig.saveBudget(fSettings.value.source, inBudget, viewProfile()) }.onFailure { fNotice.value = "Budget non enregistré : ${it.message}" }
 	}
 
 	/*
@@ -657,7 +714,7 @@ class DesktopController(
 	fun setGoals(inGoals: Goals)
 	{
 		fGoals.value = inGoals
-		runCatching { inConfig.saveGoals(fSettings.value.source, inGoals) }.onFailure { fNotice.value = "Objectifs non enregistrés : ${it.message}" }
+		runCatching { inConfig.saveGoals(fSettings.value.source, inGoals, viewProfile()) }.onFailure { fNotice.value = "Objectifs non enregistrés : ${it.message}" }
 	}
 
 	/*
@@ -816,8 +873,8 @@ class DesktopController(
 	{
 		fBank.value = null
 		update(fSettings.value.copy(source = inSource))
-		fBudget.value = inConfig.loadBudget(inSource)
-		fGoals.value  = inConfig.loadGoals(inSource)
+		fBudget.value = inConfig.loadBudget(inSource, scopeOf(fSettings.value.view, emptyList()))
+		fGoals.value  = inConfig.loadGoals(inSource, scopeOf(fSettings.value.view, emptyList()))
 		fProjection.value = null													// hypothèses de l'autre source
 		fBatch.value      = emptyList()												// lignes saisies sur les comptes de l'autre source
 		fQuery.value      = SearchQuery()											// critères sur les comptes de l'autre source
@@ -836,3 +893,24 @@ class DesktopController(
 		runCatching { inConfig.save(inSettings) }
 	}
 }
+
+const val kFamilyView = "*"														// vue mémorisée de la famille
+
+/*
+	Profil d'une vue mémorisée : "" premier profil, "*" famille (null),
+	sinon le profil s'il existe encore (le premier sinon). Sans profils
+	encore lus : le profil « Moi ».
+	inView     : vue mémorisée
+	inProfiles : profils des données
+*/
+fun scopeOf(
+	inView     : String,
+	inProfiles : List<fr.maubin.patrimoineplus.domain.model.Profile>
+): String? =
+	when
+	{
+		inView == kFamilyView                  -> null
+		inProfiles.any { it.id == inView }     -> inView
+		else                                   -> inProfiles.firstOrNull()?.id ?: kDefaultProfileId
+	}
+

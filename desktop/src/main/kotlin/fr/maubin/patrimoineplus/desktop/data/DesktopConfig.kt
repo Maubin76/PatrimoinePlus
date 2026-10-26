@@ -12,7 +12,8 @@ import fr.maubin.patrimoineplus.ui.goals.decodeGoals
 import fr.maubin.patrimoineplus.ui.goals.encodeGoals
 import java.nio.file.StandardCopyOption
 import java.util.Properties
-import fr.maubin.patrimoineplus.ui.theme.ColorTheme
+import fr.maubin.patrimoineplus.ui.theme.ColorTheme
+import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
 
 /*
 	Source des données de l'appli PC.
@@ -40,6 +41,7 @@ sealed interface Source
 	colors     : thème de couleurs (Monochrome par défaut)
 	pies       : clés des diagrammes de répartition affichés en cercle (barre par défaut)
 	glass      : effet verre (désactivé par défaut)
+	view       : vue affichée : "" premier profil, "*" famille, sinon identifiant du profil
 */
 data class DesktopSettings(
 	val source     : Source    = Source.None,
@@ -47,7 +49,8 @@ data class DesktopSettings(
 	val hidden     : Boolean   = false,
 	val colors     : ColorTheme = ColorTheme.MONOCHROME,
 	val pies       : Set<String> = emptySet(),
-	val glass      : Boolean   = false
+	val glass      : Boolean   = false,
+	val view       : String    = ""
 )
 
 /*
@@ -82,7 +85,8 @@ class DesktopConfig(private val inFile: Path)
 			colors     = ColorTheme.entries.firstOrNull { it.name == vProps.getProperty("theme") }
 				?: if (vProps.getProperty("trend") == "true") ColorTheme.MINIMAL else ColorTheme.MONOCHROME,	// ancien réglage vert et rouge : thème Minimal
 			pies       = vProps.getProperty("pies").orEmpty().split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet(),
-			glass      = vProps.getProperty("glass") == "true"
+			glass      = vProps.getProperty("glass") == "true",
+			view       = vProps.getProperty("view").orEmpty()
 		)
 	}
 
@@ -109,6 +113,7 @@ class DesktopConfig(private val inFile: Path)
 		vProps.setProperty("theme", inSettings.colors.name)
 		vProps.setProperty("pies", inSettings.pies.sorted().joinToString(","))
 		vProps.setProperty("glass", inSettings.glass.toString())
+		vProps.setProperty("view", inSettings.view)
 		inFile.parent?.let { Files.createDirectories(it) }
 		val vTemp = inFile.resolveSibling("${inFile.fileName}.tmp")				// écriture provisoire
 		Files.newBufferedWriter(vTemp, Charsets.UTF_8).use { vProps.store(it, "Réglages de PatrimoinePlus (PC)") }
@@ -121,8 +126,11 @@ class DesktopConfig(private val inFile: Path)
 		s'il est absent ou illisible.
 		inSource : source des données
 	*/
-	fun loadBudget(inSource: Source): Budget =
-		readFor(inSource, "budget")?.let { runCatching { decodeBudget(it) }.getOrNull() } ?: Budget()
+	fun loadBudget(
+		inSource  : Source,
+		inProfile : String? = kDefaultProfileId
+	): Budget =
+		readFor(inSource, "budget" + scopeSuffix(inProfile))?.let { runCatching { decodeBudget(it) }.getOrNull() } ?: Budget()
 
 	/*
 		Enregistre le budget prévisionnel d'une source.
@@ -130,9 +138,10 @@ class DesktopConfig(private val inFile: Path)
 		inBudget : budget
 	*/
 	fun saveBudget(
-		inSource : Source,
-		inBudget : Budget
-	) = write(fileFor(inSource, "budget"), encodeBudget(inBudget))
+		inSource  : Source,
+		inBudget  : Budget,
+		inProfile : String? = kDefaultProfileId
+	) = write(fileFor(inSource, "budget" + scopeSuffix(inProfile)), encodeBudget(inBudget))
 
 	/*
 		Lit les objectifs d'une source (goals.json pour vos données,
@@ -140,8 +149,11 @@ class DesktopConfig(private val inFile: Path)
 		illisible.
 		inSource : source des données
 	*/
-	fun loadGoals(inSource: Source): Goals =
-		readFor(inSource, "goals")?.let { runCatching { decodeGoals(it) }.getOrNull() } ?: Goals()
+	fun loadGoals(
+		inSource  : Source,
+		inProfile : String? = kDefaultProfileId
+	): Goals =
+		readFor(inSource, "goals" + scopeSuffix(inProfile))?.let { runCatching { decodeGoals(it) }.getOrNull() } ?: Goals()
 
 	/*
 		Enregistre les objectifs d'une source.
@@ -149,9 +161,24 @@ class DesktopConfig(private val inFile: Path)
 		inGoals  : objectifs
 	*/
 	fun saveGoals(
-		inSource : Source,
-		inGoals  : Goals
-	) = write(fileFor(inSource, "goals"), encodeGoals(inGoals))
+		inSource  : Source,
+		inGoals   : Goals,
+		inProfile : String? = kDefaultProfileId
+	) = write(fileFor(inSource, "goals" + scopeSuffix(inProfile)), encodeGoals(inGoals))
+
+	/*
+		Suffixe des fichiers d'une vue : aucun pour le profil « Moi » (fichiers
+		d'avant les profils), « -famille » pour la famille, sinon l'identifiant
+		du profil (caractères sûrs seulement).
+		inProfile : profil ; null pour la famille
+	*/
+	private fun scopeSuffix(inProfile: String?): String =
+		when (inProfile)
+		{
+			null              -> "-famille"
+			kDefaultProfileId -> ""
+			else              -> "-" + inProfile.replace(Regex("[^A-Za-z0-9-]"), "_")
+		}
 
 	/*
 		Fichier propre à une source, à côté des réglages : la démonstration a

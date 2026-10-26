@@ -9,7 +9,8 @@ import fr.maubin.patrimoineplus.domain.model.TransactionKind
 import java.time.LocalDate
 import fr.maubin.patrimoineplus.domain.calc.netValues
 import fr.maubin.patrimoineplus.domain.calc.financedAccounts
-import fr.maubin.patrimoineplus.domain.model.Loan
+import fr.maubin.patrimoineplus.domain.model.Loan
+import fr.maubin.patrimoineplus.domain.model.Ownership
 
 /*
 	Compte affiché dans la liste.
@@ -67,7 +68,8 @@ data class AccountForm(
 	val institution : String      = "",
 	val share       : String      = "100",
 	val opening     : String      = "",
-	val openingDate : LocalDate
+	val openingDate : LocalDate,
+	val owners      : Map<String, String> = emptyMap()
 )
 
 /*
@@ -137,3 +139,12 @@ fun buildAccountsState(
 	}																			// comptes valorisés
 	return AccountsUiState(true, vItems.filterNot { it.account.archived }, vItems.filter { it.account.archived })
 }
+
+/*
+	Propriétaires saisis : part de chaque profil (vide : pas propriétaire).
+	Retour : propriétaires dans l'ordre des profils ; null si une part est
+	illisible.
+	inTexts : part tapée par profil
+*/
+fun parseOwners(inTexts: Map<String, String>): List<Ownership>? =
+	inTexts.filterValues { it.isNotBlank() }.map { (inId, inText) -> Ownership(inId, inText.trim().removeSuffix("%").trim().toIntOrNull() ?: return null) }

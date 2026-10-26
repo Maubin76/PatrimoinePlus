@@ -771,6 +771,7 @@ class DataEditor(
 		inInstitution : établissement, facultatif
 		inShare       : part détenue, en %
 		inLoan        : paramètres (identifiants de compte et de crédit ignorés ; catégorie vide : « Crédit »)
+		inOwners      : propriétaires du compte Crédit ; null : le premier profil, pour inShare
 		inToday       : date du jour
 	*/
 	fun createLoan(
@@ -779,7 +780,8 @@ class DataEditor(
 		inInstitution : String?,
 		inShare       : Int,
 		inLoan        : Loan,
-		inToday       : LocalDate
+		inToday       : LocalDate,
+		inOwners      : List<Ownership>? = null
 	): EditResult
 	{
 		var vFile = inFile																// contenu modifié
@@ -790,7 +792,7 @@ class DataEditor(
 				is EditResult.Done    -> { vFile = vCreated.file; vCreated.id!! }
 				is EditResult.Refused -> return vCreated
 			}																			// catégorie des intérêts
-		val vAccount = when (val vCreated = createAccount(vFile, inName, AccountType.LOAN, inInstitution, inShare, null))
+		val vAccount = when (val vCreated = createAccount(vFile, inName, AccountType.LOAN, inInstitution, inShare, null, inOwners))
 		{
 			is EditResult.Done    -> vCreated
 			is EditResult.Refused -> return vCreated

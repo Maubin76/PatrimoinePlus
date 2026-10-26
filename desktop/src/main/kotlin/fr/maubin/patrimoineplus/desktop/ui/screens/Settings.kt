@@ -36,6 +36,18 @@ import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 import fr.maubin.patrimoineplus.desktop.ui.panels.Choice
 import fr.maubin.patrimoineplus.desktop.ui.components.FloatingCard
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import fr.maubin.patrimoineplus.domain.model.Profile
+import fr.maubin.patrimoineplus.data.edit.EditResult
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Button
+import fr.maubin.patrimoineplus.ui.icons.LineIcons
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.width
 import androidx.compose.ui.semantics.contentDescription
 
 /*
@@ -113,8 +125,69 @@ fun SettingsScreen(
 			}
 		}
 		Spacer(Modifier.height(32.dp))
+		SectionHeader(inTitle = "Profils")
+		Spacer(Modifier.height(12.dp))
+		ProfilesSection(inSpace.data.profiles, inController)
+		Spacer(Modifier.height(32.dp))
 		SectionHeader(inTitle = "Catégories")
 		Spacer(Modifier.height(12.dp))
 		CategoriesSection(inSpace, inController)
 	}
 }
+
+/*
+	Profils de la famille : nom modifiable (✓ pour l'enregistrer), retrait
+	(refusé pour le dernier profil ou le seul propriétaire d'un compte), puis
+	ajout. Chaque profil a sa vue ; la vue Famille rassemble tous les comptes.
+	inProfiles   : profils
+	inController : contrôleur
+*/
+@Composable
+private fun ProfilesSection(
+	inProfiles   : List<Profile>,
+	inController : DesktopController
+)
+{
+	var vError by remember { mutableStateOf<String?>(null) }						// refus affiché
+	var vNew   by remember { mutableStateOf("") }									// nom du profil à ajouter
+	val vShow  = { inResult: EditResult -> vError = (inResult as? EditResult.Refused)?.messages?.joinToString(" ") }	// affiche un refus
+	FloatingCard {
+		Column(Modifier.padding(horizontal = 24.dp, vertical = 12.dp)) {
+			inProfiles.forEach { inProfile ->
+				var vName by remember(inProfile.id, inProfile.name) { mutableStateOf(inProfile.name) }	// nom saisi
+				Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+					OutlinedTextField(
+						value         = vName,
+						onValueChange = { vName = it },
+						singleLine    = true,
+						modifier      = Modifier.weight(1f).semantics { contentDescription = "Nom du profil ${inProfile.name}" }
+					)
+					Spacer(Modifier.width(8.dp))
+					IconButton(onClick = { vShow(inController.renameProfile(inProfile.id, vName)) }, enabled = vName.trim() != inProfile.name) {
+						Icon(LineIcons.Check, contentDescription = "Renommer ${inProfile.name}")
+					}
+					IconButton(onClick = { vShow(inController.removeProfile(inProfile.id)) }, enabled = inProfiles.size > 1) {
+						Icon(LineIcons.Close, contentDescription = "Retirer ${inProfile.name}")
+					}
+				}
+			}
+			Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+				OutlinedTextField(
+					value         = vNew,
+					onValueChange = { vNew = it },
+					singleLine    = true,
+					placeholder   = { Text("Nouveau profil (prénom)") },
+					modifier      = Modifier.weight(1f).semantics { contentDescription = "Nom du nouveau profil" }
+				)
+				Spacer(Modifier.width(8.dp))
+				Button(onClick = {
+					val vResult = inController.addProfile(vNew)						// ajout
+					vShow(vResult)
+					if (vResult is EditResult.Done) vNew = ""
+				}) { Text("Ajouter") }
+			}
+			vError?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp)) }
+		}
+	}
+}
+

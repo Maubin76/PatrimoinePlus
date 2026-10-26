@@ -153,6 +153,9 @@ object LineIcons
 	// Montants masqués : œil barré.
 	val EyeOff: ImageVector = lineIcon("Montants masqués", "M2.5 12 C5 7 8.5 5 12 5 C15.5 5 19 7 21.5 12 C19 17 15.5 19 12 19 C8.5 19 5 17 2.5 12 Z", "M4 20 L20 4")
 
+	// Famille : deux silhouettes, tête et épaules.
+	val Family: ImageVector = lineIcon("Famille", circle(9f, 8.5f, 3f), "M3.5 19.5 C3.5 15.5 6 13.5 9 13.5 C12 13.5 14.5 15.5 14.5 19.5", circle(16.5f, 9.5f, 2.5f), "M15.5 13.7 C18.5 13.4 20.5 15.5 20.5 18.5")
+
 	// Ajouter : croix droite.
 	val Plus: ImageVector = lineIcon("Ajouter", "M12 5 V19", "M5 12 H19")
 
