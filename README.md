@@ -200,9 +200,12 @@ inspirée de deux maquettes de référence fournies le 2026-10-07.
   catégories ; réapparaît après « Tout effacer » (debug).
 - Mode discret : l'œil de la barre du haut ou le réglage masque tous les
   montants ; mémorisé en DataStore.
-- Icône : deux chevrons noirs sur une pastille blanche, fond noir
-  (`res/drawable/ic_launcher_*.xml`, vectorielle) ; version monochrome pour les
-  icônes à thème d'Android 13 et plus.
+- Icône : deux cartes de comptes en verre violet, puce et courbe de hausse sur
+  celle de devant, et un « + », sur une tuile noire aux halos violet et bleu
+  nuit (verre sombre ; `res/drawable/ic_launcher_*.xml`, vectorielle) ; version
+  monochrome pour les icônes à thème d'Android 13 et plus. Dans l'appli, le
+  logo (`ui/components/Logo.kt`, partagé avec le PC) prend la déclinaison verre
+  sombre ou verre clair (tuile lavande, « + » violet) selon le thème choisi.
 - Contexte de conception : `PRODUCT.md`, `DESIGN.md` et `.impeccable/`.
 
 Captures de relecture : `./gradlew :app:recordRoborazziDebug` écrit les PNG
@@ -604,11 +607,13 @@ Les comptes Bourse se valorisent seuls : il suffit de saisir les ordres.
 
 ## Lancement et verrou
 
-- **Lancement** : l'écran de démarrage système montre la pastille du logo
-  (`res/drawable/splash_logo.xml`, bibliothèque `core-splashscreen`) ;
+- **Lancement** : l'écran de démarrage système montre la tuile du logo avec
+  la carte de derrière seule, en verre clair ou sombre selon le mode du
+  téléphone (`res/drawable(-night)/splash_logo.xml`, bibliothèque
+  `core-splashscreen`) ;
   l'animation Compose prend le relais au même endroit et à la même taille
   (l'écran système reste affiché jusqu'à ce que le logo soit mesuré, 1,5 s au
-  plus) : les deux chevrons glissent dans la pastille et s'emboîtent, le logo
+  plus) : la carte de devant monte se poser et le « + » apparaît, le logo
   remonte, puis le nom et le bouton apparaissent (≈ 1,25 s,
   `ui/lock/LockScreen.kt`). Animation sautée si les animations du téléphone
   sont désactivées.

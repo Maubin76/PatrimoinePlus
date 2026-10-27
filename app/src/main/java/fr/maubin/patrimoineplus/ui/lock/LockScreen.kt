@@ -46,13 +46,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 
 private const val kIntroMillis   = 1_250											// durée de l'animation du lancement
-private const val kSplashLogoDp  = 192f												// diamètre du logo sur l'écran de démarrage système
-private const val kFinalLogoDp   = 104f												// diamètre du logo sur l'écran de connexion
+private const val kSplashLogoDp  = 156f												// côté du logo sur l'écran de démarrage système (tuile inscrite dans son cercle de 192 dp)
+private const val kFinalLogoDp   = 104f												// côté du logo sur l'écran de connexion
 private val kEase                = CubicBezierEasing(0.2f, 0f, 0f, 1f)			// courbe « accentuée » de Material
 
 /*
-	Écran de connexion. Au lancement, il s'ouvre sur l'animation du logo : les
-	deux chevrons glissent dans la pastille et s'emboîtent, puis le logo
+	Écran de connexion. Au lancement, il s'ouvre sur l'animation du logo : la
+	carte de devant monte se poser sur l'autre et le « + » apparaît, puis le logo
 	remonte à sa place et le nom et le bouton apparaissent. Ensuite (retour
 	après une minute), il s'affiche directement. L'authentification ne se lance
 	qu'au toucher du bouton ; l'animation est sautée si les animations du
@@ -96,7 +96,7 @@ fun LockScreen(
 
 /*
 	Contenu de l'écran de connexion à un instant de l'animation (0 : logo
-	centré en grand, sans chevrons, comme l'écran de démarrage système ; 1 :
+	centré en grand, sans la carte de devant, comme l'écran de démarrage système ; 1 :
 	écran posé). Sans état : sert aussi aux captures.
 	inProgress : avancement, de 0 à 1
 	inAuth     : vrai si le verrou est activé
@@ -113,7 +113,7 @@ fun LockContent(
 	inOnReady  : () -> Unit = {}
 )
 {
-	val vChevrons = kEase.transform(phase(inProgress, 0.05f, 0.5f))				// glissement des chevrons
+	val vArrival  = kEase.transform(phase(inProgress, 0.05f, 0.5f))				// arrivée de la carte de devant
 	val vMove     = kEase.transform(phase(inProgress, 0.5f, 0.85f))				// remontée du logo
 	val vReveal   = kEase.transform(phase(inProgress, 0.68f, 1f))				// apparition du texte et du bouton
 	var vRoot     by remember { mutableStateOf<Offset?>(null) }				// centre de l'écran
@@ -143,7 +143,7 @@ fun LockContent(
 						translationY = lerp(vOffset.y, 0f, vMove)
 					}
 			) {
-				PatrimoineLogo(kFinalLogoDp.dp, vChevrons)
+				PatrimoineLogo(kFinalLogoDp.dp, vArrival)
 			}
 			LaunchedEffect(vRoot != null && vLogo != null) {
 				if (vRoot != null && vLogo != null) inOnReady()

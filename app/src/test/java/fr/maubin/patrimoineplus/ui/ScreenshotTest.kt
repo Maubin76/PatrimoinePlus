@@ -83,7 +83,15 @@ import fr.maubin.patrimoineplus.domain.calc.profileRemoval
 import fr.maubin.patrimoineplus.data.demo.kDemoPartnerId
 import fr.maubin.patrimoineplus.domain.model.Ownership
 import fr.maubin.patrimoineplus.ui.theme.Palette
-import fr.maubin.patrimoineplus.ui.settings.ThemeSheet
+import fr.maubin.patrimoineplus.ui.settings.ThemeSheet
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import android.graphics.drawable.AdaptiveIconDrawable
+import android.graphics.drawable.Drawable
+import android.graphics.Bitmap
+import org.robolectric.RuntimeEnvironment
+import java.io.File
+import fr.maubin.patrimoineplus.R
 
 private const val kOutDir = "build/outputs/roborazzi"						// dossier des captures
 
@@ -124,14 +132,15 @@ class ScreenshotTest
 	}
 
 	/*
-		Animation du lancement, image par image : pastille seule (relais de
-		l'écran de démarrage système), chevrons en route, logo qui remonte,
-		écran posé avec verrou ; puis écran sans verrou, en sombre.
+		Animation du lancement, image par image : tuile et carte de derrière
+		seules (relais de l'écran de démarrage système), carte de devant en
+		route, logo qui remonte, écran posé avec verrou ; puis écran sans
+		verrou, en sombre.
 	*/
 	@Test
 	fun launchSequence()
 	{
-		listOf(0f to "1-debut", 0.3f to "2-chevrons", 0.66f to "3-remontee", 1f to "4-pose").forEach { (inProgress, inName) ->
+		listOf(0f to "1-debut", 0.3f to "2-carte", 0.66f to "3-remontee", 1f to "4-pose").forEach { (inProgress, inName) ->
 			captureRoboImage("$kOutDir/lancement-$inName.png") {
 				Themed(inDarkTheme = false) { LockContent(inProgress, inAuth = true, inMessage = null, inOnUnlock = {}) }
 			}
@@ -139,6 +148,41 @@ class ScreenshotTest
 		captureRoboImage("$kOutDir/lancement-sans-verrou-sombre.png") {
 			Themed(inDarkTheme = true) { LockContent(1f, inAuth = false, inMessage = null, inOnUnlock = {}) }
 		}
+	}
+
+	/*
+		Icône de l'appli (icône adaptative, masque rond, et icône à thème) et
+		logo de l'écran de démarrage système, en clair et en sombre.
+	*/
+	@Test
+	fun appIcons()
+	{
+		val vContext = ApplicationProvider.getApplicationContext<Context>()			// contexte
+		val vIcon    = vContext.getDrawable(R.mipmap.ic_launcher) as AdaptiveIconDrawable	// icône adaptative
+		drawablePng(vIcon, 432, "icone-appli.png")
+		drawablePng(vIcon.monochrome!!.mutate().apply { setTint(android.graphics.Color.parseColor("#3B31B0")) }, 432, "icone-a-theme.png")
+		drawablePng(vContext.getDrawable(R.drawable.splash_logo)!!, 864, "demarrage-clair.png")
+		RuntimeEnvironment.setQualifiers("+night")
+		drawablePng(ApplicationProvider.getApplicationContext<Context>().getDrawable(R.drawable.splash_logo)!!, 864, "demarrage-sombre.png")
+	}
+
+	/*
+		Dessine un élément graphique dans un PNG des captures.
+		inDrawable : élément à dessiner
+		inSize     : côté en pixels
+		inName     : nom du fichier
+	*/
+	private fun drawablePng(
+		inDrawable : Drawable,
+		inSize     : Int,
+		inName     : String
+	)
+	{
+		val vBitmap = Bitmap.createBitmap(inSize, inSize, Bitmap.Config.ARGB_8888)	// image
+		inDrawable.setBounds(0, 0, inSize, inSize)
+		inDrawable.draw(android.graphics.Canvas(vBitmap))
+		File(kOutDir).mkdirs()
+		File("$kOutDir/$inName").outputStream().use { vBitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
 	}
 
 	/*

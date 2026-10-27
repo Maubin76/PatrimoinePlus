@@ -6,7 +6,7 @@
 		<item name="android:windowBackground">@color/window_background</item>
 	</style>
 
-	<!-- Écran de démarrage : fond de l'appli, pastille du logo ; l'animation des chevrons prend le relais. -->
+	<!-- Écran de démarrage : fond de l'appli, tuile du logo sans la carte de devant ; l'animation de la carte prend le relais. -->
 	<style name="Theme.PatrimoinePlus.Starting" parent="Theme.SplashScreen">
 		<item name="windowSplashScreenBackground">@color/window_background</item>
 		<item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>

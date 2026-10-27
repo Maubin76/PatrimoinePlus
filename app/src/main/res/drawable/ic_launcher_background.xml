@@ -1,11 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Fond de l’icône : noir bleuté plein. -->
+<!-- Fond de l’icône : verre sombre, dégradé noir et halos violet et bleu nuit (grille du logo de 120, posée sur les 72 visibles). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:aapt="http://schemas.android.com/aapt"
 	android:width="108dp"
 	android:height="108dp"
 	android:viewportWidth="108"
 	android:viewportHeight="108">
-	<path
-		android:pathData="M0,0 H108 V108 H0 Z"
-		android:fillColor="#FF16161C" />
+	<group android:translateX="18" android:translateY="18" android:scaleX="0.6" android:scaleY="0.6">
+		<path
+			android:pathData="M-30,-30 H150 V150 H-30 Z">
+			<aapt:attr name="android:fillColor">
+				<gradient android:type="linear" android:startX="0" android:startY="0" android:endX="120" android:endY="120">
+					<item android:offset="0" android:color="#FF15151D" />
+					<item android:offset="1" android:color="#FF07070B" />
+				</gradient>
+			</aapt:attr>
+		</path>
+		<path
+			android:pathData="M-30,-30 H150 V150 H-30 Z">
+			<aapt:attr name="android:fillColor">
+				<gradient android:type="radial" android:centerX="98" android:centerY="17" android:gradientRadius="90" android:startColor="#8C5B4BE0" android:endColor="#005B4BE0" />
+			</aapt:attr>
+		</path>
+		<path
+			android:pathData="M-30,-30 H150 V150 H-30 Z">
+			<aapt:attr name="android:fillColor">
+				<gradient android:type="radial" android:centerX="12" android:centerY="114" android:gradientRadius="84" android:startColor="#732A3A8C" android:endColor="#002A3A8C" />
+			</aapt:attr>
+		</path>
+	</group>
 </vector>

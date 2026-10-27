@@ -15,7 +15,7 @@ identifiant (A-03, C-12…) pour le retour.
 
 | # | Étape | Résultat attendu |
 |---|---|---|
-| 0-01 | Installer l'APK debug (`./gradlew :app:assembleDebug`) sur le téléphone. | L'appli s'installe ; icône à chevrons sur pastille blanche. |
+| 0-01 | Installer l'APK debug (`./gradlew :app:assembleDebug`) sur le téléphone. | L'appli s'installe ; icône à deux cartes de verre violet et « + » sur tuile noire. |
 | 0-02 | Construire le dossier portable PC (`./gradlew :desktop:packageZip`), le dézipper, lancer `PatrimoinePlus.exe`. | Avertissement Windows possible au premier lancement (« Exécuter quand même ») ; la fenêtre s'ouvre sur l'écran d'accueil (logo, deux boutons). |
 | 0-03 | Installer Syncthing-Fork (téléphone) et Syncthing Windows Setup (PC), les associer, partager `Documents/PatrimoinePlus` (marche à suivre dans le README). | Les deux appareils se voient « à jour » dans Syncthing. |
 
@@ -25,7 +25,7 @@ identifiant (A-03, C-12…) pour le retour.
 
 | # | Étape | Résultat attendu |
 |---|---|---|
-| A-01 | Lancer l'appli (fermée au préalable depuis les applis récentes). | Pastille du logo, puis les chevrons glissent et s'emboîtent, le logo remonte, nom et bouton apparaissent (≈ 1,25 s) ; aucun saut de taille ou de position. |
+| A-01 | Lancer l'appli (fermée au préalable depuis les applis récentes). | Tuile du logo avec la carte de derrière (claire ou sombre selon le téléphone), puis la carte de devant monte se poser et le « + » apparaît, le logo remonte, nom et bouton apparaissent (≈ 1,25 s) ; aucun saut de taille ou de position. |
 | A-02 | Sans verrou : toucher « Entrer ». | L'écran s'efface en fondu ; assistant du premier lancement (base vide) ou Accueil. |
 | A-03 | Mode sombre du téléphone, relancer. | Même enchaînement, titre lisible. |
 | A-04 | Animations désactivées (Accessibilité), relancer. | Écran de connexion posé directement. |
