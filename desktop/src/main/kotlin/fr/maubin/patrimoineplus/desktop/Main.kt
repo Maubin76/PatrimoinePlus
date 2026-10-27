@@ -38,7 +38,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import fr.maubin.patrimoineplus.ui.components.titleBarColors
 import fr.maubin.patrimoineplus.ui.theme.isDark
-import fr.maubin.patrimoineplus.desktop.update.DesktopUpdater
+import fr.maubin.patrimoineplus.desktop.update.DesktopUpdater
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 
 /*
 	Point d'entrée de l'appli PC : fenêtre unique, réglages mémorisés dans
@@ -73,6 +75,10 @@ fun main(inArgs: Array<String>)
 			}
 		) {
 			window.minimumSize = Dimension(980, 640)
+			LaunchedEffect(Unit) {
+				withTimeoutOrNull(2_000) { while (!window.isShowing) delay(16) }			// fenêtre réellement affichée
+				WindowFront.bring(window)													// au lancement : fenêtre au premier plan
+			}
 			val vSettings by vController.settings.collectAsState()					// réglages (apparence)
 			val vDark     = vSettings.appearance.isDark()								// mode sombre effectif
 			LaunchedEffect(vDark, vSettings.glass) {

@@ -17,6 +17,7 @@ identifiant (A-03, C-12…) pour le retour.
 |---|---|---|
 | 0-01 | Installer l'APK debug (`./gradlew :app:assembleDebug`) sur le téléphone. | L'appli s'installe ; icône à deux cartes de verre violet et « + » sur tuile noire. |
 | 0-02 | Construire le dossier portable PC (`./gradlew :desktop:packageZip`), le dézipper, lancer `PatrimoinePlus.exe`. | Avertissement Windows possible au premier lancement (« Exécuter quand même ») ; la fenêtre s'ouvre sur l'écran d'accueil (logo, deux boutons). |
+| 0-02b | Lancer `PatrimoinePlus.exe` depuis l'explorateur, puis depuis un terminal en gardant une autre fenêtre active (navigateur au premier plan). | La fenêtre de l'appli s'ouvre devant toutes les autres, avec le focus clavier (Ctrl+F répond tout de suite) ; elle ne reste pas cachée derrière ni ne se contente de clignoter dans la barre des tâches. |
 | 0-03 | Installer Syncthing-Fork (téléphone) et Syncthing Windows Setup (PC), les associer, partager `Documents/PatrimoinePlus` (marche à suivre dans le README). | Les deux appareils se voient « à jour » dans Syncthing. |
 
 ## A. Appli Android

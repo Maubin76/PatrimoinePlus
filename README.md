@@ -436,6 +436,10 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   d'échange (format 7, onglet Thèmes ; base du téléphone v7) ; le thème
   choisi reste propre à chaque appareil. Supprimer le thème choisi ramène
   au thème Coloré.
+- **Premier plan au lancement** (PC) : la fenêtre s'ouvre devant les
+  autres, avec le focus, même lancée depuis un terminal ou après une mise à
+  jour (Windows refuse d'ordinaire le premier plan à un programme qui ne l'a
+  pas : `WindowFront.kt` se rattache un instant à la fenêtre active).
 - **Tutoriels du PC** (visites guidées) : au premier lancement, celle du
   tableau de bord (avec la coque : saisie, recherche, mode discret, rail) ;
   à la première venue sur chaque autre page (et sur la vue d'un compte), la
