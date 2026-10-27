@@ -199,7 +199,7 @@ fun App(
 	val vLaunch   = rememberLaunch(inWindowShown)												// lancement : fond seul, puis arrivée des éléments
 	val vPointer  = remember { mutableStateOf<Offset?>(null) }									// pointeur dans la fenêtre (regard de l'assistant)
 	DeskTheme(inDarkTheme = vDark, inColorTheme = vSettings.colors, inGlass = vSettings.glass, inPalette = vPalette) {
-		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie), LocalTourAnchors provides remember { TourAnchors() }, LocalLaunch provides vLaunch, LocalPointer provides remember { { vPointer.value } }) {
+		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie), LocalTourAnchors provides remember { TourAnchors() }, LocalLaunch provides vLaunch, LocalPointer provides remember { { vPointer.value } }, LocalAssistant provides (if (vSettings.assistant) vSettings.calm else null)) {
 			AppGround(vDark, vSettings.glass)												// fond pastel, ou formes floues derrière le verre
 			Surface(
 				modifier     = Modifier.fillMaxSize().pointerInput(Unit) {
@@ -240,7 +240,8 @@ fun App(
 							inStep      = inTour.step,
 							inOnStep    = inController::setTourStep,
 							inOnFinish  = inController::finishTour,
-							inOnStopAll = inController::stopAllTours
+							inOnStopAll = inController::stopAllTours,
+							inGuide     = if (vSettings.assistant) vSettings.calm else null
 						)
 					}
 				}

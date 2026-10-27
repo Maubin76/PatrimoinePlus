@@ -84,7 +84,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.VectorConverter
+import androidx.compose.runtime.CompositionLocalProvider
+import fr.maubin.patrimoineplus.ui.components.LocalPointer
+import fr.maubin.patrimoineplus.ui.components.AssistantAvatar
+import fr.maubin.patrimoineplus.ui.components.AvatarReaction
+import fr.maubin.patrimoineplus.ui.assistant.Mood
 
 /*
 	Étape d'une visite guidée : élément présenté et texte de la bulle.
@@ -147,6 +152,7 @@ fun Modifier.tourAnchor(inKey: String): Modifier =
 	inOnStep    : change d'étape
 	inOnFinish  : visite terminée ou passée (vue)
 	inOnStopAll : ne plus afficher aucune visite
+	inGuide     : assistant en guide, à gauche du texte (regarde l'élément présenté, hoche la tête à chaque étape) ; vrai : en mode calme ; null : sans assistant
 */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -155,7 +161,8 @@ fun TourOverlay(
 	inStep      : Int,
 	inOnStep    : (Int) -> Unit,
 	inOnFinish  : () -> Unit,
-	inOnStopAll : () -> Unit
+	inOnStopAll : () -> Unit,
+	inGuide     : Boolean? = null
 )
 {
 	val vStep    = inSteps.getOrNull(inStep) ?: return									// étape affichée
@@ -239,19 +246,27 @@ fun TourOverlay(
 		) {
 			FloatingSurface(RoundedCornerShape(24.dp)) {
 				Column(Modifier.padding(22.dp).animateContentSize(tween(kMoveMillis, easing = kTourEase)), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-					AnimatedContent(
-						targetState    = inStep,
-						transitionSpec = {
-							val vForward = targetState > initialState						// sens de la navigation
-							(slideInHorizontally(tween(kMoveMillis, easing = kTourEase)) { if (vForward) it / 6 else -it / 6 } + fadeIn(tween(kMoveMillis / 2, delayMillis = kMoveMillis / 4))) togetherWith
-								(slideOutHorizontally(tween(kMoveMillis, easing = kTourEase)) { if (vForward) -it / 6 else it / 6 } + fadeOut(tween(kMoveMillis / 3)))
-						},
-						label          = "étape"
-					) { inShown ->
-						val vText = inSteps[inShown]												// étape montrée
-						Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-							Text(vText.title, style = MaterialTheme.typography.titleLarge)
-							Text(vText.text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+					Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+						if (inGuide != null)
+						{
+							CompositionLocalProvider(LocalPointer provides { vTarget?.center }) {			// l'assistant regarde l'élément présenté
+								AssistantAvatar(48.dp, Mood.HAPPY, inReaction = AvatarReaction.NOD to inStep.toLong(), inCalm = inGuide, inLabel = "Assistant, guide du tutoriel")
+							}
+						}
+						AnimatedContent(
+							targetState    = inStep,
+							transitionSpec = {
+								val vForward = targetState > initialState						// sens de la navigation
+								(slideInHorizontally(tween(kMoveMillis, easing = kTourEase)) { if (vForward) it / 6 else -it / 6 } + fadeIn(tween(kMoveMillis / 2, delayMillis = kMoveMillis / 4))) togetherWith
+									(slideOutHorizontally(tween(kMoveMillis, easing = kTourEase)) { if (vForward) -it / 6 else it / 6 } + fadeOut(tween(kMoveMillis / 3)))
+							},
+							label          = "étape"
+						) { inShown ->
+							val vText = inSteps[inShown]												// étape montrée
+							Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+								Text(vText.title, style = MaterialTheme.typography.titleLarge)
+								Text(vText.text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+							}
 						}
 					}
 					Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {

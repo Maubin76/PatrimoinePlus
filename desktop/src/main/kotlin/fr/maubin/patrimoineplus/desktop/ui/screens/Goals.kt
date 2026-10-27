@@ -99,7 +99,8 @@ import java.time.YearMonth
 import androidx.compose.foundation.layout.heightIn
 import fr.maubin.patrimoineplus.ui.components.glassRaised
 import fr.maubin.patrimoineplus.ui.components.glassWell
-import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
+import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
+import fr.maubin.patrimoineplus.desktop.ui.AssistantHint
 
 private const val kBarMillis = 420														// remplissage de la barre d'avancement
 
@@ -246,7 +247,7 @@ private fun Suggestions(
 		Draft(null, GoalKind.TASK, "Ouvrir une assurance vie")
 	)																					// idées d'objectifs
 	Tile(inTitle = "Aucun objectif pour l’instant") {
-		Hint("Choisissez une idée pour commencer, ou créez votre propre objectif. Tout reste modifiable.")
+		AssistantHint("Choisissez une idée pour commencer, ou créez votre propre objectif. Tout reste modifiable.")
 		Spacer(Modifier.height(12.dp))
 		FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
 			vIdeas.forEach { inIdea -> OutlinedButton(onClick = { inOpen(inIdea) }) { Text(inIdea.title, maxLines = 1) } }

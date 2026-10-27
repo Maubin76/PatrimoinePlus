@@ -66,6 +66,7 @@ import kotlin.math.roundToLong
 import fr.maubin.patrimoineplus.ui.components.flowAccent
 import fr.maubin.patrimoineplus.ui.components.flowColorOr
 import fr.maubin.patrimoineplus.ui.components.FlowAccent
+import fr.maubin.patrimoineplus.desktop.ui.AssistantHint
 
 private val kMonthShort  = DateTimeFormatter.ofPattern("MMM", Locale.FRANCE)		// mois en tête de colonne
 /*
@@ -104,7 +105,7 @@ fun AnalysisSection(
 	) {
 		if (vTable.expenses.isEmpty() && vTable.incomes.isEmpty())
 		{
-			Tile { Hint("Aucune dépense ni revenu sur les douze derniers mois.") }
+			Tile { AssistantHint("Aucune dépense ni revenu sur les douze derniers mois : l’analyse se remplira avec vos opérations.") }
 			return@Column
 		}
 		Figures(vTable)

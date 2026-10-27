@@ -85,7 +85,7 @@ enum class AvatarReaction
 	inEyesClosed : yeux fermés (montants masqués)
 	inReaction   : dernière réaction demandée, avec un numéro qui change à chaque demande ; null sans
 	inCalm       : sans réactions ni jeu au clic (yeux et clignements seulement)
-	inLabel      : nom pour les lecteurs d'écran
+	inLabel      : nom pour les lecteurs d'écran ; null : décoratif (le texte voisin dit tout)
 	inOnClick    : clic (après le rebond) ; null : pas cliquable
 	inModifier   : modificateur
 */
@@ -96,7 +96,7 @@ fun AssistantAvatar(
 	inEyesClosed : Boolean                     = false,
 	inReaction   : Pair<AvatarReaction, Long>? = null,
 	inCalm       : Boolean                     = false,
-	inLabel      : String                      = "Assistant",
+	inLabel      : String?                     = "Assistant",
 	inOnClick    : (() -> Unit)?               = null,
 	inModifier   : Modifier                    = Modifier
 )
@@ -179,7 +179,7 @@ fun AssistantAvatar(
 		inModifier
 			.size(inSize)
 			.onGloballyPositioned { inLayout -> vCenter = inLayout.boundsInRoot().center }
-			.semantics { contentDescription = inLabel }
+			.then(if (inLabel != null) Modifier.semantics { contentDescription = inLabel } else Modifier)
 			.then(if (vClick != null) Modifier.clickable(remember { MutableInteractionSource() }, indication = null, onClick = vClick) else Modifier)
 	) {
 		val vLook = lookDirection(vPointer(), vCenter, size.width) + vGlance.value * 0.8f + Offset(0f, -vUp.value)	// regard : pointeur, coup d'œil, haut

@@ -73,7 +73,8 @@ import fr.maubin.patrimoineplus.ui.theme.colorfulMain
 import fr.maubin.patrimoineplus.ui.components.heroFilled
 import fr.maubin.patrimoineplus.ui.components.glassWell
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Box
+import fr.maubin.patrimoineplus.desktop.ui.AssistantHint
 
 private val kShortDay   = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date courte
 private val kAccountMin = 300.dp													// largeur minimale d'une tuile de compte
@@ -564,7 +565,7 @@ private fun RecentTile(
 		inTitle    = "Dernières opérations",
 		inAction   = if (inState.upcoming > 0) { { InfoPill("${inState.upcoming} à venir") } } else null
 	) {
-		if (inState.recent.isEmpty()) Hint("Aucune opération pour l’instant.")
+		if (inState.recent.isEmpty()) AssistantHint("Aucune opération pour l’instant : « Nouvelle opération » (Ctrl+N) en haut pour la première.")
 		inState.recent.forEach { inOp ->
 			OperationLine(
 				inIcon    = inOp.icon,
@@ -612,7 +613,7 @@ private fun ArchivedAccounts(
 private fun EmptyDashboard(inController: DesktopController)
 {
 	Tile(inTitle = "Aucun compte") {
-		Hint("Le patrimoine se calcule à partir de vos comptes et de leurs opérations. Créez un premier compte, ou attendez le fichier du téléphone.")
+		AssistantHint("Le patrimoine se calcule à partir de vos comptes et de leurs opérations. Créez un premier compte, ou attendez le fichier du téléphone.")
 		Spacer(Modifier.height(12.dp))
 		OutlinedButton(onClick = { inController.openPanel(Panel.AccountSheet(null)) }) { Text("Ajouter un compte") }
 	}

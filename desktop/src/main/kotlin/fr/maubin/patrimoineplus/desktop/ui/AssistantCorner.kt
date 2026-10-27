@@ -51,6 +51,8 @@ import fr.maubin.patrimoineplus.ui.goals.evaluateGoals
 import fr.maubin.patrimoineplus.ui.home.buildHomeState
 import kotlinx.coroutines.delay
 import java.time.YearMonth
+import androidx.compose.runtime.staticCompositionLocalOf
+import fr.maubin.patrimoineplus.desktop.ui.components.Hint
 
 const val kAssistantName = "Assistant"											// nom de l'assistant (provisoire)
 private const val kHoverMillis   = 450L											// survol avant d'ouvrir la bulle
@@ -255,3 +257,23 @@ private fun RemarkRow(
 		Text(inRemark.text, style = MaterialTheme.typography.bodyMedium)
 	}
 }
+
+// Assistant affiché : null s'il est retiré (Réglages), sinon vrai en mode calme.
+val LocalAssistant = staticCompositionLocalOf<Boolean?> { null }
+
+/*
+	Message d'un écran vide, dit par l'assistant (petit, à gauche) quand il
+	est affiché : il propose l'action utile ; sinon le message seul.
+	inText : message
+*/
+@Composable
+fun AssistantHint(inText: String)
+{
+	val vCalm = LocalAssistant.current ?: return Hint(inText)								// assistant retiré : message seul
+	Row(Modifier.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+		AssistantAvatar(40.dp, Mood.NEUTRAL, inCalm = vCalm, inLabel = null)						// décoratif : le message dit tout
+		Spacer(Modifier.width(12.dp))
+		Text(inText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+	}
+}
+

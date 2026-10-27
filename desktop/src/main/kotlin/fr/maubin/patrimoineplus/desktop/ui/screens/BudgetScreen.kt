@@ -69,7 +69,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import fr.maubin.patrimoineplus.domain.format.kCurrencySeparator
 import fr.maubin.patrimoineplus.ui.components.heroFilled
-import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
+import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
+import fr.maubin.patrimoineplus.desktop.ui.AssistantHint
 
 private const val kNameWeight   = 2.4f											// largeur relative de la colonne du nom
 private const val kAmountWeight = 1.2f											// largeur relative de la colonne du montant
@@ -106,7 +107,7 @@ fun BudgetScreen(
 		Tile(inTitle = "Cashflow", inModifier = Modifier.tourAnchor("budget.cashflow")) {
 			if (vDiagram.total <= 0L)
 			{
-				Hint("Ajoutez des entrées et des dépenses ci-dessous pour voir le schéma.")
+				AssistantHint("Ajoutez des entrées et des dépenses ci-dessous pour voir le schéma.")
 			}
 			else
 			{

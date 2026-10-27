@@ -448,8 +448,12 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   page ; montants masqués en mode discret. Réactions : hochement à
   l'enregistrement, sursaut et bulle ouverte d'elle-même sur un conflit, un
   fichier illisible ou une écriture impossible, regard vers le haut à une
-  nouvelle version, joie à un objectif atteint. Mode calme : les yeux
-  seulement. Nom provisoire : « Assistant ».
+  nouvelle version, joie à un objectif atteint. Il guide aussi les visites
+  guidées (dans leur bulle, il regarde l'élément présenté et hoche la tête à
+  chaque étape) et accompagne les écrans vides (aucun compte, aucune
+  opération, aucun objectif, budget vide, analyse sans historique, recherche
+  sans résultat) avec l'action utile. Mode calme : les yeux seulement. Nom
+  provisoire : « Assistant ».
 - **Lancement du PC** : fond seul pendant 0,15 s, puis les éléments
   arrivent l'un après l'autre en fondu et glissement (cadre, rail, barre du
   haut, écran ; sur l'écran d'accueil : logo, titre, texte, boutons), 0,9 s

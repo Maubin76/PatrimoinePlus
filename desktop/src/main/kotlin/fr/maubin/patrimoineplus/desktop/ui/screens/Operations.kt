@@ -74,7 +74,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.foundation.layout.height
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import androidx.compose.runtime.withFrameNanos
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import fr.maubin.patrimoineplus.desktop.ui.AssistantHint
 
 private val kRowDate   = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)	// date d'une ligne
 private const val kPage = 20														// opérations affichées d'abord, puis à chaque « Afficher 20 de plus »
@@ -124,7 +125,7 @@ fun SearchScreen(
 			}
 		) {
 			vResult.badQuery?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
-			if (vResult.hits.isEmpty() && vResult.badQuery == null) Hint("Aucune opération ne répond à ces critères.")
+			if (vResult.hits.isEmpty() && vResult.badQuery == null) AssistantHint("Aucune opération ne répond à ces critères : essayez un autre mot, ou retirez un filtre.")
 			if (vSelected.isNotEmpty())
 			{
 				SelectionBar(inSpace, vResult.hits.filter { it.transaction.id in vSelected }, inController, vMessage, { vMessage = it }) { vSelected = emptySet() }
