@@ -2,7 +2,6 @@ package fr.maubin.patrimoineplus.desktop.ui
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -131,22 +130,22 @@ import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.graphics.Path as DrawPath
 import fr.maubin.patrimoineplus.ui.components.isGlass
 import fr.maubin.patrimoineplus.ui.components.AppGround
-import fr.maubin.patrimoineplus.ui.components.FloatingSurface
+import fr.maubin.patrimoineplus.ui.components.FloatingSurface
 import fr.maubin.patrimoineplus.domain.calc.scoped
 import fr.maubin.patrimoineplus.domain.calc.scopeOf
 import fr.maubin.patrimoineplus.domain.model.Profile
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenuItem
 import fr.maubin.patrimoineplus.desktop.ui.tour.TourOverlay
 import fr.maubin.patrimoineplus.desktop.ui.tour.Tours
 import fr.maubin.patrimoineplus.desktop.ui.tour.TourAnchors
 import fr.maubin.patrimoineplus.desktop.ui.tour.LocalTourAnchors
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import fr.maubin.patrimoineplus.desktop.ui.tour.kTourAccount
-import kotlinx.coroutines.delay
-import fr.maubin.patrimoineplus.desktop.ActiveTour
+import kotlinx.coroutines.delay
+import fr.maubin.patrimoineplus.desktop.ActiveTour
 import fr.maubin.patrimoineplus.ui.theme.Palette
-import fr.maubin.patrimoineplus.desktop.ui.panels.ThemePanel
+import fr.maubin.patrimoineplus.desktop.ui.panels.ThemePanel
 import fr.maubin.patrimoineplus.ui.components.UpdateDialog
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
@@ -282,10 +281,12 @@ private fun Shell(
 			StatusBar(inSpace, vNotice, inController, scopeOf(vSet.view, inSpace.data.profiles))
 			Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
 				Box(Modifier.widthIn(max = kContentMaxWidth).fillMaxSize()) {
-					AnimatedContent(
-						targetState    = vNav.screen to (vNav.accountId?.let { if (vBank?.accountId == it) "$it#relevé" else it }),
-						transitionSpec = { pageTransition(initialState.second, targetState.second) },
-						label          = "écran"
+					ScreenStack(
+						inKey    = vNav.screen to (vNav.accountId?.let { if (vBank?.accountId == it) "$it#relevé" else it }),
+						inKeep   = { it.second == null },												// écrans principaux gardés en vie ; comptes et relevés oubliés
+						inShift  = { inFrom, inTo -> pageShift(inFrom.second, inTo.second) },
+						inMillis = kPageMillis,
+						inEasing = kEase
 					) { (inScreen, inAccountId) ->
 						when
 						{
@@ -349,28 +350,20 @@ private fun Shell(
 }
 
 /*
-	Transition entre deux écrans : vers la vue d'un compte, la page arrive de
-	la droite ; au retour, de la gauche ; entre écrans principaux, simple
-	fondu. Courte (moins d'un tiers de seconde) pour ne jamais faire attendre.
+	Sens du glissement entre deux écrans (voir ScreenStack) : vers la vue
+	d'un compte, la page arrive de la droite ; au retour, de la gauche ; entre
+	écrans principaux, simple fondu.
 	inFrom : compte affiché avant ; null sur un écran principal
 	inTo   : compte affiché après ; null sur un écran principal
 */
-private fun pageTransition(
+private fun pageShift(
 	inFrom : String?,
 	inTo   : String?
-): ContentTransform
+): Int = when
 {
-	val vShift = when
-	{
-		inFrom == null && inTo != null -> 1										// ouverture d'un compte
-		inFrom != null && inTo == null -> -1									// retour au tableau de bord
-		else                           -> 0
-	}																			// sens du glissement
-	val vIn  = fadeIn(tween(kPageMillis, delayMillis = kPageMillis / 4, easing = kEase)) +
-		slideInHorizontally(tween(kPageMillis, easing = kEase)) { inWidth -> vShift * inWidth / 12 }	// arrivée
-	val vOut = fadeOut(tween(kPageMillis / 2)) +
-		slideOutHorizontally(tween(kPageMillis, easing = kEase)) { inWidth -> -vShift * inWidth / 24 }	// départ
-	return vIn togetherWith vOut
+	inFrom == null && inTo != null -> 1											// ouverture d'un compte
+	inFrom != null && inTo == null -> -1										// retour au tableau de bord
+	else                           -> 0
 }
 
 /*

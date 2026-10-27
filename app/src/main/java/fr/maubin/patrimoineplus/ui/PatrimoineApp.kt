@@ -206,7 +206,7 @@ private fun MainTabs(
 	) {
 		HorizontalPager(
 			state                   = vPager,
-			beyondViewportPageCount = 1,
+			beyondViewportPageCount = TopLevelDestination.entries.size - 1,			// les quatre onglets restent composés : un glissement ne construit jamais d'écran en route
 			key                     = { inPage -> TopLevelDestination.entries[inPage].name }
 		) { inPage ->
 			when (TopLevelDestination.entries[inPage])

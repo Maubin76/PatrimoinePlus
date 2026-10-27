@@ -72,10 +72,13 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.foundation.layout.height
-import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
+import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.runtime.mutableIntStateOf
 
 private val kRowDate   = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)	// date d'une ligne
 private const val kShown = 500														// lignes affichées au plus
+private const val kFirstRows = 40													// lignes posées à chaque image (pas de saccade à l'arrivée sur l'écran ni en tapant)
 
 /*
 	Opérations : recherche dans toutes les opérations (texte, compte,
@@ -99,8 +102,16 @@ fun SearchScreen(
 	var vMessage  by remember { mutableStateOf<String?>(null) }						// refus d'une action groupée
 	val vFocus    = remember { FocusRequester() }									// champ de recherche
 	val vVisible  = vResult.hits.map { it.transaction.id }.toSet()					// opérations affichées
+	var vRows     by remember(vResult) { mutableIntStateOf(kFirstRows) }				// lignes déjà posées (les suivantes arrivent par paquets)
+	LaunchedEffect(vResult) {
+		while (vRows < minOf(kShown, vResult.hits.size))
+		{
+			withFrameNanos {}
+			vRows += kFirstRows
+		}
+	}
 	if (!vVisible.containsAll(vSelected)) vSelected = vSelected intersect vVisible
-	LaunchedEffect(vFocusAsk) { if (vFocusAsk > 0) runCatching { vFocus.requestFocus() } }
+	LaunchedEffect(vFocusAsk) { if (vFocusAsk > 0) { withFrameNanos {}; runCatching { vFocus.requestFocus() } } }
 	Column(
 		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -138,7 +149,7 @@ fun SearchScreen(
 				}
 				HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 			}
-			vResult.hits.take(kShown).forEachIndexed { inIndex, inHit ->
+			vResult.hits.take(minOf(kShown, vRows)).forEachIndexed { inIndex, inHit ->
 				val vId = inHit.transaction.id												// opération de la ligne
 				HitRow(
 					inHit      = inHit,

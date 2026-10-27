@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.Dispatchers
 
 /*
 	Catégorie affichée dans la liste.
@@ -87,7 +89,8 @@ class CategoriesViewModel @Inject constructor(
 				incomes  = vItems.filter { !it.category.archived && it.category.kind == CategoryKind.INCOME },
 				archived = vItems.filter { it.category.archived }
 			)
-		}.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CategoriesUiState())
+		}.flowOn(Dispatchers.Default)													// calcul hors du fil de l'interface
+			.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CategoriesUiState())
 
 	/*
 		Crée ou modifie une catégorie ; renvoie l'erreur éventuelle (null si enregistrée).
