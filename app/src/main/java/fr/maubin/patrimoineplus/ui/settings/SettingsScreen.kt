@@ -91,6 +91,7 @@ data class SafetyActions(
 	inOnGlass      : active ou retire l'effet verre
 	inProfiles     : profils de la famille ; null pour masquer la section
 	inThemes       : thèmes personnalisés et leurs actions ; null pour masquer la liste
+	inUpdates      : mises à jour (vérification, version) ; null pour masquer la section
 */
 @Composable
 fun SettingsScreen(
@@ -106,7 +107,8 @@ fun SettingsScreen(
 	inGlass        : Boolean = false,
 	inOnGlass      : (Boolean) -> Unit = {},
 	inProfiles     : ProfilesActions? = null,
-	inThemes       : ThemesActions? = null
+	inThemes       : ThemesActions? = null,
+	inUpdates      : UpdatesActions? = null
 )
 {
 	ScreenScaffold(inTitle = "Réglages") { inPadding ->
@@ -165,6 +167,25 @@ fun SettingsScreen(
 					inChecked  = inSafety.lockEnabled,
 					inOnChange = inSafety.onLockChange
 				)
+			}
+			inUpdates?.let { inActions ->
+				Spacer(Modifier.height(32.dp))
+				SectionHeader(inTitle = "Mises à jour")
+				Spacer(Modifier.height(8.dp))
+				BorderedCard {
+					SwitchRow(
+						inTitle    = "Vérifier au démarrage",
+						inDetail   = "Consulte les versions publiées sur GitHub ; aucune donnée n’est envoyée.",
+						inChecked  = inActions.enabled,
+						inOnChange = inActions.onEnabled
+					)
+					HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = MaterialTheme.colorScheme.outlineVariant)
+					ActionRow(
+						inTitle   = "Vérifier maintenant",
+						inDetail  = "Version installée : ${inActions.version}.",
+						inOnClick = inActions.onCheckNow
+					)
+				}
 			}
 			inProfiles?.let { inActions ->
 				Spacer(Modifier.height(32.dp))
@@ -500,3 +521,16 @@ private fun CustomThemes(inActions: ThemesActions)
 	}
 }
 
+/*
+	Mises à jour (réglages).
+	enabled    : vérification au lancement
+	version    : version installée
+	onEnabled  : active ou coupe la vérification
+	onCheckNow : vérifie tout de suite
+*/
+data class UpdatesActions(
+	val enabled    : Boolean,
+	val version    : String,
+	val onEnabled  : (Boolean) -> Unit,
+	val onCheckNow : () -> Unit
+)

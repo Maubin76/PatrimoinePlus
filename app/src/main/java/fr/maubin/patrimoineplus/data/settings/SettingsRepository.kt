@@ -122,6 +122,24 @@ interface SettingsRepository
 	// Instant de la dernière mise à jour automatique des cours (ms) ; null avant la première.
 	val lastQuotesAt: Flow<Long?>
 
+	// Vérification des mises à jour au lancement (activée par défaut).
+	val updatesEnabled: Flow<Boolean>
+
+	/*
+		Active ou coupe la vérification des mises à jour au lancement.
+		inOn : vrai pour vérifier
+	*/
+	suspend fun setUpdatesEnabled(inOn: Boolean)
+
+	// Version que l'utilisateur a choisi d'ignorer ; vide sans.
+	val ignoredUpdate: Flow<String>
+
+	/*
+		Mémorise la version à ne plus proposer.
+		inVersion : version
+	*/
+	suspend fun setIgnoredUpdate(inVersion: String)
+
 	/*
 		Mémorise l'instant de la dernière mise à jour des cours.
 		inAt : instant (ms)
@@ -149,6 +167,8 @@ class DataStoreSettingsRepository @Inject constructor(
 	private val kOnboardingKey    = booleanPreferencesKey("onboarding_done")	// clé du premier lancement
 	private val kLastAccountKey   = stringPreferencesKey("last_account")	// clé du dernier compte utilisé
 	private val kLockKey          = booleanPreferencesKey("lock_enabled")	// clé du verrou biométrique
+	private val kUpdatesKey       = booleanPreferencesKey("updates_enabled")	// clé de la vérification des mises à jour
+	private val kIgnoredKey       = stringPreferencesKey("update_ignored")	// clé de la version ignorée
 	private val kLastExportKey    = longPreferencesKey("last_export")		// clé du dernier export
 	private val kLastQuotesKey    = longPreferencesKey("last_quotes")		// clé de la dernière mise à jour des cours
 
@@ -189,6 +209,30 @@ class DataStoreSettingsRepository @Inject constructor(
 	override suspend fun setGlassEffect(inGlass: Boolean)
 	{
 		inDataStore.edit { inPreferences -> inPreferences[kGlassKey] = inGlass }
+	}
+
+	override val updatesEnabled: Flow<Boolean> =
+		inDataStore.data.map { inPreferences -> inPreferences[kUpdatesKey] ?: true }
+
+	/*
+		Enregistre la vérification des mises à jour.
+		inOn : vrai pour vérifier
+	*/
+	override suspend fun setUpdatesEnabled(inOn: Boolean)
+	{
+		inDataStore.edit { inPreferences -> inPreferences[kUpdatesKey] = inOn }
+	}
+
+	override val ignoredUpdate: Flow<String> =
+		inDataStore.data.map { inPreferences -> inPreferences[kIgnoredKey].orEmpty() }
+
+	/*
+		Enregistre la version ignorée.
+		inVersion : version
+	*/
+	override suspend fun setIgnoredUpdate(inVersion: String)
+	{
+		inDataStore.edit { inPreferences -> inPreferences[kIgnoredKey] = inVersion }
 	}
 
 	override val customTheme: Flow<String> =

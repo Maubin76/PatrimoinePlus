@@ -37,7 +37,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import fr.maubin.patrimoineplus.ui.components.titleBarColors
-import fr.maubin.patrimoineplus.ui.theme.isDark
+import fr.maubin.patrimoineplus.ui.theme.isDark
+import fr.maubin.patrimoineplus.desktop.update.DesktopUpdater
 
 /*
 	Point d'entrée de l'appli PC : fenêtre unique, réglages mémorisés dans
@@ -52,7 +53,10 @@ fun main(inArgs: Array<String>)
 	runCatching { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()) }
 	application {
 		val vScope      = rememberCoroutineScope()									// portée de la surveillance du fichier
-		val vController = remember { DesktopController(DesktopConfig.default(), Workspace(Clock.systemDefaultZone()), vScope) }	// contrôleur
+		val vController = remember { DesktopController(DesktopConfig.default(), Workspace(Clock.systemDefaultZone()), vScope, inUpdater = DesktopUpdater()) }	// contrôleur
+		val vExit       by vController.exitRequested.collectAsState()				// fermeture pour la mise à jour
+		LaunchedEffect(Unit) { vController.checkForUpdates() }
+		LaunchedEffect(vExit) { if (vExit) vController.requestExit(::exitApplication) }
 		Window(
 			onCloseRequest    = { vController.requestExit(::exitApplication) },
 			title             = "PatrimoinePlus",

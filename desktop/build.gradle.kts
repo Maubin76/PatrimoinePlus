@@ -39,6 +39,17 @@ dependencies {
 val kVersion = property("patrimoineplus.version").toString()						// version affichée
 val kPackage = (kVersion.split('.') + listOf("0", "0", "0")).take(3).joinToString(".")	// version du paquet
 
+// Version lue par l'appli au lancement (mises à jour) : ressource version.properties générée.
+val generateVersion = tasks.register("generateVersion") {
+	val vOut = layout.buildDirectory.dir("generated/version")						// dossier généré
+	inputs.property("version", kVersion)
+	outputs.dir(vOut)
+	doLast {
+		vOut.get().file("version.properties").asFile.apply { parentFile.mkdirs(); writeText("version=$kVersion\n") }
+	}
+}
+sourceSets.main { resources.srcDir(generateVersion) }
+
 compose.desktop {
 	application {
 		mainClass = "fr.maubin.patrimoineplus.desktop.MainKt"

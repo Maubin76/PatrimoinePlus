@@ -49,6 +49,47 @@ dans [`doc/SPEC.md`](doc/SPEC.md) ; la couverture des tests dans
   clé de debug.
 - **À la main** : `./gradlew :app:assembleRelease :desktop:packageZip` donne
   l'APK et `desktop/build/distributions/PatrimoinePlus-<version>-windows.zip`.
+- **Notes de la release** : la CI les ouvre par « Format d'échange : N »
+  (`kBackupVersion`), puis la liste des commits. Les applis lisent cette ligne
+  pour savoir si la nouvelle version change le format (voir Mises à jour).
+
+## Mises à jour
+
+Au lancement (après le déverrouillage sur le téléphone), chaque appli lit la
+dernière release du dépôt (`api.github.com/.../releases/latest`, public, sans
+jeton : seule l'adresse IP est connue de GitHub, rien n'est envoyé). Si elle
+est plus récente que la version installée, une fenêtre la propose : version
+disponible et installée, taille du fichier, rappel de mettre à jour l'autre
+appareil (appuyé si le format d'échange change), « Mettre à jour », « Plus
+tard » (reposée au prochain lancement), « Ignorer cette version ». Le fichier
+est téléchargé puis vérifié par son empreinte SHA-256 donnée par GitHub ; un
+fichier altéré est refusé. Hors ligne, rien ne s'affiche.
+
+- **Téléphone** : l'APK, téléchargé dans le cache, est confié à l'installeur
+  d'Android (`PackageInstaller`). La première fois, Android demande
+  d'autoriser PatrimoinePlus à installer des applis (« Autoriser depuis cette
+  source ») ; l'installation reprend au retour dans l'appli. La première mise
+  à jour faite depuis l'appli passe par l'écran « Installer » d'Android ; les
+  suivantes se font sans lui sur Android 12 et plus (toujours avec sur
+  Android 11). Seules les releases signées de la CI s'installent par-dessus
+  (une version debug a une autre signature : refus). Pas de vérification
+  automatique en debug ; « Vérifier maintenant » reste possible.
+- **PC** : le zip est décompressé à côté du dossier de l'appli
+  (`<dossier>.new`), puis un script PowerShell attend la fermeture de
+  l'appli, met le nouveau dossier à la place de l'ancien (même nom), relance
+  l'appli et supprime l'ancien ; en cas d'échec il remet l'ancien en place.
+  Réglages (`%APPDATA%\PatrimoinePlus`) et données (dossier synchronisé) ne
+  bougent pas. Si le dossier n'est pas modifiable (par exemple sous
+  `Program Files`) ou si l'appli n'est pas lancée par `PatrimoinePlus.exe`,
+  le zip est seulement téléchargé dans Téléchargements. Version installée :
+  ressource `version.properties` générée à la construction.
+- **Réglages › Mises à jour** (les deux applis) : « Vérifier au démarrage »
+  (activé par défaut), version installée, « Vérifier maintenant » (propose
+  aussi une version ignorée ; sinon « à jour » ou « injoignable »).
+- Code : `core/.../data/update/Updates.kt` (release, versions, offre,
+  téléchargement vérifié), `ui/.../components/UpdateDialog.kt` (fenêtre
+  commune), `app/.../ui/update/UpdateViewModel.kt` et
+  `app/.../data/update/ApkInstaller.kt`, `desktop/.../update/DesktopUpdater.kt`.
 
 ## Intégration continue
 

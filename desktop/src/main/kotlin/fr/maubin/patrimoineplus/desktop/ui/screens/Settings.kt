@@ -150,6 +150,10 @@ fun SettingsScreen(
 		Spacer(Modifier.height(12.dp))
 		ToursSection(vSettings.toursSeen, vSettings.toursOff, inController)
 		Spacer(Modifier.height(32.dp))
+		SectionHeader(inTitle = "Mises à jour")
+		Spacer(Modifier.height(12.dp))
+		UpdatesSection(vSettings.updates, inController)
+		Spacer(Modifier.height(32.dp))
 		SectionHeader(inTitle = "Catégories")
 		Spacer(Modifier.height(12.dp))
 		CategoriesSection(inSpace, inController)
@@ -219,6 +223,37 @@ private fun ProfilesSection(
 			inOnConfirm = { vShow(inController.removeProfile(inProfile.id)); vAsk = null },
 			inOnDismiss = { vAsk = null }
 		)
+	}
+}
+
+/*
+	Mises à jour : vérification au lancement (interrupteur), version
+	installée et « Vérifier maintenant ». La vérification ne contacte que
+	GitHub, sans rien envoyer.
+	inOn         : vérification au lancement
+	inController : contrôleur
+*/
+@Composable
+private fun UpdatesSection(
+	inOn         : Boolean,
+	inController : DesktopController
+)
+{
+	FloatingCard {
+		Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
+			Row(verticalAlignment = Alignment.CenterVertically) {
+				Column(Modifier.weight(1f)) {
+					Text("Vérifier les mises à jour au démarrage", style = MaterialTheme.typography.titleMedium)
+					Text("Consulte les versions publiées sur GitHub ; aucune donnée n’est envoyée.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+				}
+				Switch(checked = inOn, onCheckedChange = inController::setUpdates, modifier = Modifier.semantics { contentDescription = "Vérifier les mises à jour au démarrage" })
+			}
+			Spacer(Modifier.height(12.dp))
+			Row(verticalAlignment = Alignment.CenterVertically) {
+				Text("Version installée : ${inController.appVersion ?: "inconnue"}", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+				OutlinedButton(onClick = inController::checkUpdatesNow, enabled = inController.appVersion != null) { Text("Vérifier maintenant") }
+			}
+		}
 	}
 }
 

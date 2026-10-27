@@ -209,12 +209,21 @@ jobs:
           VERSION: ${{ needs.version.outputs.version }}
           SHA: ${{ needs.version.outputs.sha }}
         run: |
+          # Format d'échange de la version, lu par les applis pour savoir s'il faut
+          # mettre à jour le téléphone et le PC ensemble (ligne « Format d'échange : N »).
+          vFormat=$(sed -n 's/^const val kBackupVersion = \([0-9]*\).*/\1/p' core/src/main/kotlin/fr/maubin/patrimoineplus/data/backup/BackupFormat.kt)
+          if [ -z "$vFormat" ]
+          then
+            echo "::error::kBackupVersion introuvable dans BackupFormat.kt"
+            exit 1
+          fi
+          printf "Format d'échange : %s\n\n" "$vFormat" > notes.md
           vPrevious=$(git tag -l 'v*' --sort=-v:refname | head -1)
           if [ -n "$vPrevious" ]
           then
-            echo "## Changements depuis $vPrevious" > notes.md
+            echo "## Changements depuis $vPrevious" >> notes.md
             git log --no-merges --format='- %s' "$vPrevious..$SHA" | grep -v '^- chore(version)' >> notes.md || true
           else
-            echo "Première version publiée." > notes.md
+            echo "Première version publiée." >> notes.md
           fi
           gh release create "v$VERSION" fichiers/* --target "$SHA" --title "PatrimoinePlus $VERSION" --notes-file notes.md

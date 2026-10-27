@@ -91,7 +91,11 @@ import android.graphics.drawable.Drawable
 import android.graphics.Bitmap
 import org.robolectric.RuntimeEnvironment
 import java.io.File
-import fr.maubin.patrimoineplus.R
+import fr.maubin.patrimoineplus.R
+import fr.maubin.patrimoineplus.data.update.UpdateOffer
+import fr.maubin.patrimoineplus.data.update.ReleaseAsset
+import fr.maubin.patrimoineplus.ui.components.UpdateDialog
+import fr.maubin.patrimoineplus.ui.components.UpdateUiState
 
 private const val kOutDir = "build/outputs/roborazzi"						// dossier des captures
 
@@ -183,6 +187,27 @@ class ScreenshotTest
 		inDrawable.draw(android.graphics.Canvas(vBitmap))
 		File(kOutDir).mkdirs()
 		File("$kOutDir/$inName").outputStream().use { vBitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+	}
+
+	/*
+		Fenêtre de mise à jour : proposée (rappel de l'autre appareil), puis
+		avec changement de format et autorisation à donner, en sombre.
+	*/
+	@Test
+	fun updateDialog()
+	{
+		val vOffer = UpdateOffer("1.3", "1.2", ReleaseAsset("PatrimoinePlus-1.3.apk", 5_100_305, "u", null), formatChanged = false)	// mise à jour
+		captureRoboImage("$kOutDir/mise-a-jour.png") {
+			Themed(inDarkTheme = false) { UpdateDialog(UpdateUiState(vOffer), {}, {}, {}, {}) }
+		}
+		captureRoboImage("$kOutDir/mise-a-jour-format-sombre.png") {
+			Themed(inDarkTheme = true) {
+				UpdateDialog(UpdateUiState(vOffer.copy(formatChanged = true), notice = "Android doit d’abord autoriser PatrimoinePlus à installer des applis : activez « Autoriser depuis cette source » dans l’écran qui s’ouvre, puis revenez ici.", action = "Installer"), {}, {}, {}, {})
+			}
+		}
+		captureRoboImage("$kOutDir/mise-a-jour-telechargement.png") {
+			Themed(inDarkTheme = false) { UpdateDialog(UpdateUiState(vOffer, progress = 0.42f), {}, {}, {}, {}) }
+		}
 	}
 
 	/*

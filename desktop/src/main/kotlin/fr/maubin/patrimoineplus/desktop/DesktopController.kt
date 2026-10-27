@@ -60,7 +60,20 @@ import fr.maubin.patrimoineplus.domain.calc.kFamilyView
 import fr.maubin.patrimoineplus.domain.calc.ProfileRemoval
 import fr.maubin.patrimoineplus.domain.calc.profileRemoval
 import fr.maubin.patrimoineplus.desktop.ui.tour.Tours
-import fr.maubin.patrimoineplus.desktop.ui.tour.kTourAccount
+import fr.maubin.patrimoineplus.desktop.ui.tour.kTourAccount
+import fr.maubin.patrimoineplus.desktop.update.DesktopUpdater
+import fr.maubin.patrimoineplus.ui.components.UpdateUiState
+import fr.maubin.patrimoineplus.data.update.UpdateOffer
+import fr.maubin.patrimoineplus.data.update.UpdateCheck
+import fr.maubin.patrimoineplus.data.update.UpdatePlatform
+import fr.maubin.patrimoineplus.data.update.checkUpdate
+import fr.maubin.patrimoineplus.data.update.findUpdate
+import fr.maubin.patrimoineplus.data.update.downloadAsset
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.update
 
 private const val kDayCheckMillis = 60_000L										// contrôle du changement de jour
 
@@ -230,12 +243,14 @@ data class BankSession(
 	inWorkspace : espace de travail (données)
 	inScope     : portée de la surveillance du fichier d'échange ; null pour ne pas surveiller
 	inClock     : horloge (horodatages des modifications, date du jour)
+	inUpdater   : mises à jour (GitHub, dossier de l'appli) ; null : pas de vérification
 */
 class DesktopController(
 	private val inConfig    : DesktopConfig,
 	private val inWorkspace : Workspace,
 	private val inScope     : CoroutineScope?,
-	private val inClock     : Clock = Clock.systemDefaultZone()
+	private val inClock     : Clock = Clock.systemDefaultZone(),
+	private val inUpdater   : DesktopUpdater? = null
 )
 {
 	private val fSettings   = MutableStateFlow(inConfig.load())					// réglages
@@ -251,6 +266,9 @@ class DesktopController(
 	private val fProjection = MutableStateFlow<ProjectionInput?>(null)			// hypothèses de la projection ; null : par défaut
 	private val fBudget     = MutableStateFlow(inConfig.loadBudget(fSettings.value.source, scopeOf(fSettings.value.view, emptyList())))	// budget prévisionnel de la vue
 	private val fGoals      = MutableStateFlow(inConfig.loadGoals(fSettings.value.source, scopeOf(fSettings.value.view, emptyList())))		// objectifs de la vue
+	private val fUpdate     = MutableStateFlow<UpdateUiState?>(null)			// fenêtre de mise à jour ; null sans
+	private val fExit       = MutableStateFlow(false)							// fermeture demandée (remplacement par la nouvelle version)
+	private var fDownload   : Job? = null										// téléchargement en cours
 	private var fRowKeys    = 0L												// identifiants des lignes de la grille
 	private var fTokens     = 0L												// numéros d'ouverture des panneaux
 
@@ -286,6 +304,138 @@ class DesktopController(
 
 	// Onglet affiché de l'écran Bilan.
 	val reportTab: StateFlow<ReportTab> = fReportTab
+
+	// Fenêtre de mise à jour ; null sans.
+	val update: StateFlow<UpdateUiState?> = fUpdate
+
+	// Vrai quand l'appli doit se fermer pour laisser la nouvelle version la remplacer.
+	val exitRequested: StateFlow<Boolean> = fExit
+
+	// Version installée ; null si inconnue.
+	val appVersion: String? get() = inUpdater?.version
+
+	/*
+		Vérification du lancement : propose la mise à jour s'il en existe une
+		(version ignorée exclue). Sans effet si elle est désactivée dans les
+		réglages, si la version installée est inconnue ou sans réseau.
+	*/
+	fun checkForUpdates()
+	{
+		val vUpdater = inUpdater ?: return												// mises à jour
+		val vVersion = vUpdater.version ?: return										// version installée
+		if (!fSettings.value.updates || inScope == null) return
+		inScope.launch {
+			findUpdate(vUpdater.source, vVersion, UpdatePlatform.WINDOWS, fSettings.value.ignored)?.let { fUpdate.value = updateState(it) }
+		}
+	}
+
+	/*
+		Vérification demandée depuis les réglages : propose la mise à jour,
+		même ignorée, ou dit que l'appli est à jour ou que GitHub est
+		injoignable.
+	*/
+	fun checkUpdatesNow()
+	{
+		val vUpdater = inUpdater ?: return												// mises à jour
+		val vVersion = vUpdater.version ?: return showNotice("Version de l’appli inconnue : vérification impossible.")	// version installée
+		val vScope   = inScope ?: return												// portée
+		vScope.launch {
+			when (val vCheck = checkUpdate(vUpdater.source, vVersion, UpdatePlatform.WINDOWS))
+			{
+				is UpdateCheck.Available -> fUpdate.value = updateState(vCheck.offer)
+				UpdateCheck.UpToDate     -> showNotice("PatrimoinePlus est à jour (version $vVersion).")
+				UpdateCheck.Unreachable  -> showNotice("Vérification impossible : GitHub est injoignable.")
+			}
+		}
+	}
+
+	/*
+		État de la fenêtre pour une mise à jour : installation automatique si
+		le dossier de l'appli est remplaçable, sinon téléchargement seul.
+		inOffer : mise à jour
+	*/
+	private fun updateState(inOffer: UpdateOffer): UpdateUiState =
+		if (inUpdater?.folder != null) UpdateUiState(inOffer)
+		else UpdateUiState(inOffer, notice = "L’appli ne peut pas se remplacer elle-même ici (dossier protégé ou lancement hors du dossier portable) : le zip sera enregistré dans vos Téléchargements, à décompresser à la place de l’ancien dossier.", action = "Télécharger")
+
+	/*
+		Télécharge la mise à jour proposée, vérifie son empreinte puis, si le
+		dossier est remplaçable, prépare la nouvelle version, lance le script
+		de remplacement et demande la fermeture de l'appli (elle redémarre
+		ensuite d'elle-même). Sinon, montre le zip téléchargé.
+	*/
+	fun startUpdate()
+	{
+		val vUpdater = inUpdater ?: return												// mises à jour
+		val vState   = fUpdate.value ?: return											// fenêtre affichée
+		val vScope   = inScope ?: return												// portée
+		if (fDownload?.isActive == true) return
+		fUpdate.value = vState.copy(progress = 0f, error = null)
+		fDownload = vScope.launch {
+			try
+			{
+				val vFile = downloadAsset(vState.offer.asset, vUpdater.download.resolve(vState.offer.asset.name).toFile()) { inProgress ->
+					fUpdate.update { it?.copy(progress = inProgress) }
+				}																		// zip vérifié
+				val vFolder = vUpdater.folder												// dossier de l'appli
+				if (vFolder != null)
+				{
+					withContext(Dispatchers.IO) { vUpdater.install(vFile, vFolder) }
+					fExit.value = true
+				}
+				else
+				{
+					vUpdater.reveal(vFile)
+					fUpdate.value = null
+					showNotice("Mise à jour ${vState.offer.version} téléchargée : ${vFile.name}")
+				}
+			}
+			catch (inCancel: CancellationException)
+			{
+				fUpdate.update { it?.copy(progress = null) }
+				throw inCancel
+			}
+			catch (inError: Exception)
+			{
+				fUpdate.update { it?.copy(error = "La mise à jour a échoué : ${inError.message ?: "erreur inconnue"}.") }
+			}
+		}
+	}
+
+	/*
+		Interrompt le téléchargement ; la fenêtre reste ouverte.
+	*/
+	fun cancelUpdate()
+	{
+		fDownload?.cancel()
+		fDownload = null
+		fUpdate.update { it?.copy(progress = null) }
+	}
+
+	/*
+		Ferme la fenêtre ; la question reviendra au prochain lancement.
+	*/
+	fun postponeUpdate()
+	{
+		cancelUpdate()
+		fUpdate.value = null
+	}
+
+	/*
+		Ne plus proposer la version de la fenêtre (jusqu'à la suivante).
+	*/
+	fun ignoreUpdate()
+	{
+		val vVersion = fUpdate.value?.offer?.version ?: return							// version ignorée
+		postponeUpdate()
+		update(fSettings.value.copy(ignored = vVersion))
+	}
+
+	/*
+		Active ou coupe la vérification au lancement.
+		inOn : vrai pour vérifier
+	*/
+	fun setUpdates(inOn: Boolean) = update(fSettings.value.copy(updates = inOn))
 
 	/*
 		Change l'onglet de l'écran Bilan.

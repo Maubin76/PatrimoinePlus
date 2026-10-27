@@ -146,7 +146,8 @@ import fr.maubin.patrimoineplus.desktop.ui.tour.kTourAccount
 import kotlinx.coroutines.delay
 import fr.maubin.patrimoineplus.desktop.ActiveTour
 import fr.maubin.patrimoineplus.ui.theme.Palette
-import fr.maubin.patrimoineplus.desktop.ui.panels.ThemePanel
+import fr.maubin.patrimoineplus.desktop.ui.panels.ThemePanel
+import fr.maubin.patrimoineplus.ui.components.UpdateDialog
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -204,6 +205,10 @@ fun App(
 					Shell(inController, vSpace, inOnPickFolder, vDark)
 				}
 				vPending?.let { inAction -> UnsavedDialog(inAction, inController, inOnPickSaveFile) }
+				val vUpdate by inController.update.collectAsState()						// fenêtre de mise à jour
+				vUpdate?.let { inState ->
+					UpdateDialog(inState, inController::startUpdate, inController::postponeUpdate, inController::ignoreUpdate, inController::cancelUpdate)
+				}
 				val vTour by inController.tour.collectAsState()							// visite guidée affichée
 				val vLastTour = remember { mutableStateOf<ActiveTour?>(null) }			// dernière visite (gardée pendant sa disparition)
 				vTour?.let { vLastTour.value = it }

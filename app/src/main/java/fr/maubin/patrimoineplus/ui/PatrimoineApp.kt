@@ -62,8 +62,11 @@ import fr.maubin.patrimoineplus.ui.components.ProportionStyle
 import fr.maubin.patrimoineplus.ui.profiles.ProfilesViewModel
 import fr.maubin.patrimoineplus.ui.shell.LocalViewChip
 import fr.maubin.patrimoineplus.ui.shell.ViewChip
-import fr.maubin.patrimoineplus.ui.settings.ProfilesActions
+import fr.maubin.patrimoineplus.ui.settings.ProfilesActions
 import fr.maubin.patrimoineplus.ui.settings.ThemesActions
+import fr.maubin.patrimoineplus.ui.update.UpdateViewModel
+import fr.maubin.patrimoineplus.ui.update.UpdatePrompt
+import fr.maubin.patrimoineplus.ui.settings.UpdatesActions
 
 private const val kSlideMillis = 260									// entrée et sortie de la vue d'un compte
 
@@ -74,11 +77,16 @@ private val kPageSpring = spring<Float>(									// défilement vers un onglet t
 
 /*
 	Coque de l'application : mode discret partagé et graphe de navigation
-	(écran principal à onglets, vue d'un compte qui glisse par-dessus).
+	(écran principal à onglets, vue d'un compte qui glisse par-dessus), et
+	fenêtre de mise à jour quand une nouvelle version est publiée.
 	inAppViewModel : état partagé (mode discret, apparence)
+	inUpdates      : mises à jour (vérification au lancement, fenêtre)
 */
 @Composable
-fun PatrimoineApp(inAppViewModel: AppViewModel = hiltViewModel())
+fun PatrimoineApp(
+	inAppViewModel : AppViewModel = hiltViewModel(),
+	inUpdates      : UpdateViewModel = hiltViewModel()
+)
 {
 	val vNavController = rememberNavController()							// contrôleur de navigation
 	val vHidden        by inAppViewModel.amountsHidden.collectAsStateWithLifecycle()	// mode discret
@@ -94,7 +102,7 @@ fun PatrimoineApp(inAppViewModel: AppViewModel = hiltViewModel())
 			popExitTransition  = { slideOutHorizontally(tween(kSlideMillis)) { it / 6 } + fadeOut(tween(kSlideMillis)) }
 		) {
 			composable<MainRoute> {
-				MainOrOnboarding(inAppViewModel, inOnOpenAccount = { inId -> vNavController.navigate(AccountRoute(inId)) })
+				MainOrOnboarding(inAppViewModel, inUpdates, inOnOpenAccount = { inId -> vNavController.navigate(AccountRoute(inId)) })
 			}
 			composable<AccountRoute> {
 				AccountDetailScreen(
@@ -104,6 +112,7 @@ fun PatrimoineApp(inAppViewModel: AppViewModel = hiltViewModel())
 			}
 		}
 		SyncConflictDialog()
+		UpdatePrompt(inUpdates)
 	}
 }
 
@@ -111,12 +120,14 @@ fun PatrimoineApp(inAppViewModel: AppViewModel = hiltViewModel())
 	Assistant du premier lancement s'il est dû, écran principal sinon ; fond
 	vide le temps de lire la base, pour éviter un clignotement.
 	inAppViewModel  : état partagé (mode discret, apparence)
+	inUpdates       : mises à jour (réglages)
 	inOnOpenAccount : ouvre la vue d'un compte
 	inOnboarding    : ViewModel de l'assistant
 */
 @Composable
 private fun MainOrOnboarding(
 	inAppViewModel  : AppViewModel,
+	inUpdates       : UpdateViewModel,
 	inOnOpenAccount : (String) -> Unit,
 	inOnboarding    : OnboardingViewModel = hiltViewModel()
 )
@@ -130,7 +141,7 @@ private fun MainOrOnboarding(
 			inOnFinish      = inOnboarding::finish,
 			inOnSkip        = inOnboarding::skip
 		)
-		false -> MainTabs(inAppViewModel, inOnOpenAccount)
+		false -> MainTabs(inAppViewModel, inUpdates, inOnOpenAccount)
 		null  -> Box(Modifier.fillMaxSize())
 	}
 }
@@ -141,12 +152,14 @@ private fun MainOrOnboarding(
 	la position du pager au pixel près. Le retour système ramène à l'Accueil.
 	Le bouton « + » ouvre la saisie d'une opération.
 	inAppViewModel  : état partagé (mode discret, apparence)
+	inUpdates       : mises à jour (réglages)
 	inOnOpenAccount : ouvre la vue d'un compte
 	inEntry         : ViewModel de la saisie
 */
 @Composable
 private fun MainTabs(
 	inAppViewModel  : AppViewModel,
+	inUpdates       : UpdateViewModel,
 	inOnOpenAccount : (String) -> Unit,
 	inEntry         : EntryViewModel = hiltViewModel()
 )
@@ -165,6 +178,7 @@ private fun MainTabs(
 	val vPending   by vProfiles.pending.collectAsStateWithLifecycle()			// retrait de profil à confirmer
 	val vThemes    by inAppViewModel.themes.collectAsStateWithLifecycle()		// thèmes créés
 	val vCustom    by inAppViewModel.customTheme.collectAsStateWithLifecycle()	// thème personnalisé choisi
+	val vChecking  by inUpdates.enabled.collectAsStateWithLifecycle()			// vérification des mises à jour au lancement
 	val vToggle    = inAppViewModel::toggleAmountsHidden					// bascule du mode discret
 	val vData      by inEntry.data.collectAsStateWithLifecycle()			// données de saisie
 	var vEntry     by remember { mutableStateOf<EntryForm?>(null) }		// saisie ouverte
@@ -216,7 +230,10 @@ private fun MainTabs(
 					inGlass        = vGlass,
 					inOnGlass      = inAppViewModel::setGlassEffect,
 					inProfiles     = ProfilesActions(vView.profiles, vProfError, vProfiles::add, vProfiles::rename, vProfiles::askRemove, vPending, vProfiles::confirmRemove, vProfiles::cancelRemove),
-					inThemes       = ThemesActions(vThemes, vCustom, inAppViewModel::setCustomTheme, inAppViewModel::saveTheme, inAppViewModel::deleteTheme)
+					inThemes       = ThemesActions(vThemes, vCustom, inAppViewModel::setCustomTheme, inAppViewModel::saveTheme, inAppViewModel::deleteTheme),
+					inUpdates      = UpdatesActions(vChecking, inUpdates.version, inUpdates::setEnabled) {
+						inUpdates.checkNow { inMessage -> vScope.launch { vSnackbar.showSnackbar(inMessage) } }
+					}
 				)
 			}
 		}

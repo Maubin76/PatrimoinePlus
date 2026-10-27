@@ -17,6 +17,12 @@ import fr.maubin.patrimoineplus.data.settings.DataStoreSettingsRepository
 import fr.maubin.patrimoineplus.data.settings.SettingsRepository
 import java.time.Clock
 import javax.inject.Singleton
+import fr.maubin.patrimoineplus.data.update.ReleaseSource
+import fr.maubin.patrimoineplus.data.update.GitHubReleaseSource
+import fr.maubin.patrimoineplus.data.update.ApkInstaller
+import fr.maubin.patrimoineplus.data.update.PackageApkInstaller
+import fr.maubin.patrimoineplus.ui.update.AppBuild
+import javax.inject.Named
 
 /*
 	Dépendances transverses de l'application.
@@ -48,6 +54,27 @@ object AppModule
 	@Provides
 	@Singleton
 	fun provideQuoteSource(): QuoteSource = YahooQuoteSource()
+
+	/*
+		Dernière release publiée sur GitHub (mises à jour).
+	*/
+	@Provides
+	@Singleton
+	fun provideReleaseSource(): ReleaseSource = GitHubReleaseSource()
+
+	/*
+		Version installée de l'appli.
+	*/
+	@Provides
+	@Named("appVersion")
+	fun provideAppVersion(): String = AppBuild.version
+
+	/*
+		Vérification des mises à jour au lancement (en release seulement).
+	*/
+	@Provides
+	@Named("autoUpdateCheck")
+	fun provideAutoUpdateCheck(): Boolean = AppBuild.autoCheck
 }
 
 /*
@@ -63,5 +90,12 @@ abstract class BindingsModule
 	*/
 	@Binds
 	abstract fun bindSettings(inImpl: DataStoreSettingsRepository): SettingsRepository
+
+	/*
+		Installation des mises à jour par l'installeur du système.
+		inImpl : implémentation PackageInstaller
+	*/
+	@Binds
+	abstract fun bindInstaller(inImpl: PackageApkInstaller): ApkInstaller
 
 }

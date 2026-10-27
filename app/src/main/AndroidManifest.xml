@@ -5,6 +5,8 @@
 
 	<!-- Cours publics des ETF (Yahoo Finance) : seuls des ISIN et des symboles sont envoyés. -->
 	<uses-permission android:name="android.permission.INTERNET" />
+	<!-- Mises à jour : installation de l'APK téléchargé depuis les releases GitHub (autorisation donnée par l'utilisateur). -->
+	<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
 	<application
 		android:name=".PatrimoineApplication"
@@ -27,6 +29,15 @@
 				<category android:name="android.intent.category.LAUNCHER" />
 			</intent-filter>
 		</activity>
+
+		<!-- Résultat de l'installeur du système pour une mise à jour. -->
+		<receiver
+			android:name=".data.update.UpdateInstallReceiver"
+			android:exported="false">
+			<intent-filter>
+				<action android:name="fr.maubin.patrimoineplus.action.INSTALL_STATUS" />
+			</intent-filter>
+		</receiver>
 
 		<!-- WorkManager s'initialise à la demande, avec la configuration de l'application. -->
 		<provider

@@ -56,7 +56,9 @@ data class DesktopSettings(
 	val view       : String    = "",
 	val toursSeen  : Set<String> = emptySet(),
 	val toursOff   : Boolean   = false,
-	val palette    : String    = ""
+	val palette    : String    = "",
+	val updates    : Boolean   = true,
+	val ignored    : String    = ""
 )
 
 /*
@@ -95,7 +97,9 @@ class DesktopConfig(private val inFile: Path)
 			view       = vProps.getProperty("view").orEmpty(),
 			toursSeen  = vProps.getProperty("tours_seen").orEmpty().split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet(),
 			toursOff   = vProps.getProperty("tours_off") == "true",
-			palette    = vProps.getProperty("palette").orEmpty()
+			palette    = vProps.getProperty("palette").orEmpty(),
+			updates    = vProps.getProperty("updates") != "false",
+			ignored    = vProps.getProperty("update_ignored").orEmpty()
 		)
 	}
 
@@ -126,6 +130,8 @@ class DesktopConfig(private val inFile: Path)
 		vProps.setProperty("tours_seen", inSettings.toursSeen.sorted().joinToString(","))
 		vProps.setProperty("tours_off", inSettings.toursOff.toString())
 		vProps.setProperty("palette", inSettings.palette)
+		vProps.setProperty("updates", inSettings.updates.toString())
+		vProps.setProperty("update_ignored", inSettings.ignored)
 		inFile.parent?.let { Files.createDirectories(it) }
 		val vTemp = inFile.resolveSibling("${inFile.fileName}.tmp")				// écriture provisoire
 		Files.newBufferedWriter(vTemp, Charsets.UTF_8).use { vProps.store(it, "Réglages de PatrimoinePlus (PC)") }
