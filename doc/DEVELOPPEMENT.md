@@ -1,0 +1,742 @@
+# PatrimoinePlus — documentation technique
+
+Documentation de développement : construction, publication, architecture,
+modèle de données, synchronisation et détail des écrans. La présentation de
+l'application est dans le [README](../README.md).
+
+Deux applications partagent le même cœur Kotlin : **Android** (`:app`) et
+**PC Windows** (`:desktop`), avec l'interface commune `:ui` et le cœur `:core`.
+Les données restent sur les appareils ; elles passent de l'un à l'autre par
+un fichier d'échange dans un dossier synchronisé (Syncthing). Seules sorties
+réseau : les cours des titres (Yahoo Finance, téléphone) et la recherche des
+mises à jour (GitHub).
+
+La spécification complète (besoins, modèle de données, plan des étapes) est
+dans [`SPEC.md`](SPEC.md) ; la couverture des tests dans
+[`TESTS.md`](TESTS.md) ; le plan de tests manuels dans
+[`PLAN_DE_TESTS.md`](PLAN_DE_TESTS.md).
+
+## Construire
+
+```sh
+./gradlew :app:assembleDebug        # APK : app/build/outputs/apk/debug/app-debug.apk
+./gradlew :core:test                # tests du module commun (Kotlin pur)
+./gradlew :desktop:run               # lance l'appli PC (Windows)
+./gradlew :desktop:packageZip        # dossier portable zippé de l'appli PC
+./gradlew :desktop:test             # tests de l'appli PC
+./gradlew :app:testDebugUnitTest    # tests de l'appli Android (Robolectric)
+./gradlew :app:assembleRelease      # APK optimisé (R8), signé avec la clé de publication :
+                                    # app/build/outputs/apk/release/app-release.apk
+```
+
+## Publier une version
+
+- **Automatique** : chaque push sur `main` aux tests verts publie une release
+  GitHub (voir Intégration continue) ; la version augmente de 0.1 à chaque
+  fois, commitée par la CI : faire `git pull` sur `main` avant la branche
+  suivante.
+- **Version** : `patrimoineplus.version` (ex. `1.0`) dans `gradle.properties`,
+  commune aux deux applis (paquet Windows en `1.0.0`) ;
+  `patrimoineplus.versionCode` augmente de 1 à chaque version Android publiée.
+  Pour sauter un numéro (ex. `2.0`), le changer à la main : non encore
+  publié, il sort tel quel.
+- **Clé de signature** : un keystore hors du dépôt, décrit par trois lignes
+  dans le `gradle.properties` de l'utilisateur (`~/.gradle`) ou dans
+  `local.properties` (jamais versionnés) :
+  `patrimoineplus.keystore` (chemin), `patrimoineplus.keyAlias`,
+  `patrimoineplus.keyPassword`. Toujours la même clé : sinon Android refuse la
+  mise à jour par-dessus. Sans clé (CI), l'APK release est signé avec la clé
+  de debug.
+- **Secrets GitHub** (Settings › Secrets and variables › Actions) pour la
+  CI : `KEYSTORE_BASE64` (le keystore en base64), `KEY_ALIAS`,
+  `KEY_PASSWORD` ; sans eux, la release échoue plutôt que de signer avec la
+  clé de debug.
+- **À la main** : `./gradlew :app:assembleRelease :desktop:packageZip` donne
+  l'APK et `desktop/build/distributions/PatrimoinePlus-<version>-windows.zip`.
+- **Notes de la release** : la CI les ouvre par « Format d'échange : N »
+  (`kBackupVersion`), puis la liste des commits. Les applis lisent cette ligne
+  pour savoir si la nouvelle version change le format (voir Mises à jour).
+
+## Mises à jour
+
+Au lancement (après le déverrouillage sur le téléphone), chaque appli lit la
+dernière release du dépôt (`api.github.com/.../releases/latest`, public, sans
+jeton : seule l'adresse IP est connue de GitHub, rien n'est envoyé). Si elle
+est plus récente que la version installée, une fenêtre la propose : version
+disponible et installée, taille du fichier, rappel de mettre à jour l'autre
+appareil (appuyé si le format d'échange change), « Mettre à jour », « Plus
+tard » (reposée au prochain lancement), « Ignorer cette version ». Le fichier
+est téléchargé puis vérifié par son empreinte SHA-256 donnée par GitHub ; un
+fichier altéré est refusé. Hors ligne, rien ne s'affiche.
+
+- **Téléphone** : l'APK, téléchargé dans le cache, est confié à l'installeur
+  d'Android (`PackageInstaller`). La première fois, Android demande
+  d'autoriser PatrimoinePlus à installer des applis (« Autoriser depuis cette
+  source ») ; l'installation reprend au retour dans l'appli. La première mise
+  à jour faite depuis l'appli passe par l'écran « Installer » d'Android ; les
+  suivantes se font sans lui sur Android 12 et plus (toujours avec sur
+  Android 11). Seules les releases signées de la CI s'installent par-dessus
+  (une version debug a une autre signature : refus). Pas de vérification
+  automatique en debug ; « Vérifier maintenant » reste possible.
+- **PC** : le zip est décompressé à côté du dossier de l'appli
+  (`<dossier>.new`), puis un script PowerShell attend la fermeture de
+  l'appli, met le nouveau dossier à la place de l'ancien (même nom), relance
+  l'appli et supprime l'ancien ; en cas d'échec il remet l'ancien en place.
+  Réglages (`%APPDATA%\PatrimoinePlus`) et données (dossier synchronisé) ne
+  bougent pas. Si le dossier n'est pas modifiable (par exemple sous
+  `Program Files`) ou si l'appli n'est pas lancée par `PatrimoinePlus.exe`,
+  le zip est seulement téléchargé dans Téléchargements. Version installée :
+  ressource `version.properties` générée à la construction.
+- **Réglages › Mises à jour** (les deux applis) : « Vérifier au démarrage »
+  (activé par défaut), version installée, « Vérifier maintenant » (propose
+  aussi une version ignorée ; sinon « à jour » ou « injoignable »).
+- Code : `core/.../data/update/Updates.kt` (release, versions, offre,
+  téléchargement vérifié), `ui/.../components/UpdateDialog.kt` (fenêtre
+  commune), `app/.../ui/update/UpdateViewModel.kt` et
+  `app/.../data/update/ApkInstaller.kt`, `desktop/.../update/DesktopUpdater.kt`.
+
+## Intégration continue
+
+GitHub Actions (`.github/workflows/ci.yml`) : à chaque push sur `main`
+seulement (les branches de travail ne la déclenchent pas ; lancement manuel
+possible depuis l'onglet Actions), la CI installe le JDK 21, lance tous les
+tests JVM (`:core:test`, `:app:testDebugUnitTest`, `:desktop:test`) puis
+construit l'APK debug. En cas
+d'échec, les rapports de tests sont joints à l'exécution (artefact
+« rapports-tests », 14 jours). Tests verts : numéro de version (publié tel
+quel si son tag `vX.Y` n'existe pas, sinon + 0.1 commité sur `main` par la
+CI), APK signé (Linux), zip de l'appli PC (Windows), puis release GitHub
+`vX.Y` avec les deux fichiers et la liste des commits depuis la précédente.
+Les exécutions se suivent sans s'interrompre. Les tests ne dépendent ni du fuseau horaire ni de la
+langue du système (vérifié en UTC et en anglais, comme sur la machine de CI).
+
+## Socle technique
+
+| Élément          | Choix                                                                    |
+|------------------|--------------------------------------------------------------------------|
+| Langage          | Kotlin (intégré à AGP 9), JVM 17                                         |
+| Interface        | Jetpack Compose + Material 3, monochrome noir sur blanc, police Hanken Grotesk |
+| Navigation       | `navigation-compose`, routes typées (`kotlinx.serialization`)             |
+| Injection        | Hilt (KSP)                                                               |
+| Asynchronisme    | Coroutines et Flow                                                       |
+| Réglages         | DataStore Preferences (mode discret)                                     |
+| Captures         | Roborazzi + Robolectric (rendu JVM, sans émulateur)                      |
+| Base de données  | Room 2.8, schéma exporté (`app/schemas`)                                  |
+| SDK              | minSdk 30, targetSdk 35, compileSdk 37                                   |
+| Versions         | catalogue `gradle/libs.versions.toml`                                    |
+
+`compileSdk` est à 37 parce que les bibliothèques AndroidX actuelles
+(Compose 1.12, core-ktx 1.19) l'exigent ; cela ne change ni les appareils
+compatibles (`minSdk`) ni le comportement à l'exécution (`targetSdk`).
+
+## Architecture
+
+Package racine : `fr.maubin.patrimoineplus`. Le projet est découpé en modules
+Gradle ; un module ne peut utiliser que ce dont il dépend, ce qui garantit les
+frontières :
+
+```
+:core   Kotlin pur sur la JVM, sans Android ni interface — partagé par les applis
+        domain/        modèles, règles de saisie, calculs, formats d'affichage
+        data/backup/   format de sauvegarde (classeur Excel, ancien JSON), rotation
+        data/demo/     données de démonstration
+        data/market/   analyse des cours, client Yahoo Finance
+        data/sync/     synchronisation par fichier : empreintes, décision
+        data/DataSet   toutes les données en modèles du domaine (base, fichier, démo)
+        testFixtures/  aides de test partagées (fausse source de cours, réponses enregistrées)
+        ui/            états des écrans (accueil, comptes, vue d'un compte, tableau
+                       de bord du PC) et logique de saisie, sans Compose
+:ui     interface commune, Compose Multiplatform compilé pour Android et pour la
+        JVM du PC (dépend de :core)
+        theme/         couleurs, typographie, PatrimoineTheme, ThemeMode, couleurs
+                       des hausses et baisses ; police Hanken Grotesk en ressource
+        components/    montants, courbes, barres, marques, sélecteur de mois, logo,
+                       tuiles et courbes miniatures
+        icons/         icônes au trait et icônes de catégories
+:app    appli Android (dépend de :core et :ui)
+        data/          base Room (db), dépôts (repo), réglages DataStore (settings),
+                       sauvegarde sur le téléphone, mise à jour des cours (market)
+        di/            modules Hilt (horloge, base, réglages, source de cours)
+        ui/            écrans Compose, ViewModels, navigation, feuilles de saisie
+:desktop appli PC, Compose Multiplatform (dépend de :core et :ui)
+        data/          réglages (%APPDATA%\PatrimoinePlus), espace de travail
+        ui/            tableau de bord, vue d'un compte, panneaux de saisie
+```
+
+Le code commun garde ses noms de packages : passer d'un module à l'autre n'a
+changé aucun import. Les états des écrans sont calculés par les mêmes
+fonctions sur le téléphone et sur le PC : les chiffres affichés sont
+identiques. Le thème et les composants graphiques sont écrits une seule fois
+(`:ui`) ; seule la mise en page diffère : écrans et feuilles du bas sur le
+téléphone, tableau de bord à tuiles et panneau latéral sur le PC.
+
+Règles :
+
+- aucun solde ni total stocké : tout est recalculé par `domain` à partir des
+  opérations ;
+- montants en centimes (`Long`), jamais en virgule flottante ;
+- la date courante vient d'une `Clock` injectée, jamais de `LocalDate.now()`
+  appelé directement dans la logique.
+
+## Interface
+
+Direction visuelle monochrome, noir sur blanc (blanc sur noir en mode sombre),
+inspirée de deux maquettes de référence fournies le 2026-10-07.
+
+- Palette fixe (`:ui`, `theme/Color.kt`) : blanc, encre presque noire, gris
+  secondaire, filets gris très clair ; aucun accent par défaut. Rouge discret
+  réservé aux montants négatifs. Option « Hausses en vert, baisses en rouge »
+  (Réglages › Apparence, téléphone et PC) : variations et plus-values
+  colorées, signe toujours écrit. Les couleurs dynamiques Material You sont écartées.
+- Apparence commune au PC (`:ui`, `theme/DeskTheme.kt`) : fond pastel (ou
+  effet verre, Réglages › Apparence), cartes flottantes, titre à gauche tout
+  en haut, sur la ligne des actions, choix en pilules, police Outfit (OFL, licence
+  dans `doc/licenses/`) à chiffres tabulaires.
+- Accueil : total centré en très grand, variation du mois, pastille « Calculé
+  au … », courbe d'évolution du patrimoine (12 mois au plus), répartition par
+  type en niveaux de gris dont chaque ligne ouvre l'onglet Comptes (la liste des
+  comptes n'est pas répétée sur l'accueil).
+- Navigation : les quatre onglets sont les pages d'un pager horizontal (on
+  glisse de l'un à l'autre) ; pilule flottante à icônes fines dont l'indicateur
+  suit le doigt (`ui/shell/AppFrame.kt`) ; bouton rond noir de saisie au-dessus,
+  sur Accueil et Comptes ; le retour système ramène à l'Accueil.
+- Composants : `AmountText` (masqué en mode discret, chiffres qui roulent),
+  `InfoPill`, `SectionHeader`, `BorderedCard`, `ProportionBar`, `EmptyState`,
+  `ScreenScaffold`.
+- Apparence : Système (suit le téléphone), Clair ou Sombre, au choix dans
+  Réglages ; mémorisée en DataStore, les barres système suivent.
+- Comptes : barre « Répartition » en tête de la liste (part de chaque compte
+  dans le patrimoine, part détenue appliquée, comptes archivés encore valorisés
+  compris, comptes à découvert exclus) ; chaque compte porte la pastille de sa
+  teinte et sa part sous son montant. Même rampe de gris que les positions
+  (`allocationColor`), les plus petits comptes au-delà du quatrième partageant
+  la dernière teinte.
+- Comptes et catégories : listes réordonnables par glisser-déposer (actions
+  « Monter » / « Descendre » pour TalkBack), création et modification en feuille
+  du bas, archivage, suppression (simple, ou définitive avec double
+  confirmation ; réaffectation des opérations pour une catégorie). Icônes de
+  catégories au trait fin (`ui/icons/CategoryIcons.kt`).
+- Vue d'un compte (`ui/account`) : page dédiée ouverte depuis l'onglet
+  Comptes, adaptée au type du compte.
+  - Courant : mois par flèches (sélecteur en touchant le mois), synthèse
+    (ouverture, entrées, dépenses, épargne, clôture), dépenses par catégorie,
+    courbe du solde sur 12 mois, opérations par jour avec « À venir » en tête.
+  - Épargne : vue globale depuis l'ouverture, sans navigation par mois ; solde
+    du jour et ce qui l'a constitué (solde initial, versements nets, intérêts
+    et revenus), courbe du solde, relevés, opérations groupées par mois.
+  - Bourse : vue globale ; valeur et plus-values, courbe de la **valeur**
+    (espèces et positions au dernier cours connu) au-dessus des positions,
+    puis opérations groupées par mois. Les positions s'ouvrent sur une barre
+    de répartition des titres (espèces exclues) en quatre gris au plus, les
+    plus petits titres partageant le dernier ; chaque ligne porte sa pastille,
+    sa valeur et sa part.
+  - Partout : sélection multiple par appui long et suppression confirmée.
+- Saisie (`ui/entry`) : feuille du bas ouverte par le bouton « + » (onglets
+  Accueil et Comptes, vue d'un compte) ; dépense ou revenu, montant sans
+  signe, compte (dernier utilisé par défaut), libellé obligatoire avec
+  suggestions qui reprennent la dernière catégorie, catégorie, date, notes.
+- Virements, épargne, bourse : la saisie a quatre modes (Dépense, Revenu,
+  Virement en une seule saisie, Ordre de bourse avec montant calculé en
+  direct). Un livret affiche ses relevés et l'écart au solde calculé, avec la
+  création de l'opération Intérêts. Un compte Bourse affiche sa valeur, ses
+  plus-values latente et réalisée, ses positions (quantité, PRU, cours,
+  plus-value), la mise à jour groupée des cours et ses positions initiales.
+- Premier lancement : assistant qui propose comptes (avec solde du jour) et
+  catégories ; réapparaît après « Tout effacer » (debug).
+- Mode discret : l'œil de la barre du haut ou le réglage masque tous les
+  montants ; mémorisé en DataStore.
+- Icône : deux cartes de comptes en verre violet, puce et courbe de hausse sur
+  celle de devant, et un « + », sur une tuile noire aux halos violet et bleu
+  nuit (verre sombre ; `res/drawable/ic_launcher_*.xml`, vectorielle) ; version
+  monochrome pour les icônes à thème d'Android 13 et plus. Dans l'appli, le
+  logo (`ui/components/Logo.kt`, partagé avec le PC) prend la déclinaison verre
+  sombre ou verre clair (tuile lavande, « + » violet) selon le thème choisi.
+- Contexte de conception : `PRODUCT.md`, `DESIGN.md` et `.impeccable/`.
+
+Captures de relecture : `./gradlew :app:recordRoborazziDebug` écrit les PNG
+dans `app/build/outputs/roborazzi/`.
+
+## Modèle de données
+
+Détail complet : [`doc/SPEC.md` § 2](SPEC.md#2-modèle-de-données).
+
+- **Base Room** (`data/db`), seule source de données, schéma exporté dans
+  `app/schemas` (version 5 ; migrations automatiques 1 → 2 → 3 → 4 → 5). Tables : `account`, `category`, `asset`, `txn`
+  (opérations), `posting` (jambes), `trade` (ordres), `account_statement`
+  (relevés), `asset_price` (cours), `recurrence` (opérations récurrentes),
+  `loan` (crédits). Aucun solde ni total stocké.
+- **Comptes** créés dans l'application, six types : Courant, Épargne, Bourse,
+  deux comptes de biens, **Immobilier** et **Collection** (objets de
+  collection), et **Crédit** (solde négatif : capital restant dû, déduit du
+  patrimoine) ; établissement facultatif ; **propriétaires** : la part de
+  chaque profil (50 et 50 pour un compte joint du couple).
+- **Profils** (membres de la famille, un seul fichier synchronisé pour tous) :
+  chaque profil voit ses comptes à sa part ; la vue **Famille** rassemble
+  tous les comptes, chacun pour le total des parts de la famille. Sur le PC,
+  sélecteur de vue en haut (à partir de deux profils), section Profils des
+  réglages (ajout, renommage, retrait après un récapitulatif à confirmer :
+  ses comptes seuls supprimés avec leurs opérations, sa part des comptes
+  partagés retirée), budget et objectifs propres à chaque vue. Sur le téléphone,
+  même sélecteur dans la barre de l'accueil et des comptes, vue mémorisée
+  sur le téléphone, section Profils des réglages, une part par profil dans
+  la fiche d'un compte (un crédit créé sur le téléphone va au premier
+  profil ; ses parts se règlent ensuite dans sa fiche). Données d'avant les
+  profils : un profil « Moi » pour la part détenue. Fichier d'échange au
+  format 6 (onglet Profils, colonnes Propriétaires et Parts) : les deux
+  applis doivent être à jour.
+- **Opérations récurrentes** : dépense, revenu ou virement répété chaque
+  mois, trimestre ou année, à partir d'une première échéance (fin
+  facultative ; un 31 devient le dernier jour des mois plus courts). Chaque
+  échéance arrivée crée l'opération **toute seule** : au lancement de
+  l'appli et au retour au premier plan (téléphone), à l'ouverture et au
+  changement de jour (PC), après un import ou une synchronisation, et dès
+  l'enregistrement pour les échéances déjà passées. L'opération créée a un
+  identifiant tiré de la récurrence et de sa date, et des horodatages tirés
+  de sa date : créée sur le téléphone et sur le PC, elle n'en fait qu'une ;
+  la récurrence retient sa dernière échéance créée, si bien qu'une opération
+  supprimée n'est pas recréée. Saisie : « Répéter » dans la saisie d'une
+  opération, ou section « Opérations récurrentes » (onglet Comptes du
+  téléphone, écran Opérations du PC, sous la saisie rapide).
+- **Crédits** : un compte Crédit créé avec son tableau d'amortissement
+  (montant, taux nominal, durée, première mensualité, assurance mensuelle,
+  compte payeur, catégorie des intérêts, « Crédit » créée si besoin) ;
+  mensualité constante, intérêts sur le capital restant, dernière mensualité
+  qui solde. Les mensualités déjà passées sont tenues pour payées : le compte
+  part du capital restant dû du jour. Chaque mensualité suivante crée à sa
+  date **une seule opération** (format 5) : le compte payeur est débité du
+  total, le compte Crédit crédité du capital, et l'écart (intérêts et
+  assurance) est une dépense de la catégorie du crédit. Les mensualités
+  créées avant, en deux opérations (virement du capital, dépense des
+  intérêts), sont fusionnées automatiquement, avec les mêmes montants, sur
+  le téléphone comme sur le PC. Saisie à la main : mode **« Crédit »** de la
+  saisie d'une opération (crédit, compte payeur, montant payé, dont capital
+  ; la mensualité du mois est proposée ; capital vide : remboursement
+  anticipé, tout en capital). Un crédit peut être lié au **bien qu'il
+  finance** (achat d'un compte Immobilier ou Collection) : la page du crédit
+  et celle du bien montrent sa **valeur nette** (prix d'achat moins capital
+  restant dû des crédits liés, à 100 %) ; le lien disparaît si l'achat est
+  supprimé. Tableau de bord, accueil et onglet Comptes sont **en net** : un
+  compte de biens vaut son prix d'achat moins le capital restant dû des
+  crédits liés à ses biens (valeur, part et répartition) ; un crédit
+  s'affiche **en positif** (somme due), avec le compte dont il est déduit ;
+  un crédit sans bien reste « à déduire » sous la répartition. Patrimoine
+  net en grand, avec le brut (hors crédits) et les crédits. La courbe du
+  patrimoine part du début du suivi, pas de la date d'achat ancienne d'un
+  bien déjà possédé. Page du compte : capital
+  restant dû, mensualité, intérêts restants, bien financé, tableau
+  d'amortissement (PC) ou prochaines mensualités (téléphone). Dans le
+  budget, le thème Crédit compte le capital remboursé et les intérêts.
+- **Opérations à jambes** : dépense ou revenu (1 jambe), virement (2 jambes de
+  somme nulle), ordre de bourse (1 jambe + 1 ordre), solde initial, **achat
+  d'un bien** (jambe du compte de biens, et du compte payeur s'il a été payé
+  depuis un compte) et **vente d'un bien** (liée à son achat par `linkedId` :
+  sortie au prix d'achat, prix de vente versé sur un compte ou non).
+- **Comptes de biens** : pas un vrai compte en banque ; ils ne reçoivent que
+  des achats et des ventes de biens et valent le **prix d'achat des biens
+  détenus** (part détenue appliquée au patrimoine). Un achat payé depuis un
+  compte ne change pas le patrimoine ; une vente y fait apparaître la plus-
+  ou moins-value. Saisie sur le téléphone (vue du compte : « Ajouter »,
+  « Vendre ») comme sur le PC (page du compte, panneaux d'achat et de vente).
+  Les projections les gardent stables ; l'analyse des dépenses les ignore.
+- **Montants** en centimes ; quantités et cours en dix-millièmes.
+- **Dépôts** (`data/repo`) : toute opération passe par `TransactionValidator`
+  avant d'atteindre la base ; suppression d'un compte (simple, archivage ou
+  définitive), réaffectation d'une catégorie avant suppression.
+- **Domaine** (`domain/calc`) : `Ledger` (soldes, synthèse mensuelle,
+  synthèse par catégorie), `Portfolio` (PRU, positions, plus-values),
+  `Wealth` (valeur des comptes, patrimoine avec part détenue, séries, écart de
+  relevé).
+- **Démonstration** (`data/demo`) : six mois de données fictives, chargeables
+  depuis les Réglages en version debug seulement.
+
+## Sauvegarde
+
+La sauvegarde cloud Android est désactivée (`allowBackup=false`, et toutes les
+données sont exclues de `cloud-backup` pour Android 12 et plus). Le transfert
+direct entre téléphones reste possible.
+
+- **Sauvegarde automatique** : chaque jour, un classeur Excel
+  `patrimoineplus-AAAA-MM-JJ.xlsx` est écrit dans `Documents/PatrimoinePlus`
+  (stockage partagé du téléphone, par MediaStore, sans autorisation) ; les
+  **3 plus récents** sont conservés. Tâche de fond WorkManager quotidienne,
+  avec rattrapage au démarrage si celle du jour manque ; une base sans compte
+  n'est jamais sauvegardée (elle évincerait de bonnes sauvegardes). Bouton
+  « Sauvegarder maintenant » dans Réglages › Données (remplace celle du jour).
+  Fichiers **non chiffrés**, lisibles par toute appli ayant accès aux fichiers.
+- **Classeur** (`data/backup/BackupWorkbook.kt`, écrit et lu sans
+  bibliothèque par `data/backup/xlsx/`) : un onglet par type de compte
+  (Courant, Épargne, Bourse, Immobilier, Collection, Crédit : une ligne par
+  mouvement sur un compte, ordres
+  de bourse détaillés), puis Comptes, Catégories, Actifs, Cours, Relevés,
+  Récurrences, Crédits (avec le bien financé) et Fichier (signature,
+  version ; format 5 : nature « Mensualité »). Un
+  classeur plus ancien, sans les derniers onglets, reste lisible. En-têtes figés et filtrables, dates et
+  montants en vrais nombres, négatifs en rouge. Les identifiants sont dans des
+  colonnes techniques repliées : ils rendent la restauration exacte. Un
+  virement entre deux types de comptes figure sur les deux onglets et n'est
+  relu qu'une fois.
+- **Import** (Réglages › Données) : un classeur (même réenregistré par un
+  tableur) ou un ancien export JSON, reconnu à son contenu. Le fichier est
+  entièrement vérifié avant toute écriture (signature, version, valeurs,
+  identifiants, références, règles de saisie rejouées dans l'ordre
+  chronologique) ; un résumé est affiché, puis, après confirmation, toutes
+  les données sont remplacées en une seule transaction (tout ou rien).
+- **Limite Android** : après une désinstallation, l'appli ne peut plus
+  supprimer les fichiers qu'elle avait créés ; la rotation ne s'applique
+  qu'aux fichiers créés depuis la réinstallation (l'import, lui, passe par le
+  sélecteur de fichiers et reste possible).
+
+## Appli PC (branche `desktop`)
+
+Appli Windows en Compose Multiplatform (`:desktop`), même identité noir et
+blanc que le téléphone, mais pensée pour un grand écran : un **tableau de
+bord** de pilotage plutôt qu'une suite d'écrans.
+
+- **Installation** : `./gradlew :desktop:packageZip` produit
+  `desktop/build/distributions/PatrimoinePlus-<version>-windows.zip` (≈ 70 Mo) :
+  à dézipper n'importe où, puis lancer `PatrimoinePlus.exe` (Java inclus, sans
+  installation ni droits administrateur). Non signé : Windows peut afficher un
+  avertissement au premier lancement (« Informations complémentaires ›
+  Exécuter quand même »). En développement : `./gradlew :desktop:run`.
+- **Écran d'accueil** : choisir le dossier synchronisé avec le téléphone, ou
+  **essayer avec la démonstration** (données fictives en mémoire, modifiables,
+  jamais enregistrées). Le choix est mémorisé et rouvert au lancement suivant.
+- **Tableau de bord** (Accueil et Comptes réunis) : patrimoine et variation du
+  mois, variation sur douze mois, entrées et dépenses du mois, épargne du mois ;
+  évolution du patrimoine et répartition par type ; **une tuile par compte**
+  (valeur, variation, petite courbe sur douze mois et aperçu selon le type :
+  dépenses du mois et principales catégories, intérêts de l'année et dernier
+  relevé, plus-value latente et principales positions), qui ouvre le compte
+  d'un clic ; « Réorganiser » pour changer l'ordre des tuiles ; dépenses du
+  mois par catégorie ; dernières opérations (un clic pour les modifier) ;
+  comptes archivés repliés.
+- **Vue d'un compte**, en tuiles : chiffres clés, courbe, dépenses par
+  catégorie (Courant, mois par mois) ou répartition des titres et tableau des
+  positions (Bourse), relevés, opérations.
+- **Saisie** (panneau latéral à droite ; Échap ferme, Entrée dans un champ
+  enregistre ; Ctrl+N ou « Nouvelle opération ») : opérations (dépense,
+  remboursement, revenu, virement, ordre avec nouvel actif), comptes (solde
+  initial, archivage, suppression simple ou définitive confirmée), catégories
+  (icône, suppression avec réaffectation), relevés, cours saisis à la main,
+  positions initiales, fiche d'un actif. Mêmes contrôles et mêmes règles que
+  le téléphone (`:core` : `DataEditor`, logique de saisie partagée).
+- **Apparence du PC** (`:ui`, `theme/DeskTheme.kt`) : fond en dégradé
+  pastel (lavande, bleu brume, rose poudré ; en sombre, nuit indigo et
+  prune), appli portée par un grand cadre arrondi, tuiles et panneau de
+  saisie en panneaux blancs flottants (ombre douce, sans bord), titre de
+  page en grand ; police géométrique **Outfit** (OFL, ressource Compose du
+  module `:ui`, licence dans `doc/licenses/`), chiffres tabulaires. Le
+  téléphone a la même apparence (fond, cartes flottantes, Outfit, pilules). **Effet verre** (Réglages ›
+  Apparence, mémorisé) : panneaux translucides à liseré lumineux sur un fond
+  de formes floues (halos pastel en clair ; en sombre, noir profond, facettes
+  fumées, lueur violette, coque et chiffre mis en avant en violet).
+- **Thèmes personnalisés** (Réglages › Apparence › Thème, PC et téléphone) :
+  « Créer un thème », un nom et cinq couleurs en hexadécimal (#RRGGBB, ou
+  #RGB), une par rôle comme le thème Coloré : principale (chiffre mis en
+  avant, immobilier), hausses et entrées (courant), investissements
+  (épargne), baisses et sorties (bourse), secondaire (collection) ; pastille
+  et alerte si une couleur est peu lisible sur le fond clair ou sombre
+  (contraste < 3:1), aperçu en direct. Les thèmes voyagent dans le fichier
+  d'échange (format 7, onglet Thèmes ; base du téléphone v7) ; le thème
+  choisi reste propre à chaque appareil. Supprimer le thème choisi ramène
+  au thème Coloré.
+- **Assistant** (PC, flottant en bas à droite ; Réglages › Assistant) :
+  petit être blanc et mat aux angles très doux (168 dp), légère lueur
+  blanche, grands yeux d'encre brillants qui suivent le pointeur, joues
+  roses. Très vivant et élastique : respiration, clignements ; au repos il
+  penche la tête, se dandine (surtout content), s'étire, fait un petit saut
+  (prise d'élan, envol étiré, atterrissage en gelée) ou regarde autour de
+  lui ; sans mouvement du pointeur il somnole et se réveille en sursaut ;
+  survolé, il se redresse ; cliqué, il s'écrase et tremble (étourdi après
+  plusieurs clics) ; yeux fermés en mode discret. Il s'efface quand le panneau de
+  saisie est ouvert, et les écrans laissent de la place en bas pour que
+  leur contenu remonte au-dessus de lui. Son humeur résume
+  le mois en cours de la vue affichée : inquiet dès qu'un thème du budget
+  est dépassé, qu'un objectif est en retard ou que le patrimoine baisse ;
+  content si le patrimoine monte, qu'un objectif est atteint ou que le
+  budget est tenu (`core/.../ui/assistant/Assistant.kt`). Sa bulle (survol ou
+  clic, au-dessus de lui) résume l'humeur et liste au plus trois remarques, qui mènent à leur
+  page ; montants masqués en mode discret. Réactions : hochement à
+  l'enregistrement, sursaut et bulle ouverte d'elle-même sur un conflit, un
+  fichier illisible ou une écriture impossible, regard vers le haut à une
+  nouvelle version, joie à un objectif atteint. Il guide aussi les visites
+  guidées (dans leur bulle, il regarde l'élément présenté et hoche la tête à
+  chaque étape) et accompagne les écrans vides (aucun compte, aucune
+  opération, aucun objectif, budget vide, analyse sans historique, recherche
+  sans résultat) avec l'action utile. Mode calme : les yeux seulement. Nom
+  provisoire : « Assistant ».
+- **Lancement du PC** : fond seul pendant 0,15 s, puis les éléments
+  arrivent l'un après l'autre en fondu et glissement (cadre, rail, barre du
+  haut, écran ; sur l'écran d'accueil : logo, titre, texte, boutons), 0,9 s
+  en tout (`ui/Launch.kt`) ; la visite guidée attend la fin.
+- **Premier plan au lancement** (PC) : la fenêtre s'ouvre agrandie (toute
+  la place de l'écran, barre de titre et barre des tâches visibles ;
+  1440 × 900 une fois restaurée), devant les autres, avec le focus, même lancée depuis un terminal ou après une mise à
+  jour (Windows refuse d'ordinaire le premier plan à un programme qui ne l'a
+  pas : `WindowFront.kt` se rattache un instant à la fenêtre active).
+- **Tutoriels du PC** (visites guidées) : au premier lancement, celle du
+  tableau de bord (avec la coque : saisie, recherche, mode discret, rail) ;
+  à la première venue sur chaque autre page (et sur la vue d'un compte), la
+  sienne. La page s'assombrit sauf l'élément présenté (découpe animée qui
+  glisse d'un élément à l'autre, halo), une bulle l'explique en le suivant
+  (Précédent, Suivant, Passer ; Échap passe, flèches pour changer
+  d'étape) ; « Passer » ne vaut que pour la page, « Ne plus afficher les
+  tutoriels » les coupe tous. Réglages › Tutoriels : « Revoir » la visite
+  d'une page, ou « Réactiver tous les tutoriels ». Pages vues mémorisées
+  sur le PC.
+- **Rail d'icônes du PC**, dans cet ordre : Tableau de bord, Objectifs,
+  Recherche, Opérations (saisie rapide puis récurrences et mensualités),
+  Budget, Projection, Bilan (onglets « Mois par mois » et « Bilan annuel »),
+  Réglages (avec la section Catégories) ; nom de la page en info-bulle (et
+  pour les lecteurs d'écran), page active sur un disque plein qui glisse
+  d'une icône à l'autre ; bascule clair / sombre en bas du rail ; en haut,
+  « Nouvelle opération », recherche (Ctrl+F) et mode discret (œil).
+- **Thèmes de couleurs** (Réglages › Apparence › Thème, PC et téléphone,
+  chacun en clair et en sombre) : **Monochrome** (tout en noir et blanc),
+  **Minimal** (noir et blanc, hausses en vert et baisses en rouge),
+  **Coloré** (palette « Indigo », assortie au logo : fonds identiques aux
+  autres thèmes, encre indigo profond et boutons indigo — lavande en
+  sombre, chaque teinte ayant sa version claire et sombre —, une couleur
+  par type de compte (Courant menthe, Épargne ambre, Bourse corail,
+  Immobilier indigo, Collection pervenche, Crédit ardoise)
+  portée par les tuiles du tableau de bord (aplat pastel, courbe),
+  la répartition et les comptes du téléphone ; patrimoine net en tuile
+  pleine ; pastilles des opérations en menthe (entrées) ou corail
+  (sorties) ; graphiques et cashflow aux couleurs de la palette ; hausses en
+  menthe et baisses en corail). Sur les autres pages, mêmes repères : vue
+  d'un compte à la couleur de son type (marque, tuile principale, courbe) ;
+  entrées et revenus en menthe, sorties et dépenses en corail, épargne et
+  placements en ambre (bilan, budget, projection, objectifs) ; chiffre
+  principal en tuile pleine (variation du bilan, reste du budget, scénario
+  central de la projection) ; pastilles d'opérations colorées dans la
+  recherche et les récurrences. Les teintes des
+  graphiques sont validées (voisins distincts, daltonisme compris) et les
+  textes gardent un contraste d'au moins 4,5:1. Remplace l'ancien réglage
+  « Hausses en vert, baisses en rouge » (activé : thème Minimal).
+- **Répartitions en barre ou en cercle** (PC et téléphone) : une icône sur
+  chaque diagramme de répartition, sur la ligne du titre de sa tuile, bascule
+  entre la barre et l'anneau, mêmes
+  parts dans le même ordre et les mêmes teintes que la légende ; chaque
+  diagramme garde sa forme, indépendamment des autres (tableau de bord,
+  titres de chaque compte Bourse, accueil, onglet Comptes), mémorisée pour
+  la prochaine visite. Sur le PC, la tuile garde sa
+  taille quand on bascule.
+- **Rapprochement avec le relevé de la banque** (vue d'un compte, tuile
+  Relevés › « Rapprocher un relevé… ») : le fichier CSV exporté par le site de
+  la banque est lu sans réglage (encodage, séparateur, lignes d'informations,
+  colonnes Montant ou Débit/Crédit, dates et montants à la française) et
+  comparé aux opérations du compte : même montant, dates à cinq jours au plus.
+  Trois listes : lignes retrouvées ; lignes de la banque absentes de l'appli,
+  avec libellé et catégorie proposés d'après les saisies passées, à cocher et
+  corriger puis créer en une fois ; opérations de l'appli absentes du relevé.
+  Rien n'est mémorisé (pas de pointage) ; le format exact de chaque banque reste
+  à vérifier sur un vrai export.
+- **Bilan › Mois par mois** (rail) : dépenses et revenus des douze derniers mois,
+  tous comptes : moyennes (dépenses, revenus, taux d'épargne), plus fortes
+  hausses du dernier mois, barres mois par mois, tableau catégories × mois
+  (moyenne des mois complets, écart du dernier mois). Un clic sur une case
+  ouvre ses opérations.
+- **Recherche** (rail, Ctrl+F) : recherche dans toutes les
+  opérations (mots sans accents ni majuscules dans le libellé, les notes, la
+  catégorie, les comptes ; montant exact ; filtres de compte, de catégorie, de
+  période et de montant), total des résultats ; les 20 plus récentes
+  d'abord, puis « Afficher 20 de plus » en bas de la liste (de nouveaux
+  critères repartent à 20) ; sélection multiple (cases,
+  Ctrl+clic, Maj+clic, tout sélectionner) pour **changer la catégorie** de
+  plusieurs dépenses ou revenus d'un coup, ou les **supprimer** (confirmé ;
+  refusé si une vente devenait impossible).
+- **Opérations › Saisie rapide** (rail ; la page continue avec les récurrences et les mensualités) : dépenses et revenus en série dans une
+  grille au clavier (Tab, Entrée pour une nouvelle ligne, Ctrl+Entrée pour tout
+  enregistrer) ; catégorie proposée d'après le libellé ; montant sans signe =
+  dépense, « + » = entrée ; tout est contrôlé puis enregistré en une fois.
+- **Bilan › Bilan annuel** (rail) : patrimoine au début et à la fin de
+  l'année (avoirs et crédits restant dus), comptes, revenus et dépenses par
+  catégorie, taux d'épargne, intérêts, dividendes, plus-values réalisées par
+  titre ; **biens** achetés, ajoutés (déjà possédés) et vendus (plus-values) ;
+  **crédits** (capital restant dû, capital remboursé, intérêts et assurance
+  d'après le tableau d'amortissement) ; **export PDF** A4
+  prêt à imprimer (générateur PDF minimal écrit pour l'appli, polices
+  standard, sans bibliothèque).
+- **Projection** (rail) : patrimoine estimé à 5, 10, 20 ou 30 ans ;
+  épargne mensuelle (par défaut la moyenne des douze derniers mois),
+  rendements de l'épargne et de la bourse, part versée en bourse ; trois
+  scénarios et courbe année par année. Comptes courants et biens (au prix
+  d'achat) stables ; crédits remboursés selon leur tableau d'amortissement,
+  le capital de chaque mensualité étant pris sur l'épargne mensuelle (crédits
+  restant dus à l'horizon affichés). Une estimation, sans impôts ni
+  inflation.
+- **Budget** (rail) : page de **planification** d'un mois type
+  (le suivi se fait dans Objectifs), en lignes libres d'entrées, de
+  dépenses et d'investissements (nom et montant) ; une dépense porte l'un
+  des six **thèmes** Vie quotidienne, Plaisirs, Abonnements, Transports,
+  Logement, Crédit (affichés sur deux colonnes de trois), qui la regroupe
+  dans le schéma et dans les objectifs du mois (le réel d'un thème vient
+  des catégories du même nom ; Crédit : « Crédit », « Prêt », « Emprunt » ;
+  Plaisirs : « Plaisirs », « Loisirs », « Sorties » ; toutes les autres
+  catégories de dépense : Vie quotidienne) ; bandeau « Objectifs du mois » (mois en cours ou suivant) ;
+  **diagramme de cashflow (Sankey)** du budget sur
+  quatre colonnes : entrées → budget → investissements (en haut) puis
+  thèmes de dépenses (du plus fort au plus faible), puis reste →
+  détail de chaque groupe ; rubans en courbes douces, teintes pastel par thème,
+  étiquettes « Nom : montant » ; déficit visible. Enregistré sur le PC
+  (`%APPDATA%\PatrimoinePlus\budget.json` ; `budget-demo.json` pour la démonstration), pas dans le fichier
+  synchronisé.
+- **Objectifs** (rail, PC), en deux sections. **Objectifs
+  globaux** : cibles suivies sur les données (patrimoine, compte, type de
+  placement, épargne mensuelle, taux d'épargne), mises à jour à la main ou à
+  cocher, avec rythme, date estimée et effort mensuel ; idées toutes prêtes
+  (matelas de sécurité de trois mois de dépenses, remplir le PEA, apport pour
+  un achat immobilier…). **Objectifs du mois** : fixés depuis le Budget
+  (« Fixer les objectifs du mois » sur le mois affiché, « Mettre à jour »
+  ensuite) : une dépense maximale par thème prévu et une épargne minimale
+  égale aux investissements prévus ; suivis automatiquement sur les
+  opérations (dépenses du thème, mis de côté), états En cours, Tenu,
+  Dépassé, Atteint, Manqué ; navigation par mois et **historique** des mois
+  écoulés (réussis sur fixés), figé une fois le mois passé. Enregistrés dans
+  le fichier d'objectifs du PC (propre à chaque source).
+- **Synchronisation côté PC** : le fichier d'échange est lu, puis surveillé
+  (2 s) ; une modification du PC est écrite 1,5 s plus tard (fichier
+  temporaire ignoré par Syncthing, puis remplacement atomique), une
+  modification du téléphone est relue ; même décision par empreintes que le
+  téléphone, même fenêtre de conflit (le fichier est relu avant d'écraser).
+  Un fichier illisible n'est jamais écrasé. Si des modifications ne peuvent
+  pas être écrites (conflit, fichier refusé), la fermeture et le changement de
+  source proposent d'en **enregistrer une copie**. Les **cours automatiques**
+  restent récupérés par le téléphone seul (le PC ne va sur internet que pour
+  chercher les mises à jour).
+- **Vérification sans fenêtre** : `PatrimoinePlus.exe --verifier <fichier>`
+  lit et vérifie un fichier d'échange (code de sortie 0 s'il est valide) et
+  montre une date en français (contrôle de la JVM embarquée).
+- Réglages de l'appli PC : `%APPDATA%\PatrimoinePlus\desktop.properties`.
+- Un installateur `.msi` est possible gratuitement (le plugin Compose
+  télécharge WiX lui-même).
+
+## Synchronisation avec le PC
+
+Les données sont partagées avec l'appli PC (branche `desktop`) par un
+**fichier d'échange** déposé dans un dossier que
+synchronise un outil comme Syncthing (gratuit, sans cloud).
+
+- **Dossier** : choisi une fois dans Réglages › Synchronisation (sélecteur du
+  système, ouvert sur `Documents/PatrimoinePlus`) ; Android mémorise
+  l'autorisation, ce qui permet de lire les fichiers déposés par Syncthing.
+- **Fichier** : `patrimoineplus-donnees.xlsx`, même classeur que les
+  sauvegardes. Réécrit 3 s après chaque modification, relu au démarrage et à
+  chaque retour dans l'appli.
+- **Décision** (`:core`, `data/sync/SyncLogic.kt`) : par **empreintes de
+  contenu** (SHA-256 de la forme canonique), sans aucune date — les horloges
+  des appareils peuvent différer. Dernière synchronisation, téléphone et
+  fichier : seul le téléphone a changé → le fichier est réécrit ; seul le
+  fichier → les données du téléphone sont remplacées (après une sauvegarde de
+  sécurité) ; les deux, différemment → **conflit** : une fenêtre demande
+  quelle version garder, rien n'est modifié avant. Un téléphone vide (nouvelle
+  installation) reprend le fichier sans conflit.
+- **Fichier illisible** (copie interrompue) : refusé, rien n'est modifié.
+- La rotation des sauvegardes ne compte que les fichiers datés : le fichier
+  d'échange et les copies de conflit de Syncthing ne sont jamais supprimés.
+
+### Mise en place avec Syncthing
+
+Syncthing est gratuit et libre ; il synchronise le dossier directement entre
+le téléphone et le PC (Wi‑Fi local), sans serveur intermédiaire.
+
+1. **Téléphone** : installer **Syncthing-Fork** depuis le Google Play Store
+   (l'ancienne appli « Syncthing » n'y est plus disponible).
+2. **PC (Windows)** : installer Syncthing avec **Syncthing Windows Setup**,
+   l'installateur listé sur la page de téléchargement de syncthing.net
+   (`github.com/Bill-Stewart/SyncthingWindowsSetup`). L'interface de Syncthing
+   s'ouvre ensuite dans le navigateur.
+3. **Associer les appareils** : dans Syncthing-Fork, ajouter le PC en scannant
+   le QR code de son identifiant (interface PC : Actions › Afficher
+   l'identifiant), puis accepter l'appareil côté PC.
+4. **Partager le dossier** : sur le téléphone, partager
+   `Documents/PatrimoinePlus` avec le PC ; côté PC, accepter le partage et
+   choisir son emplacement (par exemple `Documents\PatrimoinePlus`).
+5. **Dans PatrimoinePlus** : Réglages › Synchronisation › « Choisir le dossier »,
+   sélectionner `Documents/PatrimoinePlus` et autoriser.
+6. **Vérifier** : `patrimoineplus-donnees.xlsx` apparaît dans le dossier du PC
+   au bout de quelques secondes et suit chaque modification faite sur le
+   téléphone.
+
+Si la synchronisation tarde, vérifier dans Syncthing-Fork les conditions
+d'exécution (Wi‑Fi seulement, en charge…) et l'autoriser à fonctionner en
+arrière-plan : Android peut le mettre en pause. Dans un tableur, ne jamais
+modifier les colonnes repliées (identifiants) du fichier d'échange.
+
+## Cours automatiques
+
+Les comptes Bourse se valorisent seuls : il suffit de saisir les ordres.
+
+- **Source** : Yahoo Finance (API publique non officielle, sans clé,
+  `data/market/YahooQuoteSource.kt`). Seuls des ISIN et des symboles sont
+  envoyés, jamais de quantité ni de montant ; le fournisseur voit toutefois
+  quels titres sont suivis et l'adresse IP. Permission `INTERNET`.
+- **Identifiant** : l'ISIN de chaque actif (saisi à la création d'un actif
+  dans un ordre, ou dans la fiche de l'actif en touchant sa position).
+  L'appli cherche la cotation **en euros** : correspondance directe adoptée
+  automatiquement (LU1681043599 → CW8.PA) ; sinon, dans la fiche, « Chercher
+  la cotation » essaie le même symbole sur les places de la zone euro
+  (IE00B4L5Y983 → IWDA.AS) et montre le titre trouvé pour confirmation. Le
+  symbole peut aussi être saisi à la main (colonne `ticker`, schéma v2).
+- **Quand** : à l'ouverture d'un compte Bourse et par une tâche de fond
+  quotidienne (avec réseau), au plus toutes les 4 heures ; « Actualiser » ou
+  tirer la vue vers le bas pour forcer.
+- **Historique** : à la première mise à jour, les clôtures de fin de mois
+  depuis le premier ordre sont enregistrées (courbe de la valeur et
+  patrimoine justes sur tout l'historique) ; ensuite, seuls les mois manquants
+  et le dernier cours.
+- **Sans réseau ou titre introuvable** : le dernier cours connu reste utilisé ;
+  « Saisir des cours » permet toujours la saisie manuelle.
+
+## Lancement et verrou
+
+- **Lancement** : l'écran de démarrage système montre une carte de verre
+  seule, sans tuile (`res/drawable/splash_logo.xml`, bibliothèque
+  `core-splashscreen`) ;
+  l'animation Compose prend le relais au même endroit et à la même taille
+  (l'écran système reste affiché jusqu'à ce que le logo soit mesuré, 1,5 s au
+  plus) : c'étaient deux cartes superposées, celle de derrière glisse en haut
+  à droite en s'inclinant, la puce, la courbe et le « + » apparaissent, le
+  cadre se trace dans le sens des aiguilles d'une montre et la tuile se
+  remplit ; puis le logo remonte et le nom et le bouton apparaissent
+  (≈ 1,9 s, `ui/lock/LockScreen.kt`, étapes dans `ui/components/Logo.kt`). Animation sautée si les animations du téléphone
+  sont désactivées.
+- **Écran de connexion** : toujours franchi au lancement. Avec le verrou, le
+  bouton « Déverrouiller » demande l'empreinte ou le code du téléphone
+  (`BIOMETRIC_STRONG` ou `DEVICE_CREDENTIAL`) — plus de demande automatique ;
+  sans verrou, « Entrer » ouvre l'appli. Il s'efface en fondu.
+- **Verrou** : désactivé par défaut ; interrupteur dans Réglages › Sécurité,
+  qui demande une première authentification pour s'activer. Une fois activé,
+  l'écran de connexion revient (sans animation) après une minute ou plus en
+  arrière-plan (`domain/rules/Safety.kt` : `shouldLock`, `gateShown`).
+- L'écran se pose par-dessus l'appli, qui garde son état ; le contenu dessous
+  est retiré de l'accessibilité. Choix assumé : l'aperçu des applis récentes et
+  les captures d'écran restent permis (pas de `FLAG_SECURE`).
+
+## Reste à faire
+
+- Archivage d'un actif (la fiche permet le renommage, l'ISIN et le symbole).
+- ISIN des positions initiales : à compléter dans la fiche de l'actif.
+- Cours d'un titre coté seulement hors zone euro : pas de conversion de devise
+  (saisie manuelle des cours).
+- Légende de la répartition coupée avec une police système à 130 %.
+- Fond qui peut clignoter au démarrage en mode clair forcé quand le téléphone
+  est en sombre.
+- Version release : construite mais jamais exécutée par les tests.
+- PC : barre de titre Windows claire même en mode sombre ; sélecteur de
+  dossier de Java (pas celui de l'Explorateur).
+- Téléphone : quand la liste des opérations tient sur l'écran, le bouton « + »
+  peut recouvrir le montant de la dernière ligne.
+
+## Conventions de code
+
+- Indentation par tabulations (largeur 4).
+- Constantes préfixées `k`, variables locales `v`, paramètres `in`.
+- Un commentaire par classe et par fonction ; commentaires et textes en français.
+- Alignement des `=` et des commentaires de fin de ligne sur les déclarations
+  consécutives.
+- Commits en français, style Conventional Commits.
+
+Conséquence connue : un paramètre de méthode redéfinie (par exemple
+`onCreate(inSavedInstanceState)`) porte un autre nom que dans la classe
+parente, ce qui produit une alerte du compilateur Kotlin sans effet.
