@@ -97,7 +97,12 @@ fun SettingsScreen(
 					},
 					style = MaterialTheme.typography.bodyLarge
 				)
+				val vBackup by inController.backupInfo.collectAsState()								// sauvegardes du PC
+				vBackup?.let { inInfo ->
+					Text(inInfo, style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+				}
 				Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+					if (vBackup != null) OutlinedButton(onClick = { inController.backupIfDue(inForce = true) }) { Text("Sauvegarder maintenant") }
 					OutlinedButton(onClick = { inOnPickFolder()?.let(inController::openFolder) }) { Text("Choisir un dossier…") }
 					if (vSettings.source != Source.Demo)
 					{

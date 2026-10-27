@@ -73,7 +73,12 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.update
+import fr.maubin.patrimoineplus.desktop.data.PcBackup
+import fr.maubin.patrimoineplus.desktop.data.PcBackupResult
+import fr.maubin.patrimoineplus.desktop.data.kPcBackupFolder
+import fr.maubin.patrimoineplus.desktop.data.kPcBackupKept
+import fr.maubin.patrimoineplus.desktop.data.LoadStatus
 
 private const val kDayCheckMillis = 60_000L										// contrôle du changement de jour
 
@@ -269,6 +274,8 @@ class DesktopController(
 	private val fUpdate     = MutableStateFlow<UpdateUiState?>(null)			// fenêtre de mise à jour ; null sans
 	private val fExit       = MutableStateFlow(false)							// fermeture demandée (remplacement par la nouvelle version)
 	private var fDownload   : Job? = null										// téléchargement en cours
+	private val fBackup     = PcBackup(inClock)									// sauvegardes quotidiennes du PC
+	private val fBackupInfo = MutableStateFlow<String?>(null)					// état des sauvegardes (réglages) ; null sans dossier
 	private var fRowKeys    = 0L												// identifiants des lignes de la grille
 	private var fTokens     = 0L												// numéros d'ouverture des panneaux
 
@@ -304,6 +311,51 @@ class DesktopController(
 
 	// Onglet affiché de l'écran Bilan.
 	val reportTab: StateFlow<ReportTab> = fReportTab
+
+	// État des sauvegardes automatiques du PC (réglages) ; null sans dossier synchronisé.
+	val backupInfo: StateFlow<String?> = fBackupInfo
+
+	/*
+		Sauvegarde quotidienne du PC (sous-dossier « Sauvegardes PC » du dossier
+		synchronisé) si celle du jour manque, ou tout de suite si elle est
+		demandée. Rien en démonstration, sans dossier ou tant que le fichier
+		n'est pas lu. En arrière-plan si une portée est fournie.
+		inForce : « Sauvegarder maintenant » (réécrit celle du jour)
+	*/
+	fun backupIfDue(inForce: Boolean = false)
+	{
+		val vSpace  = inWorkspace.state.value													// espace de travail
+		val vFolder = (vSpace.source as? Source.Folder)?.path ?: run { fBackupInfo.value = null; return }	// dossier synchronisé
+		if (vSpace.status == LoadStatus.Idle || vSpace.status == LoadStatus.Waiting) return
+		val vFile   = inWorkspace.file																// données à sauvegarder
+		val vRun    = {
+			val vResult = fBackup.backup(vFolder, vFile, inForce)								// sauvegarde
+			fBackupInfo.value = backupText(vFolder)
+			if (inForce) showNotice(when (vResult)
+			{
+				is PcBackupResult.Done   -> "Sauvegarde enregistrée dans « $kPcBackupFolder »."
+				PcBackupResult.Empty     -> "Rien à sauvegarder : aucun compte."
+				is PcBackupResult.Failed -> "Sauvegarde impossible : ${vResult.message}"
+			})
+		}
+		if (inScope != null) inScope.launch(Dispatchers.IO) { vRun() } else vRun()
+	}
+
+	/*
+		Texte de l'état des sauvegardes pour les réglages.
+		inFolder : dossier synchronisé
+	*/
+	private fun backupText(inFolder: Path): String
+	{
+		val vLast = fBackup.last(inFolder)														// dernière sauvegarde
+		val vWhen = when (vLast)
+		{
+			null                -> "aucune pour l’instant"
+			LocalDate.now(inClock) -> "la dernière aujourd’hui"
+			else                -> "la dernière le ${fr.maubin.patrimoineplus.domain.format.formatFrenchDate(vLast)}"
+		}																						// date de la dernière
+		return "Chaque jour, une copie complète dans « $kPcBackupFolder » (dossier synchronisé, donc aussi sur le téléphone) ; les $kPcBackupKept plus récentes sont gardées ; $vWhen."
+	}
 
 	// Fenêtre de mise à jour ; null sans.
 	val update: StateFlow<UpdateUiState?> = fUpdate
@@ -474,11 +526,13 @@ class DesktopController(
 	init
 	{
 		inWorkspace.open(fSettings.value.source, inScope)
+		backupIfDue()
 		inScope?.launch {
 			while (isActive)
 			{
 				delay(kDayCheckMillis)
 				inWorkspace.refreshDay()
+				backupIfDue()
 			}
 		}
 	}
@@ -1168,6 +1222,7 @@ class DesktopController(
 		inWorkspace.open(inSource, inScope)
 		fNavigation.value = Navigation()
 		fPanel.value      = null
+		backupIfDue()
 	}
 
 	/*

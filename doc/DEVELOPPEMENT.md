@@ -612,6 +612,15 @@ bord** de pilotage plutôt qu'une suite d'écrans.
 - **Vérification sans fenêtre** : `PatrimoinePlus.exe --verifier <fichier>`
   lit et vérifie un fichier d'échange (code de sortie 0 s'il est valide) et
   montre une date en français (contrôle de la JVM embarquée).
+- **Sauvegardes automatiques du PC** : une par jour (au lancement, à
+  l'ouverture d'un dossier et au changement de jour), dans le sous-dossier
+  `Sauvegardes PC` du dossier synchronisé (donc copiées aussi sur le
+  téléphone par Syncthing) : `patrimoineplus-pc-AAAA-MM-JJ.xlsx`, même
+  classeur que le fichier d'échange, écrit dans un fichier temporaire puis
+  renommé ; les **7 plus récentes** gardées, les autres fichiers jamais
+  touchés (noms distincts de ceux du téléphone : aucun conflit). Rien en
+  démonstration ni sans compte. Réglages › Données : date de la dernière
+  et « Sauvegarder maintenant » (`desktop/.../data/PcBackup.kt`).
 - Réglages de l'appli PC : `%APPDATA%\PatrimoinePlus\desktop.properties`.
 - Un installateur `.msi` est possible gratuitement (le plugin Compose
   télécharge WiX lui-même).

@@ -72,7 +72,8 @@ biens immobiliers, objets de collection et crédits, et calcule votre
 | **Recherche** | Recherche multicritère dans toutes les opérations, modification ou suppression groupée | — | ✅ |
 | **Rapprochement bancaire** | Comparaison avec le relevé CSV de la banque, création des opérations manquantes | — | ✅ |
 | **Synchronisation** | Fichier d'échange dans un dossier partagé par Syncthing ; conflits détectés, jamais d'écrasement silencieux | ✅ | ✅ |
-| **Sauvegarde et import** | Sauvegarde quotidienne en classeur Excel lisible, import vérifié avant remplacement | ✅ | — |
+| **Sauvegarde automatique** | Une sauvegarde par jour en classeur Excel lisible (téléphone : les 3 dernières ; PC : les 7 dernières, dans « Sauvegardes PC ») | ✅ | ✅ |
+| **Import d'une sauvegarde** | Restauration d'un classeur, entièrement vérifiée avant de remplacer les données | ✅ | — |
 | **Mode discret** | Masque tous les montants d'un geste | ✅ | ✅ |
 | **Verrou** | Empreinte ou code du téléphone à l'ouverture | ✅ | — |
 | **Thèmes** | Monochrome, Minimal ou Coloré, clair ou sombre, effet verre | ✅ | ✅ |
