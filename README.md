@@ -648,15 +648,16 @@ Les comptes Bourse se valorisent seuls : il suffit de saisir les ordres.
 
 ## Lancement et verrou
 
-- **Lancement** : l'écran de démarrage système montre la tuile du logo avec
-  la carte de derrière seule, en verre clair ou sombre selon le mode du
-  téléphone (`res/drawable(-night)/splash_logo.xml`, bibliothèque
+- **Lancement** : l'écran de démarrage système montre une carte de verre
+  seule, sans tuile (`res/drawable/splash_logo.xml`, bibliothèque
   `core-splashscreen`) ;
   l'animation Compose prend le relais au même endroit et à la même taille
   (l'écran système reste affiché jusqu'à ce que le logo soit mesuré, 1,5 s au
-  plus) : la carte de devant monte se poser et le « + » apparaît, le logo
-  remonte, puis le nom et le bouton apparaissent (≈ 1,25 s,
-  `ui/lock/LockScreen.kt`). Animation sautée si les animations du téléphone
+  plus) : c'étaient deux cartes superposées, celle de derrière glisse en haut
+  à droite en s'inclinant, la puce, la courbe et le « + » apparaissent, le
+  cadre se trace dans le sens des aiguilles d'une montre et la tuile se
+  remplit ; puis le logo remonte et le nom et le bouton apparaissent
+  (≈ 1,9 s, `ui/lock/LockScreen.kt`, étapes dans `ui/components/Logo.kt`). Animation sautée si les animations du téléphone
   sont désactivées.
 - **Écran de connexion** : toujours franchi au lancement. Avec le verrou, le
   bouton « Déverrouiller » demande l'empreinte ou le code du téléphone

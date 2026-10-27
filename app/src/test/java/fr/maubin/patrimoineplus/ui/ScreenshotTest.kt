@@ -136,15 +136,15 @@ class ScreenshotTest
 	}
 
 	/*
-		Animation du lancement, image par image : tuile et carte de derrière
-		seules (relais de l'écran de démarrage système), carte de devant en
-		route, logo qui remonte, écran posé avec verrou ; puis écran sans
-		verrou, en sombre.
+		Animation du lancement, image par image : une carte seule (relais de
+		l'écran de démarrage système), carte de derrière qui glisse, dessins,
+		cadre qui se trace, tuile remplie, logo qui remonte, écran posé avec
+		verrou ; puis écran sans verrou, en sombre.
 	*/
 	@Test
 	fun launchSequence()
 	{
-		listOf(0f to "1-debut", 0.3f to "2-carte", 0.66f to "3-remontee", 1f to "4-pose").forEach { (inProgress, inName) ->
+		listOf(0f to "1-debut", 0.15f to "2-cartes", 0.3f to "3-dessins", 0.45f to "4-cadre", 0.58f to "5-tuile", 0.74f to "6-remontee", 1f to "7-pose").forEach { (inProgress, inName) ->
 			captureRoboImage("$kOutDir/lancement-$inName.png") {
 				Themed(inDarkTheme = false) { LockContent(inProgress, inAuth = true, inMessage = null, inOnUnlock = {}) }
 			}

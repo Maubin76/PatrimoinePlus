@@ -45,15 +45,17 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 
-private const val kIntroMillis   = 1_250											// durée de l'animation du lancement
+private const val kIntroMillis   = 1_900											// durée de l'animation du lancement
 private const val kSplashLogoDp  = 156f												// côté du logo sur l'écran de démarrage système (tuile inscrite dans son cercle de 192 dp)
 private const val kFinalLogoDp   = 104f												// côté du logo sur l'écran de connexion
 private val kEase                = CubicBezierEasing(0.2f, 0f, 0f, 1f)			// courbe « accentuée » de Material
 
 /*
-	Écran de connexion. Au lancement, il s'ouvre sur l'animation du logo : la
-	carte de devant monte se poser sur l'autre et le « + » apparaît, puis le logo
-	remonte à sa place et le nom et le bouton apparaissent. Ensuite (retour
+	Écran de connexion. Au lancement, il s'ouvre sur l'animation du logo : une
+	carte seule (les deux, superposées), puis celle de derrière glisse en
+	s'inclinant, la puce, la courbe et le « + » apparaissent, le cadre se trace
+	et la tuile se remplit ; enfin le logo remonte à sa place et le nom et le
+	bouton apparaissent. Ensuite (retour
 	après une minute), il s'affiche directement. L'authentification ne se lance
 	qu'au toucher du bouton ; l'animation est sautée si les animations du
 	téléphone sont désactivées.
@@ -95,8 +97,8 @@ fun LockScreen(
 }
 
 /*
-	Contenu de l'écran de connexion à un instant de l'animation (0 : logo
-	centré en grand, sans la carte de devant, comme l'écran de démarrage système ; 1 :
+	Contenu de l'écran de connexion à un instant de l'animation (0 : une carte
+	seule, centrée en grand, comme l'écran de démarrage système ; 1 :
 	écran posé). Sans état : sert aussi aux captures.
 	inProgress : avancement, de 0 à 1
 	inAuth     : vrai si le verrou est activé
@@ -113,9 +115,9 @@ fun LockContent(
 	inOnReady  : () -> Unit = {}
 )
 {
-	val vArrival  = kEase.transform(phase(inProgress, 0.05f, 0.5f))				// arrivée de la carte de devant
-	val vMove     = kEase.transform(phase(inProgress, 0.5f, 0.85f))				// remontée du logo
-	val vReveal   = kEase.transform(phase(inProgress, 0.68f, 1f))				// apparition du texte et du bouton
+	val vBuild    = phase(inProgress, 0.03f, 0.62f)								// construction du logo (ses étapes ont leur propre courbe)
+	val vMove     = kEase.transform(phase(inProgress, 0.62f, 0.86f))				// remontée du logo
+	val vReveal   = kEase.transform(phase(inProgress, 0.74f, 1f))				// apparition du texte et du bouton
 	var vRoot     by remember { mutableStateOf<Offset?>(null) }				// centre de l'écran
 	var vLogo     by remember { mutableStateOf<Offset?>(null) }				// centre du logo posé
 	Box(
@@ -143,7 +145,7 @@ fun LockContent(
 						translationY = lerp(vOffset.y, 0f, vMove)
 					}
 			) {
-				PatrimoineLogo(kFinalLogoDp.dp, vArrival)
+				PatrimoineLogo(kFinalLogoDp.dp, vBuild)
 			}
 			LaunchedEffect(vRoot != null && vLogo != null) {
 				if (vRoot != null && vLogo != null) inOnReady()

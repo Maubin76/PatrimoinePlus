@@ -61,26 +61,29 @@ class LogoTest
 	}
 
 	/*
-		Planche des deux déclinaisons à trois instants de l'arrivée, et rendu
-		de l'icône en grand : la carte de devant absente laisse le bas de la
-		tuile inchangé par rapport à l'écran de démarrage, présente elle le
-		colore de violet.
+		Planche des deux déclinaisons à cinq instants de la construction, et
+		rendu de l'icône en grand. Au départ (comme l'écran de démarrage) : une
+		carte seule, sans tuile ni carte de derrière visible ; à la fin : tuile
+		pleine, coins transparents.
 	*/
 	@Test
 	fun variants()
 	{
 		listOf(true to "sombre", false to "clair").forEach { (inDark, inName) ->
-			save(render(3 * 220 + 40, 240) {
+			save(render(5 * 220 + 60, 240) {
 				Row(Modifier.padding(10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-					listOf(0f, 0.5f, 1f).forEach { PatrimoineLogo(220.dp, it, inDark) }
+					listOf(0f, 0.25f, 0.5f, 0.75f, 1f).forEach { PatrimoineLogo(220.dp, it, inDark) }
 				}
 			}, "logo-$inName")
 		}
 		val vIcon   = ImageIO.read(save(render(1024, 1024) { PatrimoineLogo(1024.dp, 1f, true) }, "logo-icone-1024"))	// icône en grand
-		val vAbsent = ImageIO.read(save(render(1024, 1024) { PatrimoineLogo(1024.dp, 0f, true) }, "logo-sans-carte"))	// carte de devant absente
+		val vStart  = ImageIO.read(save(render(1024, 1024) { PatrimoineLogo(1024.dp, 0f, true) }, "logo-depart"))	// départ : une carte seule
 		assertEquals(0, vIcon.getRGB(2, 2) ushr 24)										// coins transparents
-		assertNotEquals(vIcon.getRGB(512, 640), vAbsent.getRGB(512, 640))
-		assertTrue((vIcon.getRGB(512, 640) and 0xFF) > 150)							// violet de la carte de devant
+		assertEquals(255, vIcon.getRGB(512, 80) ushr 24)								// tuile pleine à la fin
+		assertEquals(0, vStart.getRGB(512, 80) ushr 24)								// pas de tuile au départ
+		assertEquals(0, vStart.getRGB(700, 320) ushr 24)								// carte de derrière invisible au départ
+		assertNotEquals(0, vIcon.getRGB(700, 320) ushr 24)
+		assertTrue((vStart.getRGB(512, 640) and 0xFF) > 150)							// violet de la carte de devant, dès le départ
 	}
 
 	/*

@@ -25,7 +25,7 @@ identifiant (A-03, C-12…) pour le retour.
 
 | # | Étape | Résultat attendu |
 |---|---|---|
-| A-01 | Lancer l'appli (fermée au préalable depuis les applis récentes). | Tuile du logo avec la carte de derrière (claire ou sombre selon le téléphone), puis la carte de devant monte se poser et le « + » apparaît, le logo remonte, nom et bouton apparaissent (≈ 1,25 s) ; aucun saut de taille ou de position. |
+| A-01 | Lancer l'appli (fermée au préalable depuis les applis récentes). | Une carte seule sur le fond, puis la carte de derrière glisse en s'inclinant, puce, courbe et « + » apparaissent, le cadre se trace (sens horaire) et la tuile se remplit, le logo remonte, nom et bouton apparaissent (≈ 1,9 s) ; aucun saut de taille ou de position. |
 | A-01b | Téléphone avec la release N-1 (APK de GitHub) quand une version N est publiée : lancer, déverrouiller ; « Mettre à jour » ; autoriser l'installation dans l'écran d'Android, revenir ; confirmer « Installer ». Recommencer à la version suivante. | Fenêtre après le déverrouillage seulement ; barre de téléchargement ; écran d'autorisation à la première fois, installation reprise au retour ; l'appli redémarre en version N, données intactes ; à la mise à jour suivante, plus d'écran « Installer » (Android 12 et plus). |
 | A-02 | Sans verrou : toucher « Entrer ». | L'écran s'efface en fondu ; assistant du premier lancement (base vide) ou Accueil. |
 | A-03 | Mode sombre du téléphone, relancer. | Même enchaînement, titre lisible. |
