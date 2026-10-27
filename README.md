@@ -510,7 +510,9 @@ bord** de pilotage plutôt qu'une suite d'écrans.
 - **Recherche** (rail, Ctrl+F) : recherche dans toutes les
   opérations (mots sans accents ni majuscules dans le libellé, les notes, la
   catégorie, les comptes ; montant exact ; filtres de compte, de catégorie, de
-  période et de montant), total des résultats ; sélection multiple (cases,
+  période et de montant), total des résultats ; les 20 plus récentes
+  d'abord, puis « Afficher 20 de plus » en bas de la liste (de nouveaux
+  critères repartent à 20) ; sélection multiple (cases,
   Ctrl+clic, Maj+clic, tout sélectionner) pour **changer la catégorie** de
   plusieurs dépenses ou revenus d'un coup, ou les **supprimer** (confirmé ;
   refusé si une vente devenait impossible).

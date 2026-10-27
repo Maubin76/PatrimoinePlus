@@ -36,6 +36,9 @@ import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
 import kotlin.math.roundToLong
+import fr.maubin.patrimoineplus.ui.search.searchTransactions
+import fr.maubin.patrimoineplus.ui.search.SearchQuery
+import androidx.compose.ui.test.assertCountEquals
 
 /*
 	Écrans Analyse et Opérations du PC (sans écran) : case du tableau qui
@@ -124,5 +127,32 @@ class AnalysisSearchUiTest
 		fCompose.onAllNodesWithText("Supprimer")[1].performClick()
 		fCompose.waitForIdle()
 		assertEquals(vBefore - vRents.size, vApp.workspace.value.data.transactions.size)
+	}
+
+	/*
+		Recherche sans critère : les 20 opérations les plus récentes, puis
+		« Afficher 20 de plus » en bas de la liste ; de nouveaux critères
+		repartent à 20 ; plus de bouton quand tout est affiché.
+	*/
+	@Test
+	fun searchShowsTwentyAtATime()
+	{
+		val vApp   = demo().apply { show(Screen.SEARCH) }							// démonstration
+		val vTotal = searchTransactions(vApp.workspace.value.data, SearchQuery()).hits.size	// opérations trouvées
+		assertTrue(vTotal > 40)
+		fCompose.setContent { App(vApp) { null } }
+		fCompose.waitForIdle()
+		fCompose.onNodeWithText("20 sur $vTotal").performScrollTo().assertExists()
+		capture(vApp, "33-recherche-par-20")
+		fCompose.onNodeWithText("Afficher 20 de plus").performClick()
+		fCompose.waitForIdle()
+		fCompose.onNodeWithText("40 sur $vTotal").performScrollTo().assertExists()
+		vApp.setQuery(SearchQuery(text = "a"))
+		fCompose.waitForIdle()
+		val vFound = searchTransactions(vApp.workspace.value.data, SearchQuery(text = "a")).hits.size	// opérations avec un « a »
+		if (vFound > 20) fCompose.onNodeWithText("20 sur $vFound").performScrollTo().assertExists()
+		vApp.setQuery(SearchQuery(text = "electricite"))
+		fCompose.waitForIdle()
+		fCompose.onAllNodesWithText("de plus", substring = true).assertCountEquals(0)
 	}
 }

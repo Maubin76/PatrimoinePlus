@@ -77,8 +77,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.mutableIntStateOf
 
 private val kRowDate   = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)	// date d'une ligne
-private const val kShown = 500														// lignes affichées au plus
-private const val kFirstRows = 40													// lignes posées à chaque image (pas de saccade à l'arrivée sur l'écran ni en tapant)
+private const val kPage = 20														// opérations affichées d'abord, puis à chaque « Afficher 20 de plus »
 
 /*
 	Opérations : recherche dans toutes les opérations (texte, compte,
@@ -102,14 +101,7 @@ fun SearchScreen(
 	var vMessage  by remember { mutableStateOf<String?>(null) }						// refus d'une action groupée
 	val vFocus    = remember { FocusRequester() }									// champ de recherche
 	val vVisible  = vResult.hits.map { it.transaction.id }.toSet()					// opérations affichées
-	var vRows     by remember(vResult) { mutableIntStateOf(kFirstRows) }				// lignes déjà posées (les suivantes arrivent par paquets)
-	LaunchedEffect(vResult) {
-		while (vRows < minOf(kShown, vResult.hits.size))
-		{
-			withFrameNanos {}
-			vRows += kFirstRows
-		}
-	}
+	var vShown    by remember(vResult) { mutableIntStateOf(kPage) }					// opérations affichées (les plus récentes) ; 20 de plus à la demande
 	if (!vVisible.containsAll(vSelected)) vSelected = vSelected intersect vVisible
 	LaunchedEffect(vFocusAsk) { if (vFocusAsk > 0) { withFrameNanos {}; runCatching { vFocus.requestFocus() } } }
 	Column(
@@ -149,7 +141,7 @@ fun SearchScreen(
 				}
 				HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 			}
-			vResult.hits.take(minOf(kShown, vRows)).forEachIndexed { inIndex, inHit ->
+			vResult.hits.take(vShown).forEachIndexed { inIndex, inHit ->
 				val vId = inHit.transaction.id												// opération de la ligne
 				HitRow(
 					inHit      = inHit,
@@ -167,7 +159,14 @@ fun SearchScreen(
 					}
 				)
 			}
-			if (vResult.hits.size > kShown) Hint("Seules les $kShown plus récentes sont affichées : affinez la recherche.")
+			if (vResult.hits.size > vShown)
+			{
+				Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+					OutlinedButton(onClick = { vShown += kPage }) { Text("Afficher ${minOf(kPage, vResult.hits.size - vShown)} de plus") }
+					Spacer(Modifier.width(16.dp))
+					Text("${vShown} sur ${vResult.hits.size}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+				}
+			}
 		}
 	}
 }
