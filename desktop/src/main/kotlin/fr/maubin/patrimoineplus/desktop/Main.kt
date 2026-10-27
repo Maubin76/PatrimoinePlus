@@ -40,7 +40,8 @@ import fr.maubin.patrimoineplus.ui.components.titleBarColors
 import fr.maubin.patrimoineplus.ui.theme.isDark
 import fr.maubin.patrimoineplus.desktop.update.DesktopUpdater
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.withTimeoutOrNull
+import androidx.compose.ui.window.WindowPlacement
 
 /*
 	Point d'entrée de l'appli PC : fenêtre unique, réglages mémorisés dans
@@ -63,7 +64,7 @@ fun main(inArgs: Array<String>)
 			onCloseRequest    = { vController.requestExit(::exitApplication) },
 			title             = "PatrimoinePlus",
 			icon              = BitmapPainter(windowIcon()),
-			state             = rememberWindowState(size = DpSize(1440.dp, 900.dp)),
+			state             = rememberWindowState(placement = WindowPlacement.Maximized, size = DpSize(1440.dp, 900.dp)),	// agrandie à chaque lancement ; 1440 × 900 une fois restaurée
 			onPreviewKeyEvent = { inEvent ->
 				when
 				{
