@@ -22,6 +22,7 @@ private const val kStepLength   = 0.55f												// part de l'arrivée occupé
 private val kLaunchEase         = CubicBezierEasing(0.2f, 0f, 0f, 1f)				// courbe « accentuée » de Material
 private const val kSmoothFrames = 3													// images rapides (< 50 ms) d'affilée avant de lancer l'animation
 private const val kWaitMillis   = 4_000L											// attente maximale de la fenêtre
+private const val kWarmAlpha    = 0.003f											// opacité invisible des éléments pas encore arrivés
 
 // Avancement de l'animation du lancement (0 : fond seul, 1 : tout est en place), lu au dessin.
 val LocalLaunch = staticCompositionLocalOf<() -> Float> { { 1f } }
@@ -61,7 +62,10 @@ fun rememberLaunch(inShown: (() -> Boolean)? = null): () -> Float
 
 /*
 	Arrivée d'un élément au lancement : fondu, glissement et léger zoom, à son
-	tour (les éléments arrivent l'un après l'autre).
+	tour (les éléments arrivent l'un après l'autre). Pour la fluidité :
+	l'élément est déjà dessiné, à une opacité invisible, pendant la phase du
+	fond seul : son premier dessin, le plus coûteux, n'arrive pas en pleine
+	animation.
 	inStart : début de son arrivée, en part de l'animation (0 à 1 − kStepLength)
 	inDx    : décalage horizontal de départ
 	inDy    : décalage vertical de départ
@@ -78,7 +82,7 @@ fun Modifier.launchReveal(
 	val vLaunch = LocalLaunch.current													// avancement du lancement
 	return graphicsLayer {
 		val vT = kLaunchEase.transform(((vLaunch() - inStart) / kStepLength).coerceIn(0f, 1f))	// avancement de cet élément
-		alpha        = vT
+		alpha               = maxOf(vT, kWarmAlpha)													// jamais tout à fait 0 : dessiné (et mis en cache) dès la phase du fond seul
 		translationX = (1f - vT) * inDx.toPx()
 		translationY = (1f - vT) * inDy.toPx()
 		scaleX       = inScale + (1f - inScale) * vT

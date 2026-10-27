@@ -270,7 +270,7 @@ private fun Shell(
 		Modifier
 			.fillMaxSize()
 			.padding(14.dp)
-			.launchReveal(0f, inScale = 0.985f)													// lancement : le cadre d'abord
+			.launchReveal(0f)																	// lancement : le cadre d'abord (fondu seul : un zoom redessinerait tout le cadre à chaque image)
 			.clip(vFrame)
 			.background(Color.White.copy(alpha = if (inDark) 0.025f else if (isGlass()) 0.18f else 0.38f))
 			.border(1.dp, Color.White.copy(alpha = if (inDark) 0.07f else 0.7f), vFrame)
