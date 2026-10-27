@@ -27,7 +27,8 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
-import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.TopAppBar
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.Color
 
 // Hauteur laissée libre en bas du contenu pour la pilule de navigation (et le bouton de saisie).
@@ -37,10 +38,10 @@ val LocalBottomClearance = staticCompositionLocalOf { 0.dp }
 val kScreenMargin: Dp = 20.dp
 
 /*
-	Gabarit commun des écrans, sur le fond de l'appli : grand titre à gauche
-	qui se replie en barre quand le contenu défile (la barre repliée prend
-	le fond, avec un filet). Les marges transmises au contenu incluent la
-	place de la pilule flottante.
+	Gabarit commun des écrans, sur le fond de l'appli : titre à gauche, sur
+	la même ligne que les actions, tout en haut ; quand le contenu défile
+	dessous, la barre prend le fond, avec un filet. Les marges transmises au
+	contenu incluent la place de la pilule flottante.
 	inTitle   : titre de l'écran
 	inActions : actions de la barre du haut
 	inContent : contenu, qui reçoit les marges à respecter
@@ -53,8 +54,8 @@ fun ScreenScaffold(
 	inContent : @Composable (PaddingValues) -> Unit
 )
 {
-	val vScroll    = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())	// grand titre replié au défilement
-	val vScrolled  = vScroll.state.collapsedFraction > 0.99f				// titre replié : le contenu passe sous la barre
+	val vScroll    = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())	// barre fixe, colorée quand le contenu passe dessous
+	val vScrolled  = vScroll.state.overlappedFraction > 0.01f				// contenu sous la barre
 	val vBar       = MaterialTheme.colorScheme.background.copy(alpha = 0.94f)	// barre repliée, sur le fond
 	val vClearance = LocalBottomClearance.current							// place de la pilule
 	val vDirection = LocalLayoutDirection.current							// sens de lecture
@@ -63,8 +64,8 @@ fun ScreenScaffold(
 		containerColor = Color.Transparent,
 		topBar         = {
 			Column {
-				LargeTopAppBar(
-					title          = { Text(inTitle) },
+				TopAppBar(
+					title          = { Text(inTitle, style = MaterialTheme.typography.headlineMedium, maxLines = 1, overflow = TextOverflow.Ellipsis) },
 					actions        = inActions,
 					scrollBehavior = vScroll,
 					colors         = TopAppBarDefaults.topAppBarColors(

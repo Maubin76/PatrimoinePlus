@@ -185,8 +185,8 @@ inspirée de deux maquettes de référence fournies le 2026-10-07.
   (Réglages › Apparence, téléphone et PC) : variations et plus-values
   colorées, signe toujours écrit. Les couleurs dynamiques Material You sont écartées.
 - Apparence commune au PC (`:ui`, `theme/DeskTheme.kt`) : fond pastel (ou
-  effet verre, Réglages › Apparence), cartes flottantes, grand titre à gauche
-  qui se replie au défilement, choix en pilules, police Outfit (OFL, licence
+  effet verre, Réglages › Apparence), cartes flottantes, titre à gauche tout
+  en haut, sur la ligne des actions, choix en pilules, police Outfit (OFL, licence
   dans `doc/licenses/`) à chiffres tabulaires.
 - Accueil : total centré en très grand, variation du mois, pastille « Calculé
   au … », courbe d'évolution du patrimoine (12 mois au plus), répartition par
