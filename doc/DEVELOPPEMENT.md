@@ -107,6 +107,15 @@ d'échec, les rapports de tests sont joints à l'exécution (artefact
 quel si son tag `vX.Y` n'existe pas, sinon + 0.1 commité sur `main` par la
 CI), APK signé (Linux), zip de l'appli PC (Windows), puis release GitHub
 `vX.Y` avec les deux fichiers et la liste des commits depuis la précédente.
+Versions release vérifiées avant toute publication, et à chaque lancement
+manuel : l'**APK release** (réduit par R8) est construit, installé et lancé
+sur un émulateur Android 14 ; `ci/release-smoke-android.sh` le pilote par son
+arbre d'accessibilité (écran de connexion, assistant du premier lancement,
+accueil, réglages) et échoue au moindre plantage. Le **zip de l'appli PC**
+est décompressé et son `PatrimoinePlus.exe` lancé en autocontrôle
+(`--autotest` : version embarquée, démonstration écrite en classeur puis
+relue, tableau de bord calculé, dates en français, icône) sous Windows. La
+release attend ces deux contrôles.
 Les exécutions se suivent sans s'interrompre. Les tests ne dépendent ni du fuseau horaire ni de la
 langue du système (vérifié en UTC et en anglais, comme sur la machine de CI).
 
@@ -736,7 +745,6 @@ Les comptes Bourse se valorisent seuls : il suffit de saisir les ordres.
 - Légende de la répartition coupée avec une police système à 130 %.
 - Fond qui peut clignoter au démarrage en mode clair forcé quand le téléphone
   est en sombre.
-- Version release : construite mais jamais exécutée par les tests.
 - PC : barre de titre Windows claire même en mode sombre ; sélecteur de
   dossier de Java (pas celui de l'Explorateur).
 - Téléphone : quand la liste des opérations tient sur l'écran, le bouton « + »

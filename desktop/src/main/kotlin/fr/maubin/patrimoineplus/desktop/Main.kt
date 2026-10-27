@@ -32,16 +32,20 @@ import kotlin.system.exitProcess
 import java.nio.file.Path
 import java.time.Clock
 import javax.swing.JFileChooser
-import javax.swing.UIManager
+import javax.swing.UIManager
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import fr.maubin.patrimoineplus.ui.components.titleBarColors
-import fr.maubin.patrimoineplus.ui.theme.isDark
-import fr.maubin.patrimoineplus.desktop.update.DesktopUpdater
+import fr.maubin.patrimoineplus.ui.theme.isDark
+import fr.maubin.patrimoineplus.desktop.update.DesktopUpdater
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.ui.window.WindowPlacement
+import fr.maubin.patrimoineplus.desktop.update.appVersion
+import fr.maubin.patrimoineplus.data.backup.writeBackupXlsx
+import fr.maubin.patrimoineplus.data.toDataSet
+import fr.maubin.patrimoineplus.ui.dashboard.buildDashboard
 
 /*
 	Point d'entrée de l'appli PC : fenêtre unique, réglages mémorisés dans
@@ -52,6 +56,10 @@ fun main(inArgs: Array<String>)
 	if (inArgs.firstOrNull() == "--verifier")
 	{
 		exitProcess(verify(inArgs.getOrNull(1)))
+	}
+	if (inArgs.firstOrNull() == "--autotest")
+	{
+		exitProcess(selfTest())
 	}
 	runCatching { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()) }
 	application {
@@ -117,6 +125,35 @@ private fun verify(inPath: String?): Int
 		is BackupRead.Valid   -> { println("Fichier valide : ${vRead.file.summary} (dates en français : ${LocalDate.of(2026, 10, 12).format(DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE))})"); 0 }
 		is BackupRead.Invalid -> { println("Fichier refusé : ${vRead.message}"); 1 }
 	}
+}
+
+/*
+	Autocontrôle sans fenêtre (option --autotest), pour la CI sur l'appli
+	empaquetée (sa JVM embarquée, ses modules, ses ressources) : version
+	embarquée lue, démonstration écrite en classeur puis relue à l'identique,
+	tableau de bord calculé, dates en français, icône présente.
+	Retour : code de sortie (0 si tout va bien)
+*/
+private fun selfTest(): Int = runCatching {
+	val vVersion = checkNotNull(appVersion()) { "version embarquée absente" }		// version.properties
+	val vFile    = Workspace(Clock.systemDefaultZone()).apply { open(Source.Demo) }.file	// démonstration complète
+	val vTemp    = Files.createTempFile("patrimoineplus-autotest-", ".xlsx")		// classeur écrit
+	Files.newOutputStream(vTemp).use { writeBackupXlsx(vFile, it) }
+	val vRead    = Files.newInputStream(vTemp).use { readBackupXlsx(it) }			// classeur relu
+	Files.deleteIfExists(vTemp)
+	check(vRead is BackupRead.Valid) { "classeur refusé : ${(vRead as BackupRead.Invalid).message}" }
+	check(vRead.file.accounts.size == vFile.accounts.size && vRead.file.transactions.size == vFile.transactions.size) { "classeur relu différent" }
+	val vToday   = LocalDate.now()																		// date de calcul
+	val vBoard   = buildDashboard(vRead.file.toDataSet(), vToday)						// tableau de bord
+	check(vBoard.tiles.isNotEmpty()) { "tableau de bord vide" }
+	val vMonth   = LocalDate.of(2026, 10, 12).format(DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE))	// date en français
+	check(vMonth == "12 octobre 2026") { "dates pas en français : $vMonth" }
+	checkNotNull(Thread.currentThread().contextClassLoader.getResource("icone.png")) { "icône absente" }
+	println("Autotest réussi : version $vVersion, ${vRead.file.accounts.size} comptes et ${vRead.file.transactions.size} opérations relus, ${vBoard.tiles.size} tuiles, $vMonth.")
+	0
+}.getOrElse { inError ->
+	println("Autotest échoué : ${inError.message}")
+	1
 }
 
 /*
