@@ -225,6 +225,7 @@ fun AssistantCorner(
 			inEyesClosed = inHidden,
 			inReaction   = vReaction,
 			inCalm       = inCalm,
+			inHovered    = vHovered,
 			inLabel      = "$kAssistantName : ${vMood.headline}",
 			inOnClick    = { if (vOpen && vPinned) { vOpen = false; vPinned = false } else { vOpen = true; vPinned = true } }
 		)

@@ -437,10 +437,14 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   choisi reste propre à chaque appareil. Supprimer le thème choisi ramène
   au thème Coloré.
 - **Assistant** (PC, flottant en bas à droite ; Réglages › Assistant) :
-  carte blanche aux angles très doux (168 dp), deux petits yeux d'encre qui
-  suivent le pointeur ; clignements,
-  respiration ; s'écrase et rebondit au clic, étourdi après plusieurs clics
-  rapides ; yeux fermés en mode discret. Il s'efface quand le panneau de
+  petit être blanc et mat aux angles très doux (168 dp), légère lueur
+  blanche, grands yeux d'encre brillants qui suivent le pointeur, joues
+  roses. Très vivant et élastique : respiration, clignements ; au repos il
+  penche la tête, se dandine (surtout content), s'étire, fait un petit saut
+  (prise d'élan, envol étiré, atterrissage en gelée) ou regarde autour de
+  lui ; sans mouvement du pointeur il somnole et se réveille en sursaut ;
+  survolé, il se redresse ; cliqué, il s'écrase et tremble (étourdi après
+  plusieurs clics) ; yeux fermés en mode discret. Il s'efface quand le panneau de
   saisie est ouvert, et les écrans laissent de la place en bas pour que
   leur contenu remonte au-dessus de lui. Son humeur résume
   le mois en cours de la vue affichée : inquiet dès qu'un thème du budget
