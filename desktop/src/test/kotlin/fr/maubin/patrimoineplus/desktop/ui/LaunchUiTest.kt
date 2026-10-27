@@ -91,6 +91,32 @@ class LaunchUiTest
 	}
 
 	/*
+		Vraie fenêtre, lente à apparaître : tant qu'elle n'est pas à l'écran,
+		puis pendant une première image lente (1 s), rien ne bouge (fond seul) ;
+		l'animation ne part qu'une fois les images fluides, et se voit en entier.
+	*/
+	@Test
+	fun waitsForWindow()
+	{
+		val vApp    = DesktopController(DesktopConfig(fTemp.root.toPath().resolve("c.properties")), Workspace(kClock), null, kClock).apply { openDemo(); setAppearance(ThemeMode.LIGHT) }	// démonstration
+		var vShown  = false																// fenêtre à l'écran
+		val vScene  = ImageComposeScene(width = 1440, height = 900, density = Density(1f)) { App(vApp, inOnPickFolder = { null }, inWindowShown = { vShown }) }	// scène hors écran
+		fun shot(inMillis: Long) = vScene.render(inMillis * 1_000_000L).encodeToData(EncodedImageFormat.PNG)!!.bytes.let { ImageIO.read(it.inputStream()) }	// image à un instant
+		val vStart  = shot(0)																// premier rendu
+		shot(200); shot(400)
+		vShown = true
+		shot(450); val vSlow = shot(1_450)													// première image lente
+		assertTrue("animation partie pendant l'attente", gap(vStart, vSlow) < 0.2)
+		var vTime = 1_450L																	// instant courant
+		repeat(4) { vTime += 16; shot(vTime) }											// images fluides : départ de l'animation
+		val vEarly = shot(vTime + 16)														// tout début de l'animation (encore le fond)
+		assertTrue("animation déjà finie au départ", gap(vStart, vEarly) < 1)
+		repeat(80) { vTime += 16; shot(vTime) }
+		assertTrue("animation jamais jouée", gap(vStart, shot(vTime + 16)) > 2)
+		vScene.close()
+	}
+
+	/*
 		Écran d'accueil sans données : même déroulé (logo, titre, texte, boutons).
 	*/
 	@Test

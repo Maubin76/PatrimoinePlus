@@ -86,7 +86,7 @@ fun main(inArgs: Array<String>)
 				val (vCaption, vText) = titleBarColors(vDark, vSettings.glass)			// couleurs de la barre de titre
 				TitleBar.apply(window, vCaption, vText, vDark)
 			}
-			App(vController, inOnPickSaveFile = ::pickSaveFile, inOnPickBankFile = ::pickBankFile, inOnPickSave = ::pickSave, inOnPickFolder = ::pickFolder)
+			App(vController, inOnPickSaveFile = ::pickSaveFile, inOnPickBankFile = ::pickBankFile, inOnPickSave = ::pickSave, inOnPickFolder = ::pickFolder, inWindowShown = { window.isShowing })
 		}
 	}
 }

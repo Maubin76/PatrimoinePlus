@@ -174,6 +174,7 @@ private val kEase       = CubicBezierEasing(0.2f, 0f, 0f, 1f)						// courbe « 
 	inOnPickSaveFile : choix d'un fichier où enregistrer une copie ; null si annulé
 	inOnPickBankFile : choix d'un relevé exporté par la banque ; null si annulé
 	inOnPickSave     : choix d'un fichier à écrire, d'après un nom proposé ; null si annulé
+	inWindowShown    : vrai quand la fenêtre est à l'écran (l'animation du lancement l'attend) ; null sans fenêtre (tests)
 	inOnPickFolder   : ouvre le sélecteur de dossier ; rend le dossier choisi ou null
 */
 @Composable
@@ -182,6 +183,7 @@ fun App(
 	inOnPickSaveFile : () -> Path? = { null },
 	inOnPickBankFile : () -> Path? = { null },
 	inOnPickSave     : (String) -> Path? = { null },
+	inWindowShown    : (() -> Boolean)? = null,
 	inOnPickFolder   : () -> Path?
 )
 {
@@ -190,7 +192,7 @@ fun App(
 	val vPending  by inController.pending.collectAsState()					// action retenue
 	val vDark     = vSettings.appearance.isDark()									// mode sombre effectif
 	val vPalette  = vSpace.data.themes.firstOrNull { it.id == vSettings.palette }?.let { Palette.of(it.colors) }	// thème personnalisé choisi ; null sans
-	val vLaunch   = rememberLaunch()															// lancement : fond seul, puis arrivée des éléments
+	val vLaunch   = rememberLaunch(inWindowShown)												// lancement : fond seul, puis arrivée des éléments
 	DeskTheme(inDarkTheme = vDark, inColorTheme = vSettings.colors, inGlass = vSettings.glass, inPalette = vPalette) {
 		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie), LocalTourAnchors provides remember { TourAnchors() }, LocalLaunch provides vLaunch) {
 			AppGround(vDark, vSettings.glass)												// fond pastel, ou formes floues derrière le verre

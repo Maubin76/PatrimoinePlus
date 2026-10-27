@@ -12,25 +12,50 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.withFrameNanos
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeoutOrNull
 
 private const val kLaunchDelay  = 150												// fond seul, avant les éléments
 private const val kLaunchMillis = 750												// arrivée de tous les éléments
 private const val kStepLength   = 0.55f												// part de l'arrivée occupée par un élément
 private val kLaunchEase         = CubicBezierEasing(0.2f, 0f, 0f, 1f)				// courbe « accentuée » de Material
+private const val kSmoothFrames = 3													// images rapides (< 50 ms) d'affilée avant de lancer l'animation
+private const val kWaitMillis   = 4_000L											// attente maximale de la fenêtre
 
 // Avancement de l'animation du lancement (0 : fond seul, 1 : tout est en place), lu au dessin.
 val LocalLaunch = staticCompositionLocalOf<() -> Float> { { 1f } }
 
 /*
-	Avancement de l'animation du lancement, lancé une fois à la première
-	composition : d'abord le fond seul, puis l'arrivée des éléments.
-	Retour : lecture de l'avancement, à faire au dessin (pas de recomposition)
+	Avancement de l'animation du lancement, lancé une fois : d'abord le fond
+	seul, puis l'arrivée des éléments. Dans la vraie fenêtre, l'animation
+	attend que la fenêtre soit à l'écran et que les premières images (les plus
+	lentes : démarrage, agrandissement, premier dessin) soient passées ; sans
+	cela, elle était finie avant d'être vue.
+	inShown : vrai quand la fenêtre est à l'écran ; null : départ immédiat (rendu sans fenêtre, tests)
+	Retour  : lecture de l'avancement, à faire au dessin (pas de recomposition)
 */
 @Composable
-fun rememberLaunch(): () -> Float
+fun rememberLaunch(inShown: (() -> Boolean)? = null): () -> Float
 {
 	val vProgress = remember { Animatable(0f) }											// avancement
-	LaunchedEffect(Unit) { vProgress.animateTo(1f, tween(kLaunchMillis, delayMillis = kLaunchDelay, easing = LinearEasing)) }
+	LaunchedEffect(Unit) {
+		if (inShown != null)
+		{
+			withTimeoutOrNull(kWaitMillis) {
+				while (!inShown()) delay(16)
+				var vLast = withFrameNanos { it }												// image précédente
+				var vSmooth = 0																// images rapides d'affilée
+				while (vSmooth < kSmoothFrames)
+				{
+					val vNow = withFrameNanos { it }											// image suivante
+					vSmooth = if (vNow - vLast < 50_000_000L) vSmooth + 1 else 0
+					vLast = vNow
+				}
+			}
+		}
+		vProgress.animateTo(1f, tween(kLaunchMillis, delayMillis = kLaunchDelay, easing = LinearEasing))
+	}
 	return remember { { vProgress.value } }
 }
 
