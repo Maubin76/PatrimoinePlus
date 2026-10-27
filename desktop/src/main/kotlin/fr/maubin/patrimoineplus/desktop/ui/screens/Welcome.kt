@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.data.sync.kSyncFileName
 import fr.maubin.patrimoineplus.ui.components.PatrimoineLogo
+import fr.maubin.patrimoineplus.desktop.ui.launchReveal
 
 /*
 	Écran d'accueil (aucune source choisie) : ouvrir le dossier synchronisé
@@ -35,19 +36,20 @@ fun WelcomeScreen(
 {
 	Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
 		Column(Modifier.widthIn(max = 520.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-			PatrimoineLogo(96.dp)
+			Box(Modifier.launchReveal(0f, inScale = 0.9f)) { PatrimoineLogo(96.dp) }			// lancement : logo, titre, texte puis boutons
 			Spacer(Modifier.height(28.dp))
-			Text("PatrimoinePlus", style = MaterialTheme.typography.headlineLarge)
+			Text("PatrimoinePlus", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.launchReveal(0.15f, inDy = 12.dp))
 			Spacer(Modifier.height(12.dp))
 			Text(
 				text      = "Ouvrez le dossier synchronisé avec votre téléphone (par exemple Documents\\PatrimoinePlus, partagé par Syncthing) : " +
 					"l’appli y lit le fichier $kSyncFileName. Ou essayez-la avec des données fictives.",
 				style     = MaterialTheme.typography.bodyLarge,
 				color     = MaterialTheme.colorScheme.onSurfaceVariant,
-				textAlign = TextAlign.Center
+				textAlign = TextAlign.Center,
+				modifier  = Modifier.launchReveal(0.28f, inDy = 12.dp)
 			)
 			Spacer(Modifier.height(36.dp))
-			Column(verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+			Column(Modifier.launchReveal(0.42f, inDy = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
 				Button(onClick = inOnFolder, contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp)) {
 					Text("Choisir le dossier synchronisé…")
 				}

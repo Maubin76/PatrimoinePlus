@@ -436,6 +436,10 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   d'échange (format 7, onglet Thèmes ; base du téléphone v7) ; le thème
   choisi reste propre à chaque appareil. Supprimer le thème choisi ramène
   au thème Coloré.
+- **Lancement du PC** : fond seul pendant 0,15 s, puis les éléments
+  arrivent l'un après l'autre en fondu et glissement (cadre, rail, barre du
+  haut, écran ; sur l'écran d'accueil : logo, titre, texte, boutons), 0,9 s
+  en tout (`ui/Launch.kt`) ; la visite guidée attend la fin.
 - **Premier plan au lancement** (PC) : la fenêtre s'ouvre agrandie (toute
   la place de l'écran, barre de titre et barre des tâches visibles ;
   1440 × 900 une fois restaurée), devant les autres, avec le focus, même lancée depuis un terminal ou après une mise à

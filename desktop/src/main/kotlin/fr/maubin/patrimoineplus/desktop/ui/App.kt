@@ -146,7 +146,9 @@ import kotlinx.coroutines.delay
 import fr.maubin.patrimoineplus.desktop.ActiveTour
 import fr.maubin.patrimoineplus.ui.theme.Palette
 import fr.maubin.patrimoineplus.desktop.ui.panels.ThemePanel
-import fr.maubin.patrimoineplus.ui.components.UpdateDialog
+import fr.maubin.patrimoineplus.ui.components.UpdateDialog
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.first
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -188,8 +190,9 @@ fun App(
 	val vPending  by inController.pending.collectAsState()					// action retenue
 	val vDark     = vSettings.appearance.isDark()									// mode sombre effectif
 	val vPalette  = vSpace.data.themes.firstOrNull { it.id == vSettings.palette }?.let { Palette.of(it.colors) }	// thème personnalisé choisi ; null sans
+	val vLaunch   = rememberLaunch()															// lancement : fond seul, puis arrivée des éléments
 	DeskTheme(inDarkTheme = vDark, inColorTheme = vSettings.colors, inGlass = vSettings.glass, inPalette = vPalette) {
-		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie), LocalTourAnchors provides remember { TourAnchors() }) {
+		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie), LocalTourAnchors provides remember { TourAnchors() }, LocalLaunch provides vLaunch) {
 			AppGround(vDark, vSettings.glass)												// fond pastel, ou formes floues derrière le verre
 			Surface(Modifier.fillMaxSize(), color = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSurface) {
 				if (vSpace.source == Source.None)
@@ -254,7 +257,9 @@ private fun Shell(
 	val vFocus  = remember { FocusRequester() }									// focus clavier de secours (raccourcis)
 	LaunchedEffect(Unit) { vFocus.requestFocus() }
 	LaunchedEffect(inSpace.data) { inController.dropStalePanel() }
+	val vLaunch = LocalLaunch.current														// animation du lancement
 	LaunchedEffect(vNav.screen, vNav.accountId) {
+		snapshotFlow { vLaunch() }.first { it >= 1f }										// lancement fini : pas de visite pendant l'arrivée des éléments
 		delay(kTourDelay)																// page arrivée et éléments placés
 		inController.showTourIfNew(if (vNav.accountId != null) kTourAccount else vNav.screen.name)
 	}
@@ -263,6 +268,7 @@ private fun Shell(
 		Modifier
 			.fillMaxSize()
 			.padding(14.dp)
+			.launchReveal(0f, inScale = 0.985f)													// lancement : le cadre d'abord
 			.clip(vFrame)
 			.background(Color.White.copy(alpha = if (inDark) 0.025f else if (isGlass()) 0.18f else 0.38f))
 			.border(1.dp, Color.White.copy(alpha = if (inDark) 0.07f else 0.7f), vFrame)
@@ -276,10 +282,10 @@ private fun Shell(
 			}
 		}
 	) {
-		Rail(vNav.screen, inController::show, inDark, inController::setAppearance)
+		Box(Modifier.launchReveal(0.15f, inDx = (-20).dp)) { Rail(vNav.screen, inController::show, inDark, inController::setAppearance) }	// puis le rail
 		Column(Modifier.weight(1f).fillMaxHeight()) {
-			StatusBar(inSpace, vNotice, inController, scopeOf(vSet.view, inSpace.data.profiles))
-			Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+			Box(Modifier.launchReveal(0.25f, inDy = (-12).dp)) { StatusBar(inSpace, vNotice, inController, scopeOf(vSet.view, inSpace.data.profiles)) }	// puis la barre du haut
+			Box(Modifier.fillMaxSize().launchReveal(0.4f, inDy = 18.dp), contentAlignment = Alignment.TopCenter) {	// enfin l'écran
 				Box(Modifier.widthIn(max = kContentMaxWidth).fillMaxSize()) {
 					ScreenStack(
 						inKey    = vNav.screen to (vNav.accountId?.let { if (vBank?.accountId == it) "$it#relevé" else it }),
