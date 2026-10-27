@@ -454,9 +454,14 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   le mois en cours de la vue affichée : inquiet dès qu'un thème du budget
   est dépassé, qu'un objectif est en retard ou que le patrimoine baisse ;
   content si le patrimoine monte, qu'un objectif est atteint ou que le
-  budget est tenu (`core/.../ui/assistant/Assistant.kt`). Sa bulle (survol ou
-  clic, au-dessus de lui) résume l'humeur et liste au plus trois remarques, qui mènent à leur
-  page ; montants masqués en mode discret. Réactions : hochement à
+  budget est tenu (`core/.../ui/assistant/Assistant.kt`). Sa bulle de BD (survol
+  ou clic, au-dessus de lui ; trait d'encre, pointe vers lui, apparition
+  en « pop ») dit, en phrases naturelles et sans chiffres, ce qui va ou pas
+  ce mois-ci, puis propose de petits liens vers les pages concernées ; elle
+  ne s'ouvre d'elle-même que pour un problème, une fois par jour au plus
+  pour un même message. Après un conflit, des modifications à enregistrer
+  ou une nouvelle version, il regarde un instant la fenêtre ouverte au
+  centre. Réactions : hochement à
   l'enregistrement, sursaut et bulle ouverte d'elle-même sur un conflit, un
   fichier illisible ou une écriture impossible, regard vers le haut à une
   nouvelle version, joie à un objectif atteint. Il guide aussi les visites

@@ -30,8 +30,8 @@ import androidx.compose.ui.test.isRoot
 	Assistant du PC (sans écran, démonstration) : flottant en bas à droite,
 	le logo reste en haut du rail ; un clic ouvre sa bulle (résumé de
 	l'humeur, remarques), au-dessus de lui ; une
-	remarque mène à sa page ; en mode discret, yeux fermés et montants
-	masqués dans la bulle ; caché quand le panneau de saisie est ouvert ;
+	lien mène à sa page ; phrases naturelles, sans chiffres (rien à masquer
+	en mode discret) ; caché quand le panneau de saisie est ouvert ;
 	réglages : retiré, mode calme
 	mémorisé. Captures `35-*.png`.
 */
@@ -75,16 +75,16 @@ class AssistantUiTest
 		fCompose.onNodeWithContentDescription("Assistant :", substring = true).performClick()
 		fCompose.waitForIdle()
 		File("build/captures-desktop").mkdirs()
-		fCompose.onAllNodesWithText("ce mois-ci", substring = true)[0].assertExists()
-		val vRemark = fCompose.onAllNodesWithText("Patrimoine en hausse", substring = true)	// remarque du patrimoine
-		vRemark[0].assertExists()
-		vRemark[0].performClick()
+		fCompose.onNodeWithContentDescription("Assistant dit :", substring = true).assertExists()
+		fCompose.onAllNodesWithText("Votre patrimoine grimpe ce mois-ci.", substring = true)[0].assertExists()
+		fCompose.onNodeWithText("Voir le tableau de bord").performClick()
 		fCompose.waitForIdle()
 		assertEquals(Screen.DASHBOARD, vApp.navigation.value.screen)
 		vApp.toggleHidden()
 		fCompose.onNodeWithContentDescription("Assistant :", substring = true).performClick()
 		fCompose.waitForIdle()
-		assertTrue(fCompose.onAllNodesWithText("Patrimoine en hausse de ${fr.maubin.patrimoineplus.domain.format.kMaskedAmount}", substring = true).fetchSemanticsNodes().isNotEmpty())
+		val vSaid = fCompose.onNodeWithContentDescription("Assistant dit :", substring = true).fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].joinToString()	// ce qu'il dit
+		assertTrue("chiffres dans la bulle : $vSaid", vSaid.none { it.isDigit() })
 		vApp.toggleHidden()
 		capture(vApp, "35-assistant-coin")
 		vApp.newOperation()

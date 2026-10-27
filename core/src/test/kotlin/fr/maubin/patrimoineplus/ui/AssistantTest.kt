@@ -57,7 +57,7 @@ class AssistantTest
 	) = GoalView(Goal(inTitle, GoalKind.WEALTH, inTitle, 100_000), 0, 0, 0, null, null, null, null, 0, 0, inStatus)
 
 	/*
-		Rien de notable : neutre, sans remarque.
+		Rien de notable : neutre, sans remarque ; il dit qu'il veille.
 	*/
 	@Test
 	fun neutral()
@@ -65,7 +65,7 @@ class AssistantTest
 		val vMood = assistantMood(null, null, listOf(goal("Voyage", GoalStatus.ON_TRACK)))	// humeur
 		assertEquals(Mood.NEUTRAL, vMood.mood)
 		assertTrue(vMood.remarks.isEmpty())
-		assertEquals("Rien à signaler ce mois-ci.", vMood.headline)
+		assertEquals("Tout est calme de mon côté. Je garde un œil sur vos comptes.", vMood.speech)
 		assertEquals(Mood.NEUTRAL, assistantMood(0, null, emptyList()).mood)
 	}
 
@@ -77,8 +77,7 @@ class AssistantTest
 	{
 		val vMood = assistantMood(209_338, budget(theme(ExpenseTheme.DAILY, 50_000, 30_000)), listOf(goal("Matelas", GoalStatus.REACHED)))	// humeur
 		assertEquals(Mood.HAPPY, vMood.mood)
-		assertEquals(listOf("Patrimoine en hausse de 2 093,38 € ce mois-ci.", "Objectif « Matelas » atteint.", "Budget du mois tenu jusqu’ici."), vMood.remarks.map { it.text })
-		assertEquals("Tout va bien ce mois-ci.", vMood.headline)
+		assertEquals("Bonne nouvelle ! Votre patrimoine grimpe ce mois-ci. L’objectif « Matelas » est atteint, bravo ! Le budget du mois tient bon pour l’instant. Continuez comme ça !", vMood.speech)
 	}
 
 	/*
@@ -94,21 +93,22 @@ class AssistantTest
 			listOf(goal("Voyage", GoalStatus.OVERDUE), goal("Matelas", GoalStatus.REACHED))
 		)																				// humeur
 		assertEquals(Mood.WORRIED, vMood.mood)
-		assertEquals(listOf("Budget « Plaisirs » dépassé de 150,00 €.", "Budget « Vie quotidienne » dépassé de 42,00 €.", "Objectif « Voyage » : échéance passée."), vMood.remarks.map { it.text })
+		assertEquals(listOf("Vos petits plaisirs ont un peu débordé du budget ce mois-ci.", "Les dépenses du quotidien dépassent ce que vous aviez prévu ce mois-ci.", "L’échéance de « Voyage » est passée sans qu’il soit atteint."), vMood.remarks.map { it.text })
 		assertEquals(listOf(AssistantTarget.BUDGET, AssistantTarget.BUDGET, AssistantTarget.GOALS), vMood.remarks.map { it.target })
-		assertEquals("Quelques points à surveiller ce mois-ci.", vMood.headline)
+		assertTrue(vMood.speech.startsWith("Hmm, quelques petites choses à surveiller…"))
+		assertTrue(vMood.speech.endsWith("On lève un peu le pied ?"))
 		val vDown = assistantMood(-12_000, null, listOf(goal("Voyage", GoalStatus.BEHIND)))	// baisse et retard
-		assertEquals(listOf("Objectif « Voyage » : en retard sur son rythme.", "Patrimoine en baisse de 120,00 € ce mois-ci."), vDown.remarks.map { it.text })
-		assertEquals("Un point à surveiller ce mois-ci.", assistantMood(-1, null, emptyList()).headline)
+		assertEquals("Hmm, quelques petites choses à surveiller… Votre objectif « Voyage » prend un peu de retard. Votre patrimoine a un peu baissé ce mois-ci. Rien de grave, mais je préfère vous le dire.", vDown.speech)
+		assertEquals("Hmm, un petit point d’attention…", assistantMood(-1, null, emptyList()).headline)
 	}
 
 	/*
-		Mode discret : les montants passent par l'écriture fournie.
+		Jamais de chiffres dans ce qu'il dit (rien à masquer en mode discret).
 	*/
 	@Test
-	fun maskedAmounts()
+	fun noFigures()
 	{
-		val vMood = assistantMood(-12_000, budget(theme(ExpenseTheme.DAILY, 100, 200)), emptyList()) { "•••" }	// humeur, montants masqués
-		assertEquals(listOf("Budget « Vie quotidienne » dépassé de •••.", "Patrimoine en baisse de ••• ce mois-ci."), vMood.remarks.map { it.text })
+		val vMood = assistantMood(-1_234_567, budget(theme(ExpenseTheme.TRANSPORT, 100, 98_765)), listOf(goal("Voyage", GoalStatus.BEHIND)))	// humeur
+		assertTrue(vMood.speech, vMood.speech.none { it.isDigit() })
 	}
 }

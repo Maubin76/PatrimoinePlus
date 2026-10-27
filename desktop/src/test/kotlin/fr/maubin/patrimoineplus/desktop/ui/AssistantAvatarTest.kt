@@ -111,10 +111,10 @@ class AssistantAvatarTest
 		val vRight = render(200, 0) { CompositionLocalProvider(LocalPointer provides { Offset(5_000f, 100f) }) { AssistantAvatar(150.dp, Mood.NEUTRAL) } }	// regard à droite
 		assertNotEquals(vLeft.toList(), vRight.toList())
 		val vMood   = assistantMood(-12_000, null, emptyList())								// humeur inquiète
-		File("build/captures-desktop/34-assistant-bulle.png").writeBytes(render(420, 0, 300) {
+		File("build/captures-desktop/34-assistant-bulle.png").writeBytes(render(420, 700, 360) {
 			DeskTheme(inDarkTheme = false, inColorTheme = ColorTheme.MONOCHROME) {
 				Box(Modifier.background(Color(0xFFEEEAF9)).padding(20.dp)) {
-					AssistantBubble(vMood.copy(remarks = vMood.remarks + Remark("Budget « Plaisirs » dépassé de 150,00 €.", Mood.WORRIED, AssistantTarget.BUDGET) + Remark("Objectif « Matelas » atteint.", Mood.HAPPY, AssistantTarget.GOALS)), "Une nouvelle version de PatrimoinePlus est disponible.") {}
+					AssistantBubble(vMood.copy(remarks = listOf(Remark("Vos petits plaisirs ont un peu débordé du budget ce mois-ci.", Mood.WORRIED, AssistantTarget.BUDGET)) + vMood.remarks + Remark("L’objectif « Matelas » est atteint, bravo !", Mood.HAPPY, AssistantTarget.GOALS)), "Psst… une nouvelle version de PatrimoinePlus est arrivée !") {}
 				}
 			}
 		})
