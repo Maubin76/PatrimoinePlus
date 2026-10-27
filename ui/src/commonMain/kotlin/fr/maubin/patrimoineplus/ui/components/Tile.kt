@@ -58,6 +58,7 @@ private val kTileShape = RoundedCornerShape(28.dp)								// forme d'une tuile :
 private val kShadowTint = Color(0xFF5B4E9E)										// ombre teintée de lavande (clair)
 private const val kHoverMillis = 160												// fondu du survol
 private const val kPressMillis = 90												// enfoncement au clic
+private val kHeroDarkInk = Color(0xFF1E1A4D)									// texte foncé d'une tuile pleine claire (indigo profond, luminance 0,0155)
 
 /*
 	Tuile du tableau de bord : panneau flottant sans bord, posé sur le fond
@@ -100,7 +101,7 @@ fun Tile(
 		isColorful()       -> colorfulMain()												// accent Coloré
 		else               -> vBase.primary												// encre
 	}																				// fond d'une tuile pleine
-	val vOnHero   = if (vHero.luminance() < 0.5f) Color.White else Color(0xFF0B1B26)	// texte sur la tuile pleine
+	val vOnHero   = if (1.05f / (vHero.luminance() + 0.05f) >= (vHero.luminance() + 0.05f) / 0.0655f) Color.White else kHeroDarkInk	// texte sur la tuile pleine : le plus contrasté des deux
 	val vColors   = if (inFilled) vBase.copy(primary = vOnHero, onPrimary = vHero, surface = vHero, onSurface = vOnHero, onSurfaceVariant = vOnHero.copy(alpha = 0.78f),
 		surfaceContainerLow = lerp(vHero, vOnHero, 0.08f), surfaceContainerHigh = lerp(vHero, vOnHero, 0.2f),
 		outline = vOnHero.copy(alpha = 0.5f), outlineVariant = vHero) else vBase	// tuile pleine : couleurs inversées

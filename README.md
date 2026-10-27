@@ -456,17 +456,18 @@ bord** de pilotage plutôt qu'une suite d'écrans.
 - **Thèmes de couleurs** (Réglages › Apparence › Thème, PC et téléphone,
   chacun en clair et en sombre) : **Monochrome** (tout en noir et blanc),
   **Minimal** (noir et blanc, hausses en vert et baisses en rouge),
-  **Coloré** (palette « Refreshing Summer Fun » : fonds identiques aux
-  autres thèmes, encre et boutons bleu nuit — bleu ciel en sombre —, une
-  couleur par type de compte (Courant bleu-vert, Épargne ambre, Bourse
-  orange, Immobilier bleu nuit, Collection bleu ciel, Crédit ardoise)
+  **Coloré** (palette « Indigo », assortie au logo : fonds identiques aux
+  autres thèmes, encre indigo profond et boutons indigo — lavande en
+  sombre, chaque teinte ayant sa version claire et sombre —, une couleur
+  par type de compte (Courant menthe, Épargne ambre, Bourse corail,
+  Immobilier indigo, Collection pervenche, Crédit ardoise)
   portée par les tuiles du tableau de bord (aplat pastel, courbe),
   la répartition et les comptes du téléphone ; patrimoine net en tuile
-  pleine ; pastilles des opérations en bleu-vert (entrées) ou orange
+  pleine ; pastilles des opérations en menthe (entrées) ou corail
   (sorties) ; graphiques et cashflow aux couleurs de la palette ; hausses en
-  bleu-vert et baisses en orange). Sur les autres pages, mêmes repères : vue
+  menthe et baisses en corail). Sur les autres pages, mêmes repères : vue
   d'un compte à la couleur de son type (marque, tuile principale, courbe) ;
-  entrées et revenus en bleu-vert, sorties et dépenses en orange, épargne et
+  entrées et revenus en menthe, sorties et dépenses en corail, épargne et
   placements en ambre (bilan, budget, projection, objectifs) ; chiffre
   principal en tuile pleine (variation du bilan, reste du budget, scénario
   central de la projection) ; pastilles d'opérations colorées dans la

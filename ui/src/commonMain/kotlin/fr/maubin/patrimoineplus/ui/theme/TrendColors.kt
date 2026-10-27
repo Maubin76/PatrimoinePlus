@@ -9,14 +9,14 @@ private val kGainLight = Color(0xFF1B7A3A)										// hausse sur fond clair (co
 private val kLossLight = Color(0xFFC0262D)										// baisse sur fond clair
 private val kGainDark  = Color(0xFF6FD39A)										// hausse sur fond sombre
 private val kLossDark  = Color(0xFFFF8A84)										// baisse sur fond sombre
-private val kRiseLight = Color(0xFF136E86)										// thème Coloré : hausse, bleu-vert assombri (5,5:1)
-private val kFallLight = Color(0xFFA65200)										// thème Coloré : baisse, orange assombri (5,2:1)
-private val kRiseDark  = Color(0xFF4CC3E0)										// thème Coloré sombre : hausse (8:1)
-private val kFallDark  = Color(0xFFFFB066)										// thème Coloré sombre : baisse (9:1)
+private val kRiseLight = Color(0xFF0A6B59)										// thème Coloré : hausse, menthe foncée (6,4:1 sur blanc)
+private val kFallLight = Color(0xFF9A2042)										// thème Coloré : baisse, corail foncé (7,9:1 sur blanc)
+private val kRiseDark  = Color(0xFF4FDDB8)										// thème Coloré sombre : hausse, menthe (9:1)
+private val kFallDark  = Color(0xFFFF8FA8)										// thème Coloré sombre : baisse, corail clair (7:1)
 
 /*
 	Couleur d'une variation selon le thème : Minimal, vert pour une hausse et
-	rouge pour une baisse ; Coloré, bleu-vert et orange ; Monochrome (ou
+	rouge pour une baisse ; Coloré, menthe et corail ; Monochrome (ou
 	zéro), couleur non précisée, le texte garde celle du contenu. Le signe
 	reste toujours écrit : la couleur n'est jamais la seule indication.
 	inCents : variation, en centimes

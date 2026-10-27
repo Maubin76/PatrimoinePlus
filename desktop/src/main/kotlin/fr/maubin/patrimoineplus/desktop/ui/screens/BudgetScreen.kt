@@ -282,7 +282,7 @@ private fun LineRow(
 
 /*
 	Couleur d'une rubrique du budget dans le thème Coloré : entrées
-	bleu-vert, dépenses orange, investissements ambre.
+	menthe, dépenses corail, investissements ambre.
 	inSection : rubrique
 */
 @Composable

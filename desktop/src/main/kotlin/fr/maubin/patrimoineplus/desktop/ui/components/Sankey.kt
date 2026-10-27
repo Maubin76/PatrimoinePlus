@@ -69,13 +69,13 @@ private val kPastels  = FlowPalette(
 )																							// thèmes Monochrome et Minimal
 
 private val kSummer   = FlowPalette(
-	source  = Color(0xFFA9D6EC),																// bleu ciel adouci
-	budget  = Color(0xFFFFD466),																// ambre adouci
-	invest  = Color(0xFF7CC6D8),																// bleu-vert adouci
-	rest    = Color(0xFFCFE3EC),																// ciel très pâle
-	deficit = Color(0xFFFDB066),																// orange adouci
-	themes  = listOf(Color(0xFF8ECAE6), Color(0xFFFFE299), Color(0xFF4DB3CB), Color(0xFFFDA34D), Color(0xFFB9DEEF), Color(0xFFFFC94D), Color(0xFF9BD3E0), Color(0xFFFEC28A))
-)																							// thème Coloré : palette de l'appli, adoucie
+	source  = Color(0xFFB7AEFB),																// indigo adouci
+	budget  = Color(0xFFF3D08A),																// ambre adouci
+	invest  = Color(0xFF8EDFC8),																// menthe adoucie
+	rest    = Color(0xFFDCD8F3),																// lavande très pâle
+	deficit = Color(0xFFEFA0B5),																// corail adouci
+	themes  = listOf(Color(0xFFB7AEFB), Color(0xFFF3D08A), Color(0xFF8EDFC8), Color(0xFFEFA0B5), Color(0xFFB9CBFA), Color(0xFFE9BE6A), Color(0xFFA8E8D6), Color(0xFFF4C1CE))
+)																							// thème Coloré : palette Indigo de l'appli, adoucie
 
 /*
 	Nœud placé : position verticale et teinte.

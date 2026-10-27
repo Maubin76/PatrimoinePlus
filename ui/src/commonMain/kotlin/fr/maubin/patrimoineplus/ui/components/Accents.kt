@@ -7,11 +7,7 @@ import androidx.compose.ui.graphics.luminance
 import fr.maubin.patrimoineplus.domain.model.AccountType
 import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 import fr.maubin.patrimoineplus.ui.theme.LocalColorTheme
-import fr.maubin.patrimoineplus.ui.theme.kAmber
-import fr.maubin.patrimoineplus.ui.theme.kBlueGreen
-import fr.maubin.patrimoineplus.ui.theme.kDeepSpace
-import fr.maubin.patrimoineplus.ui.theme.kSkyBlue
-import fr.maubin.patrimoineplus.ui.theme.kTiger
+import fr.maubin.patrimoineplus.ui.theme.colorfulPalette
 import androidx.compose.runtime.staticCompositionLocalOf
 import fr.maubin.patrimoineplus.ui.theme.colorfulMain
 import fr.maubin.patrimoineplus.ui.theme.LocalPalette
@@ -21,9 +17,8 @@ import fr.maubin.patrimoineplus.ui.theme.LocalPalette
 
 private val kLoanLight      = Color(0xFF6B7F8A)									// crédit, ardoise (fond clair)
 private val kLoanDark       = Color(0xFF8FA3AE)									// crédit, ardoise (fond sombre)
-private val kIceAccent      = Color(0xFFE8F3F9)									// collection, bleu glacé (fond sombre)
-private val kRiseInk        = Color(0xFF136E86)									// icône d'une entrée sur pastille claire (5,5:1)
-private val kFallInk        = Color(0xFFA65200)									// icône d'une sortie sur pastille claire (5,2:1)
+private val kRiseInk        = Color(0xFF0A6B59)									// icône d'une entrée sur pastille claire (menthe foncée)
+private val kFallInk        = Color(0xFF9A2042)									// icône d'une sortie sur pastille claire (corail foncé)
 
 /*
 	Vrai si le thème Coloré est actif.
@@ -33,42 +28,31 @@ fun isColorful(): Boolean = LocalColorTheme.current == ColorTheme.COLORFUL
 
 /*
 	Couleur d'un type de compte dans le thème Coloré (tuiles, pastilles,
-	répartition par type) : Courant bleu-vert, Épargne ambre, Bourse orange,
-	Immobilier bleu nuit (bleu ciel sur fond sombre), Collection bleu ciel
-	(bleu glacé sur fond sombre), Crédit ardoise ; non précisée dans les
-	autres thèmes.
+	répartition par type) : Courant menthe, Épargne ambre, Bourse corail,
+	Immobilier indigo, Collection pervenche, Crédit ardoise (ou les rôles du
+	thème personnalisé) ; non précisée dans les autres thèmes.
 	inType : type de compte
 */
 @Composable
 fun accountAccent(inType: AccountType): Color
 {
 	if (!isColorful()) return Color.Unspecified
-	val vDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f					// fond sombre
-	LocalPalette.current?.let { inPalette ->
-		return when (inType)
-		{
-			AccountType.CHECKING    -> inPalette.rise
-			AccountType.SAVINGS     -> inPalette.invest
-			AccountType.BROKERAGE   -> inPalette.fall
-			AccountType.REAL_ESTATE -> inPalette.main
-			AccountType.COLLECTIBLE -> inPalette.second
-			AccountType.LOAN        -> if (vDark) kLoanDark else kLoanLight
-		}
-	}																					// thème personnalisé
+	val vDark    = MaterialTheme.colorScheme.surface.luminance() < 0.5f				// fond sombre
+	val vPalette = colorfulPalette()													// palette en cours
 	return when (inType)
 	{
-		AccountType.CHECKING    -> kBlueGreen
-		AccountType.SAVINGS     -> kAmber
-		AccountType.BROKERAGE   -> kTiger
-		AccountType.REAL_ESTATE -> if (vDark) kSkyBlue else kDeepSpace
-		AccountType.COLLECTIBLE -> if (vDark) kIceAccent else kSkyBlue
+		AccountType.CHECKING    -> vPalette.rise
+		AccountType.SAVINGS     -> vPalette.invest
+		AccountType.BROKERAGE   -> vPalette.fall
+		AccountType.REAL_ESTATE -> vPalette.main
+		AccountType.COLLECTIBLE -> vPalette.second
 		AccountType.LOAN        -> if (vDark) kLoanDark else kLoanLight
 	}
 }
 
 /*
 	Pastille d'icône d'une opération dans le thème Coloré : entrée en
-	bleu-vert, sortie en orange (fond teinté, icône foncée lisible) ; null
+	menthe, sortie en corail (fond teinté, icône foncée lisible) ; null
 	dans les autres thèmes ou pour un montant nul.
 	inCents : montant signé de l'opération
 	Retour  : fond de la pastille et teinte de l'icône
@@ -78,13 +62,11 @@ fun operationAccent(inCents: Long): Pair<Color, Color>?
 {
 	if (!isColorful() || inCents == 0L) return null
 	val vDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f					// fond sombre
-	LocalPalette.current?.let { inPalette ->
-		val vTint = if (inCents > 0) inPalette.rise else inPalette.fall					// teinte du sens
-		return vTint.copy(alpha = if (vDark) 0.28f else 0.16f) to vTint
-	}																					// thème personnalisé
-	val vBase = if (inCents > 0) kBlueGreen else kTiger									// teinte du sens
-	return if (vDark) vBase.copy(alpha = 0.28f) to (if (inCents > 0) Color(0xFF4CC3E0) else Color(0xFFFFB066))
-		else vBase.copy(alpha = 0.16f) to (if (inCents > 0) kRiseInk else kFallInk)
+	val vCustom = LocalPalette.current != null											// thème personnalisé
+	val vPalette = colorfulPalette()													// palette en cours
+	val vTint    = if (inCents > 0) vPalette.rise else vPalette.fall						// teinte du sens
+	val vInk     = if (vDark || vCustom) vTint else if (inCents > 0) kRiseInk else kFallInk	// icône : foncée sur pastille claire
+	return vTint.copy(alpha = if (vDark) 0.28f else 0.16f) to vInk
 }
 
 /*
@@ -93,8 +75,8 @@ fun operationAccent(inCents: Long): Pair<Color, Color>?
 */
 enum class FlowAccent
 {
-	INFLOW,																			// entrées, revenus : bleu-vert
-	OUTFLOW,																		// sorties, dépenses : orange
+	INFLOW,																			// entrées, revenus : menthe
+	OUTFLOW,																		// sorties, dépenses : corail
 	INVEST,																			// épargne, placements : ambre
 	MAIN																			// chiffre principal : couleur principale du thème
 }
@@ -109,9 +91,9 @@ fun flowAccent(inKind: FlowAccent): Color =
 	if (!isColorful()) Color.Unspecified
 	else when (inKind)
 	{
-		FlowAccent.INFLOW  -> LocalPalette.current?.rise ?: kBlueGreen
-		FlowAccent.OUTFLOW -> LocalPalette.current?.fall ?: kTiger
-		FlowAccent.INVEST  -> LocalPalette.current?.invest ?: kAmber
+		FlowAccent.INFLOW  -> colorfulPalette().rise
+		FlowAccent.OUTFLOW -> colorfulPalette().fall
+		FlowAccent.INVEST  -> colorfulPalette().invest
 		FlowAccent.MAIN    -> colorfulMain()
 	}
 

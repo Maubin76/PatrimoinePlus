@@ -83,7 +83,7 @@ class ThemesUiTest
 		fCompose.waitForIdle()
 		val vTheme = vApp.workspace.value.data.themes.single()							// thème créé
 		assertEquals("Lavande", vTheme.name)
-		assertEquals(listOf("#7B6CF6", "#1F9D8B", "#E9A23B", "#FB8500", "#8ECAE6"), vTheme.colors)
+		assertEquals(listOf("#7B6CF6", "#1F9D8B", "#E9A23B", "#B8294F", "#5B86E6"), vTheme.colors)
 		assertEquals(vTheme.id, vConfig.load().palette)
 		vApp.show(Screen.DASHBOARD)
 		capture(vApp, "30-tableau-de-bord-theme")

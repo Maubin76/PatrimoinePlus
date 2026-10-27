@@ -165,8 +165,8 @@ private fun Figures(inTable: ExpenseAnalysis)
 @Composable
 private fun MonthBars(inTable: ExpenseAnalysis)
 {
-	val vInk    = flowColorOr(FlowAccent.OUTFLOW, MaterialTheme.colorScheme.onSurface)	// dépenses (orange en thème Coloré)
-	val vLight  = flowColorOr(FlowAccent.INFLOW, MaterialTheme.colorScheme.outline)		// revenus (bleu-vert en thème Coloré)
+	val vInk    = flowColorOr(FlowAccent.OUTFLOW, MaterialTheme.colorScheme.onSurface)	// dépenses (corail en thème Coloré)
+	val vLight  = flowColorOr(FlowAccent.INFLOW, MaterialTheme.colorScheme.outline)		// revenus (menthe en thème Coloré)
 	val vMax    = (inTable.totalExpense + inTable.totalIncome).maxOrNull()?.coerceAtLeast(1L) ?: 1L	// plus grande valeur
 	val vHidden = LocalAmountsHidden.current											// mode discret
 	Row(verticalAlignment = Alignment.CenterVertically) {

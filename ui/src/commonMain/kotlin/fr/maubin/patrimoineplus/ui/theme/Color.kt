@@ -124,58 +124,61 @@ val kAllocationDark  = listOf(Color(0xFFF5F5F5), Color(0xFFABABAB), Color(0xFF6E
 
 // ---------- Thème Coloré ----------
 // Mêmes fonds, conteneurs et filets que le thème Monochrome ; la palette
-// « Refreshing Summer Fun » colore l'encre, les boutons et le contenu
-// (tuiles par type de compte, pastilles, graphiques). Textes secondaires et
-// négatifs assombris (clair) ou éclaircis (sombre) : contraste ≥ 4,5:1.
+// Indigo (voir kColorfulLight, kColorfulDark) colore l'encre, les boutons et
+// le contenu (tuiles par type de compte, pastilles, graphiques). Textes
+// secondaires et négatifs : contraste ≥ 4,5:1.
 
-private val kInkMuted       = Color(0xFF3F6478)							// texte secondaire bleuté (6,3:1 sur blanc)
-private val kNegativeWarm   = Color(0xFFA65200)							// négatifs, orange assombri (5,5:1 sur blanc)
-private val kIce            = Color(0xFFEAF6FB)							// encre claire
-private val kIceMuted       = Color(0xFF9FC4D6)							// texte secondaire sombre
-private val kNegativeLight  = Color(0xFFFFB066)							// négatifs, mode sombre
+private val kIndigoInk      = Color(0xFF1E1A4D)							// encre indigo profond (15:1 sur blanc)
+private val kIndigoMuted    = Color(0xFF5A5584)							// texte secondaire indigo (6,4:1 sur blanc)
+private val kNegativeCoral  = Color(0xFF9A2042)							// négatifs, corail foncé (8:1 sur blanc)
+private val kLavenderInk    = Color(0xFFEEEBFF)							// encre claire, lavande
+private val kLavenderMuted  = Color(0xFFB4AFD8)							// texte secondaire sombre
+private val kNegativeRose   = Color(0xFFFF8FA8)							// négatifs, mode sombre
 
 /*
-	Palette claire du thème Coloré : fonds blancs, encre bleu nuit.
+	Palette claire du thème Coloré : fonds blancs, encre indigo profond,
+	boutons indigo.
 */
 val ColorfulLightColors: ColorScheme = MonoLightColors.copy(
-	primary              = kDeepSpace,
+	primary              = kColorfulLight.main,
 	onPrimary            = kWhite,
-	primaryContainer     = kDeepSpace,
+	primaryContainer     = kColorfulLight.main,
 	onPrimaryContainer   = kWhite,
-	secondary            = kBlueGreen,
+	secondary            = kColorfulLight.rise,
 	onSecondary          = kWhite,
-	tertiary             = kAmber,
-	onTertiary           = kDeepSpace,
-	onBackground         = kDeepSpace,
-	onSurface            = kDeepSpace,
-	onSurfaceVariant     = kInkMuted,
-	onSecondaryContainer = kDeepSpace,
-	onTertiaryContainer  = kDeepSpace,
-	inverseSurface       = kDeepSpace,
-	inversePrimary       = kSkyBlue,
-	error                = kNegativeWarm,
-	errorContainer       = Color(0xFFFFEBD6),
-	onErrorContainer     = Color(0xFF5A2C00)
+	tertiary             = kColorfulLight.invest,
+	onTertiary           = kWhite,
+	onBackground         = kIndigoInk,
+	onSurface            = kIndigoInk,
+	onSurfaceVariant     = kIndigoMuted,
+	onSecondaryContainer = kIndigoInk,
+	onTertiaryContainer  = kIndigoInk,
+	inverseSurface       = kIndigoInk,
+	inversePrimary       = kColorfulDark.main,
+	error                = kNegativeCoral,
+	errorContainer       = Color(0xFFFCE4EA),
+	onErrorContainer     = Color(0xFF5C0F25)
 )
 
 /*
-	Palette sombre du thème Coloré : fonds noirs, encre glacée, boutons bleu ciel.
+	Palette sombre du thème Coloré : fonds noirs, encre lavande, boutons
+	lavande.
 */
 val ColorfulDarkColors: ColorScheme = MonoDarkColors.copy(
-	primary              = kSkyBlue,
-	onPrimary            = kDeepSpace,
-	primaryContainer     = kSkyBlue,
-	onPrimaryContainer   = kDeepSpace,
-	secondary            = kBlueGreen,
-	onSecondary          = kIce,
-	tertiary             = kAmber,
-	onTertiary           = kDeepSpace,
-	onBackground         = kIce,
-	onSurface            = kIce,
-	onSurfaceVariant     = kIceMuted,
-	inverseSurface       = kIce,
-	inversePrimary       = kDeepSpace,
-	error                = kNegativeLight,
-	errorContainer       = Color(0xFF4A2500),
-	onErrorContainer     = Color(0xFFFFE3C7)
+	primary              = kColorfulDark.main,
+	onPrimary            = kIndigoInk,
+	primaryContainer     = kColorfulDark.main,
+	onPrimaryContainer   = kIndigoInk,
+	secondary            = kColorfulDark.rise,
+	onSecondary          = kIndigoInk,
+	tertiary             = kColorfulDark.invest,
+	onTertiary           = kIndigoInk,
+	onBackground         = kLavenderInk,
+	onSurface            = kLavenderInk,
+	onSurfaceVariant     = kLavenderMuted,
+	inverseSurface       = kLavenderInk,
+	inversePrimary       = kColorfulLight.main,
+	error                = kNegativeRose,
+	errorContainer       = Color(0xFF4A1426),
+	onErrorContainer     = Color(0xFFFFE1E8)
 )

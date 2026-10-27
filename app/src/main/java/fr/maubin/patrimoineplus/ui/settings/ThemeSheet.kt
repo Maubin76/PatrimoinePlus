@@ -30,7 +30,7 @@ import fr.maubin.patrimoineplus.ui.components.ThemeSwatches
 import fr.maubin.patrimoineplus.ui.theme.Palette
 
 // Couleurs de départ d'un nouveau thème : celles du thème Coloré, dans l'ordre des rôles.
-private val kStarterColors = listOf("#023047", "#219EBC", "#FFB703", "#FB8500", "#8ECAE6")
+private val kStarterColors = listOf("#4B3FCE", "#0F9A80", "#B47D0A", "#B8294F", "#5B86E6")
 
 /*
 	Feuille de création ou de modification d'un thème de couleurs : nom, une

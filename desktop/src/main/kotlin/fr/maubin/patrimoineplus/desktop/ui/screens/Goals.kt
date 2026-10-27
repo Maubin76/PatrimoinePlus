@@ -600,8 +600,8 @@ private fun rateInput(inPermille: Long): String = if (inPermille % 10 == 0L) (in
 
 /*
 	Couleur d'un objectif dans le thème Coloré : celle du compte ou du type
-	visé, bleu-vert pour l'épargne mensuelle, ambre pour le taux d'épargne,
-	orange pour un montant saisi, couleur principale sinon.
+	visé, menthe pour l'épargne mensuelle, ambre pour le taux d'épargne,
+	corail pour un montant saisi, couleur principale sinon.
 	inGoal  : objectif
 	inSpace : données (type du compte visé)
 */

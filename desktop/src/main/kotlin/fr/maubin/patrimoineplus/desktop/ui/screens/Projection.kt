@@ -191,7 +191,7 @@ private fun Chart(inResult: Projection)
 {
 	val vInk   = flowColorOr(FlowAccent.MAIN, MaterialTheme.colorScheme.onSurface)		// scénario central
 	val vSoft  = MaterialTheme.colorScheme.onSurfaceVariant							// textes des axes
-	val vSide  = flowColorOr(FlowAccent.INFLOW, vSoft)								// autres scénarios (bleu-vert en thème Coloré)
+	val vSide  = flowColorOr(FlowAccent.INFLOW, vSoft)								// autres scénarios (menthe en thème Coloré)
 	val vLight = flowColorOr(FlowAccent.INVEST, MaterialTheme.colorScheme.outline)	// versements seuls (ambre en thème Coloré)
 	val vRule  = MaterialTheme.colorScheme.outlineVariant								// filets
 	Row(verticalAlignment = Alignment.CenterVertically) {

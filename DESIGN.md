@@ -52,11 +52,16 @@ colors:
   desk-ground-night-plum: "#181427"
   desk-halo-plum: "#3A2142"
   desk-halo-indigo: "#223259"
-  colorful-sky: "#8ECAE6"
-  colorful-blue-green: "#219EBC"
-  colorful-deep-space: "#023047"
-  colorful-amber: "#FFB703"
-  colorful-tiger: "#FB8500"
+  colorful-main-light: "#4B3FCE"
+  colorful-rise-light: "#0F9A80"
+  colorful-invest-light: "#B47D0A"
+  colorful-fall-light: "#B8294F"
+  colorful-second-light: "#5B86E6"
+  colorful-main-dark: "#B0A6FF"
+  colorful-rise-dark: "#4FDDB8"
+  colorful-invest-dark: "#F2BE5C"
+  colorful-fall-dark: "#E0577E"
+  colorful-second-dark: "#86A9FF"
 typography:
   display-large:
     fontFamily: "Hanken Grotesk, sans-serif"
@@ -570,9 +575,10 @@ Des neutres légèrement teintés de lavande sur un ciel pastel ; l'encre pour l
 - **Cadre** : blanc à 38 % d'opacité, liseré blanc de 1 dp à 70 % (sombre : 2,5 % et 6 %).
 
 #### Données (thème Coloré)
-- **Bleu nuit** (colorful-deep-space) / **Bleu ciel** (colorful-sky, sombre) : accent principal (`colorfulMain`), fond de la tuile pleine, courbes et barres de proportion.
-- **Bleu-vert** (colorful-blue-green) : hausses. **Orange** (colorful-tiger) : baisses. **Ambre** (colorful-amber) : teinte de rang.
-- Rampe de répartition, la plus grosse part d'abord : en clair bleu nuit, ambre, bleu-vert, orange, bleu ciel ; en sombre bleu ciel, orange, bleu-vert, ambre, glace. Chaque teinte est doublée d'une légende.
+- Palette « Indigo » (`kColorfulLight`, `kColorfulDark`), assortie au violet du logo et aux fonds lavande et nuit indigo ; chaque rôle a sa teinte claire et sa teinte sombre.
+- **Indigo** (colorful-main) : accent principal (`colorfulMain`), immobilier, fond de la tuile pleine, courbes et barres de proportion.
+- **Menthe** (colorful-rise) : hausses, entrées, comptes courants. **Corail** (colorful-fall) : baisses, sorties, bourse ; luminosité écartée de la menthe pour rester distincts en deutéranopie. **Ambre** (colorful-invest) : épargne et placements. **Pervenche** (colorful-second) : collection.
+- Rampe de répartition, la plus grosse part d'abord : indigo, menthe, ambre, corail, pervenche (clair et sombre). Voisins séparés de ΔE OKLab ≥ 10 sous daltonisme simulé et ≥ 18 sinon ; toutes les teintes ≥ 3:1 sur leur fond. Chaque teinte est doublée d'une légende.
 - **Aplat de tuile** : mélange de la surface et de la couleur du type, 17 % en clair (25 % au survol), 13 % en sombre (19 % au survol).
 
 #### Named Rules
@@ -652,7 +658,7 @@ Texte de l'état de synchronisation en bodyMedium secondaire (rouge d'erreur pou
 - **Shadow Strategy :** tuile au repos, survolée, enfoncée (voir Elevation & Depth).
 - **Border :** aucun en clair ; arête blanche à 5 % en sombre.
 - **Internal Padding :** 26 dp.
-- **Tuile pleine :** fond colorful-deep-space (colorful-sky en sombre), texte blanc ou bleu nuit selon la luminance du fond, texte secondaire à 78 %. Sert au patrimoine net, à la variation du bilan, au scénario central de la projection, au total du budget.
+- **Tuile pleine :** fond colorful-main (indigo en clair, lavande en sombre), texte blanc ou indigo profond selon la luminance du fond, texte secondaire à 78 %. Sert au patrimoine net, à la variation du bilan, au scénario central de la projection, au total du budget.
 
 #### Chips : segmenté en pilules
 Piste en pilule desk-mid, 4 dp de marge et d'écart ; chaque choix fait 38 dp de haut, à parts égales ; le choix actif est une pilule à l'encre, texte inversé, en fondu de 180 ms. Cinq choix et plus : labelMedium.
