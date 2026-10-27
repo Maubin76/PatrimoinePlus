@@ -101,6 +101,7 @@ import fr.maubin.patrimoineplus.ui.components.glassRaised
 import fr.maubin.patrimoineplus.ui.components.glassWell
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import fr.maubin.patrimoineplus.desktop.ui.AssistantHint
+import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
 
 private const val kBarMillis = 420														// remplissage de la barre d'avancement
 
@@ -153,7 +154,7 @@ fun GoalsScreen(
 	val vUpdate = { inGoal: Goal -> inController.setGoals(vGoals.copy(goals = vGoals.goals.map { if (it.id == inGoal.id) inGoal else it })) }	// modifie un objectif
 	Row(Modifier.fillMaxSize()) {
 		Column(
-			modifier            = Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
+			modifier            = Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp).padding(bottom = LocalAssistantRoom.current),
 			verticalArrangement = Arrangement.spacedBy(20.dp)
 		) {
 			Row(verticalAlignment = Alignment.CenterVertically) {

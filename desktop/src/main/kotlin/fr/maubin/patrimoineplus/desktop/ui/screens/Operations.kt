@@ -76,6 +76,7 @@ import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.mutableIntStateOf
 import fr.maubin.patrimoineplus.desktop.ui.AssistantHint
+import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
 
 private val kRowDate   = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)	// date d'une ligne
 private const val kPage = 20														// opérations affichées d'abord, puis à chaque « Afficher 20 de plus »
@@ -106,7 +107,7 @@ fun SearchScreen(
 	if (!vVisible.containsAll(vSelected)) vSelected = vSelected intersect vVisible
 	LaunchedEffect(vFocusAsk) { if (vFocusAsk > 0) { withFrameNanos {}; runCatching { vFocus.requestFocus() } } }
 	Column(
-		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
+		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
 		Column {

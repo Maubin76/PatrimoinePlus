@@ -436,15 +436,19 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   d'échange (format 7, onglet Thèmes ; base du téléphone v7) ; le thème
   choisi reste propre à chaque appareil. Supprimer le thème choisi ramène
   au thème Coloré.
-- **Assistant** (PC, en haut du rail, à la place du logo ; Réglages ›
-  Assistant) : la carte du logo, vivante (yeux qui suivent le pointeur,
-  clignements, respiration ; s'écrase et rebondit au clic, étourdi après
-  plusieurs clics rapides ; yeux fermés en mode discret). Son humeur résume
+- **Assistant** (PC, flottant en bas à droite ; Réglages › Assistant) :
+  petite carte blanche aux angles très doux, deux petits yeux d'encre qui
+  suivent le pointeur, pastille violette « … » quand il a des remarques
+  (corail « ! » quand un problème vient d'apparaître) ; clignements,
+  respiration ; s'écrase et rebondit au clic, étourdi après plusieurs clics
+  rapides ; yeux fermés en mode discret. Il s'efface quand le panneau de
+  saisie est ouvert, et les écrans laissent de la place en bas pour que
+  leur contenu remonte au-dessus de lui. Son humeur résume
   le mois en cours de la vue affichée : inquiet dès qu'un thème du budget
   est dépassé, qu'un objectif est en retard ou que le patrimoine baisse ;
   content si le patrimoine monte, qu'un objectif est atteint ou que le
   budget est tenu (`core/.../ui/assistant/Assistant.kt`). Sa bulle (survol ou
-  clic) résume l'humeur et liste au plus trois remarques, qui mènent à leur
+  clic, au-dessus de lui) résume l'humeur et liste au plus trois remarques, qui mènent à leur
   page ; montants masqués en mode discret. Réactions : hochement à
   l'enregistrement, sursaut et bulle ouverte d'elle-même sur un conflit, un
   fichier illisible ou une écriture impossible, regard vers le haut à une

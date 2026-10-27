@@ -199,7 +199,7 @@ fun App(
 	val vLaunch   = rememberLaunch(inWindowShown)												// lancement : fond seul, puis arrivée des éléments
 	val vPointer  = remember { mutableStateOf<Offset?>(null) }									// pointeur dans la fenêtre (regard de l'assistant)
 	DeskTheme(inDarkTheme = vDark, inColorTheme = vSettings.colors, inGlass = vSettings.glass, inPalette = vPalette) {
-		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie), LocalTourAnchors provides remember { TourAnchors() }, LocalLaunch provides vLaunch, LocalPointer provides remember { { vPointer.value } }, LocalAssistant provides (if (vSettings.assistant) vSettings.calm else null)) {
+		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie), LocalTourAnchors provides remember { TourAnchors() }, LocalLaunch provides vLaunch, LocalPointer provides remember { { vPointer.value } }, LocalAssistant provides (if (vSettings.assistant) vSettings.calm else null), LocalAssistantRoom provides (if (vSettings.assistant) kAssistantRoom else 0.dp)) {
 			AppGround(vDark, vSettings.glass)												// fond pastel, ou formes floues derrière le verre
 			Surface(
 				modifier     = Modifier.fillMaxSize().pointerInput(Unit) {
@@ -224,6 +224,7 @@ fun App(
 				else
 				{
 					Shell(inController, vSpace, inOnPickFolder, vDark)
+					if (vSettings.assistant) FloatingAssistant(inController, vSpace, vSettings.hidden, vSettings.calm)
 				}
 				vPending?.let { inAction -> UnsavedDialog(inAction, inController, inOnPickSaveFile) }
 				val vUpdate by inController.update.collectAsState()						// fenêtre de mise à jour
@@ -302,11 +303,7 @@ private fun Shell(
 			}
 		}
 	) {
-		Box(Modifier.launchReveal(0.15f, inDx = (-20).dp)) {											// puis le rail
-			Rail(vNav.screen, inController::show, inDark, inController::setAppearance) {
-				if (vSet.assistant) AssistantCorner(inController, vView, vSet.hidden, vSet.calm) else PatrimoineLogo(48.dp)
-			}
-		}
+		Box(Modifier.launchReveal(0.15f, inDx = (-20).dp)) { Rail(vNav.screen, inController::show, inDark, inController::setAppearance) }	// puis le rail
 		Column(Modifier.weight(1f).fillMaxHeight()) {
 			Box(Modifier.launchReveal(0.25f, inDy = (-12).dp)) { StatusBar(inSpace, vNotice, inController, scopeOf(vSet.view, inSpace.data.profiles)) }	// puis la barre du haut
 			Box(Modifier.fillMaxSize().launchReveal(0.4f, inDy = 18.dp), contentAlignment = Alignment.TopCenter) {	// enfin l'écran
@@ -437,7 +434,7 @@ private fun UnsavedDialog(
 }
 
 /*
-	Colonne de gauche : assistant (ou logo), rail flottant d'une icône ronde par écran
+	Colonne de gauche : logo, rail flottant d'une icône ronde par écran
 	principal (l'écran actif sur un disque plein, qui glisse d'une icône à
 	l'autre ; nom de l'écran en info-bulle et pour les lecteurs d'écran),
 	bascule clair / sombre en bas.
@@ -445,15 +442,13 @@ private fun UnsavedDialog(
 	inOnScreen   : change d'écran
 	inDark       : mode sombre effectif
 	inOnAppearance : choisit l'apparence claire ou sombre
-	inTop          : haut de la colonne (assistant, ou logo)
 */
 @Composable
 private fun Rail(
 	inScreen       : Screen,
 	inOnScreen     : (Screen) -> Unit,
 	inDark         : Boolean,
-	inOnAppearance : (ThemeMode) -> Unit,
-	inTop          : @Composable () -> Unit
+	inOnAppearance : (ThemeMode) -> Unit
 )
 {
 	val vIndex  = Screen.entries.indexOf(inScreen)								// rang de l'écran actif
@@ -462,7 +457,7 @@ private fun Rail(
 		modifier            = Modifier.fillMaxHeight().width(92.dp).padding(vertical = 22.dp),
 		horizontalAlignment = Alignment.CenterHorizontally
 	) {
-		inTop()
+		PatrimoineLogo(48.dp)
 		Spacer(Modifier.weight(1f))
 		FloatingSurface(RoundedCornerShape(50), Modifier.tourAnchor("shell.rail")) {
 			Box(Modifier.padding(6.dp)) {

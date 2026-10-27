@@ -54,6 +54,7 @@ import fr.maubin.patrimoineplus.ui.entry.editEntryForm
 import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
 
 private val kDay  = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)			// date d'une ligne
 private val kLong = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)		// bornes de la période
@@ -92,7 +93,7 @@ fun ReconcileScreen(
 	val vChoices = remember(inSession) { mutableStateMapOf<BankLine, Choice>() }	// saisies retenues
 	var vError   by remember(inSession) { mutableStateOf<String?>(null) }			// refus de la création
 	Column(
-		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
+		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
 		Row(verticalAlignment = Alignment.CenterVertically) {

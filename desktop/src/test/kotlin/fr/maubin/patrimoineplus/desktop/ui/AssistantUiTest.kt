@@ -23,12 +23,16 @@ import java.io.File
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.isRoot
 
 /*
-	Assistant du PC (sans écran, démonstration) : en haut du rail à la place
-	du logo ; un clic ouvre sa bulle (résumé de l'humeur, remarques) ; une
+	Assistant du PC (sans écran, démonstration) : flottant en bas à droite,
+	le logo reste en haut du rail ; un clic ouvre sa bulle (résumé de
+	l'humeur, remarques), au-dessus de lui ; une
 	remarque mène à sa page ; en mode discret, yeux fermés et montants
-	masqués dans la bulle ; réglages : retiré (logo de retour), mode calme
+	masqués dans la bulle ; caché quand le panneau de saisie est ouvert ;
+	réglages : retiré, mode calme
 	mémorisé. Captures `35-*.png`.
 */
 class AssistantUiTest
@@ -50,7 +54,6 @@ class AssistantUiTest
 	{
 		val vScene = ImageComposeScene(width = 1440, height = 900, density = Density(1f)) { App(inApp) { null } }	// scène hors écran
 		listOf(0L, 300L, 1_000L).forEach { vScene.render(it * 1_000_000L) }
-		File("build/captures-desktop").mkdirs()
 		File("build/captures-desktop/$inName.png").writeBytes(vScene.render(1_500_000_000L).encodeToData(EncodedImageFormat.PNG)!!.bytes)
 		vScene.close()
 	}
@@ -62,12 +65,16 @@ class AssistantUiTest
 	fun assistant()
 	{
 		val vConfig = DesktopConfig(fTemp.root.toPath().resolve("desktop.properties"))	// réglages
-		val vApp    = DesktopController(vConfig, Workspace(kClock), null, kClock).apply { openDemo(); setAppearance(ThemeMode.LIGHT); show(Screen.BUDGET) }	// démonstration
+		val vApp    = DesktopController(vConfig, Workspace(kClock), null, kClock).apply { openDemo(); setAppearance(ThemeMode.LIGHT); setAssistant(true); show(Screen.BUDGET) }	// démonstration
 		fCompose.setContent { App(vApp) { null } }
 		fCompose.waitForIdle()
-		fCompose.onNodeWithContentDescription("Logo PatrimoinePlus").assertDoesNotExist()
-		fCompose.onNodeWithContentDescription("Assistant", substring = true).performClick()
+		fCompose.onNodeWithContentDescription("Logo PatrimoinePlus").assertExists()
+		val vAvatar = fCompose.onNodeWithContentDescription("Assistant :", substring = true).fetchSemanticsNode().boundsInRoot	// place de l'assistant
+		val vRoot   = fCompose.onAllNodes(isRoot())[0].fetchSemanticsNode().boundsInRoot						// fenêtre
+		assertTrue("assistant pas en bas à droite : $vAvatar dans $vRoot", vAvatar.right > vRoot.width * 0.8f && vAvatar.bottom > vRoot.height * 0.75f)
+		fCompose.onNodeWithContentDescription("Assistant :", substring = true).performClick()
 		fCompose.waitForIdle()
+		File("build/captures-desktop").mkdirs()
 		fCompose.onAllNodesWithText("ce mois-ci", substring = true)[0].assertExists()
 		val vRemark = fCompose.onAllNodesWithText("Patrimoine en hausse", substring = true)	// remarque du patrimoine
 		vRemark[0].assertExists()
@@ -75,16 +82,22 @@ class AssistantUiTest
 		fCompose.waitForIdle()
 		assertEquals(Screen.DASHBOARD, vApp.navigation.value.screen)
 		vApp.toggleHidden()
-		fCompose.onNodeWithContentDescription("Assistant", substring = true).performClick()
+		fCompose.onNodeWithContentDescription("Assistant :", substring = true).performClick()
 		fCompose.waitForIdle()
 		assertTrue(fCompose.onAllNodesWithText("Patrimoine en hausse de ${fr.maubin.patrimoineplus.domain.format.kMaskedAmount}", substring = true).fetchSemanticsNodes().isNotEmpty())
 		vApp.toggleHidden()
-		capture(vApp, "35-assistant-rail")
+		capture(vApp, "35-assistant-coin")
+		vApp.newOperation()
+		fCompose.waitForIdle()
+		fCompose.onNodeWithContentDescription("Assistant :", substring = true).assertDoesNotExist()
+		vApp.closePanel()
+		fCompose.waitForIdle()
+		fCompose.onNodeWithContentDescription("Assistant :", substring = true).assertExists()
 		vApp.setAssistantCalm(true)
 		assertTrue(DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")).load().calm)
 		vApp.setAssistant(false)
 		fCompose.waitForIdle()
-		fCompose.onNodeWithContentDescription("Logo PatrimoinePlus").assertExists()
+		fCompose.onNodeWithContentDescription("Assistant :", substring = true).assertDoesNotExist()
 		assertFalse(DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")).load().assistant)
 	}
 }

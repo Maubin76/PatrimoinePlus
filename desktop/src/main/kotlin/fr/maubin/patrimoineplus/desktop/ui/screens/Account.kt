@@ -95,7 +95,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
-import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
+import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
+import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
 
 private val kDayTitle = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANCE)	// en-tête d'un jour
 private val kShortDay = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date d'une opération
@@ -137,7 +138,7 @@ fun AccountScreen(
 	val vAccent = accountAccent(vAccount.type)										// couleur du type (thème Coloré)
 	CompositionLocalProvider(LocalAccent provides vAccent) {
 	Column(
-		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
+		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
 		Row(verticalAlignment = Alignment.CenterVertically) {

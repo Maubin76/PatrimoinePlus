@@ -61,6 +61,7 @@ import fr.maubin.patrimoineplus.ui.components.isColorful
 import fr.maubin.patrimoineplus.ui.components.heroFilled
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import androidx.compose.foundation.layout.Box
+import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
 
 private val kHorizons = listOf(5, 10, 20, 30)											// horizons proposés, en années
 
@@ -83,7 +84,7 @@ fun ProjectionScreen(
 	val vInput   = vStored ?: vDefault													// hypothèses retenues
 	val vResult  = remember(inSpace.data, inSpace.today, vInput) { projectWealth(inSpace.data, inSpace.today, vInput) }	// projection
 	Column(
-		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
+		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
 		Column {

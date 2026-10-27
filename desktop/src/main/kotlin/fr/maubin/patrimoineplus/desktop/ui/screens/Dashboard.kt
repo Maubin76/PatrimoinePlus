@@ -75,6 +75,7 @@ import fr.maubin.patrimoineplus.ui.components.glassWell
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import androidx.compose.foundation.layout.Box
 import fr.maubin.patrimoineplus.desktop.ui.AssistantHint
+import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
 
 private val kShortDay   = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date courte
 private val kAccountMin = 300.dp													// largeur minimale d'une tuile de compte
@@ -97,7 +98,7 @@ fun DashboardScreen(
 	val vState   = remember(inSpace.data, inSpace.today) { buildDashboard(inSpace.data, inSpace.today) }	// tableau de bord
 	var vReorder by remember { mutableStateOf(false) }								// réorganisation des tuiles
 	Column(
-		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 28.dp),
+		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 28.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
 		if (vState.home.isEmpty)

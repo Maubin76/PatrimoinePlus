@@ -57,6 +57,7 @@ import fr.maubin.patrimoineplus.ui.components.heroFilled
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.foundation.shape.RoundedCornerShape
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
+import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
 
 private val kLongDay = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)	// date en toutes lettres
 
@@ -76,7 +77,7 @@ fun ReportScreen(
 {
 	val vTab by inController.reportTab.collectAsState()								// onglet affiché
 	Column(
-		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
+		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
 		Row(verticalAlignment = Alignment.CenterVertically) {

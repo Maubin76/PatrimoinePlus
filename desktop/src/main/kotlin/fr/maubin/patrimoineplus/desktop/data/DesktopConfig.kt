@@ -33,6 +33,9 @@ sealed interface Source
 	data class Folder(val path: Path) : Source
 }
 
+// Assistant affiché par défaut ; coupé dans les tests (propriété patrimoineplus.assistant=off), sauf ceux qui le visent.
+val kAssistantDefault = System.getProperty("patrimoineplus.assistant") != "off"
+
 /*
 	Réglages mémorisés de l'appli PC.
 	source     : source des données au prochain lancement
@@ -59,7 +62,7 @@ data class DesktopSettings(
 	val palette    : String    = "",
 	val updates    : Boolean   = true,
 	val ignored    : String    = "",
-	val assistant  : Boolean   = true,
+	val assistant  : Boolean   = kAssistantDefault,
 	val calm       : Boolean   = false
 )
 
@@ -102,7 +105,7 @@ class DesktopConfig(private val inFile: Path)
 			palette    = vProps.getProperty("palette").orEmpty(),
 			updates    = vProps.getProperty("updates") != "false",
 			ignored    = vProps.getProperty("update_ignored").orEmpty(),
-			assistant  = vProps.getProperty("assistant") != "false",
+			assistant  = vProps.getProperty("assistant")?.let { it != "false" } ?: kAssistantDefault,
 			calm       = vProps.getProperty("assistant_calm") == "true"
 		)
 	}

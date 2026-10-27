@@ -26,6 +26,7 @@ import fr.maubin.patrimoineplus.ui.assistant.Remark
 import fr.maubin.patrimoineplus.ui.assistant.AssistantTarget
 import fr.maubin.patrimoineplus.ui.theme.DeskTheme
 import fr.maubin.patrimoineplus.ui.theme.ColorTheme
+import fr.maubin.patrimoineplus.ui.components.AvatarBadge
 
 /*
 	Assistant (dessin) : planche des expressions pour relecture (humeurs,
@@ -63,9 +64,9 @@ class AssistantAvatarTest
 	fun expressions()
 	{
 		val vStates = listOf<@Composable () -> Unit>(
-			{ AssistantAvatar(150.dp, Mood.HAPPY) },
+			{ AssistantAvatar(150.dp, Mood.HAPPY, inBadge = AvatarBadge.DOTS) },
 			{ AssistantAvatar(150.dp, Mood.NEUTRAL) },
-			{ AssistantAvatar(150.dp, Mood.WORRIED) },
+			{ AssistantAvatar(150.dp, Mood.WORRIED, inBadge = AvatarBadge.ALERT) },
 			{ CompositionLocalProvider(LocalPointer provides { Offset(0f, 100f) }) { AssistantAvatar(150.dp, Mood.NEUTRAL) } },
 			{ CompositionLocalProvider(LocalPointer provides { Offset(5_000f, 0f) }) { AssistantAvatar(150.dp, Mood.HAPPY) } },
 			{ AssistantAvatar(150.dp, Mood.HAPPY, inEyesClosed = true) }
@@ -77,6 +78,11 @@ class AssistantAvatarTest
 			}
 		}
 		File("build/captures-desktop/34-assistant.png").writeBytes(vBoard)
+		File("build/captures-desktop/34-assistant-sombre.png").writeBytes(render(6 * 170 + 20, 0) {
+			Row(Modifier.background(Color(0xFF16162B)).padding(10.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+				vStates.forEach { inState -> Box(Modifier.padding(top = 10.dp)) { inState() } }
+			}
+		})
 		val vStartle = render(200, 140) { Box(Modifier.background(Color(0xFFEEEAF9)).padding(20.dp)) { AssistantAvatar(150.dp, Mood.NEUTRAL, inReaction = AvatarReaction.STARTLE to 1L) } }	// sursaut en cours
 		val vJoy     = render(200, 200) { Box(Modifier.background(Color(0xFFEEEAF9)).padding(20.dp)) { AssistantAvatar(150.dp, Mood.HAPPY, inReaction = AvatarReaction.JOY to 1L) } }		// joie en cours
 		File("build/captures-desktop/34-assistant-sursaut.png").writeBytes(vStartle)

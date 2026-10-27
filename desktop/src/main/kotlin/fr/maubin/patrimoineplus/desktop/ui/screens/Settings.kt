@@ -62,7 +62,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.size
+import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
 
 /*
 	Réglages de l'appli PC : source des données (dossier synchronisé,
@@ -80,7 +81,7 @@ fun SettingsScreen(
 {
 	val vSettings by inController.settings.collectAsState()				// réglages
 	val vColors   = MaterialTheme.colorScheme									// palette courante
-	Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(40.dp).widthIn(max = 720.dp)) {
+	Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(40.dp).padding(bottom = LocalAssistantRoom.current).widthIn(max = 720.dp)) {
 		Text("Réglages", style = MaterialTheme.typography.displaySmall)
 		Spacer(Modifier.height(32.dp))
 		SectionHeader(inTitle = "Données", inModifier = Modifier.tourAnchor("settings.data"))

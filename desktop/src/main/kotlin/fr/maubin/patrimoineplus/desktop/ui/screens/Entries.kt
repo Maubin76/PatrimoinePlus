@@ -15,6 +15,7 @@ import fr.maubin.patrimoineplus.desktop.DesktopController
 import fr.maubin.patrimoineplus.desktop.data.WorkspaceState
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import androidx.compose.foundation.layout.Box
+import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
 
 /*
 	Écran Opérations : saisie rapide en grille, puis opérations récurrentes et
@@ -29,7 +30,7 @@ fun EntriesScreen(
 )
 {
 	Column(
-		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
+		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(32.dp)
 	) {
 		Column {

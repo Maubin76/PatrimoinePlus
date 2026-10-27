@@ -53,8 +53,20 @@ import kotlinx.coroutines.delay
 import java.time.YearMonth
 import androidx.compose.runtime.staticCompositionLocalOf
 import fr.maubin.patrimoineplus.desktop.ui.components.Hint
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.platform.LocalDensity
+import fr.maubin.patrimoineplus.ui.components.AvatarBadge
+import fr.maubin.patrimoineplus.domain.calc.scoped
+import fr.maubin.patrimoineplus.domain.calc.scopeOf
 
 const val kAssistantName = "Assistant"											// nom de l'assistant (provisoire)
+private val kAvatarSize  = 112.dp												// taille de l'assistant flottant
 private const val kHoverMillis   = 450L											// survol avant d'ouvrir la bulle
 private const val kLeaveMillis   = 350L											// sortie avant de la refermer
 private const val kNoticeMillis  = 6_000L											// durée d'un message d'événement
@@ -97,7 +109,39 @@ fun rememberAssistantMood(
 }
 
 /*
-	Assistant en haut du rail : la carte vivante, son humeur du mois, ses
+	Assistant flottant en bas à droite de la fenêtre (au-dessus du contenu,
+	par-dessus le cadre) ; il s'efface quand le panneau de saisie est ouvert,
+	pour n'en cacher aucun bouton. Lancement : il arrive en dernier.
+	inController : contrôleur
+	inSpace      : données et état de la lecture (toutes vues)
+	inHidden     : mode discret
+	inCalm       : mode calme
+*/
+@Composable
+fun FloatingAssistant(
+	inController : DesktopController,
+	inSpace      : WorkspaceState,
+	inHidden     : Boolean,
+	inCalm       : Boolean
+)
+{
+	val vSet   by inController.settings.collectAsState()							// réglages (vue affichée)
+	val vPanel by inController.panel.collectAsState()								// panneau de saisie ouvert
+	val vView  = remember(inSpace, vSet.view) { inSpace.copy(data = inSpace.data.scoped(scopeOf(vSet.view, inSpace.data.profiles))) }	// données de la vue
+	Box(Modifier.fillMaxSize().padding(end = 44.dp, bottom = 34.dp), contentAlignment = Alignment.BottomEnd) {
+		AnimatedVisibility(
+			visible  = vPanel == null,
+			enter    = fadeIn(tween(220)) + slideInVertically(tween(260)) { it / 3 },
+			exit     = fadeOut(tween(160)) + slideOutVertically(tween(200)) { it / 3 },
+			modifier = Modifier.launchReveal(0.45f, inDy = 24.dp)
+		) {
+			AssistantCorner(inController, vView, inHidden, inCalm)
+		}
+	}
+}
+
+/*
+	Assistant : la carte vivante, son humeur du mois, ses
 	réactions aux événements (enregistrement réussi : hochement ; conflit,
 	fichier illisible, écriture impossible, modifications à enregistrer :
 	sursaut et bulle ; nouvelle version : regard vers le haut ; objectif
@@ -177,8 +221,14 @@ fun AssistantCorner(
 
 	Box(Modifier.hoverable(vHoverSrc)) {
 		AssistantAvatar(
-			inSize       = 60.dp,
+			inSize       = kAvatarSize,
 			inMood       = vMood.mood,
+			inBadge      = when
+			{
+				vNotice?.urgent == true                         -> AvatarBadge.ALERT
+				vMood.remarks.isNotEmpty() || vNotice != null   -> AvatarBadge.DOTS
+				else                                            -> AvatarBadge.NONE
+			},
 			inEyesClosed = inHidden,
 			inReaction   = vReaction,
 			inCalm       = inCalm,
@@ -187,7 +237,8 @@ fun AssistantCorner(
 		)
 		if (vOpen)
 		{
-			Popup(offset = IntOffset(78, 0), onDismissRequest = { vOpen = false; vPinned = false }) {
+			val vAbove = with(LocalDensity.current) { (kAvatarSize * 0.75f).roundToPx() }	// la bulle s'ouvre au-dessus du corps
+			Popup(alignment = Alignment.BottomEnd, offset = IntOffset(0, -vAbove), onDismissRequest = { vOpen = false; vPinned = false }) {
 				AssistantBubble(vMood, vNotice?.text) { inTarget ->
 					vOpen = false; vPinned = false
 					inController.show(when (inTarget) { AssistantTarget.DASHBOARD -> Screen.DASHBOARD; AssistantTarget.BUDGET -> Screen.BUDGET; AssistantTarget.GOALS -> Screen.GOALS })
@@ -276,4 +327,10 @@ fun AssistantHint(inText: String)
 		Text(inText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 	}
 }
+
+// Place laissée en bas des écrans défilants pour que leur contenu remonte au-dessus de l'assistant flottant ; 0 sans assistant.
+val LocalAssistantRoom = staticCompositionLocalOf { 0.dp }
+
+// Place à laisser quand l'assistant flottant est affiché (sa hauteur et sa marge).
+val kAssistantRoom = 140.dp
 

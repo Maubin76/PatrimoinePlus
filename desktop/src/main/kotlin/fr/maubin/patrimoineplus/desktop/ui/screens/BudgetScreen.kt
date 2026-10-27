@@ -71,6 +71,7 @@ import fr.maubin.patrimoineplus.domain.format.kCurrencySeparator
 import fr.maubin.patrimoineplus.ui.components.heroFilled
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import fr.maubin.patrimoineplus.desktop.ui.AssistantHint
+import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
 
 private const val kNameWeight   = 2.4f											// largeur relative de la colonne du nom
 private const val kAmountWeight = 1.2f											// largeur relative de la colonne du montant
@@ -96,7 +97,7 @@ fun BudgetScreen(
 	val vDiagram = remember(vView) { cashFlow(vView, false) }							// diagramme du budget
 	val vUpdate  = { inLines: List<BudgetLine> -> inController.setBudget(Budget(inLines)) }	// enregistre les lignes
 	Column(
-		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
+		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
 		Column {

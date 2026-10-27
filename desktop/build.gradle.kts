@@ -85,8 +85,10 @@ tasks.register<Zip>("packageZip") {
 
 // Tests sans écran, comme sur la CI (Linux) : une fenêtre AWT y serait refusée ;
 // les visites guidées ne s'ouvrent pas d'elles-mêmes (elles bloqueraient les clics
-// des tests) ; le test des visites les réactive pour lui.
+// des tests) ; le test des visites les réactive pour lui. L'assistant flottant est
+// coupé de même (il couvrirait le coin bas droit) ; ses tests l'activent.
 tasks.withType<Test>().configureEach {
 	systemProperty("java.awt.headless", "true")
 	systemProperty("patrimoineplus.tours", "off")
+	systemProperty("patrimoineplus.assistant", "off")
 }

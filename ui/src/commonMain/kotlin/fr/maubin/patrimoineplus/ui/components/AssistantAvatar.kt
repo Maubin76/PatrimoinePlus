@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
@@ -52,12 +53,22 @@ import kotlin.math.min
 import kotlin.math.sin
 import kotlin.random.Random
 
-private val kBodyTop    = Color(0xFF9A8DFF)											// carte, haut (comme le logo)
-private val kBodyMiddle = Color(0xFF6A5CF5)											// carte, milieu
-private val kBodyBottom = Color(0xFF3B31B0)											// carte, bas
-private val kEyeWhite   = Color(0xFFF7F5FE)											// blanc des yeux
-private val kPupil      = Color(0xFF1E1A4D)											// pupilles, bouche, paupières (indigo profond)
-private val kCheek      = Color(0xFFFF8FA8).copy(alpha = 0.55f)						// joues roses (content)
+private val kBodyTop    = Color(0xFFFFFFFF)											// corps, haut : blanc
+private val kBodyBottom = Color(0xFFE3DFF3)											// corps, bas : reflet lavande
+private val kEye        = Color(0xFF16151F)											// yeux, sourcils (encre)
+private val kCheek      = Color(0xFFFF8FA8).copy(alpha = 0.45f)						// joues roses (content)
+private val kBadge      = Color(0xFF6A5CF5)											// pastille : remarques (violet de l'appli)
+private val kAlert      = Color(0xFFE0577E)											// pastille : point à régler (corail)
+
+/*
+	Pastille de l'assistant, en haut à gauche.
+*/
+enum class AvatarBadge
+{
+	NONE,																			// sans pastille
+	DOTS,																			// « … » : il a des remarques
+	ALERT																			// « ! » : un point demande attention
+}
 
 // Position du pointeur dans la fenêtre (racine de l'appli), lue au dessin ; null hors de la fenêtre.
 val LocalPointer = staticCompositionLocalOf<() -> Offset?> { { null } }
@@ -74,17 +85,19 @@ enum class AvatarReaction
 }
 
 /*
-	Assistant de l'appli : la carte de verre du logo, vivante. Yeux qui
+	Assistant de l'appli : petite carte blanche aux angles très doux, deux
+	petits yeux d'encre et une pastille violette, vivante. Yeux qui
 	suivent le pointeur (LocalPointer), clignements, respiration et coups
 	d'œil ailleurs au repos ; s'écrase puis rebondit au clic, étourdi après
 	plusieurs clics rapides ; bouche et sourcils selon l'humeur ; yeux fermés
 	en mode discret ; réactions ponctuelles (hochement, sursaut, joie, regard
 	vers le haut). Tout est animé au dessin, sans recomposer à chaque image.
-	inSize       : largeur de l'assistant (la carte fait 2/3 de haut)
+	inSize       : côté de la zone de l'assistant (le corps en occupe la largeur, les 3/5 de la hauteur)
 	inMood       : humeur
 	inEyesClosed : yeux fermés (montants masqués)
 	inReaction   : dernière réaction demandée, avec un numéro qui change à chaque demande ; null sans
 	inCalm       : sans réactions ni jeu au clic (yeux et clignements seulement)
+	inBadge      : pastille en haut à gauche
 	inLabel      : nom pour les lecteurs d'écran ; null : décoratif (le texte voisin dit tout)
 	inOnClick    : clic (après le rebond) ; null : pas cliquable
 	inModifier   : modificateur
@@ -96,6 +109,7 @@ fun AssistantAvatar(
 	inEyesClosed : Boolean                     = false,
 	inReaction   : Pair<AvatarReaction, Long>? = null,
 	inCalm       : Boolean                     = false,
+	inBadge      : AvatarBadge                 = AvatarBadge.NONE,
 	inLabel      : String?                     = "Assistant",
 	inOnClick    : (() -> Unit)?               = null,
 	inModifier   : Modifier                    = Modifier
@@ -195,7 +209,8 @@ fun AssistantAvatar(
 			inDizzy  = vDizzy.value,
 			inSpin   = vSpin,
 			inWide   = vWide.value,
-			inSquint = vSquint.value
+			inSquint = vSquint.value,
+			inBadge  = inBadge
 		)
 	}
 }
@@ -222,19 +237,22 @@ private fun lookDirection(
 }
 
 /*
-	Dessine l'assistant dans sa zone (grille de 120 de large).
+	Dessine l'assistant dans sa zone (grille de 120 de large) : ombre douce,
+	corps blanc aux angles très arrondis, deux petits yeux ovales d'encre qui
+	regardent (sourcils inquiets, joues contentes), pastille en haut à gauche.
 	inScope  : zone de dessin
 	inMood   : humeur
 	inLook   : direction du regard (longueur ≤ 1 environ)
-	inBlink  : paupières, de 0 (ouvertes) à 1 (fermées)
+	inBlink  : paupières, de 0 (ouverts) à 1 (fermés)
 	inClosed : yeux fermés pour de bon (mode discret) : traits paisibles
 	inBreath : respiration, de −1 à 1
 	inSquash : écrasement du clic, de 0 à 1
 	inHop    : saut (positif vers le haut), en part de la hauteur
 	inDizzy  : étourdissement, de 0 à 1
-	inSpin   : tour des pupilles étourdies, de 0 à 1
+	inSpin   : tour des yeux étourdis, de 0 à 1
 	inWide   : yeux écarquillés, de 0 à 1
 	inSquint : yeux plissés de joie, de 0 à 1
+	inBadge  : pastille
 */
 private fun drawAssistant(
 	inScope  : DrawScope,
@@ -248,55 +266,54 @@ private fun drawAssistant(
 	inDizzy  : Float,
 	inSpin   : Float,
 	inWide   : Float,
-	inSquint : Float
+	inSquint : Float,
+	inBadge  : AvatarBadge
 ) = with(inScope)
 {
-	val vU      = size.width / 120f														// une unité de la grille
-	fun p(inX: Float, inY: Float) = Offset(inX * vU, inY * vU)						// point de la grille
-	val vSx     = 1f + 0.16f * inSquash - 0.012f * inBreath								// largeur : s'étale écrasé, respire
-	val vSy     = 1f - 0.22f * inSquash + 0.025f * inBreath								// hauteur
-	val vBase   = p(60f, 100f)																// pied de la carte (point fixe de l'écrasement)
+	val vU    = size.width / 120f															// une unité de la grille
+	fun p(inX: Float, inY: Float) = Offset(inX * vU, inY * vU)							// point de la grille
+	val vSx   = 1f + 0.14f * inSquash - 0.010f * inBreath									// largeur : s'étale écrasé, respire
+	val vSy   = 1f - 0.20f * inSquash + 0.022f * inBreath									// hauteur
+	val vBase = p(60f, 104f)																// pied du corps (point fixe de l'écrasement)
+	drawOval(Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.18f * (1f - inHop * 2f).coerceIn(0.3f, 1f)), Color.Black.copy(alpha = 0f)), p(60f, 106f), 46f * vU), p(14f, 100f), Size(92f * vU, 12f * vU))	// ombre au sol
 	translate(top = -inHop * size.height) {
 		scale(vSx, vSy, vBase) {
-			// ombre douce au sol
-			drawOval(Color.Black.copy(alpha = 0.10f), p(22f, 98f), Size(76f * vU, 8f * vU))
-			// carte
-			val vBody = Rect(p(10f, 22f), p(110f, 98f))												// carte, 100 × 76
-			drawRoundRect(Brush.linearGradient(0f to kBodyTop, 0.55f to kBodyMiddle, 1f to kBodyBottom, start = vBody.topLeft, end = vBody.bottomRight.copy(x = vBody.left + vBody.width * 0.3f)), vBody.topLeft, vBody.size, CornerRadius(18f * vU))
-			drawRoundRect(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.40f), Color.White.copy(alpha = 0f)), vBody.top, vBody.top + 26f * vU), vBody.topLeft, Size(vBody.width, 26f * vU), CornerRadius(18f * vU))
-			drawRoundRect(Brush.linearGradient(0f to Color.White.copy(alpha = 0.7f), 0.5f to Color.White.copy(alpha = 0.08f), 1f to Color.White.copy(alpha = 0.3f), start = vBody.topLeft, end = vBody.bottomRight), vBody.topLeft, vBody.size, CornerRadius(18f * vU), style = Stroke(1.6f * vU))
-			// joues
+			val vBody = Rect(p(10f, 34f), p(110f, 104f))												// corps, 100 × 70
+			val vRound = CornerRadius(30f * vU)															// angles très doux
+			drawRoundRect(Brush.verticalGradient(listOf(kBodyTop, kBodyBottom), vBody.top, vBody.bottom), vBody.topLeft, vBody.size, vRound)
+			clipPath(Path().apply { addRoundRect(androidx.compose.ui.geometry.RoundRect(vBody, vRound)) }) {
+				drawRect(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.9f), Color.White.copy(alpha = 0f)), vBody.top, vBody.top + 22f * vU), vBody.topLeft, Size(vBody.width, 22f * vU))	// reflet du haut, dans la forme du corps
+			}
+			drawRoundRect(Color(0xFF9E97C8).copy(alpha = 0.35f), vBody.topLeft, vBody.size, vRound, style = Stroke(1.2f * vU))	// contour léger (fonds clairs)
 			if (inMood == Mood.HAPPY || inSquint > 0f)
 			{
-				drawOval(kCheek, p(20f, 66f), Size(16f * vU, 9f * vU))
-				drawOval(kCheek, p(84f, 66f), Size(16f * vU, 9f * vU))
+				drawOval(kCheek, p(34f, 78f), Size(13f * vU, 7f * vU))
+				drawOval(kCheek, p(84f, 78f), Size(13f * vU, 7f * vU))
 			}
-			// yeux
-			listOf(40f, 80f).forEach { inX -> eye(this, p(inX, 52f), vU, inLook, inBlink, inClosed, inDizzy, inSpin, inWide, inSquint, inX < 60f) }
-			// sourcils (inquiet)
-			if (inMood == Mood.WORRIED && !inClosed)
+			val vEyes = p(70f, 66f) + Offset(inLook.x * 12f * vU, inLook.y * 7f * vU)					// milieu des yeux, qui suit le regard
+			listOf(-11f, 11f).forEach { inDx -> eye(this, vEyes + Offset(inDx * vU, 0f), vU, inBlink, inClosed, inDizzy, inSpin, inWide, inSquint, inDx < 0f) }
+			if (inMood == Mood.WORRIED && !inClosed && inSquint == 0f)
 			{
-				drawLine(kPupil, p(31f, 37f), p(45f, 34f), 2.6f * vU, StrokeCap.Round)
-				drawLine(kPupil, p(75f, 34f), p(89f, 37f), 2.6f * vU, StrokeCap.Round)
+				drawLine(kEye, vEyes + Offset(-16f * vU, -14f * vU), vEyes + Offset(-6f * vU, -16.5f * vU), 2.2f * vU, StrokeCap.Round)
+				drawLine(kEye, vEyes + Offset(6f * vU, -16.5f * vU), vEyes + Offset(16f * vU, -14f * vU), 2.2f * vU, StrokeCap.Round)
 			}
-			// bouche
-			mouth(this, vU, if (inSquint > 0.5f) Mood.HAPPY else inMood, inWide, inDizzy)
+			if (inWide > 0.4f) drawOval(kEye, vEyes + Offset(-3f * vU, 12f * vU), Size(6f * vU, 5f * vU))	// petite bouche ronde du sursaut
+			if (inBadge != AvatarBadge.NONE) badge(this, p(22f, 36f), 14f * vU, inBadge)
 		}
 	}
 }
 
 /*
-	Dessine un œil : blanc, pupille qui suit le regard, paupière qui descend ;
-	fermé pour de bon : trait arrondi paisible ; étourdi : pupille qui tourne ;
-	plissé de joie : arc vers le haut.
+	Dessine un œil : petit ovale d'encre (le blanc du corps l'entoure) qui
+	s'aplatit au clignement ; fermé pour de bon : trait arrondi vers le bas ;
+	plissé de joie : arc vers le haut ; étourdi : tourne sur lui-même.
 	inScope  : zone de dessin
 	inCenter : centre de l'œil
 	inU      : unité de la grille
-	inLook   : direction du regard
 	inBlink  : paupière, de 0 à 1
 	inClosed : fermé pour de bon
 	inDizzy  : étourdissement, de 0 à 1
-	inSpin   : tour des pupilles, de 0 à 1
+	inSpin   : tour des yeux, de 0 à 1
 	inWide   : écarquillé, de 0 à 1
 	inSquint : plissé, de 0 à 1
 	inLeft   : œil gauche (sens du tour étourdi)
@@ -305,7 +322,6 @@ private fun eye(
 	inScope  : DrawScope,
 	inCenter : Offset,
 	inU      : Float,
-	inLook   : Offset,
 	inBlink  : Float,
 	inClosed : Boolean,
 	inDizzy  : Float,
@@ -315,59 +331,57 @@ private fun eye(
 	inLeft   : Boolean
 ) = with(inScope)
 {
-	val vRx = (9f + 2.5f * inWide) * inU															// demi-largeur
-	val vRy = (11f + 3f * inWide) * inU																// demi-hauteur
+	val vRx = (3.4f + 1.4f * inWide) * inU															// demi-largeur
+	val vRy = (5.8f + 1.8f * inWide) * inU															// demi-hauteur
 	if (inClosed || inSquint > 0.5f)
 	{
-		val vArc = Path().apply {
-			val vDy = if (inClosed) 2f * inU else -3f * inU											// fermé : vers le bas ; joie : vers le haut
-			moveTo(inCenter.x - vRx, inCenter.y)
-			quadraticTo(inCenter.x, inCenter.y + vDy * 2.4f, inCenter.x + vRx, inCenter.y)
-		}																						// trait de l'œil
-		drawPath(vArc, kPupil, style = Stroke(2.8f * inU, cap = StrokeCap.Round))
+		val vDy  = if (inClosed) 2.6f * inU else -3.2f * inU											// fermé : vers le bas ; joie : vers le haut
+		val vArc = Path().apply { moveTo(inCenter.x - 4.6f * inU, inCenter.y); quadraticTo(inCenter.x, inCenter.y + vDy * 2f, inCenter.x + 4.6f * inU, inCenter.y) }	// trait de l'œil
+		drawPath(vArc, kEye, style = Stroke(2.4f * inU, cap = StrokeCap.Round))
 		return@with
 	}
-	val vOpen = (1f - inBlink).coerceIn(0.06f, 1f)												// part ouverte
-	drawOval(kEyeWhite, Offset(inCenter.x - vRx, inCenter.y - vRy * vOpen), Size(2 * vRx, 2 * vRy * vOpen))
-	if (vOpen > 0.2f)
+	val vAngle  = (if (inLeft) inSpin else -inSpin) * 2f * PI.toFloat()								// tour étourdi
+	val vCenter = inCenter + Offset(cos(vAngle), sin(vAngle)) * (2.4f * inU * inDizzy)				// œil qui tourne
+	val vOpen   = (1f - inBlink).coerceIn(0.12f, 1f)													// part ouverte
+	drawOval(kEye, Offset(vCenter.x - vRx, vCenter.y - vRy * vOpen), Size(2 * vRx, 2 * vRy * vOpen))
+	if (vOpen > 0.5f) drawCircle(Color.White.copy(alpha = 0.85f), 1.1f * inU, vCenter + Offset(-1.2f * inU, -2.4f * inU * vOpen))	// reflet
+}
+
+/*
+	Dessine la pastille : disque violet avec « … » (remarques) ou corail
+	avec « ! » (point à régler), cerclée de blanc.
+	inScope  : zone de dessin
+	inCenter : centre
+	inRadius : rayon
+	inBadge  : pastille
+*/
+private fun badge(
+	inScope  : DrawScope,
+	inCenter : Offset,
+	inRadius : Float,
+	inBadge  : AvatarBadge
+) = with(inScope)
+{
+	drawCircle(Color.White, inRadius * 1.16f, inCenter)
+	drawCircle(Brush.verticalGradient(listOf(lerpColor(if (inBadge == AvatarBadge.ALERT) kAlert else kBadge, 0.25f), if (inBadge == AvatarBadge.ALERT) kAlert else kBadge), inCenter.y - inRadius, inCenter.y + inRadius), inRadius, inCenter)
+	val vDot = inRadius * 0.17f																		// point
+	if (inBadge == AvatarBadge.DOTS)
 	{
-		val vSpinAngle = (if (inLeft) inSpin else -inSpin) * 2f * PI.toFloat()					// tour étourdi
-		val vLook      = inLook * (1f - inDizzy) + Offset(cos(vSpinAngle), sin(vSpinAngle)) * inDizzy	// regard, ou tournis
-		val vPupil     = Offset(inCenter.x + vLook.x * vRx * 0.45f, inCenter.y + vLook.y * vRy * 0.4f * vOpen)	// centre de la pupille
-		val vR         = (5.2f - 1.4f * inWide) * inU											// rayon de la pupille (rétrécit au sursaut)
-		drawCircle(kPupil, vR, vPupil)
-		drawCircle(Color.White.copy(alpha = 0.9f), vR * 0.32f, vPupil + Offset(-vR * 0.35f, -vR * 0.38f))	// reflet
+		listOf(-0.42f, 0f, 0.42f).forEach { inDx -> drawCircle(Color.White, vDot, inCenter + Offset(inDx * inRadius, 0f)) }
+	}
+	else
+	{
+		drawLine(Color.White, inCenter + Offset(0f, -inRadius * 0.45f), inCenter + Offset(0f, inRadius * 0.12f), vDot * 1.9f, StrokeCap.Round)
+		drawCircle(Color.White, vDot * 1.0f, inCenter + Offset(0f, inRadius * 0.45f))
 	}
 }
 
 /*
-	Dessine la bouche selon l'humeur : sourire, trait, petite moue ; ronde
-	au sursaut ; ondulée quand il est étourdi.
-	inScope : zone de dessin
-	inU     : unité de la grille
-	inMood  : humeur
-	inWide  : sursaut, de 0 à 1
-	inDizzy : étourdissement, de 0 à 1
+	Couleur éclaircie vers le blanc.
+	inColor  : couleur
+	inAmount : part de blanc, de 0 à 1
 */
-private fun mouth(
-	inScope : DrawScope,
-	inU     : Float,
-	inMood  : Mood,
-	inWide  : Float,
-	inDizzy : Float
-) = with(inScope)
-{
-	val vStroke = Stroke(2.8f * inU, cap = StrokeCap.Round)										// trait de la bouche
-	when
-	{
-		inWide > 0.4f  -> drawOval(kPupil, Offset(55f * inU, 72f * inU), Size(10f * inU, 9f * inU))
-		inDizzy > 0.4f -> drawPath(Path().apply {
-			moveTo(50f * inU, 78f * inU)
-			cubicTo(53f * inU, 74f * inU, 56f * inU, 82f * inU, 60f * inU, 78f * inU)
-			cubicTo(64f * inU, 74f * inU, 67f * inU, 82f * inU, 70f * inU, 78f * inU)
-		}, kPupil, style = vStroke)
-		inMood == Mood.HAPPY   -> drawPath(Path().apply { moveTo(50f * inU, 74f * inU); quadraticTo(60f * inU, 84f * inU, 70f * inU, 74f * inU) }, kPupil, style = vStroke)
-		inMood == Mood.WORRIED -> drawPath(Path().apply { moveTo(52f * inU, 80f * inU); quadraticTo(60f * inU, 73f * inU, 68f * inU, 80f * inU) }, kPupil, style = vStroke)
-		else                   -> drawLine(kPupil, Offset(53f * inU, 77f * inU), Offset(67f * inU, 77f * inU), 2.8f * inU, StrokeCap.Round)
-	}
-}
+private fun lerpColor(
+	inColor  : Color,
+	inAmount : Float
+): Color = androidx.compose.ui.graphics.lerp(inColor, Color.White, inAmount)
