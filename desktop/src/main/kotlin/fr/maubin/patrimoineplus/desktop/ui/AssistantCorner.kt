@@ -61,12 +61,11 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.platform.LocalDensity
-import fr.maubin.patrimoineplus.ui.components.AvatarBadge
 import fr.maubin.patrimoineplus.domain.calc.scoped
 import fr.maubin.patrimoineplus.domain.calc.scopeOf
 
 const val kAssistantName = "Assistant"											// nom de l'assistant (provisoire)
-private val kAvatarSize  = 112.dp												// taille de l'assistant flottant
+private val kAvatarSize  = 168.dp												// taille de l'assistant flottant
 private const val kHoverMillis   = 450L											// survol avant d'ouvrir la bulle
 private const val kLeaveMillis   = 350L											// sortie avant de la refermer
 private const val kNoticeMillis  = 6_000L											// durée d'un message d'événement
@@ -223,12 +222,6 @@ fun AssistantCorner(
 		AssistantAvatar(
 			inSize       = kAvatarSize,
 			inMood       = vMood.mood,
-			inBadge      = when
-			{
-				vNotice?.urgent == true                         -> AvatarBadge.ALERT
-				vMood.remarks.isNotEmpty() || vNotice != null   -> AvatarBadge.DOTS
-				else                                            -> AvatarBadge.NONE
-			},
 			inEyesClosed = inHidden,
 			inReaction   = vReaction,
 			inCalm       = inCalm,
@@ -332,5 +325,5 @@ fun AssistantHint(inText: String)
 val LocalAssistantRoom = staticCompositionLocalOf { 0.dp }
 
 // Place à laisser quand l'assistant flottant est affiché (sa hauteur et sa marge).
-val kAssistantRoom = 140.dp
+val kAssistantRoom = 200.dp
 

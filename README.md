@@ -437,9 +437,8 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   choisi reste propre à chaque appareil. Supprimer le thème choisi ramène
   au thème Coloré.
 - **Assistant** (PC, flottant en bas à droite ; Réglages › Assistant) :
-  petite carte blanche aux angles très doux, deux petits yeux d'encre qui
-  suivent le pointeur, pastille violette « … » quand il a des remarques
-  (corail « ! » quand un problème vient d'apparaître) ; clignements,
+  carte blanche aux angles très doux (168 dp), deux petits yeux d'encre qui
+  suivent le pointeur ; clignements,
   respiration ; s'écrase et rebondit au clic, étourdi après plusieurs clics
   rapides ; yeux fermés en mode discret. Il s'efface quand le panneau de
   saisie est ouvert, et les écrans laissent de la place en bas pour que
