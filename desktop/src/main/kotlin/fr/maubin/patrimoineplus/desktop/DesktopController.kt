@@ -438,6 +438,19 @@ class DesktopController(
 	fun setUpdates(inOn: Boolean) = update(fSettings.value.copy(updates = inOn))
 
 	/*
+		Affiche ou retire l'assistant (en haut du rail).
+		inOn : vrai pour l'afficher
+	*/
+	fun setAssistant(inOn: Boolean) = update(fSettings.value.copy(assistant = inOn))
+
+	/*
+		Mode calme de l'assistant : yeux et clignements seulement, ni réactions
+		ni bulle d'elle-même.
+		inOn : vrai pour le mode calme
+	*/
+	fun setAssistantCalm(inOn: Boolean) = update(fSettings.value.copy(calm = inOn))
+
+	/*
 		Change l'onglet de l'écran Bilan.
 		inTab : onglet
 	*/

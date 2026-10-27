@@ -148,7 +148,11 @@ import fr.maubin.patrimoineplus.ui.theme.Palette
 import fr.maubin.patrimoineplus.desktop.ui.panels.ThemePanel
 import fr.maubin.patrimoineplus.ui.components.UpdateDialog
 import androidx.compose.runtime.snapshotFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.first
+import fr.maubin.patrimoineplus.ui.components.LocalPointer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -193,10 +197,23 @@ fun App(
 	val vDark     = vSettings.appearance.isDark()									// mode sombre effectif
 	val vPalette  = vSpace.data.themes.firstOrNull { it.id == vSettings.palette }?.let { Palette.of(it.colors) }	// thème personnalisé choisi ; null sans
 	val vLaunch   = rememberLaunch(inWindowShown)												// lancement : fond seul, puis arrivée des éléments
+	val vPointer  = remember { mutableStateOf<Offset?>(null) }									// pointeur dans la fenêtre (regard de l'assistant)
 	DeskTheme(inDarkTheme = vDark, inColorTheme = vSettings.colors, inGlass = vSettings.glass, inPalette = vPalette) {
-		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie), LocalTourAnchors provides remember { TourAnchors() }, LocalLaunch provides vLaunch) {
+		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie), LocalTourAnchors provides remember { TourAnchors() }, LocalLaunch provides vLaunch, LocalPointer provides remember { { vPointer.value } }) {
 			AppGround(vDark, vSettings.glass)												// fond pastel, ou formes floues derrière le verre
-			Surface(Modifier.fillMaxSize(), color = Color.Transparent, contentColor = MaterialTheme.colorScheme.onSurface) {
+			Surface(
+				modifier     = Modifier.fillMaxSize().pointerInput(Unit) {
+					awaitPointerEventScope {
+						while (true)
+						{
+							val vEvent = awaitPointerEvent(PointerEventPass.Initial)				// mouvement, sans le consommer
+							vPointer.value = if (vEvent.type == PointerEventType.Exit) null else vEvent.changes.firstOrNull()?.position
+						}
+					}
+				},
+				color        = Color.Transparent,
+				contentColor = MaterialTheme.colorScheme.onSurface
+			) {
 				if (vSpace.source == Source.None)
 				{
 					WelcomeScreen(
@@ -284,7 +301,11 @@ private fun Shell(
 			}
 		}
 	) {
-		Box(Modifier.launchReveal(0.15f, inDx = (-20).dp)) { Rail(vNav.screen, inController::show, inDark, inController::setAppearance) }	// puis le rail
+		Box(Modifier.launchReveal(0.15f, inDx = (-20).dp)) {											// puis le rail
+			Rail(vNav.screen, inController::show, inDark, inController::setAppearance) {
+				if (vSet.assistant) AssistantCorner(inController, vView, vSet.hidden, vSet.calm) else PatrimoineLogo(48.dp)
+			}
+		}
 		Column(Modifier.weight(1f).fillMaxHeight()) {
 			Box(Modifier.launchReveal(0.25f, inDy = (-12).dp)) { StatusBar(inSpace, vNotice, inController, scopeOf(vSet.view, inSpace.data.profiles)) }	// puis la barre du haut
 			Box(Modifier.fillMaxSize().launchReveal(0.4f, inDy = 18.dp), contentAlignment = Alignment.TopCenter) {	// enfin l'écran
@@ -415,7 +436,7 @@ private fun UnsavedDialog(
 }
 
 /*
-	Colonne de gauche : logo, rail flottant d'une icône ronde par écran
+	Colonne de gauche : assistant (ou logo), rail flottant d'une icône ronde par écran
 	principal (l'écran actif sur un disque plein, qui glisse d'une icône à
 	l'autre ; nom de l'écran en info-bulle et pour les lecteurs d'écran),
 	bascule clair / sombre en bas.
@@ -423,13 +444,15 @@ private fun UnsavedDialog(
 	inOnScreen   : change d'écran
 	inDark       : mode sombre effectif
 	inOnAppearance : choisit l'apparence claire ou sombre
+	inTop          : haut de la colonne (assistant, ou logo)
 */
 @Composable
 private fun Rail(
 	inScreen       : Screen,
 	inOnScreen     : (Screen) -> Unit,
 	inDark         : Boolean,
-	inOnAppearance : (ThemeMode) -> Unit
+	inOnAppearance : (ThemeMode) -> Unit,
+	inTop          : @Composable () -> Unit
 )
 {
 	val vIndex  = Screen.entries.indexOf(inScreen)								// rang de l'écran actif
@@ -438,7 +461,7 @@ private fun Rail(
 		modifier            = Modifier.fillMaxHeight().width(92.dp).padding(vertical = 22.dp),
 		horizontalAlignment = Alignment.CenterHorizontally
 	) {
-		PatrimoineLogo(48.dp)
+		inTop()
 		Spacer(Modifier.weight(1f))
 		FloatingSurface(RoundedCornerShape(50), Modifier.tourAnchor("shell.rail")) {
 			Box(Modifier.padding(6.dp)) {

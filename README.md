@@ -436,6 +436,20 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   d'échange (format 7, onglet Thèmes ; base du téléphone v7) ; le thème
   choisi reste propre à chaque appareil. Supprimer le thème choisi ramène
   au thème Coloré.
+- **Assistant** (PC, en haut du rail, à la place du logo ; Réglages ›
+  Assistant) : la carte du logo, vivante (yeux qui suivent le pointeur,
+  clignements, respiration ; s'écrase et rebondit au clic, étourdi après
+  plusieurs clics rapides ; yeux fermés en mode discret). Son humeur résume
+  le mois en cours de la vue affichée : inquiet dès qu'un thème du budget
+  est dépassé, qu'un objectif est en retard ou que le patrimoine baisse ;
+  content si le patrimoine monte, qu'un objectif est atteint ou que le
+  budget est tenu (`core/.../ui/assistant/Assistant.kt`). Sa bulle (survol ou
+  clic) résume l'humeur et liste au plus trois remarques, qui mènent à leur
+  page ; montants masqués en mode discret. Réactions : hochement à
+  l'enregistrement, sursaut et bulle ouverte d'elle-même sur un conflit, un
+  fichier illisible ou une écriture impossible, regard vers le haut à une
+  nouvelle version, joie à un objectif atteint. Mode calme : les yeux
+  seulement. Nom provisoire : « Assistant ».
 - **Lancement du PC** : fond seul pendant 0,15 s, puis les éléments
   arrivent l'un après l'autre en fondu et glissement (cadre, rail, barre du
   haut, écran ; sur l'écran d'accueil : logo, titre, texte, boutons), 0,9 s

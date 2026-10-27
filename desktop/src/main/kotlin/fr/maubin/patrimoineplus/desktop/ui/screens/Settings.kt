@@ -150,6 +150,28 @@ fun SettingsScreen(
 		Spacer(Modifier.height(12.dp))
 		ToursSection(vSettings.toursSeen, vSettings.toursOff, inController)
 		Spacer(Modifier.height(32.dp))
+		SectionHeader(inTitle = "Assistant")
+		Spacer(Modifier.height(12.dp))
+		FloatingCard {
+			Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
+				Row(verticalAlignment = Alignment.CenterVertically) {
+					Column(Modifier.weight(1f)) {
+						Text("Afficher l’assistant", style = MaterialTheme.typography.titleMedium)
+						Text("En haut à gauche : son humeur résume le mois (budget, objectifs, patrimoine) ; survolez-le ou cliquez dessus pour le détail.", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+					}
+					Switch(checked = vSettings.assistant, onCheckedChange = inController::setAssistant, modifier = Modifier.semantics { contentDescription = "Afficher l’assistant" })
+				}
+				Spacer(Modifier.height(12.dp))
+				Row(verticalAlignment = Alignment.CenterVertically) {
+					Column(Modifier.weight(1f)) {
+						Text("Mode calme", style = MaterialTheme.typography.titleMedium)
+						Text("Il ne fait plus que suivre le pointeur des yeux : ni réactions, ni bulle qui s’ouvre d’elle-même.", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+					}
+					Switch(checked = vSettings.calm, enabled = vSettings.assistant, onCheckedChange = inController::setAssistantCalm, modifier = Modifier.semantics { contentDescription = "Mode calme de l’assistant" })
+				}
+			}
+		}
+		Spacer(Modifier.height(32.dp))
 		SectionHeader(inTitle = "Mises à jour")
 		Spacer(Modifier.height(12.dp))
 		UpdatesSection(vSettings.updates, inController)

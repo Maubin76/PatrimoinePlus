@@ -58,7 +58,9 @@ data class DesktopSettings(
 	val toursOff   : Boolean   = false,
 	val palette    : String    = "",
 	val updates    : Boolean   = true,
-	val ignored    : String    = ""
+	val ignored    : String    = "",
+	val assistant  : Boolean   = true,
+	val calm       : Boolean   = false
 )
 
 /*
@@ -99,7 +101,9 @@ class DesktopConfig(private val inFile: Path)
 			toursOff   = vProps.getProperty("tours_off") == "true",
 			palette    = vProps.getProperty("palette").orEmpty(),
 			updates    = vProps.getProperty("updates") != "false",
-			ignored    = vProps.getProperty("update_ignored").orEmpty()
+			ignored    = vProps.getProperty("update_ignored").orEmpty(),
+			assistant  = vProps.getProperty("assistant") != "false",
+			calm       = vProps.getProperty("assistant_calm") == "true"
 		)
 	}
 
@@ -132,6 +136,8 @@ class DesktopConfig(private val inFile: Path)
 		vProps.setProperty("palette", inSettings.palette)
 		vProps.setProperty("updates", inSettings.updates.toString())
 		vProps.setProperty("update_ignored", inSettings.ignored)
+		vProps.setProperty("assistant", inSettings.assistant.toString())
+		vProps.setProperty("assistant_calm", inSettings.calm.toString())
 		inFile.parent?.let { Files.createDirectories(it) }
 		val vTemp = inFile.resolveSibling("${inFile.fileName}.tmp")				// écriture provisoire
 		Files.newBufferedWriter(vTemp, Charsets.UTF_8).use { vProps.store(it, "Réglages de PatrimoinePlus (PC)") }
