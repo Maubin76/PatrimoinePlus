@@ -58,9 +58,9 @@ import fr.maubin.patrimoineplus.domain.calc.scopeOf
 import fr.maubin.patrimoineplus.domain.calc.kFamilyView
 
 import fr.maubin.patrimoineplus.domain.calc.ProfileRemoval
-import fr.maubin.patrimoineplus.domain.calc.profileRemoval
+import fr.maubin.patrimoineplus.domain.calc.profileRemoval
 import fr.maubin.patrimoineplus.desktop.ui.tour.Tours
-import fr.maubin.patrimoineplus.desktop.ui.tour.kTourAccount
+import fr.maubin.patrimoineplus.desktop.ui.tour.kTourAccount
 import fr.maubin.patrimoineplus.desktop.update.DesktopUpdater
 import fr.maubin.patrimoineplus.ui.components.UpdateUiState
 import fr.maubin.patrimoineplus.data.update.UpdateOffer
@@ -73,14 +73,19 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.update
 import fr.maubin.patrimoineplus.desktop.data.PcBackup
 import fr.maubin.patrimoineplus.desktop.data.PcBackupResult
 import fr.maubin.patrimoineplus.desktop.data.kPcBackupFolder
 import fr.maubin.patrimoineplus.desktop.data.kPcBackupKept
-import fr.maubin.patrimoineplus.desktop.data.LoadStatus
+import fr.maubin.patrimoineplus.desktop.data.LoadStatus
 import fr.maubin.patrimoineplus.data.withBudget
 import fr.maubin.patrimoineplus.data.withGoals
+import fr.maubin.patrimoineplus.data.market.QuoteSource
+import fr.maubin.patrimoineplus.data.market.QuoteOutcome
+import fr.maubin.patrimoineplus.data.market.fetchQuotes
+import fr.maubin.patrimoineplus.data.market.withQuotes
+import fr.maubin.patrimoineplus.data.market.kQuotesStaleMillis
 
 private const val kDayCheckMillis = 60_000L										// contrôle du changement de jour
 
@@ -251,13 +256,15 @@ data class BankSession(
 	inScope     : portée de la surveillance du fichier d'échange ; null pour ne pas surveiller
 	inClock     : horloge (horodatages des modifications, date du jour)
 	inUpdater   : mises à jour (GitHub, dossier de l'appli) ; null : pas de vérification
+	inQuotes    : source des cours automatiques ; null : pas de cours automatiques
 */
 class DesktopController(
 	private val inConfig    : DesktopConfig,
 	private val inWorkspace : Workspace,
 	private val inScope     : CoroutineScope?,
 	private val inClock     : Clock = Clock.systemDefaultZone(),
-	private val inUpdater   : DesktopUpdater? = null
+	private val inUpdater   : DesktopUpdater? = null,
+	private val inQuotes    : QuoteSource?    = null
 )
 {
 	private val fSettings   = MutableStateFlow(inConfig.load())					// réglages
@@ -278,6 +285,7 @@ class DesktopController(
 	private val fBackupInfo = MutableStateFlow<String?>(null)					// état des sauvegardes (réglages) ; null sans dossier
 	private var fRowKeys    = 0L												// identifiants des lignes de la grille
 	private var fTokens     = 0L												// numéros d'ouverture des panneaux
+	private val fQuoting    = MutableStateFlow(false)							// cours en cours de récupération
 	private val fDirty      = MutableStateFlow(false)							// saisie du panneau ouvert modifiée et pas enregistrée
 	private val fDiscard    = MutableStateFlow<(() -> Unit)?>(null)			// action qui perdrait la saisie, en attente de confirmation
 
@@ -286,6 +294,12 @@ class DesktopController(
 
 	// Panneau de saisie ouvert ; null sans panneau.
 	val panel: StateFlow<Panel?> = fPanel
+
+	// Vrai pendant la récupération des cours.
+	val quoting: StateFlow<Boolean> = fQuoting
+
+	// Vrai si les cours automatiques sont possibles (dossier synchronisé, source de cours).
+	val canQuote: Boolean get() = inQuotes != null && inScope != null && workspace.value.source is Source.Folder
 
 	// Action qui ferait perdre la saisie en cours, en attente de confirmation ; null sinon.
 	val discard: StateFlow<(() -> Unit)?> = fDiscard
@@ -533,12 +547,14 @@ class DesktopController(
 		inWorkspace.open(fSettings.value.source, inScope)
 		importLegacyPlans(fSettings.value.source)
 		backupIfDue()
+		refreshQuotesIfStale()
 		inScope?.launch {
 			while (isActive)
 			{
 				delay(kDayCheckMillis)
 				inWorkspace.refreshDay()
 				backupIfDue()
+				refreshQuotesIfStale()
 			}
 		}
 	}
@@ -979,6 +995,58 @@ class DesktopController(
 	}
 
 	/*
+		Récupère les cours si la dernière récupération réussie date de plus
+		de quatre heures (au lancement, à l'ouverture d'un dossier, puis à
+		chaque contrôle du jour).
+	*/
+	fun refreshQuotesIfStale()
+	{
+		val vLast = fSettings.value.quotesAt												// dernière récupération réussie
+		if (vLast == null || inClock.millis() - vLast >= kQuotesStaleMillis) refreshQuotes(inManual = false)
+	}
+
+	/*
+		Récupère les cours des titres (comme le téléphone) et les range dans le
+		fichier d'échange : en arrière-plan, puis appliqués comme une saisie.
+		Demandé à la main (« Actualiser les cours ») : le résultat est affiché.
+		inManual : vrai si demandé par l'utilisateur
+	*/
+	fun refreshQuotes(inManual: Boolean = true)
+	{
+		val vSource = inQuotes ?: return													// source des cours
+		val vScope  = inScope ?: return													// portée
+		if (fQuoting.value || workspace.value.source !is Source.Folder) return
+		val vStatus = workspace.value.status												// état de la synchronisation
+		if (vStatus !is fr.maubin.patrimoineplus.desktop.data.LoadStatus.Synced && vStatus !is fr.maubin.patrimoineplus.desktop.data.LoadStatus.Pending)
+		{
+			if (inManual) showNotice("Cours non mis à jour : le fichier d’échange n’est pas à jour.")
+			return
+		}
+		val vData   = workspace.value.data													// données au moment de la demande
+		val vToday  = today()																// date du jour
+		fQuoting.value = true
+		vScope.launch {
+			val vFetch = try { withContext(Dispatchers.IO) { fetchQuotes(vSource, vData, vToday) } } finally { fQuoting.value = false }	// cours récupérés
+			if (vFetch.series.isNotEmpty() || vFetch.tickers.isNotEmpty()) edit { EditResult.Done(it.withQuotes(vFetch, inClock.millis())) }
+			if (vFetch.outcome.error == null) update(fSettings.value.copy(quotesAt = inClock.millis()))
+			if (inManual) showNotice(quoteMessage(vFetch.outcome))
+		}
+	}
+
+	/*
+		Résultat d'une récupération des cours, en clair.
+		inOutcome : résultat
+	*/
+	private fun quoteMessage(inOutcome: QuoteOutcome): String =
+		when
+		{
+			inOutcome.error != null                                   -> "Cours non mis à jour : ${inOutcome.error}."
+			inOutcome.updated == 0 && inOutcome.unresolved.isEmpty() -> "Aucun titre à coter : saisissez d’abord un ordre d’achat."
+			else                                                      -> "Cours mis à jour (${inOutcome.updated} titre(s))." +
+				(if (inOutcome.unresolved.isEmpty()) "" else " Sans cotation automatique : ${inOutcome.unresolved.joinToString(", ")}.")
+		}
+
+	/*
 		Montre un message ponctuel dans le bandeau (refus d'une action…).
 		inMessage : message
 	*/
@@ -1279,6 +1347,7 @@ class DesktopController(
 		fQuery.value      = SearchQuery()											// critères sur les comptes de l'autre source
 		inWorkspace.open(inSource, inScope)
 		importLegacyPlans(inSource)
+		refreshQuotesIfStale()
 		fNavigation.value = Navigation()
 		fPanel.value      = null
 		backupIfDue()

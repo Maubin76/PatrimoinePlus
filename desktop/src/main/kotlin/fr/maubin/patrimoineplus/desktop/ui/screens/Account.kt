@@ -96,7 +96,8 @@ import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
-import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
+import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
+import androidx.compose.runtime.collectAsState
 
 private val kDayTitle = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANCE)	// en-tête d'un jour
 private val kShortDay = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date d'une opération
@@ -651,8 +652,8 @@ private fun AllocationTile(
 
 /*
 	Tuile des positions d'un compte Bourse : tableau (quantité, PRU, cours,
-	valeur, plus-value), actions (cours, positions initiales), positions
-	initiales.
+	valeur, plus-value), actions (cours automatiques d'un dossier
+	synchronisé, cours saisis, positions initiales), positions initiales.
 	inPortfolio  : portefeuille
 	inExtras     : positions initiales
 	inAccountId  : compte Bourse
@@ -666,10 +667,13 @@ private fun PositionsTile(
 	inController : DesktopController
 )
 {
-	val vMuted = MaterialTheme.colorScheme.onSurfaceVariant							// texte secondaire
+	val vMuted   = MaterialTheme.colorScheme.onSurfaceVariant							// texte secondaire
+	val vQuoting by inController.quoting.collectAsState()							// cours en cours de récupération
+	val vQuotes  = inController.settings.collectAsState().value.quotesAt				// dernière récupération réussie (ms)
 	Tile(
 		inTitle  = "Positions",
 		inAction = {
+			if (inController.canQuote) TextButton(onClick = { inController.refreshQuotes() }, enabled = !vQuoting && inPortfolio.valuation.positions.isNotEmpty()) { Text(if (vQuoting) "Actualisation…" else "Actualiser les cours") }
 			TextButton(onClick = { inController.openPanel(Panel.Prices(inAccountId)) }, enabled = inPortfolio.valuation.positions.isNotEmpty()) { Text("Saisir des cours") }
 			TextButton(onClick = { inController.openPanel(Panel.OpeningPosition(inAccountId)) }) { Text("Position initiale") }
 		}
@@ -705,6 +709,11 @@ private fun PositionsTile(
 					AmountText(inCents = inPos.unrealizedCents, inStyle = MaterialTheme.typography.bodyLarge, inShowPlusSign = true, inTrend = true, inModifier = Modifier.weight(1.2f))
 				}
 			}
+		}
+		if (inController.canQuote && vQuotes != null && inPortfolio.valuation.positions.isNotEmpty())
+		{
+			val vAt = java.time.Instant.ofEpochMilli(vQuotes).atZone(java.time.ZoneId.systemDefault())	// dernière récupération
+			Text("Cours automatiques mis à jour le ${vAt.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH:mm"))} (toutes les 4 h).", style = MaterialTheme.typography.bodySmall, color = vMuted, modifier = Modifier.padding(top = 10.dp))
 		}
 		if (inExtras.openingPositions.isNotEmpty())
 		{

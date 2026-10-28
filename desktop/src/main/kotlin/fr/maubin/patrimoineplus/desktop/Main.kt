@@ -46,6 +46,7 @@ import fr.maubin.patrimoineplus.desktop.update.appVersion
 import fr.maubin.patrimoineplus.data.backup.writeBackupXlsx
 import fr.maubin.patrimoineplus.data.toDataSet
 import fr.maubin.patrimoineplus.ui.dashboard.buildDashboard
+import fr.maubin.patrimoineplus.data.market.YahooQuoteSource
 
 /*
 	Point d'entrée de l'appli PC : fenêtre unique, réglages mémorisés dans
@@ -64,7 +65,7 @@ fun main(inArgs: Array<String>)
 	runCatching { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()) }
 	application {
 		val vScope      = rememberCoroutineScope()									// portée de la surveillance du fichier
-		val vController = remember { DesktopController(DesktopConfig.default(), Workspace(Clock.systemDefaultZone()), vScope, inUpdater = DesktopUpdater()) }	// contrôleur
+		val vController = remember { DesktopController(DesktopConfig.default(), Workspace(Clock.systemDefaultZone()), vScope, inUpdater = DesktopUpdater(), inQuotes = YahooQuoteSource()) }	// contrôleur
 		val vExit       by vController.exitRequested.collectAsState()				// fermeture pour la mise à jour
 		LaunchedEffect(Unit) { vController.checkForUpdates() }
 		LaunchedEffect(vExit) { if (vExit) vController.requestExit(::exitApplication) }

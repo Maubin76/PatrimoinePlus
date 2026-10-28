@@ -632,8 +632,7 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   Un fichier illisible n'est jamais écrasé. Si des modifications ne peuvent
   pas être écrites (conflit, fichier refusé), la fermeture et le changement de
   source proposent d'en **enregistrer une copie**. Les **cours automatiques**
-  restent récupérés par le téléphone seul (le PC ne va sur internet que pour
-  chercher les mises à jour).
+  sont aussi récupérés par le PC (voir « Cours automatiques »).
 - **Vérification sans fenêtre** : `PatrimoinePlus.exe --verifier <fichier>`
   lit et vérifie un fichier d'échange (code de sortie 0 s'il est valide) et
   montre une date en français (contrôle de la JVM embarquée).
@@ -726,6 +725,15 @@ Les comptes Bourse se valorisent seuls : il suffit de saisir les ordres.
   et le dernier cours.
 - **Sans réseau ou titre introuvable** : le dernier cours connu reste utilisé ;
   « Saisir des cours » permet toujours la saisie manuelle.
+- **Sur le PC** (dossier synchronisé seulement, jamais en démonstration) :
+  mêmes règles, partagées dans `core` (`data/market/QuoteFetch.kt` :
+  `fetchQuotes`, `withQuotes`, `startDate`) ; au lancement, à l'ouverture
+  d'un dossier puis à chaque contrôle du jour (chaque minute), au plus
+  toutes les 4 heures (instant de la dernière réussite dans les réglages,
+  `quotes_at`) ; « Actualiser les cours » dans la tuile Positions d'un compte
+  Bourse. Récupérés en arrière-plan, puis rangés dans le fichier d'échange
+  comme une saisie (cours du même jour remplacé, symbole noté sur l'actif) :
+  le téléphone les reçoit à la synchronisation suivante.
 
 ## Lancement et verrou
 

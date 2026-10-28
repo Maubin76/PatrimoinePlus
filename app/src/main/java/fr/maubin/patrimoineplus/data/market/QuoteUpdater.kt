@@ -4,29 +4,13 @@ import fr.maubin.patrimoineplus.data.repo.MarketRepository
 import fr.maubin.patrimoineplus.data.repo.TransactionRepository
 import fr.maubin.patrimoineplus.data.settings.SettingsRepository
 import fr.maubin.patrimoineplus.domain.model.Asset
-import fr.maubin.patrimoineplus.domain.model.AssetPrice
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.time.Clock
 import java.time.LocalDate
-import java.time.YearMonth
 import javax.inject.Inject
 import javax.inject.Singleton
-
-private const val kStaleMillis = 4L * 60 * 60 * 1000							// âge au-delà duquel les cours sont redemandés (4 h)
-
-/*
-	Résultat d'une mise à jour des cours.
-	updated    : actifs dont le cours a été mis à jour
-	unresolved : noms des actifs sans cotation automatique (ISIN manquant ou introuvable)
-	error      : message si le service n'a pas pu être joint ; null sinon
-*/
-data class QuoteOutcome(
-	val updated    : Int,
-	val unresolved : List<String>,
-	val error      : String?
-)
 
 /*
 	Mise à jour automatique des cours depuis la source publique : pour chaque
@@ -108,27 +92,6 @@ class QuoteUpdater @Inject constructor(
 }
 
 /*
-	Premier jour à demander pour un actif : le début du premier mois, depuis
-	son premier ordre, auquel aucun cours n'est enregistré (historique
-	incomplet), sinon le jour de son dernier cours.
-	inFirstTrade : date du premier ordre
-	inPrices     : cours enregistrés de l'actif
-	inToday      : date du jour
-*/
-fun startDate(
-	inFirstTrade : LocalDate,
-	inPrices     : List<AssetPrice>,
-	inToday      : LocalDate
-): LocalDate
-{
-	val vMonths  = inPrices.map { YearMonth.from(it.date) }.toSet()				// mois couverts
-	val vMissing = generateSequence(YearMonth.from(inFirstTrade)) { it.plusMonths(1) }
-		.takeWhile { it.isBefore(YearMonth.from(inToday)) }
-		.firstOrNull { it !in vMonths }											// premier mois sans cours
-	return vMissing?.atDay(1) ?: inPrices.maxOfOrNull { it.date } ?: inFirstTrade
-}
-
-/*
 	Mise à jour des cours avec un rythme raisonnable : au plus une fois toutes
 	les quatre heures, sauf à la demande. Mémorise l'instant de la dernière
 	mise à jour réussie.
@@ -153,7 +116,7 @@ class QuoteRefresher @Inject constructor(
 	suspend fun refreshIfStale(): QuoteOutcome?
 	{
 		val vLast = inSettings.lastQuotesAt.first()								// dernière mise à jour
-		return if (vLast != null && inClock.millis() - vLast < kStaleMillis) null else refreshNow()
+		return if (vLast != null && inClock.millis() - vLast < kQuotesStaleMillis) null else refreshNow()
 	}
 
 	/*

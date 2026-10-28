@@ -155,6 +155,7 @@ identifiant (A-03, C-12…) pour le retour.
 | C-18s | PC : « Nouvelle opération », taper un libellé ; essayer la croix, Échap, une autre page du rail, « Nouveau compte », puis fermer la fenêtre. Recommencer sans rien taper. Même essai sur un objectif. | À chaque fois « Abandonner la saisie ? » : « Continuer la saisie » garde le panneau rempli, « Abandonner » poursuit l'action (fermeture de l'appli comprise) ; « Enregistrer » ne demande rien ; panneau intact : aucune question. |
 | C-18t | Mettre à jour le PC **et** le téléphone (format 8). Sur le PC, ouvrir le dossier synchronisé : Budget, puis Objectifs dans chaque vue (Moi, Alex, Famille) ; modifier une ligne du budget ; synchroniser, saisir une opération sur le téléphone, resynchroniser ; ouvrir le fichier d'échange dans Excel. | Budget d'avant repris (celui de la vue Famille), identique dans toutes les vues et sous-titré « Commun à toute la famille » ; objectifs de chaque vue repris ; après l'aller-retour par le téléphone, budget et objectifs intacts ; onglets Budget, Objectifs, Objectifs du mois lisibles dans Excel ; dans le dossier des réglages, `budget*.json` et `goals*.json` renommés `.avant-format-8`. |
 | C-18u | PC, famille à deux profils : Budget › Investissements, « + » sous chaque membre, saisir un montant ; sur une ligne, icône famille › « Passer à … ». | Un groupe par membre avec son total ; la ligne change de groupe ; schéma : « Investissements · Moi » et « Investissements · Alex » avec leur détail ; avec un seul profil, une seule liste « Investissements ». |
+| C-18v | PC, dossier synchronisé avec un PEA (ETF avec ISIN) : lancer l'appli, ouvrir le compte Bourse ; « Actualiser les cours » ; couper le réseau et recommencer ; synchroniser avec le téléphone. | Au lancement, cours mis à jour sans rien faire (« Cours automatiques mis à jour le … ») ; « Actualiser les cours » : message « Cours mis à jour (N titre(s)) » et titres sans cotation nommés ; hors ligne : « Cours non mis à jour : … », derniers cours gardés ; le téléphone reçoit les mêmes cours. En démonstration, pas de bouton. |
 | C-19 | `PatrimoinePlus.exe --verifier chemin\vers\patrimoineplus-donnees.xlsx` dans un terminal. | Code de sortie 0 ; date d'exemple en français (« 12 octobre 2026 »). |
 
 ## D. Correctifs de la revue du 2026-10-13
@@ -204,7 +205,6 @@ refuse un fichier au format 5.
 
 ## F. Limites connues (pas des anomalies)
 
-- Les cours automatiques ne sont récupérés que par le téléphone.
 - Titres cotés uniquement hors zone euro : pas de conversion de devise.
 - Légende de la répartition coupée avec une police à 130 % (Android) ; fond qui
   peut clignoter au démarrage en mode clair forcé.

@@ -61,7 +61,7 @@ biens immobiliers, objets de collection et crédits, et calcule votre
 | **Crédits** | Tableau d'amortissement, mensualités automatiques, capital restant dû, valeur nette du bien financé | ✅ | ✅ |
 | **Biens** | Achat et vente de biens immobiliers ou d'objets de collection, plus-values | ✅ | ✅ |
 | **Bourse et livrets** | Positions, prix de revient, plus-values latentes et réalisées ; relevés et intérêts des livrets | ✅ | ✅ |
-| **Cours automatiques** | Cours des titres récupérés chaque jour par leur ISIN, historique compris | ✅ | — |
+| **Cours automatiques** | Cours des titres récupérés chaque jour par leur ISIN, historique compris | ✅ | ✅ |
 | **Catégories** | Personnalisables, avec icônes ; réaffectation des opérations à la suppression | ✅ | ✅ |
 | **Profils et vue Famille** | Un profil par personne, comptes partagés avec la part de chacun, vue d'ensemble de la famille | ✅ | ✅ |
 | **Budget prévisionnel** | Mois type en entrées, dépenses par thème et investissements, schéma de cashflow | — | ✅ |
