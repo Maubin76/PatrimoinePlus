@@ -70,7 +70,8 @@ import fr.maubin.patrimoineplus.ui.settings.UpdatesActions
 import fr.maubin.patrimoineplus.ui.components.LocalProfiles
 import fr.maubin.patrimoineplus.ui.settings.SyncVersionDialog
 import androidx.compose.ui.platform.LocalContext
-import android.widget.Toast
+import android.widget.Toast
+import fr.maubin.patrimoineplus.ui.settings.NetworkDiagnosticEntry
 
 private const val kSlideMillis = 260									// entrée et sortie de la vue d'un compte
 
@@ -240,7 +241,8 @@ private fun MainTabs(
 					inThemes       = ThemesActions(vThemes, vCustom, inAppViewModel::setCustomTheme, inAppViewModel::saveTheme, inAppViewModel::deleteTheme),
 					inUpdates      = UpdatesActions(vChecking, inUpdates.version, inUpdates::setEnabled) {
 						inUpdates.checkNow { inMessage -> vScope.launch { vSnackbar.showSnackbar(inMessage) } }
-					}
+					},
+					inDiagnostic   = { NetworkDiagnosticEntry() }
 				)
 			}
 		}

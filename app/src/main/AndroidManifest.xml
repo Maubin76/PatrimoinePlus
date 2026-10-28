@@ -7,6 +7,11 @@
 	<uses-permission android:name="android.permission.INTERNET" />
 	<!-- Mises à jour : installation de l'APK téléchargé depuis les releases GitHub (autorisation donnée par l'utilisateur). -->
 	<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+	<!-- Synchronisation Wi-Fi : réseau courant, et nom du Wi-Fi (Android l'exige sous l'autorisation de localisation ; seul le nom est lu, jamais une position). -->
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+	<uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+	<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+	<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
 	<application
 		android:name=".PatrimoineApplication"

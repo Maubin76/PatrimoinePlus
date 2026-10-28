@@ -108,7 +108,8 @@ fun SettingsScreen(
 	inOnGlass      : (Boolean) -> Unit = {},
 	inProfiles     : ProfilesActions? = null,
 	inThemes       : ThemesActions? = null,
-	inUpdates      : UpdatesActions? = null
+	inUpdates      : UpdatesActions? = null,
+	inDiagnostic   : (@Composable () -> Unit)? = null
 )
 {
 	ScreenScaffold(inTitle = "Réglages") { inPadding ->
@@ -238,6 +239,13 @@ fun SettingsScreen(
 					}
 				}
 			}
+			if (inDiagnostic != null)
+			{
+				Spacer(Modifier.height(32.dp))
+				SectionHeader(inTitle = "Synchronisation Wi-Fi (essai)")
+				Spacer(Modifier.height(8.dp))
+				BorderedCard { inDiagnostic() }
+			}
 			if (inDemo != null)
 			{
 				Spacer(Modifier.height(32.dp))
@@ -320,7 +328,7 @@ private fun SwitchRow(
 	inOnClick : lance l'action
 */
 @Composable
-private fun ActionRow(
+internal fun ActionRow(
 	inTitle   : String,
 	inDetail  : String,
 	inOnClick : () -> Unit

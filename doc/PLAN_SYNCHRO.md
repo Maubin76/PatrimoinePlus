@@ -159,15 +159,18 @@ Nouvelle entrée du rail d'icônes ; tout l'appairage s'y configure.
 
 ## 5. Phases de développement
 
-### Phase 0 — Essais préalables
+### Phase 0 — Essais préalables (fait, à valider chez soi)
 
 - Découverte réseau (message de diffusion UDP) entre Android et Windows sur
   la box de l'utilisateur ; pare-feu Windows (autorisation sur les réseaux
   privés) ; échange TCP entre les deux appareils.
 - Lecture du réseau courant : nom du Wi-Fi sur Windows et Android,
   identifiant de la box pour un PC branché par câble.
-- Livrable : un petit utilitaire de diagnostic à lancer chez soi (pas de test
-  sur émulateur ni à la souris dans ce projet).
+- Livrable : diagnostic intégré aux deux applis (PC : page Appareils ›
+  « Lancer le diagnostic » ; téléphone : Réglages › Diagnostic réseau),
+  scénario C-18y de `doc/PLAN_DE_TESTS.md`. Le socle (`core/data/link`) sert
+  ensuite tel quel : trames, chiffrement, serveur, client, découverte, réseau
+  familial.
 
 ### Phase 1 — Fusion et historique (`core`, sans réseau)
 
