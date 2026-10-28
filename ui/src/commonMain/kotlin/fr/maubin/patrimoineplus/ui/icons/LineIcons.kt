@@ -133,6 +133,9 @@ object LineIcons
 	// Récurrences : deux flèches en boucle.
 	val Repeat: ImageVector = lineIcon("Récurrences", "M4 11 V9.5 A3 3 0 0 1 7 6.5 H19", "M16 3.5 L19 6.5 L16 9.5", "M20 13 V14.5 A3 3 0 0 1 17 17.5 H5", "M8 20.5 L5 17.5 L8 14.5")
 
+	// Appareils : écran d'ordinateur et téléphone côte à côte.
+	val Devices: ImageVector = lineIcon("Appareils", "M2.5 5 H15.5 V14.5 H2.5 Z", "M6 19 H12", "M9 14.5 V19", "M17.5 9 H21.5 V20 H17.5 Z", "M19.2 17.5 H19.8")
+
 	// Objectifs : cible, deux anneaux et un point central.
 	val Target: ImageVector = lineIcon("Objectifs", circle(12f, 12f, 8.5f), circle(12f, 12f, 4.5f), circle(12f, 12f, 0.8f))
 

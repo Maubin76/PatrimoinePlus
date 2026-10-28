@@ -32,7 +32,7 @@ import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsOff
 
 /*
-	Volet latéral du PC (sans écran) : huit entrées dans l'ordre voulu ;
+	Volet latéral du PC (sans écran) : neuf entrées dans l'ordre voulu ;
 	écran Opérations (saisie rapide puis récurrences), Bilan à deux onglets
 	(mois par mois, bilan annuel), catégories dans les réglages ; une case
 	de l'analyse ouvre la Recherche. Captures `22-*.png`.
@@ -74,7 +74,7 @@ class NavigationUiTest
 	@Test
 	fun sidebarAndMergedPages()
 	{
-		assertEquals(listOf("Tableau de bord", "Objectifs", "Recherche", "Opérations", "Budget", "Projection", "Bilan", "Réglages"), Screen.entries.map { it.label })
+		assertEquals(listOf("Tableau de bord", "Objectifs", "Recherche", "Opérations", "Budget", "Projection", "Bilan", "Appareils", "Réglages"), Screen.entries.map { it.label })
 		val vApp = demo()																	// démonstration
 		fCompose.setContent { App(vApp) { null } }
 		Screen.entries.forEach { inScreen -> fCompose.onNodeWithContentDescription(inScreen.label).assertExists() }	// rail d'icônes : nom en description

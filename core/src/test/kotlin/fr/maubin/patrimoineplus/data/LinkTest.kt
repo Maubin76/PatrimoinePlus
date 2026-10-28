@@ -149,7 +149,7 @@ class LinkTest
 	@Test
 	fun discovery()
 	{
-		val vBeacon = DiscoveryResponder { Beacon(kPc.id, kPc.name, 47801) }.also { it.start(0); fBeacon = it }	// répondeur
+		val vBeacon = DiscoveryResponder { Beacon(kPc.id, kPc.name, 47801) }.also { it.start(0, kLocal); fBeacon = it }	// répondeur
 		val vFound  = discoverPcs(listOf(kLocal), vBeacon.port, 1_000)							// PC trouvés
 		assertEquals(listOf(Beacon(kPc.id, kPc.name, 47801)), vFound.map { it.beacon })
 		assertEquals(kLocal.hostAddress, vFound.single().address)

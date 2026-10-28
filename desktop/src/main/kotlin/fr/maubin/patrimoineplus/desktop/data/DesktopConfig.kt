@@ -65,7 +65,9 @@ data class DesktopSettings(
 	val ignored    : String    = "",
 	val assistant  : Boolean   = kAssistantDefault,
 	val calm       : Boolean   = false,
-	val quotesAt   : Long?     = null
+	val quotesAt   : Long?     = null,
+	val deviceId   : String    = "",
+	val deviceName : String    = ""
 )
 
 /*
@@ -109,7 +111,9 @@ class DesktopConfig(private val inFile: Path)
 			ignored    = vProps.getProperty("update_ignored").orEmpty(),
 			assistant  = vProps.getProperty("assistant")?.let { it != "false" } ?: kAssistantDefault,
 			calm       = vProps.getProperty("assistant_calm") == "true",
-			quotesAt   = vProps.getProperty("quotes_at")?.toLongOrNull()
+			quotesAt   = vProps.getProperty("quotes_at")?.toLongOrNull(),
+			deviceId   = vProps.getProperty("device_id").orEmpty(),
+			deviceName = vProps.getProperty("device_name").orEmpty()
 		)
 	}
 
@@ -145,6 +149,8 @@ class DesktopConfig(private val inFile: Path)
 		vProps.setProperty("assistant", inSettings.assistant.toString())
 		vProps.setProperty("assistant_calm", inSettings.calm.toString())
 		inSettings.quotesAt?.let { vProps.setProperty("quotes_at", it.toString()) }
+		vProps.setProperty("device_id", inSettings.deviceId)
+		vProps.setProperty("device_name", inSettings.deviceName)
 		inFile.parent?.let { Files.createDirectories(it) }
 		val vTemp = inFile.resolveSibling("${inFile.fileName}.tmp")				// écriture provisoire
 		Files.newBufferedWriter(vTemp, Charsets.UTF_8).use { vProps.store(it, "Réglages de PatrimoinePlus (PC)") }

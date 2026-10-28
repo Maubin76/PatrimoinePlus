@@ -134,7 +134,9 @@ class DesktopControllerTest
 		val vFirst = controller()												// premier lancement
 		vFirst.setAppearance(ThemeMode.DARK)
 		vFirst.toggleHidden()
-		assertEquals(DesktopSettings(Source.None, ThemeMode.DARK, hidden = true), controller().settings.value)
+		val vNext  = controller().settings.value											// lancement suivant
+		assertEquals(DesktopSettings(Source.None, ThemeMode.DARK, hidden = true, deviceId = vFirst.settings.value.deviceId), vNext)
+		assertTrue(vNext.deviceId.isNotEmpty())											// identifiant de ce PC tiré une fois, gardé
 	}
 
 	/*

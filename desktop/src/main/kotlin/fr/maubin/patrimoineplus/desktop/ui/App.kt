@@ -156,7 +156,8 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import fr.maubin.patrimoineplus.ui.components.LocalProfiles
 import fr.maubin.patrimoineplus.desktop.ui.panels.LocalPanelGuard
 import fr.maubin.patrimoineplus.desktop.ui.panels.PanelGuard
-import fr.maubin.patrimoineplus.data.backup.newerFormatText
+import fr.maubin.patrimoineplus.data.backup.newerFormatText
+import fr.maubin.patrimoineplus.desktop.ui.screens.DevicesScreen
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -335,6 +336,7 @@ private fun Shell(
 							inScreen == Screen.PROJECTION    -> ProjectionScreen(vView, inController)
 							inScreen == Screen.BUDGET        -> BudgetScreen(vView, inController, inSpace.data)
 							inScreen == Screen.GOALS         -> GoalsScreen(vView, inController)
+							inScreen == Screen.DEVICES       -> DevicesScreen(inController)
 							else                             -> SettingsScreen(vView, inController, inOnPickFolder)
 						}
 					}
@@ -554,6 +556,7 @@ private fun screenIcon(inScreen: Screen): ImageVector =
 		Screen.BUDGET     -> LineIcons.Wallet
 		Screen.PROJECTION -> LineIcons.Trend
 		Screen.REPORT     -> LineIcons.Document
+		Screen.DEVICES    -> LineIcons.Devices
 		Screen.SETTINGS   -> LineIcons.Sliders
 	}
 

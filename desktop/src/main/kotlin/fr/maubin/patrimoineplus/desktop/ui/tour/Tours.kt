@@ -28,6 +28,10 @@ object Tours
 	fun steps(inKey: String): List<TourStep> =
 		when (inKey)
 		{
+			Screen.DEVICES.name    -> listOf(
+				TourStep("devices.this", "Ce PC sur le réseau", "Son nom, tel que le téléphone le verra, et le réseau auquel il est relié : la synchronisation ne fonctionnera que sur le réseau de la maison."),
+				TourStep("devices.diagnostic", "Diagnostic réseau", "Avant la synchronisation, vérifiez que le téléphone trouve ce PC : lancez le diagnostic ici, puis celui du téléphone dans ses Réglages.")
+			)
 			Screen.DASHBOARD.name  -> listOf(
 				TourStep("dashboard.hero", "Votre patrimoine net", "Tous vos comptes et biens, crédits déduits, calculés à partir de vos opérations. La variation du mois est juste dessous."),
 				TourStep("dashboard.charts", "Évolution et répartition", "La courbe suit votre patrimoine mois après mois ; la répartition montre son poids par type de compte. L'icône en haut à droite bascule entre barre et cercle."),

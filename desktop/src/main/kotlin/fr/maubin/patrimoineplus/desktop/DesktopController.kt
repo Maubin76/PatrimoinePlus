@@ -85,7 +85,11 @@ import fr.maubin.patrimoineplus.data.market.QuoteSource
 import fr.maubin.patrimoineplus.data.market.QuoteOutcome
 import fr.maubin.patrimoineplus.data.market.fetchQuotes
 import fr.maubin.patrimoineplus.data.market.withQuotes
-import fr.maubin.patrimoineplus.data.market.kQuotesStaleMillis
+import fr.maubin.patrimoineplus.data.market.kQuotesStaleMillis
+import fr.maubin.patrimoineplus.desktop.data.NetworkDiagnostic
+import fr.maubin.patrimoineplus.desktop.data.pcInfo
+import fr.maubin.patrimoineplus.desktop.update.appVersion
+import java.util.UUID
 
 private const val kDayCheckMillis = 60_000L										// contrôle du changement de jour
 
@@ -102,6 +106,7 @@ enum class Screen(val label: String)
 	BUDGET("Budget"),															// budget prévisionnel et cashflow
 	PROJECTION("Projection"),													// patrimoine à quelques années
 	REPORT("Bilan"),															// mois par mois (analyse) et bilan annuel, PDF
+	DEVICES("Appareils"),														// synchronisation avec le téléphone : appairage, état, diagnostic
 	SETTINGS("Réglages")														// source, apparence, catégories
 }
 
@@ -286,6 +291,7 @@ class DesktopController(
 	private var fRowKeys    = 0L												// identifiants des lignes de la grille
 	private var fTokens     = 0L												// numéros d'ouverture des panneaux
 	private val fQuoting    = MutableStateFlow(false)							// cours en cours de récupération
+	private val fDiagnostic = NetworkDiagnostic({ pcInfo(fSettings.value, inUpdater?.version ?: appVersion()) }, inClock)	// diagnostic réseau (essai de la synchronisation)
 	private val fDirty      = MutableStateFlow(false)							// saisie du panneau ouvert modifiée et pas enregistrée
 	private val fDiscard    = MutableStateFlow<(() -> Unit)?>(null)			// action qui perdrait la saisie, en attente de confirmation
 
@@ -294,6 +300,9 @@ class DesktopController(
 
 	// Panneau de saisie ouvert ; null sans panneau.
 	val panel: StateFlow<Panel?> = fPanel
+
+	// Diagnostic réseau (essai de la synchronisation).
+	val diagnostic: NetworkDiagnostic get() = fDiagnostic
 
 	// Vrai pendant la récupération des cours.
 	val quoting: StateFlow<Boolean> = fQuoting
@@ -544,6 +553,7 @@ class DesktopController(
 
 	init
 	{
+		if (fSettings.value.deviceId.isEmpty()) update(fSettings.value.copy(deviceId = UUID.randomUUID().toString()))	// identifiant de ce PC, tiré une fois
 		inWorkspace.open(fSettings.value.source, inScope)
 		importLegacyPlans(fSettings.value.source)
 		backupIfDue()
@@ -993,6 +1003,12 @@ class DesktopController(
 			fNotice.value = "Saisie fermée : l’élément a été supprimé sur l’autre appareil."
 		}
 	}
+
+	/*
+		Renomme ce PC (nom montré au téléphone) ; vide : nom de Windows.
+		inName : nom
+	*/
+	fun setDeviceName(inName: String) = update(fSettings.value.copy(deviceName = inName.trim()))
 
 	/*
 		Récupère les cours si la dernière récupération réussie date de plus

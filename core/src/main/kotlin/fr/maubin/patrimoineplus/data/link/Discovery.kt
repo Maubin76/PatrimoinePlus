@@ -49,13 +49,17 @@ class DiscoveryResponder(private val inBeacon: () -> Beacon)
 
 	/*
 		Démarre l'écoute ; sans effet si elle tourne déjà.
-		inPort : port ; 0 pour un port libre quelconque (tests)
+		inPort    : port ; 0 pour un port libre quelconque (tests)
+		inAddress : adresse d'écoute ; null pour toutes les interfaces (diffusions reçues)
 	*/
 	@Synchronized
-	fun start(inPort: Int = kDiscoveryPort)
+	fun start(
+		inPort    : Int          = kDiscoveryPort,
+		inAddress : InetAddress? = null
+	)
 	{
 		if (fSocket != null) return
-		val vSocket = DatagramSocket(null).apply { reuseAddress = true; broadcast = true; bind(InetSocketAddress(inPort)) }	// écoute
+		val vSocket = DatagramSocket(null).apply { reuseAddress = true; broadcast = true; bind(InetSocketAddress(inAddress, inPort)) }	// écoute
 		fSocket = vSocket
 		Thread({
 			val vBuffer = ByteArray(512)												// demande reçue
