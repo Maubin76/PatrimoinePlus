@@ -41,6 +41,8 @@ import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import fr.maubin.patrimoineplus.data.edit.EditResult
+import androidx.compose.ui.test.assertIsNotEnabled
 
 /*
 	Tests de la saisie sur PC, dans l'interface (sans écran) : panneau
@@ -224,28 +226,39 @@ class DesktopEditingTest
 	}
 
 	/*
-		Conflit (PC et fichier modifiés) : fenêtre de choix ; « Le fichier »
-		adopte la version du téléphone.
+		Même compte renommé sur le PC et dans le fichier : fenêtre de choix par
+		élément ; « Appliquer » n'est possible qu'une fois le choix fait ; « Le
+		fichier synchronisé » adopte la version du téléphone. Capture
+		`36-fusion-choix.png`.
 	*/
 	@Test
 	fun conflictDialog()
 	{
+		val vDemo   = demoBackupFile()												// démonstration (identifiants tirés une fois)
 		val vFolder = fTemp.newFolder("synchro").toPath()							// dossier synchronisé
 		val vPath   = vFolder.resolve(kSyncFileName)								// fichier d'échange
-		Files.newOutputStream(vPath).use { writeBackupXlsx(demoBackupFile(), it) }
+		Files.newOutputStream(vPath).use { writeBackupXlsx(vDemo, it) }
 		Files.setLastModifiedTime(vPath, FileTime.fromMillis(1_000))
 		val vApp = DesktopController(DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")), Workspace(kClock), null, kClock).apply { openFolder(vFolder) }	// contrôleur
 		fCompose.setContent { App(vApp) { null } }
-		vApp.edit { vApp.editor.createAccount(it, "Ouvert sur le PC", AccountType.CHECKING, null, 100, null) }
-		Files.newOutputStream(vPath).use { writeBackupXlsx(demoBackupFile().let { inFile -> inFile.copy(accounts = inFile.accounts + AccountDto("tel", "Ouvert sur le téléphone", "SAVINGS", null, 100, 99, false, 1, 2)) }, it) }
+		val vId = vDemo.accounts.first().id									// compte renommé des deux côtés
+		vApp.edit { EditResult.Done(it.copy(accounts = it.accounts.map { inAccount -> if (inAccount.id == vId) inAccount.copy(name = "Livret du PC", updatedAt = 5) else inAccount })) }
+		Files.newOutputStream(vPath).use { writeBackupXlsx(vDemo.let { inFile -> inFile.copy(accounts = inFile.accounts.map { inAccount -> if (inAccount.id == vId) inAccount.copy(name = "Livret du téléphone", updatedAt = 6) else inAccount }) }, it) }
 		Files.setLastModifiedTime(vPath, FileTime.fromMillis(2_000))
 		vApp.flush()
 		fCompose.waitForIdle()
-		assertTrue(vApp.workspace.value.status is LoadStatus.Conflict)
-		fCompose.onNodeWithText("Quelle version garder ?").assertExists()
-		fCompose.onNodeWithText("Le fichier").performClick()
+		assertTrue(vApp.workspace.value.status is LoadStatus.Items)
+		fCompose.onNodeWithText("Un élément modifié des deux côtés").assertExists()
+		fCompose.onNodeWithText("Appliquer").assertIsNotEnabled()
+		val vScene = androidx.compose.ui.ImageComposeScene(width = 1440, height = 900, density = androidx.compose.ui.unit.Density(1f)) { App(vApp) { null } }	// capture (relecture humaine)
+		listOf(0L, 500L, 1_500L).forEach { vScene.render(it * 1_000_000L) }
+		java.io.File("build/captures-desktop").mkdirs()
+		java.io.File("build/captures-desktop/36-fusion-choix.png").writeBytes(vScene.render(2_000_000_000L).encodeToData(org.jetbrains.skia.EncodedImageFormat.PNG)!!.bytes)
+		vScene.close()
+		fCompose.onNodeWithText("Le fichier synchronisé").performClick()
+		fCompose.onNodeWithText("Appliquer").performClick()
 		fCompose.waitForIdle()
-		assertTrue(vApp.workspace.value.data.accounts.any { it.name == "Ouvert sur le téléphone" })
-		fCompose.onNodeWithText("Quelle version garder ?").assertDoesNotExist()
+		assertEquals("Livret du téléphone", vApp.workspace.value.data.accounts.single { it.id == vId }.name)
+		fCompose.onNodeWithText("Un élément modifié des deux côtés").assertDoesNotExist()
 	}
 }

@@ -32,7 +32,11 @@ import java.time.Instant
 import java.time.LocalDate
 import fr.maubin.patrimoineplus.data.backup.toDto
 import fr.maubin.patrimoineplus.data.edit.DataEditor
-import fr.maubin.patrimoineplus.data.demo.withDemoFamily
+import fr.maubin.patrimoineplus.data.demo.withDemoFamily
+import fr.maubin.patrimoineplus.data.sync.MergeConflict
+import fr.maubin.patrimoineplus.data.sync.MergeSide
+import fr.maubin.patrimoineplus.data.sync.SyncPlan
+import fr.maubin.patrimoineplus.data.sync.planSync
 
 private const val kPollMillis  = 2_000L											// intervalle de surveillance du fichier
 private const val kFlushMillis = 1_500L											// délai entre une modification et l'écriture
@@ -83,6 +87,13 @@ sealed interface LoadStatus
 	) : LoadStatus
 
 	/*
+		Les deux côtés ont changé les mêmes éléments : l'utilisateur choisit,
+		élément par élément ; tout le reste est déjà fusionné.
+		conflicts : éléments en conflit
+	*/
+	data class Items(val conflicts: List<MergeConflict>) : LoadStatus
+
+	/*
 		Écriture impossible (dossier en lecture seule, disque plein…).
 		message : raison
 	*/
@@ -95,12 +106,14 @@ sealed interface LoadStatus
 	data   : données affichées
 	status : état de la source
 	today  : date de calcul
+	merge  : résultat de la dernière fusion, en clair (changements repris, éléments rétablis) ; null sans
 */
 data class WorkspaceState(
 	val source : Source     = Source.None,
 	val data   : DataSet    = DataSet.kEmpty,
 	val status : LoadStatus = LoadStatus.Idle,
-	val today  : LocalDate
+	val today  : LocalDate,
+	val merge  : String?    = null
 )
 
 /*
@@ -118,6 +131,8 @@ class Workspace(private val inClock: Clock)
 	private val fState    = MutableStateFlow(WorkspaceState(today = LocalDate.now(inClock)))	// état courant
 	private var fFile     : BackupFile = emptyFile()								// données du PC (référence)
 	private var fLastFp   : String?    = null										// empreinte de la dernière synchronisation
+	private var fBase     : BackupFile? = null										// dernière version commune avec le fichier (fusion)
+	private var fAsk      : BackupFile? = null										// contenu du fichier dont des éléments sont en conflit
 	private var fStamp    : Pair<Long, Long>? = null								// date et taille du fichier lu
 	private var fDirty    = false													// modifications pas encore écrites
 	private var fConflict : BackupFile? = null										// contenu du fichier en conflit
@@ -152,6 +167,8 @@ class Workspace(private val inClock: Clock)
 		fWatch    = null
 		fStamp    = null
 		fLastFp   = null
+		fBase     = null
+		fAsk      = null
 		fDirty    = false
 		fConflict = null
 		fForce    = false
@@ -229,7 +246,7 @@ class Workspace(private val inClock: Clock)
 	{
 		refreshDay()
 		val vSource = fState.value.source as? Source.Folder ?: return			// dossier ouvert
-		if (fConflict != null) return
+		if (fConflict != null || fAsk != null) return
 		val vPath  = vSource.path.resolve(kSyncFileName)							// fichier d'échange
 		val vStamp = stampOf(vPath)													// date et taille, relevées avant la lecture
 		if (vStamp == fStamp && !fDirty)
@@ -243,21 +260,72 @@ class Workspace(private val inClock: Clock)
 		}
 		val vOnDisk = if (vStamp == null) null else readFile(vPath, vStamp) ?: return	// contenu du fichier (null : absent)
 		fStamp = vStamp
-		val vLocalFp = syncFingerprint(fFile)										// empreinte du PC
-		val vFileFp  = vOnDisk?.let { syncFingerprint(it) }						// empreinte du fichier
-		when (decideSync(fLastFp, vLocalFp, vFileFp, fFile.accounts.isEmpty()))
+		apply(vPath, planSync(fLastFp, fBase, fFile, vOnDisk), vOnDisk)
+	}
+
+	/*
+		Applique une décision de synchronisation.
+		inPath   : fichier d'échange
+		inPlan   : décision
+		inOnDisk : contenu du fichier ; null s'il est absent
+	*/
+	private fun apply(
+		inPath   : java.nio.file.Path,
+		inPlan   : SyncPlan,
+		inOnDisk : BackupFile?
+	)
+	{
+		when (inPlan)
 		{
-			SyncAction.NOTHING  -> settle(if (vOnDisk == null) LoadStatus.Waiting else LoadStatus.Synced(inClock.millis()))
-			SyncAction.RECORD   -> record(vLocalFp)
-			SyncAction.EXPORT   -> export(vPath, vLocalFp)
-			SyncAction.IMPORT   -> adopt(vOnDisk!!, vFileFp!!)
-			SyncAction.CONFLICT ->
+			SyncPlan.Nothing   -> settle(if (inOnDisk == null) LoadStatus.Waiting else LoadStatus.Synced(inClock.millis()))
+			SyncPlan.Record    -> record(syncFingerprint(fFile), fFile)
+			is SyncPlan.Export -> export(inPath, syncFingerprint(fFile))
+			is SyncPlan.Import -> adopt(inPlan.file, syncFingerprint(inPlan.file))
+			is SyncPlan.Merge  ->
 			{
-				fConflict = vOnDisk
-				fState.value = fState.value.copy(status = LoadStatus.Conflict(fFile.contents, vOnDisk!!.contents))
+				fFile = inPlan.file
+				fState.value = fState.value.copy(data = fFile.toDataSet(), merge = mergeNote(inPlan))
+				export(inPath, syncFingerprint(fFile))
+				applyDue()
+			}
+			is SyncPlan.Ask    ->
+			{
+				fAsk = inPlan.remote
+				fState.value = fState.value.copy(status = LoadStatus.Items(inPlan.conflicts))
+			}
+			is SyncPlan.Whole  ->
+			{
+				fConflict = inPlan.remote
+				fState.value = fState.value.copy(status = LoadStatus.Conflict(fFile.contents, inPlan.remote.contents))
 			}
 		}
 	}
+
+	/*
+		Tranche les éléments en conflit (choix par élément), puis fusionne. Le
+		fichier est relu d'abord : s'il a encore changé, la décision est reprise
+		avec son nouveau contenu (de nouveaux conflits peuvent être présentés).
+		inChoices : version gardée pour chaque élément, par clé
+	*/
+	fun resolveItems(inChoices: Map<String, MergeSide>)
+	{
+		val vSource = fState.value.source as? Source.Folder ?: return			// dossier ouvert
+		val vSeen   = fAsk ?: return												// contenu en conflit, tel que présenté
+		val vPath   = vSource.path.resolve(kSyncFileName)							// fichier d'échange
+		val vStamp  = stampOf(vPath)												// état actuel du fichier
+		val vNow    = if (vStamp == null) null else readFile(vPath, vStamp) ?: return	// contenu actuel (illisible : on attend)
+		fAsk   = null
+		fStamp = vStamp
+		apply(vPath, planSync(fLastFp, fBase, fFile, vNow ?: vSeen, inChoices), vNow ?: vSeen)
+	}
+
+	/*
+		Résultat d'une fusion, en clair.
+		inPlan : fusion
+	*/
+	private fun mergeNote(inPlan: SyncPlan.Merge): String =
+		"Fusion avec le fichier synchronisé : ${inPlan.merged} changement(s) repris" +
+			(if (inPlan.restored.isEmpty()) "." else " ; rétabli(s), car encore utilisé(s) : ${inPlan.restored.joinToString(", ")}.")
 
 	/*
 		Tranche un conflit : garder les données du PC (le fichier est réécrit) ou
@@ -374,7 +442,7 @@ class Workspace(private val inClock: Clock)
 			}
 			fStamp = stampOf(inPath)
 			fForce = false
-			record(inFingerprint)
+			record(inFingerprint, fFile)
 		}
 		catch (inError: Exception)
 		{
@@ -396,17 +464,23 @@ class Workspace(private val inClock: Clock)
 	{
 		fFile = inFile
 		fState.value = fState.value.copy(data = inFile.toDataSet(), today = LocalDate.now(inClock))
-		record(inFingerprint)
+		record(inFingerprint, inFile)
 		applyDue()
 	}
 
 	/*
-		Mémorise une synchronisation réussie.
+		Mémorise une synchronisation réussie : empreinte et contenu communs
+		(version commune des prochaines fusions).
 		inFingerprint : empreinte commune
+		inContent     : contenu commun
 	*/
-	private fun record(inFingerprint: String)
+	private fun record(
+		inFingerprint : String,
+		inContent     : BackupFile
+	)
 	{
 		fLastFp = inFingerprint
+		fBase   = inContent
 		settle(LoadStatus.Synced(inClock.millis()))
 	}
 

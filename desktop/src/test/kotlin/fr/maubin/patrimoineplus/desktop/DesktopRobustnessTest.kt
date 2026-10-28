@@ -30,6 +30,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
+import fr.maubin.patrimoineplus.data.edit.EditResult
+import fr.maubin.patrimoineplus.data.backup.PriceDto
 
 /*
 	Horloge réglable (passage de minuit pendant que l'appli est ouverte).
@@ -54,6 +56,7 @@ class DesktopRobustnessTest
 	val fTemp = TemporaryFolder()													// dossiers jetables
 
 	private val kClock = Clock.fixed(Instant.parse("2026-10-12T09:00:00Z"), ZoneId.of("Europe/Paris"))	// horloge figée
+	private val kDemo   = demoBackupFile()										// démonstration (identifiants des opérations tirés une seule fois)
 
 	/*
 		Dossier synchronisé simulé.
@@ -81,11 +84,12 @@ class DesktopRobustnessTest
 	private fun onDisk(): BackupFile = (Files.newInputStream(folder().resolve(kSyncFileName)).use { readBackupXlsx(it) } as BackupRead.Valid).file
 
 	/*
-		Démonstration avec un compte de plus, écrit « par le téléphone ».
+		Démonstration avec un compte de plus et un cours du jour, écrite « par
+		le téléphone ».
 		inName : nom du compte
 	*/
 	private fun phoneVersion(inName: String): BackupFile =
-		demoBackupFile().let { it.copy(accounts = it.accounts + AccountDto("tel-$inName", inName, "SAVINGS", null, 100, 99, false, 1, 2)) }
+		kDemo.let { it.copy(accounts = it.accounts + AccountDto("tel-$inName", inName, "SAVINGS", null, 100, 99, false, 1, 2), prices = it.prices + PriceDto("cours-$inName", it.assets.first().id, "2026-10-12", 2_000_000)) }
 
 	/*
 		Contrôleur sur le dossier simulé, sans surveillance.
@@ -94,12 +98,14 @@ class DesktopRobustnessTest
 		DesktopController(DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")), Workspace(kClock), null, kClock).apply { openFolder(folder()) }
 
 	/*
-		Met le contrôleur en conflit : modification du PC et du téléphone.
+		Met le contrôleur en conflit : modifications incompatibles du PC et du
+		téléphone (un cours du même actif, le même jour) : fusion impossible.
 		inApp : contrôleur
 	*/
 	private fun makeConflict(inApp: DesktopController)
 	{
 		inApp.edit { inApp.editor.createAccount(it, "Ouvert sur le PC", AccountType.SAVINGS, null, 100, null) }
+		inApp.edit { EditResult.Done(it.copy(prices = it.prices + PriceDto("cours-pc", it.assets.first().id, "2026-10-12", 1_000_000))) }
 		writeExchange(phoneVersion("Téléphone 1"), 2_000)
 		inApp.flush()
 		assertTrue(inApp.workspace.value.status is LoadStatus.Conflict)
@@ -113,7 +119,7 @@ class DesktopRobustnessTest
 	@Test
 	fun conflictIsRereadBeforeOverwriting()
 	{
-		writeExchange(demoBackupFile(), 1_000)
+		writeExchange(kDemo, 1_000)
 		val vApp = controller()														// contrôleur
 		makeConflict(vApp)
 		writeExchange(phoneVersion("Téléphone 2"), 3_000)
@@ -134,7 +140,7 @@ class DesktopRobustnessTest
 	@Test
 	fun unsavedChangesHoldExit()
 	{
-		writeExchange(demoBackupFile(), 1_000)
+		writeExchange(kDemo, 1_000)
 		val vApp  = controller()														// contrôleur
 		makeConflict(vApp)
 		var vExit = false																// appli fermée
@@ -159,7 +165,7 @@ class DesktopRobustnessTest
 	@Test
 	fun cleanExitIsImmediate()
 	{
-		writeExchange(demoBackupFile(), 1_000)
+		writeExchange(kDemo, 1_000)
 		val vApp  = controller()														// contrôleur
 		var vExit = false																// appli fermée
 		vApp.edit { vApp.editor.createAccount(it, "Écrit tout de suite", AccountType.SAVINGS, null, 100, null) }

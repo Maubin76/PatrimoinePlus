@@ -157,7 +157,8 @@ import fr.maubin.patrimoineplus.ui.components.LocalProfiles
 import fr.maubin.patrimoineplus.desktop.ui.panels.LocalPanelGuard
 import fr.maubin.patrimoineplus.desktop.ui.panels.PanelGuard
 import fr.maubin.patrimoineplus.data.backup.newerFormatText
-import fr.maubin.patrimoineplus.desktop.ui.screens.DevicesScreen
+import fr.maubin.patrimoineplus.desktop.ui.screens.DevicesScreen
+import fr.maubin.patrimoineplus.ui.components.MergeConflictsDialog
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -370,6 +371,10 @@ private fun Shell(
 			}
 		}
 	}
+	(inSpace.status as? LoadStatus.Items)?.let { inItems ->
+		MergeConflictsDialog(inItems.conflicts, "Ce PC", "Le fichier synchronisé", inController::resolveItems)
+	}
+	LaunchedEffect(inSpace.merge) { inSpace.merge?.let(inController::showNotice) }
 	(inSpace.status as? LoadStatus.Conflict)?.let { inConflict ->
 		AlertDialog(
 			onDismissRequest = {},
@@ -646,10 +651,11 @@ private fun StatusBar(
 		LoadStatus.Pending        -> "Modifications en cours d’enregistrement…"
 		is LoadStatus.Invalid     -> "Fichier d’échange refusé (${vStatus.message}) : rien n’est enregistré, dernières données valides affichées."
 		is LoadStatus.Conflict    -> "Conflit : choisissez la version à garder."
+		is LoadStatus.Items       -> "Fusion : choisissez la version à garder pour ${vStatus.conflicts.size} élément(s)."
 		is LoadStatus.WriteFailed -> "Enregistrement impossible : ${vStatus.message}. Nouvel essai automatique."
 		LoadStatus.Idle           -> ""
 	}
-	val vAlert  = inNotice == null && (inSpace.status is LoadStatus.Invalid || inSpace.status is LoadStatus.WriteFailed || inSpace.status is LoadStatus.Conflict)	// état anormal
+	val vAlert  = inNotice == null && (inSpace.status is LoadStatus.Invalid || inSpace.status is LoadStatus.WriteFailed || inSpace.status is LoadStatus.Conflict || inSpace.status is LoadStatus.Items)	// état anormal
 	val vHidden = LocalAmountsHidden.current									// mode discret actif
 	Row(
 		modifier          = Modifier.fillMaxWidth().height(84.dp).padding(start = 32.dp, end = 22.dp),

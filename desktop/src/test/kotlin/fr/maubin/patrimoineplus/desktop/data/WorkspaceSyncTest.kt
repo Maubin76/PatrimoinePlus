@@ -22,6 +22,9 @@ import java.nio.file.attribute.FileTime
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
+import fr.maubin.patrimoineplus.data.edit.EditResult
+import fr.maubin.patrimoineplus.data.sync.MergeSide
+import fr.maubin.patrimoineplus.data.backup.PriceDto
 
 /*
 	Tests de la synchronisation côté PC : modifications du PC écrites dans le
@@ -35,6 +38,7 @@ class WorkspaceSyncTest
 
 	private val kClock  = Clock.fixed(Instant.parse("2026-10-12T09:00:00Z"), ZoneId.of("Europe/Paris"))	// horloge figée
 	private val kEditor = DataEditor(kClock)										// moteur de modification
+	private val kDemo   = demoBackupFile()										// démonstration (identifiants des opérations tirés une seule fois)
 
 	/*
 		Dossier synchronisé simulé.
@@ -91,7 +95,7 @@ class WorkspaceSyncTest
 	@Test
 	fun pcEditIsWritten()
 	{
-		writeExchange(demoBackupFile(), 1_000)
+		writeExchange(kDemo, 1_000)
 		val vSpace = openFolder()													// espace de travail
 		addAccount(vSpace, "Ouvert sur le PC")
 		assertEquals(LoadStatus.Pending, vSpace.state.value.status)
@@ -112,9 +116,9 @@ class WorkspaceSyncTest
 	@Test
 	fun phoneEditIsRead()
 	{
-		writeExchange(demoBackupFile(), 1_000)
+		writeExchange(kDemo, 1_000)
 		val vSpace = openFolder()													// espace de travail
-		val vMore  = demoBackupFile().let { it.copy(accounts = it.accounts + AccountDto("tel", "Ouvert sur le téléphone", "SAVINGS", null, 100, 99, false, 1, 2)) }	// contenu modifié
+		val vMore  = kDemo.let { it.copy(accounts = it.accounts + AccountDto("tel", "Ouvert sur le téléphone", "SAVINGS", null, 100, 99, false, 1, 2)) }	// contenu modifié
 		writeExchange(vMore, 2_000)
 		vSpace.sync()
 		assertTrue(vSpace.state.value.data.accounts.any { it.name == "Ouvert sur le téléphone" })
@@ -122,40 +126,68 @@ class WorkspaceSyncTest
 	}
 
 	/*
-		Conflit : modification du PC pas encore écrite, et fichier modifié
-		ailleurs ; rien n'est touché avant le choix. Garder le fichier remplace
-		les données du PC.
+		Compte ajouté sur le PC et compte ajouté sur le téléphone avant la
+		synchronisation : fusionnés sans question, des deux côtés (fichier
+		réécrit), avec un message.
 	*/
 	@Test
-	fun conflictKeepFile()
+	fun independentChangesAreMerged()
 	{
-		writeExchange(demoBackupFile(), 1_000)
+		writeExchange(kDemo, 1_000)
 		val vSpace = openFolder()													// espace de travail
 		addAccount(vSpace, "Ouvert sur le PC")
-		writeExchange(demoBackupFile().let { it.copy(accounts = it.accounts + AccountDto("tel", "Ouvert sur le téléphone", "SAVINGS", null, 100, 99, false, 1, 2)) }, 2_000)
+		writeExchange(kDemo.let { it.copy(accounts = it.accounts + AccountDto("tel", "Ouvert sur le téléphone", "SAVINGS", null, 100, 99, false, 1, 2)) }, 2_000)
 		vSpace.sync()
-		assertTrue(vSpace.state.value.status is LoadStatus.Conflict)
-		assertTrue(onDisk().accounts.none { it.name == "Ouvert sur le PC" })
-		vSpace.resolve(inKeepLocal = false)
-		assertTrue(vSpace.state.value.data.accounts.any { it.name == "Ouvert sur le téléphone" })
-		assertTrue(vSpace.state.value.data.accounts.none { it.name == "Ouvert sur le PC" })
 		assertTrue(vSpace.state.value.status is LoadStatus.Synced)
+		assertTrue(vSpace.state.value.data.accounts.map { it.name }.containsAll(listOf("Ouvert sur le PC", "Ouvert sur le téléphone")))
+		assertTrue(onDisk().accounts.map { it.name }.containsAll(listOf("Ouvert sur le PC", "Ouvert sur le téléphone")))
+		assertEquals("Fusion avec le fichier synchronisé : 1 changement(s) repris.", vSpace.state.value.merge)
 	}
 
 	/*
-		Conflit : garder le PC réécrit le fichier avec les données du PC.
+		Même compte renommé différemment des deux côtés : choix par élément,
+		rien n'est écrit avant ; « le fichier » adopte le nom du téléphone des
+		deux côtés.
 	*/
 	@Test
-	fun conflictKeepPc()
+	fun sameElementIsAsked()
 	{
-		writeExchange(demoBackupFile(), 1_000)
+		writeExchange(kDemo, 1_000)
 		val vSpace = openFolder()													// espace de travail
-		addAccount(vSpace, "Ouvert sur le PC")
-		writeExchange(demoBackupFile().let { it.copy(accounts = it.accounts + AccountDto("tel", "Ouvert sur le téléphone", "SAVINGS", null, 100, 99, false, 1, 2)) }, 2_000)
+		val vId    = kDemo.accounts.first().id							// compte renommé des deux côtés
+		vSpace.edit { EditResult.Done(it.copy(accounts = it.accounts.map { inAccount -> if (inAccount.id == vId) inAccount.copy(name = "Nom du PC", updatedAt = 5) else inAccount })) }
+		writeExchange(kDemo.let { it.copy(accounts = it.accounts.map { inAccount -> if (inAccount.id == vId) inAccount.copy(name = "Nom du téléphone", updatedAt = 6) else inAccount }) }, 2_000)
 		vSpace.sync()
-		vSpace.resolve(inKeepLocal = true)
-		assertTrue(onDisk().accounts.any { it.name == "Ouvert sur le PC" })
-		assertTrue(onDisk().accounts.none { it.name == "Ouvert sur le téléphone" })
+		val vItems = vSpace.state.value.status as LoadStatus.Items					// choix demandé
+		assertEquals(listOf("comptes/$vId"), vItems.conflicts.map { it.key })
+		assertTrue(onDisk().accounts.none { it.name == "Nom du PC" })
+		vSpace.resolveItems(mapOf("comptes/$vId" to MergeSide.THEIRS))
+		assertTrue(vSpace.state.value.status is LoadStatus.Synced)
+		assertEquals("Nom du téléphone", vSpace.state.value.data.accounts.single { it.id == vId }.name)
+		assertEquals("Nom du téléphone", onDisk().accounts.single { it.id == vId }.name)
+	}
+
+	/*
+		Changements incompatibles (un cours du même actif, le même jour, saisi
+		des deux côtés) : fusion impossible, choix d'une version entière ;
+		« le fichier » remplace les données du PC, « ce PC » réécrit le fichier.
+	*/
+	@Test
+	fun incompatibleChangesAskWholeVersion()
+	{
+		val vAsset = kDemo.assets.first().id								// actif coté des deux côtés
+		listOf(false, true).forEach { inKeepPc ->
+			writeExchange(kDemo, 1_000)
+			val vSpace = openFolder()												// espace de travail
+			vSpace.edit { EditResult.Done(it.copy(prices = it.prices + PriceDto("cours-pc", vAsset, "2026-10-12", 1_000_000))) }
+			writeExchange(kDemo.let { it.copy(prices = it.prices + PriceDto("cours-tel", vAsset, "2026-10-12", 2_000_000)) }, 2_000L + (if (inKeepPc) 1 else 0))
+			vSpace.sync()
+			assertTrue(vSpace.state.value.status is LoadStatus.Conflict)
+			vSpace.resolve(inKeepLocal = inKeepPc)
+			assertTrue(vSpace.state.value.status is LoadStatus.Synced)
+			assertEquals(if (inKeepPc) "cours-pc" else "cours-tel", onDisk().prices.single { it.assetId == vAsset && it.date == "2026-10-12" }.id)
+			assertEquals(if (inKeepPc) "cours-pc" else "cours-tel", vSpace.state.value.data.prices.single { it.assetId == vAsset && it.date.toString() == "2026-10-12" }.id)
+		}
 	}
 
 	/*
@@ -165,7 +197,7 @@ class WorkspaceSyncTest
 	@Test
 	fun corruptFileIsNeverOverwritten()
 	{
-		writeExchange(demoBackupFile(), 1_000)
+		writeExchange(kDemo, 1_000)
 		val vSpace  = openFolder()													// espace de travail
 		val vBroken = Files.readAllBytes(exchange()).copyOf(300)					// fichier tronqué
 		Files.write(exchange(), vBroken)

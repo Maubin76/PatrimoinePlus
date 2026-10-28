@@ -1311,6 +1311,12 @@ class DesktopController(
 	fun resolveConflict(inKeepLocal: Boolean) = inWorkspace.resolve(inKeepLocal)
 
 	/*
+		Tranche les éléments en conflit d'une fusion.
+		inChoices : version gardée pour chaque élément, par clé
+	*/
+	fun resolveItems(inChoices: Map<String, fr.maubin.patrimoineplus.data.sync.MergeSide>) = inWorkspace.resolveItems(inChoices)
+
+	/*
 		Écrit tout de suite les modifications en attente ; vrai si plus rien
 		n'est en attente.
 	*/
@@ -1343,6 +1349,7 @@ class DesktopController(
 		when (val vStatus = workspace.value.status)
 		{
 			is fr.maubin.patrimoineplus.desktop.data.LoadStatus.Conflict    -> "Un conflit attend votre choix."
+			is fr.maubin.patrimoineplus.desktop.data.LoadStatus.Items       -> "Des éléments modifiés des deux côtés attendent votre choix."
 			is fr.maubin.patrimoineplus.desktop.data.LoadStatus.Invalid     -> "Le fichier d’échange est refusé : ${vStatus.message}"
 			is fr.maubin.patrimoineplus.desktop.data.LoadStatus.WriteFailed -> "L’écriture a échoué : ${vStatus.message}"
 			else                                                             -> "Le fichier d’échange n’a pas pu être écrit."

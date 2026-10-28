@@ -13,6 +13,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import fr.maubin.patrimoineplus.data.sync.SyncPlan
+import fr.maubin.patrimoineplus.data.sync.planSync
 
 /*
 	Fusion élément par élément à partir de la dernière version commune :
@@ -172,5 +174,25 @@ class MergeTest
 		assertTrue(vResult.file.goals.single().done)
 		assertEquals(listOf("mois/*/2026-10"), vResult.conflicts.map { it.key })
 		assertEquals(25_000L, mergeBackups(vBase, vMine, vTheirs, mapOf("mois/*/2026-10" to MergeSide.THEIRS)).file.monthGoals.single().target)
+	}
+	/*
+		Décision de synchronisation : export, import, fusion avec la version
+		commune, choix par élément, version entière sans version commune.
+	*/
+	@Test
+	fun planDecides()
+	{
+		val vFp     = syncFingerprint(kBase)													// empreinte commune
+		val vMine   = kBase.copy(transactions = kBase.transactions + expense("t-pc", "Courses PC"))	// PC : ajout
+		val vTheirs = kBase.copy(transactions = kBase.transactions + expense("t-tel", "Boulangerie"))	// téléphone : ajout
+		assertTrue(planSync(vFp, kBase, vMine, kBase) is SyncPlan.Export)
+		assertTrue(planSync(vFp, kBase, kBase, vTheirs) is SyncPlan.Import)
+		assertTrue(planSync(vFp, kBase, kBase, kBase) is SyncPlan.Nothing)
+		val vMerge  = planSync(vFp, kBase, vMine, vTheirs) as SyncPlan.Merge					// fusion
+		assertTrue(vMerge.file.transactions.any { it.id == "t-pc" } && vMerge.file.transactions.any { it.id == "t-tel" })
+		assertTrue(planSync(vFp, null, vMine, vTheirs) is SyncPlan.Whole)						// version commune inconnue
+		val vAsk    = planSync(vFp, kBase, relabel(kBase, model().id, "A"), relabel(kBase, model().id, "B")) as SyncPlan.Ask	// même opération
+		val vDone   = planSync(vFp, kBase, relabel(kBase, model().id, "A"), relabel(kBase, model().id, "B"), mapOf(vAsk.conflicts.single().key to MergeSide.THEIRS)) as SyncPlan.Merge	// choix fait
+		assertEquals("B", vDone.file.transactions.single { it.id == model().id }.label)
 	}
 }
