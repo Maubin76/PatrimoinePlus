@@ -158,7 +158,8 @@ import fr.maubin.patrimoineplus.desktop.ui.panels.LocalPanelGuard
 import fr.maubin.patrimoineplus.desktop.ui.panels.PanelGuard
 import fr.maubin.patrimoineplus.data.backup.newerFormatText
 import fr.maubin.patrimoineplus.desktop.ui.screens.DevicesScreen
-import fr.maubin.patrimoineplus.ui.components.MergeConflictsDialog
+import fr.maubin.patrimoineplus.ui.components.MergeConflictsDialog
+import fr.maubin.patrimoineplus.desktop.ui.screens.PhoneChoiceDialogs
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -375,6 +376,9 @@ private fun Shell(
 		MergeConflictsDialog(inItems.conflicts, "Ce PC", "Le fichier synchronisé", inController::resolveItems)
 	}
 	LaunchedEffect(inSpace.merge) { inSpace.merge?.let(inController::showNotice) }
+	PhoneChoiceDialogs(inController)
+	val vPaired by inController.peers.state.collectAsState()							// appairage en cours
+	LaunchedEffect(vPaired.paired) { vPaired.paired?.let { inController.showNotice("$it est appairé : il se synchronisera tout seul sur le Wi-Fi de la maison.") } }
 	(inSpace.status as? LoadStatus.Conflict)?.let { inConflict ->
 		AlertDialog(
 			onDismissRequest = {},

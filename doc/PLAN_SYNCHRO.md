@@ -214,7 +214,7 @@ Nouvelle entrée du rail d'icônes ; tout l'appairage s'y configure.
 - Retrait d'un appareil : il n'est plus accepté ; il garde sa copie locale
   (effacement à distance impossible).
 
-### Phase 3 — Serveur du PC (`desktop`)
+### Phase 3 — Serveur du PC (`desktop`) — fait (sauf zone de notification et démarrage avec Windows)
 
 - Serveur intégré, démarré avec l'appli, en tâche de fond ; port fixe avec
   repli ; annonce sur le réseau local, **seulement sur le réseau familial**

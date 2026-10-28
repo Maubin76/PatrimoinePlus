@@ -78,6 +78,9 @@ data class DesktopSettings(
 */
 class DesktopConfig(private val inFile: Path)
 {
+	// Dossier des réglages (appareils appairés, versions communes).
+	val folder: Path get() = inFile.toAbsolutePath().parent
+
 	/*
 		Lit les réglages.
 	*/

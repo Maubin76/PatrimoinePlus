@@ -89,7 +89,10 @@ import fr.maubin.patrimoineplus.data.market.kQuotesStaleMillis
 import fr.maubin.patrimoineplus.desktop.data.NetworkDiagnostic
 import fr.maubin.patrimoineplus.desktop.data.pcInfo
 import fr.maubin.patrimoineplus.desktop.update.appVersion
-import java.util.UUID
+import java.util.UUID
+import fr.maubin.patrimoineplus.desktop.data.PeerService
+import fr.maubin.patrimoineplus.desktop.data.PeerStore
+import fr.maubin.patrimoineplus.desktop.data.PeerData
 
 private const val kDayCheckMillis = 60_000L										// contrôle du changement de jour
 
@@ -262,6 +265,7 @@ data class BankSession(
 	inClock     : horloge (horodatages des modifications, date du jour)
 	inUpdater   : mises à jour (GitHub, dossier de l'appli) ; null : pas de vérification
 	inQuotes    : source des cours automatiques ; null : pas de cours automatiques
+	inLocalOnly : écoute Wi-Fi sur la boucle locale et un port libre seulement (tests : rien sur le réseau, pas de fenêtre du pare-feu)
 */
 class DesktopController(
 	private val inConfig    : DesktopConfig,
@@ -269,7 +273,8 @@ class DesktopController(
 	private val inScope     : CoroutineScope?,
 	private val inClock     : Clock = Clock.systemDefaultZone(),
 	private val inUpdater   : DesktopUpdater? = null,
-	private val inQuotes    : QuoteSource?    = null
+	private val inQuotes    : QuoteSource?    = null,
+	private val inLocalOnly : Boolean         = false
 )
 {
 	private val fSettings   = MutableStateFlow(inConfig.load())					// réglages
@@ -291,6 +296,23 @@ class DesktopController(
 	private var fRowKeys    = 0L												// identifiants des lignes de la grille
 	private var fTokens     = 0L												// numéros d'ouverture des panneaux
 	private val fQuoting    = MutableStateFlow(false)							// cours en cours de récupération
+	private val fPeers      = PeerService(
+		inInfo   = { pcInfo(fSettings.value, inUpdater?.version ?: appVersion()) },
+		inStore  = PeerStore(inConfig.folder),
+		inData   = object : PeerData
+		{
+			override fun read(): BackupFile = onUi { inWorkspace.file }
+			override fun adopt(inFile: BackupFile, inNote: String?)
+			{
+				onUi { inWorkspace.edit { EditResult.Done(inFile) }; inNote?.let { fNotice.value = it } }
+			}
+		},
+		inAuthor = { inWorkspace.author },
+		inClock  = inClock,
+		inPort   = if (inLocalOnly) 0 else fr.maubin.patrimoineplus.data.link.kLinkPort,
+		inBeacon = if (inLocalOnly) 0 else fr.maubin.patrimoineplus.data.link.kDiscoveryPort,
+		inBind   = if (inLocalOnly) java.net.InetAddress.getLoopbackAddress() else null
+	)																			// synchronisation Wi-Fi avec le téléphone
 	private val fDiagnostic = NetworkDiagnostic({ pcInfo(fSettings.value, inUpdater?.version ?: appVersion()) }, inClock)	// diagnostic réseau (essai de la synchronisation)
 	private val fDirty      = MutableStateFlow(false)							// saisie du panneau ouvert modifiée et pas enregistrée
 	private val fDiscard    = MutableStateFlow<(() -> Unit)?>(null)			// action qui perdrait la saisie, en attente de confirmation
@@ -300,6 +322,9 @@ class DesktopController(
 
 	// Panneau de saisie ouvert ; null sans panneau.
 	val panel: StateFlow<Panel?> = fPanel
+
+	// Synchronisation Wi-Fi avec le téléphone.
+	val peers: PeerService get() = fPeers
 
 	// Diagnostic réseau (essai de la synchronisation).
 	val diagnostic: NetworkDiagnostic get() = fDiagnostic
@@ -559,6 +584,7 @@ class DesktopController(
 		importLegacyPlans(fSettings.value.source)
 		backupIfDue()
 		refreshQuotesIfStale()
+		refreshPeers()
 		inScope?.launch {
 			while (isActive)
 			{
@@ -566,6 +592,7 @@ class DesktopController(
 				inWorkspace.refreshDay()
 				backupIfDue()
 				refreshQuotesIfStale()
+				refreshPeers()
 			}
 		}
 	}
@@ -592,7 +619,30 @@ class DesktopController(
 		l'utilisateur (copie, fermer quand même, annuler).
 		inOnExit : ferme l'appli
 	*/
-	fun requestExit(inOnExit: () -> Unit) = whenDiscarded { guard("Fermer l’appli", inOnExit) }
+	fun requestExit(inOnExit: () -> Unit) = whenDiscarded { guard("Fermer l’appli") { fPeers.stop(); inOnExit() } }
+
+	/*
+		Relit le réseau du PC et démarre ou arrête l'écoute Wi-Fi (en tâche de
+		fond : la lecture du réseau lance des commandes de Windows). Seulement
+		sur un dossier de données (jamais en démonstration).
+	*/
+	fun refreshPeers()
+	{
+		val vScope = inScope ?: return													// portée (sans : tests, pas d'écoute)
+		vScope.launch(Dispatchers.IO) { if (workspace.value.source is Source.Folder) fPeers.refresh() else fPeers.stop() }
+	}
+
+	/*
+		Exécute sur le fil de l'interface une lecture ou une modification des
+		données demandée par le serveur Wi-Fi (fil d'arrière-plan) ; sans
+		portée (tests), tout de suite.
+		inBlock : action
+	*/
+	private fun <T> onUi(inBlock: () -> T): T
+	{
+		val vDispatcher = inScope?.coroutineContext?.get(kotlin.coroutines.ContinuationInterceptor) ?: return inBlock()	// fil de l'interface
+		return kotlinx.coroutines.runBlocking { withContext(vDispatcher) { inBlock() } }
+	}
 
 	/*
 		Signale que la saisie du panneau ouvert diffère (ou non) de ce qui est
@@ -912,6 +962,11 @@ class DesktopController(
 		Date du jour.
 	*/
 	fun today(): LocalDate = LocalDate.now(inClock)
+
+	/*
+		Instant courant (ms), à l'horloge de l'appli.
+	*/
+	fun now(): Long = inClock.millis()
 
 	/*
 		Ouvre un panneau de saisie (remplace celui qui était ouvert), avec une
@@ -1376,6 +1431,7 @@ class DesktopController(
 		inWorkspace.open(inSource, inScope)
 		importLegacyPlans(inSource)
 		refreshQuotesIfStale()
+		refreshPeers()
 		fNavigation.value = Navigation()
 		fPanel.value      = null
 		backupIfDue()

@@ -55,7 +55,7 @@ fun DevicesScreen(inController: DesktopController)
 	val vState    by inController.diagnostic.state.collectAsState()					// diagnostic
 	val vColors   = MaterialTheme.colorScheme											// palette courante
 	var vName     by remember { mutableStateOf(vSettings.deviceName) }				// nom saisi
-	LaunchedEffect(Unit) { inController.diagnostic.refresh() }
+	LaunchedEffect(Unit) { inController.diagnostic.refresh(); inController.refreshPeers() }
 	Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(40.dp).padding(bottom = LocalAssistantRoom.current).widthIn(max = 720.dp)) {
 		Text("Appareils", style = MaterialTheme.typography.displaySmall)
 		Spacer(Modifier.height(8.dp))
@@ -87,6 +87,10 @@ fun DevicesScreen(inController: DesktopController)
 				)
 			}
 		}
+		Spacer(Modifier.height(32.dp))
+		SectionHeader(inTitle = "Synchronisation avec le téléphone", inModifier = Modifier.tourAnchor("devices.sync"))
+		Spacer(Modifier.height(12.dp))
+		PhoneSyncCard(inController)
 		Spacer(Modifier.height(32.dp))
 		SectionHeader(inTitle = "Historique des modifications", inModifier = Modifier.tourAnchor("devices.history"))
 		Spacer(Modifier.height(12.dp))
