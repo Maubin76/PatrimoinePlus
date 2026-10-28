@@ -22,6 +22,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
+import fr.maubin.patrimoineplus.data.sync.MergeSide
 
 private val kSyncTime = DateTimeFormatter.ofPattern("d MMM 'à' HH:mm", Locale.FRANCE)	// instant d'une synchronisation
 
@@ -99,6 +100,7 @@ class SyncViewModel @Inject constructor(
 				{
 					is SyncStatus.Idle     -> "Synchronisation à jour."
 					is SyncStatus.Conflict -> "Les deux côtés ont changé : choisissez la version à garder."
+					is SyncStatus.Items    -> "Fusion faite ; choisissez la version à garder pour ${vStatus.conflicts.size} élément(s)."
 					is SyncStatus.Failed   -> vStatus.message
 					SyncStatus.Off         -> "Aucun dossier synchronisé."
 					SyncStatus.Working     -> "Synchronisation en cours…"
@@ -114,6 +116,15 @@ class SyncViewModel @Inject constructor(
 	fun resolve(inKeepLocal: Boolean)
 	{
 		viewModelScope.launch { inSyncer.resolve(inKeepLocal) }
+	}
+
+	/*
+		Tranche les éléments en conflit d'une fusion.
+		inChoices : version gardée pour chaque élément, par clé
+	*/
+	fun resolveItems(inChoices: Map<String, MergeSide>)
+	{
+		viewModelScope.launch { inSyncer.resolveItems(inChoices) }
 	}
 
 	/*
@@ -148,5 +159,6 @@ fun syncStatusText(inStatus: SyncStatus): String =
 		SyncStatus.Working     -> "Synchronisation en cours…"
 		is SyncStatus.Idle     -> inStatus.at?.let { "À jour. Dernière synchronisation le ${Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).format(kSyncTime)}." } ?: "À jour."
 		is SyncStatus.Conflict -> "Conflit : les deux côtés ont changé. Choisissez la version à garder."
+		is SyncStatus.Items    -> "Fusion : choisissez la version à garder pour ${inStatus.conflicts.size} élément(s)."
 		is SyncStatus.Failed   -> inStatus.message
 	}

@@ -18,6 +18,12 @@ import kotlinx.coroutines.withContext
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
+import fr.maubin.patrimoineplus.data.backup.BackupFile
+import fr.maubin.patrimoineplus.data.backup.BackupRead
+import fr.maubin.patrimoineplus.data.backup.decodeBackup
+import fr.maubin.patrimoineplus.data.backup.encodeBackup
+import java.util.zip.GZIPInputStream
+import java.util.zip.GZIPOutputStream
 
 /*
 	Dossier synchronisé (par Syncthing ou autre) où se trouve le fichier
@@ -142,6 +148,12 @@ interface SyncStore
 	suspend fun fingerprint(): String?
 
 	/*
+		Contenu à la dernière synchronisation (version commune des fusions) ;
+		null avant la première, ou s'il est illisible.
+	*/
+	suspend fun base(): BackupFile?
+
+	/*
 		Choisit le dossier synchronisé (null pour arrêter) ; oublie l'empreinte.
 		inUri : adresse du dossier
 	*/
@@ -151,22 +163,29 @@ interface SyncStore
 		Mémorise une synchronisation réussie.
 		inFingerprint : empreinte du contenu commun
 		inAt          : instant (ms)
+		inBase        : contenu commun
 	*/
 	suspend fun recordSync(
 		inFingerprint : String,
-		inAt          : Long
+		inAt          : Long,
+		inBase        : BackupFile
 	)
 }
 
 /*
-	Mémoire de la synchronisation dans le DataStore des réglages.
+	Mémoire de la synchronisation dans le DataStore des réglages ; le contenu
+	commun (version commune des fusions) est gardé à part, compressé, dans un
+	fichier privé de l'appli (écrit à côté puis renommé).
 	inDataStore : magasin de préférences de l'application
+	inContext   : contexte (dossier privé)
 */
 @Singleton
 class DataStoreSyncStore @Inject constructor(
-	private val inDataStore : DataStore<Preferences>
+	private val inDataStore : DataStore<Preferences>,
+	@ApplicationContext private val inContext : Context
 ) : SyncStore
 {
+	private val fBaseFile = java.io.File(inContext.filesDir, "sync-base.json.gz")	// contenu commun
 	private val kFolderKey      = stringPreferencesKey("sync_folder")		// clé du dossier
 	private val kFingerprintKey = stringPreferencesKey("sync_fingerprint")	// clé de l'empreinte
 	private val kLastSyncKey    = longPreferencesKey("sync_last")			// clé de l'instant
@@ -181,6 +200,14 @@ class DataStoreSyncStore @Inject constructor(
 	override suspend fun fingerprint(): String? = inDataStore.data.first()[kFingerprintKey]
 
 	/*
+		Contenu commun mémorisé ; null s'il est absent ou illisible.
+	*/
+	override suspend fun base(): BackupFile? = withContext(Dispatchers.IO) {
+		runCatching { GZIPInputStream(fBaseFile.inputStream()).use { String(it.readBytes(), Charsets.UTF_8) } }.getOrNull()
+			?.let { (decodeBackup(it) as? BackupRead.Valid)?.file }
+	}
+
+	/*
 		Choisit le dossier ; oublie l'empreinte et l'instant.
 		inUri : adresse du dossier ; null pour arrêter
 	*/
@@ -191,6 +218,7 @@ class DataStoreSyncStore @Inject constructor(
 			inPreferences.remove(kFingerprintKey)
 			inPreferences.remove(kLastSyncKey)
 		}
+		withContext(Dispatchers.IO) { fBaseFile.delete() }
 	}
 
 	/*
@@ -200,9 +228,15 @@ class DataStoreSyncStore @Inject constructor(
 	*/
 	override suspend fun recordSync(
 		inFingerprint : String,
-		inAt          : Long
+		inAt          : Long,
+		inBase        : BackupFile
 	)
 	{
+		withContext(Dispatchers.IO) {
+			val vTemp = java.io.File(inContext.filesDir, "sync-base.json.gz.tmp")	// écriture provisoire
+			GZIPOutputStream(vTemp.outputStream()).use { it.write(encodeBackup(inBase).toByteArray(Charsets.UTF_8)) }
+			if (!vTemp.renameTo(fBaseFile)) { fBaseFile.delete(); vTemp.renameTo(fBaseFile) }
+		}
 		inDataStore.edit { inPreferences ->
 			inPreferences[kFingerprintKey] = inFingerprint
 			inPreferences[kLastSyncKey]    = inAt

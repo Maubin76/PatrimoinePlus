@@ -19,6 +19,7 @@ import fr.maubin.patrimoineplus.data.backup.newerFormatText
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import fr.maubin.patrimoineplus.ui.components.MergeConflictsDialog
 
 // Dossier proposé à l'ouverture du sélecteur : Documents/PatrimoinePlus (celui des sauvegardes).
 private val kSuggestedFolder: Uri = DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/PatrimoinePlus")
@@ -68,14 +69,20 @@ fun rememberSyncActions(
 
 /*
 	Fenêtre de conflit, affichée par-dessus l'appli quand les données du
-	téléphone et celles du fichier synchronisé ont changé toutes les deux.
-	Rien n'est modifié tant qu'aucun choix n'est fait.
+	téléphone et celles du fichier synchronisé ont changé toutes les deux :
+	choix par élément quand la fusion a laissé des éléments modifiés des deux
+	côtés, sinon choix d'une version entière (fusion impossible). Rien n'est
+	modifié tant qu'aucun choix n'est fait.
 	inViewModel : ViewModel de la synchronisation
 */
 @Composable
 fun SyncConflictDialog(inViewModel: SyncViewModel = hiltViewModel())
 {
 	val vStatus by inViewModel.status.collectAsStateWithLifecycle()			// état
+	(vStatus as? SyncStatus.Items)?.let { inItems ->
+		MergeConflictsDialog(inItems.conflicts, "Ce téléphone", "Le fichier synchronisé", inViewModel::resolveItems)
+		return
+	}
 	val vConflict = vStatus as? SyncStatus.Conflict ?: return					// conflit en attente
 	AlertDialog(
 		onDismissRequest = {},

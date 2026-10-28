@@ -41,6 +41,10 @@ import fr.maubin.patrimoineplus.data.backup.xlsx.Sheet
 import fr.maubin.patrimoineplus.data.backup.xlsx.Column
 import fr.maubin.patrimoineplus.data.backup.xlsx.Cell
 import fr.maubin.patrimoineplus.data.backup.xlsx.writeXlsx
+import fr.maubin.patrimoineplus.data.sync.MergeSide
+import fr.maubin.patrimoineplus.data.backup.PriceDto
+import fr.maubin.patrimoineplus.data.repo.MarketRepository
+import kotlinx.coroutines.flow.first
 
 /*
 	Dossier synchronisé en mémoire.
@@ -72,10 +76,13 @@ class MemorySyncFolder : SyncFolder
 class MemorySyncStore(inFolder: String?) : SyncStore
 {
 	private var fFingerprint : String? = null										// empreinte mémorisée
+	private var fBase        : BackupFile? = null									// contenu commun mémorisé
 	override val folder     = MutableStateFlow(inFolder)
 	override val lastSyncAt = MutableStateFlow<Long?>(null)
 
 	override suspend fun fingerprint(): String? = fFingerprint
+
+	override suspend fun base(): BackupFile? = fBase
 
 	/*
 		Choisit le dossier et oublie l'empreinte.
@@ -85,6 +92,7 @@ class MemorySyncStore(inFolder: String?) : SyncStore
 	{
 		folder.value     = inUri
 		fFingerprint     = null
+		fBase            = null
 		lastSyncAt.value = null
 	}
 
@@ -92,10 +100,12 @@ class MemorySyncStore(inFolder: String?) : SyncStore
 		Mémorise une synchronisation.
 		inFingerprint : empreinte
 		inAt          : instant
+		inBase        : contenu commun
 	*/
-	override suspend fun recordSync(inFingerprint: String, inAt: Long)
+	override suspend fun recordSync(inFingerprint: String, inAt: Long, inBase: BackupFile)
 	{
 		fFingerprint     = inFingerprint
+		fBase            = inBase
 		lastSyncAt.value = inAt
 	}
 }
@@ -230,38 +240,59 @@ class SyncerTest
 	}
 
 	/*
-		Conflit : les deux côtés ont changé ; rien n'est modifié tant que
-		l'utilisateur n'a pas choisi. Garder le fichier remplace le téléphone.
+		Compte ajouté sur le PC et compte ajouté sur le téléphone : fusionnés sans
+		question, des deux côtés (téléphone sauvegardé avant, fichier réécrit).
 	*/
 	@Test
-	fun conflictKeepsFileWhenChosen() = runTest {
+	fun independentChangesAreMerged() = runTest {
 		fSyncer.sync()
 		writeFile(withExtraAccount(fileContent()))
 		AccountRepository(fDb, kClock).create("Créé sur le téléphone", AccountType.CHECKING, null, 100)
-		val vBefore = syncFingerprint(fBackup.snapshot())						// téléphone avant arbitrage
-		assertTrue(fSyncer.sync() is SyncStatus.Conflict)
-		assertEquals(vBefore, syncFingerprint(fBackup.snapshot()))
-		assertEquals(1, fFolder.writes)
-		fSyncer.resolve(inKeepLocal = false)
-		val vAfter = fBackup.snapshot()											// téléphone après arbitrage
-		assertTrue(vAfter.accounts.any { it.name == "Ouvert sur le PC" })
-		assertTrue(vAfter.accounts.none { it.name == "Créé sur le téléphone" })
+		assertTrue(fSyncer.sync() is SyncStatus.Idle)
+		assertTrue(fBackup.snapshot().accounts.map { it.name }.containsAll(listOf("Ouvert sur le PC", "Créé sur le téléphone")))
+		assertTrue(fileContent().accounts.map { it.name }.containsAll(listOf("Ouvert sur le PC", "Créé sur le téléphone")))
+		assertEquals(2, fImports)														// sauvegarde de sécurité avant, puis après
+		assertEquals(syncFingerprint(fBackup.snapshot()), fStore.fingerprint())
 	}
 
 	/*
-		Conflit : garder le téléphone réécrit le fichier.
+		Même compte renommé des deux côtés : choix par élément, rien n'est
+		modifié avant ; « le fichier » adopte le nom du PC des deux côtés.
 	*/
 	@Test
-	fun conflictKeepsPhoneWhenChosen() = runTest {
+	fun sameElementIsAsked() = runTest {
 		fSyncer.sync()
-		writeFile(withExtraAccount(fileContent()))
-		AccountRepository(fDb, kClock).create("Créé sur le téléphone", AccountType.CHECKING, null, 100)
-		fSyncer.sync()
-		fSyncer.resolve(inKeepLocal = true)
-		val vFile = fileContent()												// fichier après arbitrage
-		assertTrue(vFile.accounts.any { it.name == "Créé sur le téléphone" })
-		assertTrue(vFile.accounts.none { it.name == "Ouvert sur le PC" })
-		assertEquals(0, fImports)
+		val vAccount = fBackup.snapshot().accounts.first()								// compte renommé des deux côtés
+		writeFile(fileContent().let { it.copy(accounts = it.accounts.map { inAccount -> if (inAccount.id == vAccount.id) inAccount.copy(name = "Nom du PC", updatedAt = inAccount.updatedAt + 1) else inAccount }) })
+		AccountRepository(fDb, kClock).let { inRepo -> inRepo.observeAccounts().first().single { it.id == vAccount.id }.let { inRepo.update(it.copy(name = "Nom du téléphone")) } }
+		val vBefore  = syncFingerprint(fBackup.snapshot())								// téléphone avant le choix
+		val vItems   = fSyncer.sync() as SyncStatus.Items									// choix demandé
+		assertEquals(listOf("comptes/${vAccount.id}"), vItems.conflicts.map { it.key })
+		assertEquals(vBefore, syncFingerprint(fBackup.snapshot()))
+		assertEquals(1, fFolder.writes)
+		assertTrue(fSyncer.resolveItems(mapOf("comptes/${vAccount.id}" to MergeSide.THEIRS)) is SyncStatus.Idle)
+		assertEquals("Nom du PC", fBackup.snapshot().accounts.single { it.id == vAccount.id }.name)
+		assertEquals("Nom du PC", fileContent().accounts.single { it.id == vAccount.id }.name)
+	}
+
+	/*
+		Changements incompatibles (un cours du même actif, le même jour, des
+		deux côtés) : fusion impossible, choix d'une version entière ; garder le
+		téléphone réécrit le fichier, garder le fichier remplace le téléphone.
+	*/
+	@Test
+	fun incompatibleChangesAskWholeVersion() = runTest {
+		listOf(true, false).forEach { inKeepPhone ->
+			fSyncer.sync()
+			val vAsset = fBackup.snapshot().assets.first().id							// actif coté des deux côtés
+			val vDay   = "2026-10-0${if (inKeepPhone) 7 else 8}"						// jour du cours
+			writeFile(fileContent().let { it.copy(prices = it.prices.filter { inPrice -> inPrice.date != vDay } + PriceDto("cours-pc-$vDay", vAsset, vDay, 1_000_000)) })
+			MarketRepository(fDb, kClock).putPriceSeries(vAsset, listOf(java.time.LocalDate.parse(vDay) to 2_000_000L))
+			assertTrue(fSyncer.sync() is SyncStatus.Conflict)
+			fSyncer.resolve(inKeepLocal = inKeepPhone)
+			assertEquals(if (inKeepPhone) 2_000_000L else 1_000_000L, fileContent().prices.single { it.assetId == vAsset && it.date == vDay }.unitPrice)
+			assertEquals(if (inKeepPhone) 2_000_000L else 1_000_000L, fBackup.snapshot().prices.single { it.assetId == vAsset && it.date == vDay }.unitPrice)
+		}
 	}
 
 	/*

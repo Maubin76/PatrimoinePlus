@@ -625,6 +625,20 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   vue (profil ou Famille), rangés dans le fichier d'échange (format 8,
   onglets Objectifs et Objectifs du mois, colonne « ID vue » : identifiant du
   profil, « * » pour la famille).
+- **Fusion élément par élément** (PC et téléphone, `core/data/sync/Merge.kt`,
+  `SyncPlan.kt`) : chaque appareil garde la **dernière version commune**
+  (PC : en mémoire ; téléphone : `sync-base.json.gz` dans son dossier privé).
+  Quand les deux côtés ont changé, `planSync` fusionne par identifiant : un
+  élément ajouté, modifié ou supprimé d'un seul côté prend ce changement ; un
+  même élément changé différemment des deux côtés, ou supprimé d'un côté et
+  modifié de l'autre, est présenté dans la fenêtre de choix par élément
+  (`MergeConflictsDialog`, partagée) ; un élément supprimé mais encore
+  utilisé (compte d'une opération ajoutée ailleurs) est rétabli. Les éléments
+  sont comparés dans leur forme canonique (`canonicalBackup`) mais gardés
+  d'origine (l'ordre des lignes compte pour les mensualités). Le résultat
+  est vérifié (`validateBackup`) ; s'il est incohérent (deux cours du même
+  actif le même jour…), ou sans version commune connue, la fenêtre « Quelle
+  version garder ? » reste le dernier recours.
 - **Appareils à des versions différentes** : un fichier d'échange écrit par
   une version plus récente (format plus grand que `kBackupVersion`, lu dans
   l'onglet Fichier avant tout le reste, ou dans le champ `version` d'un export

@@ -172,11 +172,11 @@ Nouvelle entrée du rail d'icônes ; tout l'appairage s'y configure.
   ensuite tel quel : trames, chiffrement, serveur, client, découverte, réseau
   familial.
 
-### Phase 1 — Fusion et historique (`core`, sans réseau)
+### Phase 1 — Fusion et historique (`core`, sans réseau) — fusion faite, historique à venir
 
-- **Suppressions mémorisées** (identifiant et date) dans les données et le
-  fichier d'échange (nouveau format, fenêtre « Mise à jour nécessaire » pour
-  l'appareil resté en arrière).
+- ~~Suppressions mémorisées~~ : inutiles, chaque appareil garde la dernière
+  version commune (une suppression s'y lit : l'élément y est, plus chez
+  l'appareil). Pas de nouveau format d'échange.
 - **Fusion** de deux versions à partir de leur dernière version commune :
   éléments ajoutés, modifiés ou supprimés d'un seul côté appliqués
   automatiquement ; même élément modifié des deux côtés : conflit, pour cet

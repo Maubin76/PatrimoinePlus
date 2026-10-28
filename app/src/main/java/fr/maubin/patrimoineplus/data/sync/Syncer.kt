@@ -31,6 +31,10 @@ import java.time.Clock
 import javax.inject.Inject
 import javax.inject.Singleton
 import fr.maubin.patrimoineplus.data.repo.PlanningRepository
+import fr.maubin.patrimoineplus.data.sync.MergeConflict
+import fr.maubin.patrimoineplus.data.sync.MergeSide
+import fr.maubin.patrimoineplus.data.sync.SyncPlan
+import fr.maubin.patrimoineplus.data.sync.planSync
 
 private const val kDebounceMillis = 3_000L										// délai après une modification avant d'écrire le fichier
 
@@ -71,6 +75,13 @@ sealed interface SyncStatus
 		val message     : String,
 		val newerFormat : Int? = null
 	) : SyncStatus
+
+	/*
+		Les deux côtés ont changé les mêmes éléments : choix par élément ;
+		tout le reste est déjà fusionné.
+		conflicts : éléments en conflit
+	*/
+	data class Items(val conflicts: List<MergeConflict>) : SyncStatus
 }
 
 /*
@@ -166,24 +177,73 @@ class Syncer(
 					}
 				}																	// contenu du fichier
 				val vLocal  = inBackup.snapshot()									// données du téléphone
-				val vLocalFp = syncFingerprint(vLocal)								// empreinte locale
-				val vFileFp  = vFile?.let { syncFingerprint(it) }					// empreinte du fichier
-				when (decideSync(inStore.fingerprint(), vLocalFp, vFileFp, vLocal.accounts.isEmpty()))
-				{
-					SyncAction.NOTHING  -> idle()
-					SyncAction.RECORD   -> record(vLocalFp)
-					SyncAction.EXPORT   -> export(vFolder, vLocal, vLocalFp)
-					SyncAction.IMPORT   -> import(vFile!!, vFileFp!!, vLocalFp)
-					SyncAction.CONFLICT ->
-					{
-						fPending = vFile
-						SyncStatus.Conflict(vLocal.contents, vFile!!.contents)
-					}
-				}
+				apply(vFolder, vLocal, vFile, planSync(inStore.fingerprint(), inStore.base(), vLocal, vFile))
 			}
 			catch (inError: Exception)
 			{
 				SyncStatus.Failed("Dossier synchronisé inaccessible : ${inError.message ?: "erreur inconnue"}. Choisissez-le à nouveau dans les Réglages.")
+			}																		// état obtenu
+			fStatus.value = vResult
+			vResult
+		}
+
+	/*
+		Applique une décision de synchronisation.
+		inFolder : dossier
+		inLocal  : données du téléphone lors de la décision
+		inFile   : contenu du fichier ; null s'il est absent
+		inPlan   : décision
+	*/
+	private suspend fun apply(
+		inFolder : SyncFolder,
+		inLocal  : BackupFile,
+		inFile   : BackupFile?,
+		inPlan   : SyncPlan
+	): SyncStatus =
+		when (inPlan)
+		{
+			SyncPlan.Nothing   -> idle()
+			SyncPlan.Record    -> record(syncFingerprint(inLocal), inLocal)
+			is SyncPlan.Export -> export(inFolder, inLocal, syncFingerprint(inLocal))
+			is SyncPlan.Import -> import(inPlan.file, syncFingerprint(inPlan.file), syncFingerprint(inLocal))
+			is SyncPlan.Merge  ->
+			{
+				val vImported = import(inPlan.file, syncFingerprint(inPlan.file), syncFingerprint(inLocal))	// fusion adoptée sur le téléphone
+				if (vImported is SyncStatus.Idle) export(inFolder, inPlan.file, syncFingerprint(inPlan.file)) else vImported
+			}
+			is SyncPlan.Ask    ->
+			{
+				fPending = inPlan.remote
+				SyncStatus.Items(inPlan.conflicts)
+			}
+			is SyncPlan.Whole  ->
+			{
+				fPending = inPlan.remote
+				SyncStatus.Conflict(inLocal.contents, inPlan.remote.contents)
+			}
+		}
+
+	/*
+		Tranche les éléments en conflit (choix par élément), puis fusionne. Le
+		fichier et le téléphone sont relus : s'ils ont encore changé, la
+		décision est reprise (de nouveaux conflits peuvent être présentés).
+		inChoices : version gardée pour chaque élément, par clé
+	*/
+	suspend fun resolveItems(inChoices: Map<String, MergeSide>): SyncStatus =
+		fLock.withLock {
+			val vUri  = inStore.folder.first() ?: return@withLock SyncStatus.Off	// dossier synchronisé
+			val vSeen = fPending															// contenu en conflit, tel que présenté
+			fPending = null
+			val vResult = try
+			{
+				val vFolder = inFolders.open(vUri)											// dossier
+				val vFile   = vFolder.read()?.let { (readBackupXlsx(ByteArrayInputStream(it)) as? BackupRead.Valid)?.file } ?: vSeen	// contenu actuel du fichier
+				val vLocal  = inBackup.snapshot()											// données du téléphone
+				apply(vFolder, vLocal, vFile, planSync(inStore.fingerprint(), inStore.base(), vLocal, vFile, inChoices))
+			}
+			catch (inError: Exception)
+			{
+				SyncStatus.Failed("Échec de la synchronisation : ${inError.message ?: "erreur inconnue"}.")
 			}																		// état obtenu
 			fStatus.value = vResult
 			vResult
@@ -226,13 +286,18 @@ class Syncer(
 	private suspend fun idle(): SyncStatus = SyncStatus.Idle(inStore.lastSyncAt.first())
 
 	/*
-		Mémorise l'empreinte commune.
+		Mémorise l'empreinte et le contenu communs (version commune des
+		prochaines fusions).
 		inFingerprint : empreinte
+		inContent     : contenu commun
 	*/
-	private suspend fun record(inFingerprint: String): SyncStatus
+	private suspend fun record(
+		inFingerprint : String,
+		inContent     : BackupFile
+	): SyncStatus
 	{
 		val vNow = inClock.millis()													// instant
-		inStore.recordSync(inFingerprint, vNow)
+		inStore.recordSync(inFingerprint, vNow, inContent)
 		return SyncStatus.Idle(vNow)
 	}
 
@@ -249,7 +314,7 @@ class Syncer(
 	): SyncStatus
 	{
 		inFolder.write(ByteArrayOutputStream().also { writeBackupXlsx(inLocal, it) }.toByteArray())
-		return record(inFingerprint)
+		return record(inFingerprint, inLocal)
 	}
 
 	/*
@@ -273,7 +338,7 @@ class Syncer(
 			return SyncStatus.Failed("Données modifiées pendant la synchronisation : rien n’a été remplacé, relancez la synchronisation.")
 		}
 		inHooks.afterImport()
-		return record(inFingerprint)
+		return record(inFingerprint, inFile)
 	}
 }
 
