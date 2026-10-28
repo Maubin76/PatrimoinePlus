@@ -191,7 +191,13 @@ Nouvelle entrée du rail d'icônes ; tout l'appairage s'y configure.
   retiré en phase 6).
 - Tests JVM nombreux : c'est le cœur de la sûreté des données.
 
-### Phase 2 — Identité, appairage, protocole (`core`)
+### Phase 2 — Identité, appairage, protocole (`core`) — protocole fait
+
+- **Le PC décide** : le téléphone envoie ses données ; le PC compare avec la
+  dernière version commune avec ce téléphone (`PeerSyncServer`), adopte,
+  fusionne ou présente le choix (sur le PC) ; il ne retient une version
+  commune qu'après l'accusé de réception du téléphone. Le téléphone ne garde
+  qu'un état simple par PC.
 
 - **Clé secrète par paire** PC ↔ téléphone, créée par le PC à l'appairage et
   transmise par le QR code (valable 5 minutes) ; chaque message est chiffré
