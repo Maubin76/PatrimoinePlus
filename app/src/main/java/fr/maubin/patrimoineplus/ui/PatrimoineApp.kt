@@ -67,7 +67,10 @@ import fr.maubin.patrimoineplus.ui.settings.ThemesActions
 import fr.maubin.patrimoineplus.ui.update.UpdateViewModel
 import fr.maubin.patrimoineplus.ui.update.UpdatePrompt
 import fr.maubin.patrimoineplus.ui.settings.UpdatesActions
-import fr.maubin.patrimoineplus.ui.components.LocalProfiles
+import fr.maubin.patrimoineplus.ui.components.LocalProfiles
+import fr.maubin.patrimoineplus.ui.settings.SyncVersionDialog
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 
 private const val kSlideMillis = 260									// entrée et sortie de la vue d'un compte
 
@@ -114,6 +117,8 @@ fun PatrimoineApp(
 			}
 		}
 		SyncConflictDialog()
+		val vContext = LocalContext.current													// messages de la recherche de mise à jour
+		SyncVersionDialog(inOnCheck = { inUpdates.checkNow { inMessage -> Toast.makeText(vContext, inMessage, Toast.LENGTH_LONG).show() } })
 		UpdatePrompt(inUpdates)
 	}
 }

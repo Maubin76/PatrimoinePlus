@@ -28,6 +28,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import fr.maubin.patrimoineplus.data.backup.backupSheets
+import fr.maubin.patrimoineplus.data.backup.xlsx.Cell
+import fr.maubin.patrimoineplus.data.backup.xlsx.Sheet
+import fr.maubin.patrimoineplus.data.backup.xlsx.Column
+import fr.maubin.patrimoineplus.data.backup.xlsx.writeXlsx
+import fr.maubin.patrimoineplus.data.backup.encodeBackup
+import fr.maubin.patrimoineplus.data.backup.decodeBackup
+import fr.maubin.patrimoineplus.data.backup.newerFormatText
 
 /*
 	Budget et objectifs dans le fichier d'échange (format 8) : aller-retour
@@ -132,5 +140,26 @@ class PlansTest
 		val vOld = demoBackupFile().copy(version = 7).toDataSet()								// fichier d'avant le format 8
 		assertEquals(Budget(), vOld.budget)
 		assertTrue(vOld.goals.isEmpty())
+	}
+	/*
+		Fichier écrit par une version plus récente (autre appareil mis à
+		jour) : refusé avant toute lecture, avec son format, que ce soit un
+		classeur aux onglets inconnus ou un export JSON aux champs inconnus ;
+		l'explication invite à mettre à jour cette appli.
+	*/
+	@Test
+	fun newerFormatIsRecognized()
+	{
+		val vSheets = backupSheets(file()).map { inSheet ->
+			if (inSheet.name != "Fichier") inSheet
+			else inSheet.copy(rows = inSheet.rows.map { if ((it.first() as? Cell.Text)?.text == "Version") listOf(it.first(), Cell.Number(java.math.BigDecimal(9))) else it })
+		} + Sheet("Nouveauté", listOf(Column("Colonne inconnue", 10.0)), emptyList())		// classeur du format 9
+		val vBytes  = ByteArrayOutputStream().also { writeXlsx(vSheets, it) }.toByteArray()	// classeur écrit
+		val vRead   = readBackupXlsx(ByteArrayInputStream(vBytes)) as BackupRead.Invalid	// lecture refusée
+		assertEquals(9, vRead.newerFormat)
+		val vJson   = encodeBackup(file().copy(version = 9)).replaceFirst("{", "{\"nouveau\": 1,")	// export JSON du format 9
+		assertEquals(9, (decodeBackup(vJson) as BackupRead.Invalid).newerFormat)
+		assertEquals(null, (readBackupXlsx(ByteArrayInputStream(byteArrayOf(1, 2, 3))) as BackupRead.Invalid).newerFormat)	// autre problème : pas de format
+		assertTrue(newerFormatText(9, "le PC").contains("différence de version"))
 	}
 }

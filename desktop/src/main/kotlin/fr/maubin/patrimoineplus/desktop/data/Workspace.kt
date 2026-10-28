@@ -63,9 +63,13 @@ sealed interface LoadStatus
 	/*
 		Fichier illisible ou incohérent : rien n'est écrit tant qu'il l'est ; les
 		dernières données valides restent affichées.
-		message : raison
+		message     : raison
+		newerFormat : format du fichier s'il vient d'une version plus récente ; null sinon
 	*/
-	data class Invalid(val message: String) : LoadStatus
+	data class Invalid(
+		val message     : String,
+		val newerFormat : Int? = null
+	) : LoadStatus
 
 	/*
 		Les données du PC et celles du fichier ont changé toutes les deux :
@@ -436,7 +440,7 @@ class Workspace(private val inClock: Clock)
 			is BackupRead.Invalid ->
 			{
 				fStamp = inStamp
-				fState.value = fState.value.copy(status = LoadStatus.Invalid(vRead.message))
+				fState.value = fState.value.copy(status = LoadStatus.Invalid(vRead.message, vRead.newerFormat))
 				null
 			}
 		}

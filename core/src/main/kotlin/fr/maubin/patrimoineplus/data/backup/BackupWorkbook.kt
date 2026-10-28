@@ -158,6 +158,11 @@ fun readBackupXlsx(inStream: InputStream): BackupRead
 	{
 		return BackupRead.Invalid("Fichier illisible : ce n’est pas un classeur Excel valide.")
 	}
+	val vVersion = vSheets.firstOrNull { it.name == kSheetFile }?.rows?.firstOrNull { it[kKey] == kKeyVersion }?.get(kValue)?.let { runCatching { decimal(it).toInt() }.getOrNull() }	// format annoncé par le fichier
+	if (vVersion != null && vVersion > kBackupVersion)
+	{
+		return BackupRead.Invalid("Export produit par une version plus récente de l’appli (format $vVersion).", vVersion)	// avant toute lecture : ses onglets peuvent avoir changé
+	}
 	val vFile = try
 	{
 		backupFromSheets(vSheets)

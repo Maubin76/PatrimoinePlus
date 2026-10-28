@@ -155,7 +155,8 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import fr.maubin.patrimoineplus.ui.components.LocalProfiles
 import fr.maubin.patrimoineplus.desktop.ui.panels.LocalPanelGuard
-import fr.maubin.patrimoineplus.desktop.ui.panels.PanelGuard
+import fr.maubin.patrimoineplus.desktop.ui.panels.PanelGuard
+import fr.maubin.patrimoineplus.data.backup.newerFormatText
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -230,6 +231,9 @@ fun App(
 					if (vSettings.assistant) FloatingAssistant(inController, vSpace, vSettings.hidden, vSettings.calm)
 				}
 				vPending?.let { inAction -> UnsavedDialog(inAction, inController, inOnPickSaveFile) }
+				val vNewer   = (vSpace.status as? LoadStatus.Invalid)?.newerFormat				// format plus récent que celui de l'appli ; null sinon
+				var vSeen    by remember { mutableStateOf<Int?>(null) }						// format dont la fenêtre a été fermée
+				if (vNewer != null && vNewer != vSeen) NewerFormatDialog(vNewer, { vSeen = vNewer; inController.checkUpdatesNow() }, { vSeen = vNewer })
 				val vDiscard by inController.discard.collectAsState()						// abandon de la saisie à confirmer
 				if (vDiscard != null) DiscardDialog(inController::confirmDiscard, inController::cancelDiscard)
 				val vUpdate by inController.update.collectAsState()						// fenêtre de mise à jour
@@ -396,6 +400,31 @@ private fun pageShift(
 	inFrom == null && inTo != null -> 1											// ouverture d'un compte
 	inFrom != null && inTo == null -> -1										// retour au tableau de bord
 	else                           -> 0
+}
+
+/*
+	Fichier d'échange écrit par une version plus récente (le téléphone a été
+	mis à jour, pas le PC) : explication et invitation à mettre à jour. Rien
+	n'est écrit dans le fichier en attendant ; la fenêtre revient au
+	lancement suivant tant que le problème demeure.
+	inFormat   : format du fichier
+	inOnUpdate : recherche de la mise à jour
+	inOnLater  : fermeture
+*/
+@Composable
+internal fun NewerFormatDialog(
+	inFormat   : Int,
+	inOnUpdate : () -> Unit,
+	inOnLater  : () -> Unit
+)
+{
+	AlertDialog(
+		onDismissRequest = inOnLater,
+		title            = { Text("Mise à jour nécessaire") },
+		text             = { Text(newerFormatText(inFormat, "le téléphone")) },
+		confirmButton    = { TextButton(onClick = inOnUpdate) { Text("Rechercher la mise à jour") } },
+		dismissButton    = { TextButton(onClick = inOnLater) { Text("Plus tard") } }
+	)
 }
 
 /*

@@ -27,7 +27,10 @@ import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileName
 import fr.maubin.patrimoineplus.domain.rules.ownersError
 import fr.maubin.patrimoineplus.domain.calc.themeError
 import fr.maubin.patrimoineplus.data.budgetOf
-import fr.maubin.patrimoineplus.data.goalsByScope
+import fr.maubin.patrimoineplus.data.goalsByScope
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.int
 
 const val kBackupFormat  = "patrimoineplus"										// signature du fichier
 const val kBackupVersion = 8													// version du format (2 : symbole de cotation des actifs ; 3 : comptes de biens ; 4 : opérations récurrentes et crédits ; 5 : mensualités en une opération, bien financé ; 6 : profils et propriétaires des comptes ; 7 : thèmes de couleurs ; 8 : budget et objectifs)
@@ -362,10 +365,31 @@ sealed interface BackupRead
 
 	/*
 		Fichier refusé ; rien ne sera importé.
-		message : raison, pour l'utilisateur
+		message     : raison, pour l'utilisateur
+		newerFormat : format du fichier s'il est plus récent que celui que
+		              l'appli sait lire (l'autre appareil a été mis à jour) ; null sinon
 	*/
-	data class Invalid(val message: String) : BackupRead
+	data class Invalid(
+		val message     : String,
+		val newerFormat : Int? = null
+	) : BackupRead
 }
+
+/*
+	Explication d'un fichier d'échange écrit par une version plus récente :
+	l'autre appareil a sûrement été mis à jour, cette appli doit l'être aussi.
+	inFormat : format du fichier
+	inOther  : l'autre appareil, en clair (« le PC », « le téléphone »)
+*/
+fun newerFormatText(
+	inFormat : Int,
+	inOther  : String
+): String =
+	"Le fichier d’échange n’a pas pu être lu : il a été écrit par une version plus récente de PatrimoinePlus " +
+	"(format $inFormat, alors que cette appli lit jusqu’au format $kBackupVersion). Il s’agit sûrement d’une différence " +
+	"de version entre vos appareils : $inOther a été mis à jour, pas celle-ci.\n\n" +
+	"Mettez à jour cette appli pour reprendre la synchronisation, et vérifiez que vos deux appareils ont la même version. " +
+	"Vos données ne sont pas modifiées en attendant."
 
 /*
 	Écrit un fichier d'export en JSON lisible.
@@ -379,6 +403,11 @@ fun encodeBackup(inFile: BackupFile): String = kJson.encodeToString(BackupFile.s
 */
 fun decodeBackup(inText: String): BackupRead
 {
+	val vVersion = runCatching { kJson.parseToJsonElement(inText).jsonObject["version"]?.jsonPrimitive?.int }.getOrNull()	// format annoncé par le fichier
+	if (vVersion != null && vVersion > kBackupVersion)
+	{
+		return BackupRead.Invalid("Export produit par une version plus récente de l’appli (format $vVersion).", vVersion)	// avant toute lecture : ses champs peuvent avoir changé
+	}
 	val vFile = try
 	{
 		kJson.decodeFromString(BackupFile.serializer(), inText)
@@ -406,7 +435,7 @@ fun validateBackup(inFile: BackupFile): BackupRead
 	}
 	if (vFile.version > kBackupVersion)
 	{
-		return BackupRead.Invalid("Export produit par une version plus récente de l’appli (format ${vFile.version}).")
+		return BackupRead.Invalid("Export produit par une version plus récente de l’appli (format ${vFile.version}).", vFile.version)
 	}
 	val vDomain = try
 	{

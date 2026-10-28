@@ -625,6 +625,17 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   vue (profil ou Famille), rangés dans le fichier d'échange (format 8,
   onglets Objectifs et Objectifs du mois, colonne « ID vue » : identifiant du
   profil, « * » pour la famille).
+- **Appareils à des versions différentes** : un fichier d'échange écrit par
+  une version plus récente (format plus grand que `kBackupVersion`, lu dans
+  l'onglet Fichier avant tout le reste, ou dans le champ `version` d'un export
+  JSON) est refusé avec son format (`BackupRead.Invalid.newerFormat`) : le PC
+  et le téléphone affichent « Mise à jour nécessaire » (`newerFormatText` :
+  différence de version entre les appareils, mettre à jour cette appli,
+  données intactes en attendant) avec « Rechercher la mise à jour ». Le
+  fichier n'est jamais réécrit tant qu'il est refusé. Fermée, la fenêtre
+  revient au lancement suivant tant que le problème demeure. Seules les
+  versions qui contiennent cette fenêtre la montrent : une appli plus
+  ancienne garde son simple message d'échec.
 - **Reprise des fichiers d'avant le format 8** : au lancement et à
   l'ouverture d'une source, si le fichier d'échange n'a ni budget ni
   objectifs, le PC reprend `budget-famille.json` (sinon le budget du premier

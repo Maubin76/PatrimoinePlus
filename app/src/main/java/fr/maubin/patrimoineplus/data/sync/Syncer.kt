@@ -63,9 +63,14 @@ sealed interface SyncStatus
 
 	/*
 		Échec ; rien n'a été modifié.
-		message : raison
+		message     : raison
+		newerFormat : format du fichier s'il vient d'une version plus récente (le PC
+		              a été mis à jour, pas le téléphone) ; null sinon
 	*/
-	data class Failed(val message: String) : SyncStatus
+	data class Failed(
+		val message     : String,
+		val newerFormat : Int? = null
+	) : SyncStatus
 }
 
 /*
@@ -157,7 +162,7 @@ class Syncer(
 					when (val vRead = readBackupXlsx(ByteArrayInputStream(inBytes)))
 					{
 						is BackupRead.Valid   -> vRead.file
-						is BackupRead.Invalid -> return@withLock SyncStatus.Failed("Fichier d’échange illisible ou incomplet (${vRead.message}) : rien n’a été modifié.").also { fStatus.value = it }
+						is BackupRead.Invalid -> return@withLock SyncStatus.Failed("Fichier d’échange illisible ou incomplet (${vRead.message}) : rien n’a été modifié.", vRead.newerFormat).also { fStatus.value = it }
 					}
 				}																	// contenu du fichier
 				val vLocal  = inBackup.snapshot()									// données du téléphone

@@ -37,6 +37,10 @@ import java.io.ByteArrayOutputStream
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
+import fr.maubin.patrimoineplus.data.backup.xlsx.Sheet
+import fr.maubin.patrimoineplus.data.backup.xlsx.Column
+import fr.maubin.patrimoineplus.data.backup.xlsx.Cell
+import fr.maubin.patrimoineplus.data.backup.xlsx.writeXlsx
 
 /*
 	Dossier synchronisé en mémoire.
@@ -285,6 +289,27 @@ class SyncerTest
 		val vBefore = syncFingerprint(fBackup.snapshot())						// téléphone avant
 		fFolder.bytes = fFolder.bytes!!.copyOf(200)
 		assertTrue(fSyncer.sync() is SyncStatus.Failed)
+		assertEquals(vBefore, syncFingerprint(fBackup.snapshot()))
+		assertEquals(1, fFolder.writes)
+		assertNull((fSyncer.sync() as SyncStatus.Failed).newerFormat)				// fichier abîmé : pas une question de version
+	}
+
+	/*
+		Fichier écrit par une version plus récente (PC mis à jour, pas le
+		téléphone) : refusé avec son format (fenêtre « Mise à jour
+		nécessaire »), rien n'est modifié ni réécrit.
+	*/
+	@Test
+	fun newerFileAsksForUpdate() = runTest {
+		fSyncer.sync()
+		val vBefore = syncFingerprint(fBackup.snapshot())						// téléphone avant
+		val vSign   = Sheet("Fichier", listOf(Column("Clé", 16.0), Column("Valeur", 40.0)), listOf(
+			listOf(Cell.Text("Format"), Cell.Text("patrimoineplus")),
+			listOf(Cell.Text("Version"), Cell.Number(java.math.BigDecimal(9)))
+		))																		// page de signature d'un format futur
+		fFolder.bytes = ByteArrayOutputStream().also { writeXlsx(listOf(vSign), it) }.toByteArray()
+		val vStatus = fSyncer.sync() as SyncStatus.Failed						// refus
+		assertEquals(9, vStatus.newerFormat)
 		assertEquals(vBefore, syncFingerprint(fBackup.snapshot()))
 		assertEquals(1, fFolder.writes)
 	}

@@ -15,6 +15,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import fr.maubin.patrimoineplus.data.sync.SyncStatus
 import kotlinx.coroutines.launch
+import fr.maubin.patrimoineplus.data.backup.newerFormatText
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 // Dossier proposé à l'ouverture du sélecteur : Documents/PatrimoinePlus (celui des sauvegardes).
 private val kSuggestedFolder: Uri = DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Documents/PatrimoinePlus")
@@ -85,5 +89,33 @@ fun SyncConflictDialog(inViewModel: SyncViewModel = hiltViewModel())
 		},
 		confirmButton    = { TextButton(onClick = { inViewModel.resolve(inKeepLocal = true) }) { Text("Ce téléphone") } },
 		dismissButton    = { TextButton(onClick = { inViewModel.resolve(inKeepLocal = false) }) { Text("Le fichier") } }
+	)
+}
+
+/*
+	Fenêtre « Mise à jour nécessaire », par-dessus l'appli, quand le fichier
+	synchronisé vient d'une version plus récente (le PC a été mis à jour, pas
+	le téléphone) : explication et recherche de la mise à jour. Fermée, elle
+	ne revient pas pour ce format avant le prochain lancement ; rien n'est
+	modifié en attendant.
+	inOnCheck   : recherche de la mise à jour
+	inViewModel : ViewModel de la synchronisation
+*/
+@Composable
+fun SyncVersionDialog(
+	inOnCheck   : () -> Unit,
+	inViewModel : SyncViewModel = hiltViewModel()
+)
+{
+	val vStatus by inViewModel.status.collectAsStateWithLifecycle()			// état
+	val vFormat = (vStatus as? SyncStatus.Failed)?.newerFormat ?: return		// format plus récent ; rien sinon
+	var vSeen   by rememberSaveable { mutableStateOf<Int?>(null) }			// format dont la fenêtre a été fermée
+	if (vSeen == vFormat) return
+	AlertDialog(
+		onDismissRequest = { vSeen = vFormat },
+		title            = { Text("Mise à jour nécessaire") },
+		text             = { Text(newerFormatText(vFormat, "le PC")) },
+		confirmButton    = { TextButton(onClick = { vSeen = vFormat; inOnCheck() }) { Text("Rechercher la mise à jour") } },
+		dismissButton    = { TextButton(onClick = { vSeen = vFormat }) { Text("Plus tard") } }
 	)
 }
