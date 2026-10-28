@@ -8,6 +8,7 @@ plugins {
 	alias(libs.plugins.kotlin.jvm)
 	alias(libs.plugins.kotlin.compose)
 	alias(libs.plugins.compose.multiplatform)
+	alias(libs.plugins.kotlin.serialization)										// appareils appairés (synchronisation Wi-Fi)
 }
 
 java {
@@ -28,6 +29,7 @@ dependencies {
 	implementation(libs.compose.desktop.material3)
 	implementation(libs.kotlinx.coroutines.swing)
 	implementation(libs.jna.platform)												// barre de titre aux couleurs du thème (Windows 11, DWM)
+	implementation(libs.zxing.core)													// QR code de l'appairage du téléphone
 
 	testImplementation(testFixtures(project(":core")))
 	testImplementation(libs.junit)
