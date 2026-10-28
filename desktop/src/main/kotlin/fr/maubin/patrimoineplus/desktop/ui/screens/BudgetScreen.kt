@@ -77,7 +77,10 @@ import fr.maubin.patrimoineplus.ui.budget.investmentMember
 import fr.maubin.patrimoineplus.ui.budget.investmentMembers
 import fr.maubin.patrimoineplus.domain.model.Profile
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenuItem
+import fr.maubin.patrimoineplus.desktop.ui.LocalSavePicker
+import fr.maubin.patrimoineplus.desktop.ui.components.currentSankeyLook
+import fr.maubin.patrimoineplus.desktop.ui.components.exportSankeyPng
 
 private const val kNameWeight   = 2.4f											// largeur relative de la colonne du nom
 private const val kAmountWeight = 1.2f											// largeur relative de la colonne du montant
@@ -106,6 +109,8 @@ fun BudgetScreen(
 	val vMembers = remember(vBudget, inFamily) { investmentMembers(vBudget, inFamily.accounts, inFamily.profiles) }	// membre de chaque investissement (famille à plusieurs profils)
 	val vDiagram = remember(vView, vMembers) { cashFlow(vView, false, vMembers) }		// diagramme du budget
 	val vUpdate  = { inLines: List<BudgetLine> -> inController.setBudget(Budget(inLines)) }	// enregistre les lignes
+	val vPick    = LocalSavePicker.current													// choix du fichier de l'image
+	val vLook    = currentSankeyLook()														// apparence reprise dans l'image
 	Column(
 		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -116,7 +121,20 @@ fun BudgetScreen(
 		}
 		Box(Modifier.tourAnchor("budget.figures")) { Figures(vBudget) }
 		Box(Modifier.tourAnchor("budget.goals")) { MonthGoalsBar(vMonth, { vMonth = it }, inSpace, inController, vBudget) }
-		Tile(inTitle = "Cashflow", inModifier = Modifier.tourAnchor("budget.cashflow")) {
+		Tile(
+			inTitle    = "Cashflow",
+			inModifier = Modifier.tourAnchor("budget.cashflow"),
+			inAction   = {
+				TextButton(
+					onClick = {
+						vPick("cashflow-budget-${YearMonth.from(inSpace.today)}.png")?.let { inPath ->
+							inController.showNotice(exportSankeyPng(vDiagram, "Budget", "Budget prévisionnel : cashflow mensuel", vLook, inPath)?.let { "Export impossible : $it" } ?: "Image enregistrée : $inPath")
+						}
+					},
+					enabled = vDiagram.total > 0L
+				) { Text("Exporter en image…") }
+			}
+		) {
 			if (vDiagram.total <= 0L)
 			{
 				AssistantHint("Ajoutez des entrées et des dépenses ci-dessous pour voir le schéma.")

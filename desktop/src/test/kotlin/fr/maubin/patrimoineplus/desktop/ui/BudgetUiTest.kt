@@ -161,4 +161,34 @@ class BudgetUiTest
 	{
 		assertTrue(fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].any { it.contains(inText) })
 	}
+	/*
+		Export du cashflow en image : nom proposé, PNG écrit (titre et schéma,
+		largeur fixe en double résolution), message de réussite. Image déposée
+		dans build/captures-desktop pour relecture.
+	*/
+	@Test
+	fun exportCashflowImage()
+	{
+		val vApp    = demo()																// démonstration à deux profils
+		vApp.setBudget(Budget(listOf(
+			BudgetLine("1", BudgetSection.INCOME, "Salaires", 520_000),
+			BudgetLine("2", BudgetSection.EXPENSE, "Courses", 60_000, theme = ExpenseTheme.DAILY),
+			BudgetLine("3", BudgetSection.EXPENSE, "Loyer", 110_000, theme = ExpenseTheme.HOUSING),
+			BudgetLine("4", BudgetSection.INVESTMENT, "Livret A", 30_000),
+			BudgetLine("5", BudgetSection.INVESTMENT, "PEA d'Alex", 20_000, profileId = kDemoPartnerId)
+		)))
+		vApp.show(Screen.BUDGET)
+		val vTarget = File("build/captures-desktop/33-cashflow-export.png").absoluteFile	// image exportée
+		vTarget.delete()
+		var vProposed = ""																	// nom proposé
+		fCompose.setContent { App(vApp, inOnPickSave = { inName -> vProposed = inName; vTarget.toPath() }) { null } }
+		fCompose.waitForIdle()
+		fCompose.onNodeWithText("Exporter en image…").performScrollTo().performClick()
+		fCompose.waitForIdle()
+		assertEquals("cashflow-budget-2026-10.png", vProposed)
+		assertEquals("Image enregistrée : ${vTarget.toPath()}", vApp.notice.value)
+		val vImage = org.jetbrains.skia.Image.makeFromEncoded(vTarget.readBytes())		// image relue
+		assertEquals(2400, vImage.width)
+		assertTrue(vImage.height in 600..2400)
+	}
 }

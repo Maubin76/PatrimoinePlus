@@ -599,7 +599,10 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   choisi, sinon titulaire principal du compte suivi, sinon premier profil ;
   « + » par membre, menu « Changer de membre » sur chaque ligne ; colonne
   Membre du classeur) et le cashflow fait un thème par membre
-  (« Investissements · Alex ») ;
+  (« Investissements · Alex ») ; « Exporter en image… » (tuile Cashflow)
+  enregistre le schéma en PNG (titre et schéma, 1 200 dp en double
+  résolution, fond opaque aux couleurs de l'appli, mode discret respecté ;
+  `ui/components/SankeyExport.kt`, rendu hors écran) ;
   le téléphone le garde sans l'afficher (base v8, table `plan`, texte
   `PlansDto`) et le rend tel quel au fichier.
 - **Objectifs** (rail, PC), en deux sections. **Objectifs
