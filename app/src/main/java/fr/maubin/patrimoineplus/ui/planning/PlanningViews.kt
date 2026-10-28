@@ -139,7 +139,7 @@ fun RecurrenceSheet(
 	val vKinds   = listOf("Dépense", "Revenu", "Virement")									// natures
 	val vKind    = when { vForm.transfer -> 2; vForm.expense -> 0; else -> 1 }				// nature choisie
 	val vUsable  = inAccounts.filter { !it.type.isProperty && (!it.archived || it.id == vForm.accountId || it.id == vForm.toAccountId) }	// comptes proposés
-	FormSheet(inTitle = if (vForm.id == null) "Nouvelle récurrence" else "Modifier la récurrence", inOnDismiss = inOnDismiss) {
+	FormSheet(inTitle = if (vForm.id == null) "Nouvelle récurrence" else "Modifier la récurrence", inOnDismiss = inOnDismiss, inDirty = vForm != inStart) {
 		SegmentedChoice(vKinds.indices.toList(), vKind, { vKinds[it] }, { inKind -> vForm = vForm.copy(transfer = inKind == 2, expense = inKind == 0, categoryId = null) })
 		TextInput(vForm.label, { vForm = vForm.copy(label = it) }, "Libellé", vErrors.label)
 		AmountInput(vForm.amount, { vForm = vForm.copy(amount = it.replace("-", "")) }, "Montant", vErrors.amount)

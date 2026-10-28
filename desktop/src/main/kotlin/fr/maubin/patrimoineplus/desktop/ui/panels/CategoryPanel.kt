@@ -80,6 +80,7 @@ fun CategoryPanel(
 	SidePanel(
 		inTitle   = if (vCategory == null) "Nouvelle catégorie" else "Modifier la catégorie",
 		inOnClose = inController::closePanel,
+		inDirty   = vName != vCategory?.name.orEmpty() || vKind != (vCategory?.kind ?: inKind) || vIcon != (vCategory?.icon ?: "dots"),
 		inOnEnter = ::save,
 		inActions = {
 			if (vCategory != null) OutlinedButton(onClick = { vDelete = true }) { Text("Supprimer") }

@@ -61,7 +61,7 @@ fun PurchaseSheet(
 	var vGeneral by remember { mutableStateOf<String?>(null) }							// refus de l'enregistrement
 	var vDelete  by remember { mutableStateOf(false) }									// confirmation de suppression
 	val vNoun    = inAccounts.firstOrNull { it.id == vForm.accountId }?.let { propertyNoun(it.type) } ?: "bien"	// « bien » ou « objet »
-	FormSheet(inTitle = if (vForm.id == null) "Nouvel $vNoun" else "Modifier l’$vNoun", inOnDismiss = inOnDismiss) {
+	FormSheet(inTitle = if (vForm.id == null) "Nouvel $vNoun" else "Modifier l’$vNoun", inOnDismiss = inOnDismiss, inDirty = vForm != inStart) {
 		TextInput(vForm.name, { vForm = vForm.copy(name = it) }, "Nom", vErrors.name, if (vNoun == "bien") "Par exemple « Appartement Lyon 3e »" else "Par exemple « Montre de 1968 »")
 		AmountInput(vForm.price, { vForm = vForm.copy(price = it) }, "Prix d’achat", vErrors.price, if (inSold) "Vendu : annulez d’abord la vente pour changer le prix." else "Compté à ce prix dans le patrimoine.")
 		Picker(
@@ -131,7 +131,7 @@ fun SaleSheet(
 	var vGeneral by remember { mutableStateOf<String?>(null) }							// refus de l'enregistrement
 	val vHidden  = LocalAmountsHidden.current											// mode discret
 	val vGain    = saleGain(vForm, inItem)												// plus- ou moins-value
-	FormSheet(inTitle = "Vente de « ${inItem.name} »", inOnDismiss = inOnDismiss) {
+	FormSheet(inTitle = "Vente de « ${inItem.name} »", inOnDismiss = inOnDismiss, inDirty = vForm != inStart) {
 		Text(
 			text  = "Acheté ${if (vHidden) kMaskedAmount else formatEuros(inItem.cost)}.",
 			style = MaterialTheme.typography.bodyMedium,

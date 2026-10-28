@@ -47,13 +47,21 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.foundation.layout.PaddingValues
 import fr.maubin.patrimoineplus.ui.components.PillChoice
+import androidx.compose.material3.SheetValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import kotlinx.coroutines.launch
 
 private val kDateFormat = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)	// date affichée dans les champs
 
 /*
 	Feuille du bas modale : titre, champs défilants, au-dessus du clavier.
+	Une saisie modifiée n'est fermée (glissement, toucher hors de la
+	feuille, retour) qu'après confirmation ; « Continuer la saisie » la
+	garde intacte.
 	inTitle     : titre de la feuille
 	inOnDismiss : fermeture (glissement vers le bas, toucher hors de la feuille)
+	inDirty     : saisie modifiée, pas encore enregistrée
 	inContent   : champs et actions
 */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,12 +69,33 @@ private val kDateFormat = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRAN
 fun FormSheet(
 	inTitle     : String,
 	inOnDismiss : () -> Unit,
+	inDirty     : Boolean = false,
 	inContent   : @Composable ColumnScope.() -> Unit
 )
 {
+	val vDirty   by rememberUpdatedState(inDirty)								// saisie modifiée (dernière valeur)
+	var vAsk     by remember { mutableStateOf(false) }							// abandon à confirmer
+	var vLeaving by remember { mutableStateOf(false) }							// abandon confirmé : la feuille se ferme
+	val vScope   = rememberCoroutineScope()										// animations de la feuille
+	val vState   = rememberModalBottomSheetState(
+		skipPartiallyExpanded = true,
+		confirmValueChange    = { inValue ->
+			if (inValue == SheetValue.Hidden && vDirty && !vLeaving) { vAsk = true; false } else true
+		}
+	)																			// glissement et toucher dehors : question si la saisie est modifiée
+	if (vAsk)
+	{
+		DiscardDialog(
+			inOnDiscard  = { vAsk = false; vLeaving = true; vScope.launch { vState.hide() }.invokeOnCompletion { inOnDismiss() } },
+			inOnContinue = { vAsk = false; if (!vState.isVisible) vScope.launch { vState.show() } }
+		)
+	}
 	ModalBottomSheet(
-		onDismissRequest = inOnDismiss,
-		sheetState       = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+		onDismissRequest = {
+			if (vDirty && !vLeaving) { vAsk = true; vScope.launch { vState.show() } }	// retour : la feuille revient, question posée
+			else inOnDismiss()
+		},
+		sheetState       = vState,
 		containerColor   = MaterialTheme.colorScheme.surface
 	) {
 		Column(
@@ -82,6 +111,26 @@ fun FormSheet(
 			inContent()
 		}
 	}
+}
+
+/*
+	Confirmation avant de perdre une saisie modifiée.
+	inOnDiscard  : abandonne la saisie et ferme
+	inOnContinue : reprend la saisie
+*/
+@Composable
+fun DiscardDialog(
+	inOnDiscard  : () -> Unit,
+	inOnContinue : () -> Unit
+)
+{
+	AlertDialog(
+		onDismissRequest = inOnContinue,
+		title            = { Text("Abandonner la saisie ?") },
+		text             = { Text("Les modifications ne sont pas encore enregistrées. Si vous continuez, elles seront perdues.") },
+		confirmButton    = { TextButton(onClick = inOnDiscard) { Text("Abandonner", color = MaterialTheme.colorScheme.error) } },
+		dismissButton    = { TextButton(onClick = inOnContinue) { Text("Continuer la saisie") } }
+	)
 }
 
 /*

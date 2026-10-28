@@ -54,7 +54,7 @@ fun ThemeSheet(
 	var vColors by remember(inTheme) { mutableStateOf(inTheme?.colors ?: kStarterColors) }		// codes saisis
 	var vError  by remember(inTheme) { mutableStateOf<String?>(null) }						// refus affiché
 	val vPalette = Palette.of(vColors)																// palette prévisualisée ; null si un code est illisible
-	FormSheet(if (inTheme == null) "Nouveau thème" else "Modifier le thème", inOnDismiss) {
+	FormSheet(if (inTheme == null) "Nouveau thème" else "Modifier le thème", inOnDismiss, inDirty = vName != inTheme?.name.orEmpty() || vColors != (inTheme?.colors ?: kStarterColors)) {
 		vError?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
 		TextInput(vName, { vName = it }, "Nom du thème")
 		kThemeRoles.forEachIndexed { inIndex, inRole ->

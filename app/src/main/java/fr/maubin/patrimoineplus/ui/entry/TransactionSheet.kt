@@ -101,7 +101,7 @@ fun TransactionSheet(
 	val vHasBourse = inData.accounts.any { it.type == AccountType.BROKERAGE }	// un compte Bourse existe
 	val vModes     = entryModes(inData, vForm).filter { it != EntryMode.TRADE || vHasBourse || vForm.mode == EntryMode.TRADE }	// modes proposés
 
-	FormSheet(inTitle = if (vForm.id == null) "Nouvelle opération" else "Modifier l’opération", inOnDismiss = inOnDismiss) {
+	FormSheet(inTitle = if (vForm.id == null) "Nouvelle opération" else "Modifier l’opération", inOnDismiss = inOnDismiss, inDirty = vForm != inInitial) {
 		SegmentedChoice(
 			inOptions  = vModes,
 			inSelected = vForm.mode,

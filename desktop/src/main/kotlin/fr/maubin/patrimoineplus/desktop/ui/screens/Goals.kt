@@ -102,7 +102,8 @@ import fr.maubin.patrimoineplus.ui.components.glassWell
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import fr.maubin.patrimoineplus.desktop.ui.AssistantHint
 import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
-import fr.maubin.patrimoineplus.ui.components.accountLabel
+import fr.maubin.patrimoineplus.ui.components.accountLabel
+import androidx.compose.runtime.LaunchedEffect
 
 private const val kBarMillis = 420														// remplissage de la barre d'avancement
 
@@ -151,7 +152,10 @@ fun GoalsScreen(
 	val vViews  = remember(vGoals, inSpace.data, inSpace.today) { evaluateGoals(vGoals, inSpace.data, inSpace.today) }	// objectifs évalués
 	var vDraft  by remember { mutableStateOf<Draft?>(null) }							// objectif en saisie ; null sans panneau
 	var vLast   by remember { mutableStateOf<Draft?>(null) }							// dernière saisie (fermeture animée)
-	val vOpen   = { inDraft: Draft -> vDraft = inDraft; vLast = inDraft }				// ouvre le panneau
+	var vStart  by remember { mutableStateOf<Draft?>(null) }							// saisie proposée à l'ouverture
+	val vOpen   = { inDraft: Draft -> inController.whenDiscarded { vDraft = inDraft; vLast = inDraft; vStart = inDraft } }	// ouvre le panneau (saisie en cours : abandon confirmé)
+	val vNav    by inController.navigation.collectAsState()							// écran affiché
+	LaunchedEffect(vNav) { if (vNav.screen != Screen.GOALS || vNav.accountId != null) vDraft = null }	// autre écran : saisie abandonnée (déjà confirmée)
 	val vUpdate = { inGoal: Goal -> inController.setGoals(vGoals.copy(goals = vGoals.goals.map { if (it.id == inGoal.id) inGoal else it })) }	// modifie un objectif
 	Row(Modifier.fillMaxSize()) {
 		Column(
@@ -186,6 +190,7 @@ fun GoalsScreen(
 			vLast?.let { inDraft ->
 				Editor(
 					inDraft  = inDraft,
+					inDirty  = vDraft != null && vDraft != vStart,
 					inSpace  = inSpace,
 					inChange = { vDraft = it; vLast = it },
 					inClose  = { vDraft = null },
@@ -468,6 +473,7 @@ private fun StatusPill(inStatus: GoalStatus)
 	suivi, montant atteint, échéance, note ; suppression d'un objectif
 	existant.
 	inDraft  : saisie en cours
+	inDirty  : saisie modifiée depuis l'ouverture
 	inSpace  : données (comptes)
 	inChange : saisie modifiée
 	inClose  : fermeture sans enregistrer
@@ -477,6 +483,7 @@ private fun StatusPill(inStatus: GoalStatus)
 @Composable
 private fun Editor(
 	inDraft  : Draft,
+	inDirty  : Boolean,
 	inSpace  : WorkspaceState,
 	inChange : (Draft) -> Unit,
 	inClose  : () -> Unit,
@@ -490,6 +497,7 @@ private fun Editor(
 	SidePanel(
 		inTitle   = if (inDraft.id == null) "Nouvel objectif" else "Modifier l’objectif",
 		inOnClose = inClose,
+		inDirty   = inDirty,
 		inOnEnter = { vSubmit() },
 		inActions = {
 			Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {

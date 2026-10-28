@@ -153,7 +153,9 @@ import fr.maubin.patrimoineplus.ui.components.LocalPointer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
-import fr.maubin.patrimoineplus.ui.components.LocalProfiles
+import fr.maubin.patrimoineplus.ui.components.LocalProfiles
+import fr.maubin.patrimoineplus.desktop.ui.panels.LocalPanelGuard
+import fr.maubin.patrimoineplus.desktop.ui.panels.PanelGuard
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -200,7 +202,7 @@ fun App(
 	val vLaunch   = rememberLaunch(inWindowShown)												// lancement : fond seul, puis arrivée des éléments
 	val vPointer  = remember { mutableStateOf<Offset?>(null) }									// pointeur dans la fenêtre (regard de l'assistant)
 	DeskTheme(inDarkTheme = vDark, inColorTheme = vSettings.colors, inGlass = vSettings.glass, inPalette = vPalette) {
-		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie), LocalTourAnchors provides remember { TourAnchors() }, LocalLaunch provides vLaunch, LocalPointer provides remember { { vPointer.value } }, LocalAssistant provides (if (vSettings.assistant) vSettings.calm else null), LocalAssistantRoom provides (if (vSettings.assistant) kAssistantRoom else 0.dp), LocalProfiles provides vSpace.data.profiles) {
+		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie), LocalTourAnchors provides remember { TourAnchors() }, LocalLaunch provides vLaunch, LocalPointer provides remember { { vPointer.value } }, LocalAssistant provides (if (vSettings.assistant) vSettings.calm else null), LocalAssistantRoom provides (if (vSettings.assistant) kAssistantRoom else 0.dp), LocalProfiles provides vSpace.data.profiles, LocalPanelGuard provides remember(inController) { PanelGuard(inController::setPanelDirty, inController::whenDiscarded) }) {
 			AppGround(vDark, vSettings.glass)												// fond pastel, ou formes floues derrière le verre
 			Surface(
 				modifier     = Modifier.fillMaxSize().pointerInput(Unit) {
@@ -228,6 +230,8 @@ fun App(
 					if (vSettings.assistant) FloatingAssistant(inController, vSpace, vSettings.hidden, vSettings.calm)
 				}
 				vPending?.let { inAction -> UnsavedDialog(inAction, inController, inOnPickSaveFile) }
+				val vDiscard by inController.discard.collectAsState()						// abandon de la saisie à confirmer
+				if (vDiscard != null) DiscardDialog(inController::confirmDiscard, inController::cancelDiscard)
 				val vUpdate by inController.update.collectAsState()						// fenêtre de mise à jour
 				vUpdate?.let { inState ->
 					UpdateDialog(inState, inController::startUpdate, inController::postponeUpdate, inController::ignoreUpdate, inController::cancelUpdate)
@@ -392,6 +396,27 @@ private fun pageShift(
 	inFrom == null && inTo != null -> 1											// ouverture d'un compte
 	inFrom != null && inTo == null -> -1										// retour au tableau de bord
 	else                           -> 0
+}
+
+/*
+	Confirmation avant de perdre la saisie d'un panneau (croix, Échap, autre
+	panneau, autre écran, fermeture de l'appli).
+	inOnDiscard  : abandonne la saisie et poursuit
+	inOnContinue : reprend la saisie
+*/
+@Composable
+internal fun DiscardDialog(
+	inOnDiscard  : () -> Unit,
+	inOnContinue : () -> Unit
+)
+{
+	AlertDialog(
+		onDismissRequest = inOnContinue,
+		title            = { Text("Abandonner la saisie ?") },
+		text             = { Text("Les modifications de ce panneau ne sont pas encore enregistrées. Si vous continuez, elles seront perdues.") },
+		confirmButton    = { TextButton(onClick = inOnDiscard) { Text("Abandonner", color = MaterialTheme.colorScheme.error) } },
+		dismissButton    = { TextButton(onClick = inOnContinue) { Text("Continuer la saisie") } }
+	)
 }
 
 /*

@@ -47,7 +47,7 @@ fun StatementPanel(
 		finish(inController, inController.edit { inController.editor.putStatement(it, inAccountId, vDay, vCents) }) { vError = it }
 	}
 
-	SidePanel("Nouveau relevé", inController::closePanel, ::save, { Button(onClick = ::save) { Text("Enregistrer") } }) {
+	SidePanel("Nouveau relevé", inController::closePanel, ::save, { Button(onClick = ::save) { Text("Enregistrer") } }, inDirty = vAmount.isNotBlank()) {
 		FormError(vError)
 		FormField(vAmount, { vAmount = it }, "Solde indiqué par la banque (€)", inNumeric = true)
 		DateField(inController.today(), { vDate = it }, "Date du relevé")
@@ -101,7 +101,7 @@ fun PricesPanel(
 		finish(inController, inController.edit { inController.editor.putPrices(it, vDay, vPrices) }) { vError = it }
 	}
 
-	SidePanel("Saisir des cours", inController::closePanel, ::save, { Button(onClick = ::save) { Text("Enregistrer") } }) {
+	SidePanel("Saisir des cours", inController::closePanel, ::save, { Button(onClick = ::save) { Text("Enregistrer") } }, inDirty = vInputs.toMap() != vStart) {
 		FormError(vError)
 		Text("Les cours automatiques sont récupérés par le téléphone ; saisissez ici un cours manquant ou corrigé.")
 		DateField(inController.today(), { vDate = it }, "Date des cours")
@@ -164,7 +164,7 @@ fun OpeningPositionPanel(
 		}) { vError = it }
 	}
 
-	SidePanel("Position initiale", inController::closePanel, ::save, { Button(onClick = ::save) { Text("Ajouter") } }) {
+	SidePanel("Position initiale", inController::closePanel, ::save, { Button(onClick = ::save) { Text("Ajouter") } }, inDirty = vAsset != null || listOf(vName, vIsin, vQty, vPru).any { it.isNotBlank() }) {
 		FormError(vError)
 		Picker("Actif", vSpace.data.assets.filterNot { it.archived }.map { it.id to it.name } + (kNewAssetChoice to "Nouvel actif…"), vAsset, { vAsset = it })
 		if (vAsset == kNewAssetChoice)
@@ -205,7 +205,7 @@ fun AssetPanel(
 		finish(inController, inController.edit { inController.editor.updateAsset(it, inAssetId, vName, vIsin, vTicker) }) { vError = it }
 	}
 
-	SidePanel("Actif", inController::closePanel, ::save, { Button(onClick = ::save) { Text("Enregistrer") } }) {
+	SidePanel("Actif", inController::closePanel, ::save, { Button(onClick = ::save) { Text("Enregistrer") } }, inDirty = vName != vAsset?.name.orEmpty() || vIsin != vAsset?.isin.orEmpty() || vTicker != vAsset?.ticker.orEmpty()) {
 		FormError(vError)
 		FormField(vName, { vName = it }, "Nom")
 		FormField(vIsin, { vIsin = it }, "ISIN", inSupport = "Sur vos relevés, ex. LU1681043599.")

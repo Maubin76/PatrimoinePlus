@@ -350,7 +350,7 @@ fun StatementSheet(
 	var vDate   by remember { mutableStateOf(inToday) }						// date du relevé
 	var vAmount by remember { mutableStateOf("") }							// solde saisi
 	var vError  by remember { mutableStateOf<String?>(null) }				// erreur affichée
-	FormSheet(inTitle = "Nouveau relevé", inOnDismiss = inOnDismiss) {
+	FormSheet(inTitle = "Nouveau relevé", inOnDismiss = inOnDismiss, inDirty = vAmount.isNotBlank()) {
 		AmountInput(vAmount, { vAmount = it }, "Solde indiqué par la banque", vError)
 		DateInput(vDate, { vDate = it }, "Date du relevé")
 		Button(
@@ -387,7 +387,7 @@ fun PricesSheet(
 	val vStart  = remember { inPositions.associate { it.assetId to if (it.isUnpriced) "" else editableScaled(it.unitPrice) } }	// cours de départ
 	var vValues by remember { mutableStateOf(vStart) }							// cours saisis
 	var vError  by remember { mutableStateOf<String?>(null) }				// erreur affichée
-	FormSheet(inTitle = "Mettre à jour les cours", inOnDismiss = inOnDismiss) {
+	FormSheet(inTitle = "Mettre à jour les cours", inOnDismiss = inOnDismiss, inDirty = vValues != vStart) {
 		DateInput(vDate, { vDate = it }, "Date des cours")
 		inPositions.forEach { inPosition ->
 			OutlinedTextField(
@@ -434,7 +434,7 @@ fun OpeningPositionSheet(
 	var vQuantity by remember { mutableStateOf("") }							// quantité saisie
 	var vPrice    by remember { mutableStateOf("") }							// PRU saisi
 	var vError    by remember { mutableStateOf<String?>(null) }				// erreur affichée
-	FormSheet(inTitle = "Position initiale", inOnDismiss = inOnDismiss) {
+	FormSheet(inTitle = "Position initiale", inOnDismiss = inOnDismiss, inDirty = listOf(vName, vQuantity, vPrice).any { it.isNotBlank() }) {
 		if (inAssets.isNotEmpty())
 		{
 			SegmentedChoice(listOf(false, true), vNew, { if (it) "Nouvel actif" else "Actif existant" }, { vNew = it })
@@ -526,7 +526,7 @@ fun AssetSheet(
 	var vInfo    by remember { mutableStateOf<String?>(null) }				// résultat de la recherche
 	var vBusy    by remember { mutableStateOf(false) }						// recherche en cours
 	val vIsinOk  = Regex("[A-Z]{2}[A-Z0-9]{9}[0-9]").matches(vIsin.trim().uppercase())	// ISIN bien formé
-	FormSheet(inTitle = "Actif", inOnDismiss = inOnDismiss) {
+	FormSheet(inTitle = "Actif", inOnDismiss = inOnDismiss, inDirty = vName != inAsset.name || vIsin != inAsset.isin.orEmpty() || vTicker != inAsset.ticker.orEmpty()) {
 		TextInput(vName, { vName = it }, "Nom", if (vName.isBlank()) "Le nom est obligatoire." else null)
 		TextInput(vIsin, { vIsin = it; vFound = null; vInfo = null }, "ISIN", if (vIsin.isNotBlank() && !vIsinOk) "12 caractères, ex. LU1681043599." else null, "Sur vos relevés ; sert à trouver le cours.")
 		OutlinedButton(

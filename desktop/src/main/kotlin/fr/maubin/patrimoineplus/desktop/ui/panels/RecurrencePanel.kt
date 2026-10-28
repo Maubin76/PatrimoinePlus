@@ -76,6 +76,7 @@ fun RecurrencePanel(
 	SidePanel(
 		inTitle   = if (vForm.id == null) "Nouvelle récurrence" else "Modifier la récurrence",
 		inOnClose = inController::closePanel,
+		inDirty   = vForm != inStart,
 		inOnEnter = ::save,
 		inActions = {
 			vForm.id?.let { inId -> OutlinedButton(onClick = { finish(inController, inController.edit { inController.editor.deleteRecurrence(it, inId) }) { vGeneral = it } }) { Text("Supprimer") } }

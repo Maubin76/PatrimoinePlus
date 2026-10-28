@@ -69,6 +69,7 @@ fun PurchasePanel(
 	SidePanel(
 		inTitle   = if (vForm.id == null) "Nouvel $vNoun" else "Modifier l’$vNoun",
 		inOnClose = inController::closePanel,
+		inDirty   = vForm != inStart,
 		inOnEnter = ::save,
 		inActions = {
 			if (vForm.id != null) OutlinedButton(onClick = { vDelete = true }) { Text("Supprimer") }
@@ -157,6 +158,7 @@ fun SalePanel(
 	SidePanel(
 		inTitle   = if (vForm.id == null) "Vendre « ${vItem.name} »" else "Vente de « ${vItem.name} »",
 		inOnClose = inController::closePanel,
+		inDirty   = vForm != inStart,
 		inOnEnter = ::save,
 		inActions = {
 			if (vForm.id != null) OutlinedButton(onClick = ::cancelSale) { Text("Annuler la vente") }

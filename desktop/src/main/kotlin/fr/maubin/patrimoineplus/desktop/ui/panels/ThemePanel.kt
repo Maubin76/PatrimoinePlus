@@ -67,6 +67,7 @@ fun ThemePanel(
 	SidePanel(
 		inTitle   = if (vTheme == null) "Nouveau thème" else "Modifier le thème",
 		inOnClose = inController::closePanel,
+		inDirty   = vName != vTheme?.name.orEmpty() || vColors != (vTheme?.colors ?: kStarterColors),
 		inOnEnter = ::save,
 		inActions = {
 			if (vTheme != null)

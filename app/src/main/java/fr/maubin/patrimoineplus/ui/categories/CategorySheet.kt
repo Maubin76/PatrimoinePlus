@@ -65,7 +65,7 @@ fun CategorySheet(
 {
 	var vForm  by remember { mutableStateOf(inInitial) }						// saisie en cours
 	var vError by remember { mutableStateOf<String?>(null) }					// erreur affichée
-	FormSheet(inTitle = if (inEditing == null) "Nouvelle catégorie" else "Modifier la catégorie", inOnDismiss = inOnDismiss) {
+	FormSheet(inTitle = if (inEditing == null) "Nouvelle catégorie" else "Modifier la catégorie", inOnDismiss = inOnDismiss, inDirty = vForm != inInitial) {
 		TextInput(vForm.name, { vForm = vForm.copy(name = it) }, "Nom", vError)
 		SegmentedChoice(
 			inOptions  = CategoryKind.entries,

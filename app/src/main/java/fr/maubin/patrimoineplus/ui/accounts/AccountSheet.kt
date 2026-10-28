@@ -72,8 +72,9 @@ fun AccountSheet(
 	var vErrors  by remember { mutableStateOf(AccountFormErrors()) }			// erreurs affichées
 	var vLoan    by remember { mutableStateOf(LoanForm(firstDue = inInitial.openingDate.plusMonths(1).withDayOfMonth(5), payFrom = inAccounts.firstOrNull { it.type == AccountType.CHECKING && !it.archived }?.id)) }	// crédit à créer
 	var vLoanErr by remember { mutableStateOf(LoanErrors()) }					// erreurs du crédit
+	val vLoanAt  = remember { vLoan }											// crédit proposé à l'ouverture
 	val vNewLoan = inEditing == null && vForm.type == AccountType.LOAN && inOnSaveLoan != null	// création d'un crédit
-	FormSheet(inTitle = if (inEditing == null) "Nouveau compte" else "Modifier le compte", inOnDismiss = inOnDismiss) {
+	FormSheet(inTitle = if (inEditing == null) "Nouveau compte" else "Modifier le compte", inOnDismiss = inOnDismiss, inDirty = vForm != inInitial || vLoan != vLoanAt) {
 		TextInput(vForm.name, { vForm = vForm.copy(name = it) }, "Nom", vErrors.name)
 		if (inTypeLocked)
 		{

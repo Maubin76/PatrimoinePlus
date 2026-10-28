@@ -66,7 +66,9 @@ import fr.maubin.patrimoineplus.ui.components.isGlass
 import fr.maubin.patrimoineplus.ui.components.glassPanel
 import fr.maubin.patrimoineplus.ui.components.glassWell
 import fr.maubin.patrimoineplus.ui.components.FloatingSurface
-import fr.maubin.patrimoineplus.ui.components.PillChoice
+import fr.maubin.patrimoineplus.ui.components.PillChoice
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 
 val kPanelWidth = 440.dp																// largeur du panneau latéral
 
@@ -74,14 +76,30 @@ val kPanelWidth = 440.dp																// largeur du panneau latéral
 val LocalPanelSubmit = staticCompositionLocalOf<() -> Unit> { {} }
 
 /*
+	Garde des panneaux de saisie, fournie par l'appli : une saisie modifiée
+	n'est jamais perdue sans confirmation.
+	dirty   : signale la saisie modifiée (ou non)
+	discard : exécute une fermeture, après confirmation si la saisie est modifiée
+*/
+class PanelGuard(
+	val dirty   : (Boolean) -> Unit,
+	val discard : (() -> Unit) -> Unit
+)
+
+// Garde des panneaux ; par défaut, aucune confirmation.
+val LocalPanelGuard = staticCompositionLocalOf { PanelGuard({}, { it() }) }
+
+/*
 	Panneau latéral de saisie, à droite de la page : titre et bouton de
 	fermeture, champs défilants, actions en bas. Échap ferme ; Entrée (ou
 	Entrée du pavé numérique) dans un champ lance l'action principale, mais
 	sur un bouton qui a le focus (« Supprimer »…), c'est ce bouton qui agit.
+	Une saisie modifiée n'est fermée (croix, Échap) qu'après confirmation.
 	inTitle   : titre
 	inOnClose : fermeture
 	inOnEnter : action principale (Entrée)
 	inActions : boutons du bas
+	inDirty   : saisie modifiée, pas encore enregistrée
 	inContent : champs
 */
 @Composable
@@ -90,9 +108,14 @@ fun SidePanel(
 	inOnClose : () -> Unit,
 	inOnEnter : () -> Unit,
 	inActions : @Composable () -> Unit,
+	inDirty   : Boolean = false,
 	inContent : @Composable ColumnScope.() -> Unit
 )
 {
+	val vGuard = LocalPanelGuard.current										// garde de la saisie
+	val vClose = { vGuard.discard(inOnClose) }									// fermeture, confirmée si la saisie est modifiée
+	LaunchedEffect(inDirty) { vGuard.dirty(inDirty) }
+	DisposableEffect(Unit) { onDispose { vGuard.dirty(false) } }
 	val vShape = RoundedCornerShape(28.dp)										// panneau flottant
 	val vDark  = MaterialTheme.colorScheme.surface.luminance() < 0.5f				// fond sombre
 	Row(Modifier.fillMaxHeight().width(kPanelWidth).padding(top = 14.dp, end = 14.dp, bottom = 14.dp)) {
@@ -105,7 +128,7 @@ fun SidePanel(
 					else Modifier.shadow(18.dp, vShape, ambientColor = Color(0xFF5B4E9E).copy(alpha = if (vDark) 0.5f else 0.12f), spotColor = Color(0xFF5B4E9E).copy(alpha = if (vDark) 0.6f else 0.2f)).clip(vShape).background(MaterialTheme.colorScheme.surface)
 				)
 				.onPreviewKeyEvent { inEvent ->
-					if (inEvent.type == KeyEventType.KeyDown && inEvent.key == Key.Escape) { inOnClose(); true } else false
+					if (inEvent.type == KeyEventType.KeyDown && inEvent.key == Key.Escape) { vClose(); true } else false
 				}
 				.onKeyEvent { inEvent ->
 					if (inEvent.type == KeyEventType.KeyDown && (inEvent.key == Key.Enter || inEvent.key == Key.NumPadEnter)) { inOnEnter(); true } else false
@@ -113,7 +136,7 @@ fun SidePanel(
 		) {
 			Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 8.dp, top = 12.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
 				Text(inTitle, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-				IconButton(onClick = inOnClose) { Icon(LineIcons.Close, contentDescription = "Fermer") }
+				IconButton(onClick = vClose) { Icon(LineIcons.Close, contentDescription = "Fermer") }
 			}
 			CompositionLocalProvider(LocalPanelSubmit provides inOnEnter) {
 				Column(

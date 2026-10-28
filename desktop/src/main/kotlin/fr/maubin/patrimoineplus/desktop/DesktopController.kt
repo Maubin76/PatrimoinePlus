@@ -278,12 +278,17 @@ class DesktopController(
 	private val fBackupInfo = MutableStateFlow<String?>(null)					// état des sauvegardes (réglages) ; null sans dossier
 	private var fRowKeys    = 0L												// identifiants des lignes de la grille
 	private var fTokens     = 0L												// numéros d'ouverture des panneaux
+	private val fDirty      = MutableStateFlow(false)							// saisie du panneau ouvert modifiée et pas enregistrée
+	private val fDiscard    = MutableStateFlow<(() -> Unit)?>(null)			// action qui perdrait la saisie, en attente de confirmation
 
 	// Moteur de modification des données.
 	val editor = DataEditor(inClock)
 
 	// Panneau de saisie ouvert ; null sans panneau.
 	val panel: StateFlow<Panel?> = fPanel
+
+	// Action qui ferait perdre la saisie en cours, en attente de confirmation ; null sinon.
+	val discard: StateFlow<(() -> Unit)?> = fDiscard
 
 	// Réglages courants.
 	val settings: StateFlow<DesktopSettings> = fSettings
@@ -559,7 +564,47 @@ class DesktopController(
 		l'utilisateur (copie, fermer quand même, annuler).
 		inOnExit : ferme l'appli
 	*/
-	fun requestExit(inOnExit: () -> Unit) = guard("Fermer l’appli", inOnExit)
+	fun requestExit(inOnExit: () -> Unit) = whenDiscarded { guard("Fermer l’appli", inOnExit) }
+
+	/*
+		Signale que la saisie du panneau ouvert diffère (ou non) de ce qui est
+		enregistré.
+		inDirty : saisie modifiée
+	*/
+	fun setPanelDirty(inDirty: Boolean)
+	{
+		fDirty.value = inDirty
+	}
+
+	/*
+		Exécute une action qui fermerait le panneau de saisie (croix, Échap,
+		autre panneau, autre écran, fermeture de l'appli) ; si la saisie est
+		modifiée, l'action attend la confirmation de l'abandon.
+		inAction : action
+	*/
+	fun whenDiscarded(inAction: () -> Unit)
+	{
+		if (fDirty.value) fDiscard.value = inAction else inAction()
+	}
+
+	/*
+		Abandonne la saisie et exécute l'action en attente.
+	*/
+	fun confirmDiscard()
+	{
+		val vAction = fDiscard.value ?: return										// action en attente
+		fDiscard.value = null
+		fDirty.value   = false
+		vAction()
+	}
+
+	/*
+		Reprend la saisie : l'action en attente est oubliée.
+	*/
+	fun cancelDiscard()
+	{
+		fDiscard.value = null
+	}
 
 	/*
 		Continue l'action retenue sans enregistrer les modifications.
@@ -784,22 +829,22 @@ class DesktopController(
 		Affiche un écran principal (ferme la vue d'un compte et le panneau).
 		inScreen : écran
 	*/
-	fun show(inScreen: Screen)
-	{
+	fun show(inScreen: Screen) = whenDiscarded {
 		fBank.value = null
 		fNavigation.value = Navigation(inScreen)
 		fPanel.value      = null
+		fDirty.value      = false
 	}
 
 	/*
 		Ouvre la vue d'un compte, sur le mois courant.
 		inAccountId : compte
 	*/
-	fun openAccount(inAccountId: String)
-	{
+	fun openAccount(inAccountId: String) = whenDiscarded {
 		fBank.value = null
 		fNavigation.value = Navigation(Screen.DASHBOARD, inAccountId)
 		fPanel.value      = null
+		fDirty.value      = false
 	}
 
 	/*
@@ -814,11 +859,11 @@ class DesktopController(
 	/*
 		Retour : de la vue d'un compte vers le tableau de bord.
 	*/
-	fun back()
-	{
+	fun back() = whenDiscarded {
 		fBank.value = null
 		fNavigation.value = Navigation(fNavigation.value.screen)
 		fPanel.value      = null
+		fDirty.value      = false
 	}
 
 	/*
@@ -831,8 +876,8 @@ class DesktopController(
 		saisie neuve.
 		inPanel : panneau
 	*/
-	fun openPanel(inPanel: Panel)
-	{
+	fun openPanel(inPanel: Panel) = whenDiscarded {
+		fDirty.value = false
 		val vToken = ++fTokens														// nouveau numéro d'ouverture
 		fPanel.value = when (inPanel)
 		{
@@ -874,6 +919,7 @@ class DesktopController(
 	fun closePanel()
 	{
 		fPanel.value = null
+		fDirty.value = false
 	}
 
 	/*

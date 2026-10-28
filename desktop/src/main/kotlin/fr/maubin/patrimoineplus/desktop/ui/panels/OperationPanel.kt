@@ -119,6 +119,7 @@ fun OperationPanel(
 	SidePanel(
 		inTitle   = if (vForm.id == null) "Nouvelle opération" else "Modifier l’opération",
 		inOnClose = inController::closePanel,
+		inDirty   = vForm != inInitial,
 		inOnEnter = ::save,
 		inActions = {
 			if (vForm.id != null)

@@ -63,11 +63,13 @@ fun AccountPanel(
 			)
 		)
 	}																			// saisie
+	val vStart   = remember(inAccountId) { vForm }								// saisie proposée à l'ouverture
 	var vError   by remember(inAccountId) { mutableStateOf<String?>(null) }	// erreur affichée
 	var vDelete  by remember(inAccountId) { mutableStateOf(false) }			// confirmation de suppression
 	var vDateBad by remember(inAccountId) { mutableStateOf(false) }			// date du solde initial illisible
 	var vLoan    by remember(inAccountId) { mutableStateOf(LoanForm(firstDue = inController.today().plusMonths(1).withDayOfMonth(5), payFrom = vSpace.data.accounts.firstOrNull { it.type == AccountType.CHECKING && !it.archived }?.id)) }	// crédit à créer
 	var vLoanErr by remember(inAccountId) { mutableStateOf(LoanErrors()) }	// erreurs du crédit
+	val vLoanAt  = remember(inAccountId) { vLoan }								// crédit proposé à l'ouverture
 	val vNewLoan = vAccount == null && vForm.type == AccountType.LOAN			// création d'un crédit
 
 	/*
@@ -125,6 +127,7 @@ fun AccountPanel(
 	SidePanel(
 		inTitle   = if (vAccount == null) "Nouveau compte" else "Modifier le compte",
 		inOnClose = inController::closePanel,
+		inDirty   = vForm != vStart || vLoan != vLoanAt,
 		inOnEnter = ::save,
 		inActions = {
 			if (vAccount != null)
