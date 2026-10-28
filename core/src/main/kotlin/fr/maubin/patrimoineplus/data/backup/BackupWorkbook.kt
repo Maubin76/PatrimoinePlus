@@ -84,6 +84,12 @@ private const val kThemeId         = "ID thème"									// identifiant du thèm
 private const val kSheetBudget     = "Budget"									// onglet du budget de la famille (format 8)
 private const val kSheetGoals      = "Objectifs"									// onglet des objectifs globaux (format 8)
 private const val kSheetMonthGoals = "Objectifs du mois"							// onglet des objectifs fixés mois par mois (format 8)
+private const val kSheetHistory    = "Historique"									// onglet des dernières modifications (format 9)
+private const val kWhen           = "Quand"											// date et heure d'une modification
+private const val kDevice         = "Appareil"										// appareil qui l'a envoyée
+private const val kChanges        = "Changements"									// changements, en clair
+private const val kDeviceId       = "ID appareil"									// identifiant de l'appareil
+private const val kInstant        = "Instant (ms)"									// instant de la modification
 private const val kSection         = "Rubrique"									// rubrique du budget
 private const val kTheme           = "Thème"										// thème d'une dépense
 private const val kMember          = "Membre"										// membre de la famille d'un investissement
@@ -340,6 +346,16 @@ internal fun backupSheets(inFile: BackupFile): List<Sheet>
 					text(when (inRow.kind?.let { MonthGoalKind.valueOf(it) }) { MonthGoalKind.SAVING -> kSavingLabel; MonthGoalKind.SPENDING -> kSpendingLabel; null -> "" }),
 					text(inRow.theme?.let { ExpenseTheme.valueOf(it).label }.orEmpty()), if (inRow.kind == null) Cell.Empty else euros(inRow.target),
 					techText(inRow.id.orEmpty()), techText(inRow.scope)
+				)
+			}
+		),
+		Sheet(
+			kSheetHistory,
+			listOf(Column(kWhen, 18.0), Column(kDevice, 24.0), Column(kChanges, 40.0)) + tech(kDeviceId, kInstant),
+			inFile.history.map { inEntry ->
+				listOf(
+					text(java.time.Instant.ofEpochMilli(inEntry.at).atZone(java.time.ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))),
+					text(inEntry.device), text(inEntry.summary), techText(inEntry.deviceId), techNumber(inEntry.at)
 				)
 			}
 		),
@@ -631,6 +647,9 @@ internal fun backupFromSheets(inSheets: List<ReadSheet>): BackupFile
 				target    = inRow.opt(kTarget)?.let { cents(it) } ?: 0L,
 				theme     = inRow.opt(kTheme)?.let { enumName(it, ExpenseTheme.entries.map { inTheme -> inTheme.name to inTheme.label }) }
 			)
+		},
+		history      = vByName[kSheetHistory]?.also { requireColumns(it, kDeviceId, kInstant) }?.rows.orEmpty().map { inRow ->
+			HistoryDto(inRow.req(kDeviceId), inRow[kDevice].orEmpty(), decimal(inRow.req(kInstant)).toLong(), inRow[kChanges].orEmpty())
 		}
 	)
 }

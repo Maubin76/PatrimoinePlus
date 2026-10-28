@@ -15,6 +15,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import fr.maubin.patrimoineplus.data.sync.SyncPlan
 import fr.maubin.patrimoineplus.data.sync.planSync
+import fr.maubin.patrimoineplus.data.sync.ChangeCount
+import fr.maubin.patrimoineplus.data.sync.HistoryAuthor
+import fr.maubin.patrimoineplus.data.sync.countChanges
+import fr.maubin.patrimoineplus.data.backup.HistoryDto
+import fr.maubin.patrimoineplus.data.backup.readBackupXlsx
+import fr.maubin.patrimoineplus.data.backup.writeBackupXlsx
 
 /*
 	Fusion élément par élément à partir de la dernière version commune :
@@ -194,5 +200,29 @@ class MergeTest
 		val vAsk    = planSync(vFp, kBase, relabel(kBase, model().id, "A"), relabel(kBase, model().id, "B")) as SyncPlan.Ask	// même opération
 		val vDone   = planSync(vFp, kBase, relabel(kBase, model().id, "A"), relabel(kBase, model().id, "B"), mapOf(vAsk.conflicts.single().key to MergeSide.THEIRS)) as SyncPlan.Merge	// choix fait
 		assertEquals("B", vDone.file.transactions.single { it.id == model().id }.label)
+	}
+	/*
+		Historique : changements comptés (ajouts, modifications, suppressions) ;
+		l'envoi ajoute une entrée au nom de l'appareil, la fusion réunit les deux
+		historiques ; l'historique ne change pas l'empreinte ; il traverse le
+		classeur.
+	*/
+	@Test
+	fun history()
+	{
+		val vFp     = syncFingerprint(kBase)													// empreinte commune
+		val vMine   = relabel(kBase.copy(transactions = kBase.transactions + expense("t-pc", "Courses PC")), model().id, "Corrigé")	// PC : un ajout, une modification
+		assertEquals(ChangeCount(1, 1, 0), countChanges(kBase, vMine))
+		assertEquals("1 ajout, 1 modification", countChanges(kBase, vMine).label)
+		val vPc     = HistoryAuthor("pc-1", "PC du bureau")										// auteur
+		val vSent   = (planSync(vFp, kBase, vMine, kBase, inAuthor = vPc, inNow = 1_000) as SyncPlan.Export).file	// envoi
+		assertEquals(listOf(HistoryDto("pc-1", "PC du bureau", 1_000, "1 ajout, 1 modification")), vSent.history)
+		assertEquals(syncFingerprint(vMine), syncFingerprint(vSent))								// historique hors empreinte
+		val vPhone  = kBase.copy(transactions = kBase.transactions + expense("t-tel", "Boulangerie"), history = listOf(HistoryDto("tel-1", "Pixel", 900, "1 ajout")))	// téléphone
+		val vMerged = (planSync(vFp, kBase, vMine, vPhone, inAuthor = vPc, inNow = 1_000) as SyncPlan.Merge).file	// fusion
+		assertEquals(listOf("PC du bureau", "Pixel"), vMerged.history.map { it.device })
+		val vRead   = readBackupXlsx(java.io.ByteArrayInputStream(java.io.ByteArrayOutputStream().also { writeBackupXlsx(vMerged, it) }.toByteArray())) as BackupRead.Valid	// classeur relu
+		assertEquals(vMerged.history, vRead.file.history)
+		assertTrue(planSync(vFp, kBase, kBase, kBase, inAuthor = vPc, inNow = 2_000) is SyncPlan.Nothing)
 	}
 }

@@ -37,6 +37,8 @@ import fr.maubin.patrimoineplus.data.backup.encodeBackup
 import fr.maubin.patrimoineplus.data.backup.decodeBackup
 import fr.maubin.patrimoineplus.data.backup.newerFormatText
 
+import fr.maubin.patrimoineplus.data.backup.kBackupVersion
+
 /*
 	Budget et objectifs dans le fichier d'échange (format 8) : aller-retour
 	exact par le classeur et par le texte gardé sur le téléphone, onglets
@@ -94,7 +96,7 @@ class PlansTest
 		assertEquals(kBudget, vData.budget)
 		assertEquals(kGoals, vData.goals[kDefaultProfileId])
 		assertEquals("Faire le point en famille", vData.goals.getValue(kFamilyView).goals.single().title)
-		assertEquals(8, vRead.file.version)
+		assertEquals(kBackupVersion, vRead.file.version)
 	}
 
 	/*
@@ -150,16 +152,17 @@ class PlansTest
 	@Test
 	fun newerFormatIsRecognized()
 	{
+		val vNewer  = kBackupVersion + 1														// format plus récent
 		val vSheets = backupSheets(file()).map { inSheet ->
 			if (inSheet.name != "Fichier") inSheet
-			else inSheet.copy(rows = inSheet.rows.map { if ((it.first() as? Cell.Text)?.text == "Version") listOf(it.first(), Cell.Number(java.math.BigDecimal(9))) else it })
-		} + Sheet("Nouveauté", listOf(Column("Colonne inconnue", 10.0)), emptyList())		// classeur du format 9
+			else inSheet.copy(rows = inSheet.rows.map { if ((it.first() as? Cell.Text)?.text == "Version") listOf(it.first(), Cell.Number(java.math.BigDecimal(vNewer))) else it })
+		} + Sheet("Nouveauté", listOf(Column("Colonne inconnue", 10.0)), emptyList())		// classeur d'un format plus récent
 		val vBytes  = ByteArrayOutputStream().also { writeXlsx(vSheets, it) }.toByteArray()	// classeur écrit
 		val vRead   = readBackupXlsx(ByteArrayInputStream(vBytes)) as BackupRead.Invalid	// lecture refusée
-		assertEquals(9, vRead.newerFormat)
-		val vJson   = encodeBackup(file().copy(version = 9)).replaceFirst("{", "{\"nouveau\": 1,")	// export JSON du format 9
-		assertEquals(9, (decodeBackup(vJson) as BackupRead.Invalid).newerFormat)
+		assertEquals(vNewer, vRead.newerFormat)
+		val vJson   = encodeBackup(file().copy(version = vNewer)).replaceFirst("{", "{\"nouveau\": 1,")	// export JSON d'un format plus récent
+		assertEquals(vNewer, (decodeBackup(vJson) as BackupRead.Invalid).newerFormat)
 		assertEquals(null, (readBackupXlsx(ByteArrayInputStream(byteArrayOf(1, 2, 3))) as BackupRead.Invalid).newerFormat)	// autre problème : pas de format
-		assertTrue(newerFormatText(9, "le PC").contains("différence de version"))
+		assertTrue(newerFormatText(vNewer, "le PC").contains("différence de version"))
 	}
 }

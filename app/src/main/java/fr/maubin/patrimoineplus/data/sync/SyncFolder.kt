@@ -154,6 +154,12 @@ interface SyncStore
 	suspend fun base(): BackupFile?
 
 	/*
+		Identifiant de ce téléphone, tiré au hasard la première fois puis gardé
+		(historique des modifications, appairage).
+	*/
+	suspend fun deviceId(): String
+
+	/*
 		Choisit le dossier synchronisé (null pour arrêter) ; oublie l'empreinte.
 		inUri : adresse du dossier
 	*/
@@ -189,6 +195,7 @@ class DataStoreSyncStore @Inject constructor(
 	private val kFolderKey      = stringPreferencesKey("sync_folder")		// clé du dossier
 	private val kFingerprintKey = stringPreferencesKey("sync_fingerprint")	// clé de l'empreinte
 	private val kLastSyncKey    = longPreferencesKey("sync_last")			// clé de l'instant
+	private val kDeviceKey      = stringPreferencesKey("device_id")			// clé de l'identifiant du téléphone
 
 	override val folder: Flow<String?> = inDataStore.data.map { it[kFolderKey] }
 
@@ -198,6 +205,12 @@ class DataStoreSyncStore @Inject constructor(
 		Empreinte mémorisée.
 	*/
 	override suspend fun fingerprint(): String? = inDataStore.data.first()[kFingerprintKey]
+
+	/*
+		Identifiant du téléphone, tiré la première fois.
+	*/
+	override suspend fun deviceId(): String =
+		inDataStore.data.first()[kDeviceKey] ?: java.util.UUID.randomUUID().toString().also { inId -> inDataStore.edit { it[kDeviceKey] = inId } }
 
 	/*
 		Contenu commun mémorisé ; null s'il est absent ou illisible.

@@ -32,7 +32,8 @@ import fr.maubin.patrimoineplus.data.db.ThemeEntity
 import fr.maubin.patrimoineplus.data.backup.decodePlans
 import fr.maubin.patrimoineplus.data.backup.encodePlans
 import fr.maubin.patrimoineplus.data.backup.PlansDto
-import fr.maubin.patrimoineplus.data.db.PlanEntity
+import fr.maubin.patrimoineplus.data.db.PlanEntity
+import fr.maubin.patrimoineplus.data.backup.HistoryDto
 
 /*
 	Export et import de toute la base, sous forme de fichier JSON versionné.
@@ -78,9 +79,22 @@ class BackupRepository @Inject constructor(
 				loans        = inDb.planningDao().loans().map { it.toDomain().toDto() }
 			).let { inFile ->
 				val vPlans = fDao.plans()?.let(::decodePlans) ?: return@let inFile				// budget et objectifs du PC, gardés tels quels
-				inFile.copy(budget = vPlans.budget, goals = vPlans.goals, monthGoals = vPlans.monthGoals)
+				inFile.copy(budget = vPlans.budget, goals = vPlans.goals, monthGoals = vPlans.monthGoals, history = vPlans.history)
 			}.withProfiles()														// base d'avant les profils : profil « Moi »
 		}
+
+	/*
+		Remplace l'historique des modifications gardé avec le budget et les
+		objectifs (après un envoi de ce téléphone).
+		inHistory : historique
+	*/
+	suspend fun setHistory(inHistory: List<HistoryDto>)
+	{
+		inDb.withTransaction {
+			val vPlans = fDao.plans()?.let(::decodePlans) ?: PlansDto()						// budget, objectifs, historique
+			fDao.insertPlan(PlanEntity("plans", encodePlans(vPlans.copy(history = inHistory))))
+		}
+	}
 
 	/*
 		Remplace toutes les données par celles d'un fichier déjà vérifié.

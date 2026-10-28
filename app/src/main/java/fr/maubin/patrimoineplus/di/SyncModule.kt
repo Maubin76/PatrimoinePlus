@@ -24,6 +24,10 @@ import java.time.Clock
 import javax.inject.Inject
 import javax.inject.Singleton
 import fr.maubin.patrimoineplus.data.repo.PlanningRepository
+import fr.maubin.patrimoineplus.data.sync.HistoryAuthor
+import fr.maubin.patrimoineplus.data.link.phoneName
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 /*
 	Actions de l'appli autour d'un import par synchronisation : sauvegarde de
@@ -77,8 +81,11 @@ object SyncModule
 		inTransactions : TransactionRepository,
 		inMarket       : MarketRepository,
 		inPlanning     : PlanningRepository,
-		inClock        : Clock
-	): Syncer = Syncer(inBackup, inStore, inFolders, inHooks, dataChanges(inAccounts, inCategories, inTransactions, inMarket, inPlanning), inClock)
+		inClock        : Clock,
+		@ApplicationContext inContext : Context
+	): Syncer = Syncer(inBackup, inStore, inFolders, inHooks, dataChanges(inAccounts, inCategories, inTransactions, inMarket, inPlanning), inClock) {
+		HistoryAuthor(inStore.deviceId(), phoneName(inContext))
+	}
 }
 
 /*

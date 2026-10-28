@@ -25,6 +25,7 @@ import java.time.ZoneId
 import fr.maubin.patrimoineplus.data.edit.EditResult
 import fr.maubin.patrimoineplus.data.sync.MergeSide
 import fr.maubin.patrimoineplus.data.backup.PriceDto
+import fr.maubin.patrimoineplus.data.sync.HistoryAuthor
 
 /*
 	Tests de la synchronisation côté PC : modifications du PC écrites dans le
@@ -142,6 +143,25 @@ class WorkspaceSyncTest
 		assertTrue(vSpace.state.value.data.accounts.map { it.name }.containsAll(listOf("Ouvert sur le PC", "Ouvert sur le téléphone")))
 		assertTrue(onDisk().accounts.map { it.name }.containsAll(listOf("Ouvert sur le PC", "Ouvert sur le téléphone")))
 		assertEquals("Fusion avec le fichier synchronisé : 1 changement(s) repris.", vSpace.state.value.merge)
+	}
+
+	/*
+		Historique : un envoi du PC y laisse une ligne à son nom (changements
+		comptés) ; une synchronisation sans changement n'en ajoute pas.
+	*/
+	@Test
+	fun historyIsRecorded()
+	{
+		writeExchange(kDemo, 1_000)
+		val vSpace = openFolder().apply { author = HistoryAuthor("pc-1", "PC du bureau") }	// espace de travail
+		addAccount(vSpace, "Ouvert sur le PC")
+		vSpace.sync()
+		val vEntry = onDisk().history.single()											// ligne de l'envoi
+		assertEquals("PC du bureau", vEntry.device)
+		assertEquals("1 ajout", vEntry.summary)
+		assertEquals(listOf("PC du bureau"), vSpace.state.value.data.history.map { it.device })
+		vSpace.sync()
+		assertEquals(1, onDisk().history.size)
 	}
 
 	/*

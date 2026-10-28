@@ -639,6 +639,13 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   est vérifié (`validateBackup`) ; s'il est incohérent (deux cours du même
   actif le même jour…), ou sans version commune connue, la fenêtre « Quelle
   version garder ? » reste le dernier recours.
+- **Historique des modifications** (format 9, onglet Historique) : chaque
+  envoi de changements par un appareil y laisse une ligne (appareil, instant,
+  « 3 ajouts, 1 modification »), comptée depuis la dernière version commune
+  (`core/data/sync/History.kt`) ; les 20 plus récentes sont gardées, les
+  historiques des deux côtés réunis à la fusion. L'historique est hors de
+  l'empreinte : il ne déclenche jamais de synchronisation ni de conflit. PC :
+  page Appareils ; téléphone : gardé avec le budget (table `plan`).
 - **Appareils à des versions différentes** : un fichier d'échange écrit par
   une version plus récente (format plus grand que `kBackupVersion`, lu dans
   l'onglet Fichier avant tout le reste, ou dans le champ `version` d'un export

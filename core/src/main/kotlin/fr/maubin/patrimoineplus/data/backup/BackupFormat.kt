@@ -33,7 +33,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.int
 
 const val kBackupFormat  = "patrimoineplus"										// signature du fichier
-const val kBackupVersion = 8													// version du format (2 : symbole de cotation des actifs ; 3 : comptes de biens ; 4 : opérations récurrentes et crédits ; 5 : mensualités en une opération, bien financé ; 6 : profils et propriétaires des comptes ; 7 : thèmes de couleurs ; 8 : budget et objectifs)
+const val kBackupVersion = 9													// version du format (2 : symbole de cotation des actifs ; 3 : comptes de biens ; 4 : opérations récurrentes et crédits ; 5 : mensualités en une opération, bien financé ; 6 : profils et propriétaires des comptes ; 7 : thèmes de couleurs ; 8 : budget et objectifs ; 9 : historique des modifications)
 
 private val kJson = Json { prettyPrint = true; ignoreUnknownKeys = false }		// lecteur et écrivain JSON
 private val kCompact = Json { ignoreUnknownKeys = true }						// budget et objectifs en base (téléphone)
@@ -150,17 +150,34 @@ data class MonthGoalDto(
 )
 
 /*
+	Modification envoyée par un appareil, dans l'historique (format 9).
+	deviceId : identifiant de l'appareil
+	device   : nom de l'appareil
+	at       : instant de l'envoi (ms)
+	summary  : changements, en clair (« 3 ajouts, 1 modification »)
+*/
+@Serializable
+data class HistoryDto(
+	val deviceId : String,
+	val device   : String,
+	val at       : Long,
+	val summary  : String
+)
+
+/*
 	Budget et objectifs ensemble, tels que le téléphone les garde sans les
 	afficher (une seule valeur en base).
 	budget     : lignes du budget de la famille
 	goals      : objectifs globaux de toutes les vues
 	monthGoals : objectifs fixés mois par mois de toutes les vues
+	history    : dernières modifications envoyées (format 9)
 */
 @Serializable
 data class PlansDto(
 	val budget     : List<BudgetLineDto> = emptyList(),
 	val goals      : List<GoalDto>       = emptyList(),
-	val monthGoals : List<MonthGoalDto>  = emptyList()
+	val monthGoals : List<MonthGoalDto>  = emptyList(),
+	val history    : List<HistoryDto>    = emptyList()
 )
 
 /*
@@ -334,11 +351,12 @@ data class BackupFile(
 	val themes       : List<ThemeDto>      = emptyList(),
 	val budget       : List<BudgetLineDto> = emptyList(),
 	val goals        : List<GoalDto>       = emptyList(),
-	val monthGoals   : List<MonthGoalDto>  = emptyList()
+	val monthGoals   : List<MonthGoalDto>  = emptyList(),
+	val history      : List<HistoryDto>    = emptyList()
 )
 {
-	// Budget et objectifs, tels que le téléphone les garde.
-	val plans: PlansDto get() = PlansDto(budget, goals, monthGoals)
+	// Budget, objectifs et historique, tels que le téléphone les garde.
+	val plans: PlansDto get() = PlansDto(budget, goals, monthGoals, history)
 
 	// Contenu en nombres d'éléments (fenêtre de conflit : la date d'export n'y a pas de sens).
 	val contents: String

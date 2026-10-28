@@ -35,6 +35,7 @@ import fr.maubin.patrimoineplus.data.sync.MergeConflict
 import fr.maubin.patrimoineplus.data.sync.MergeSide
 import fr.maubin.patrimoineplus.data.sync.SyncPlan
 import fr.maubin.patrimoineplus.data.sync.planSync
+import fr.maubin.patrimoineplus.data.sync.HistoryAuthor
 
 private const val kDebounceMillis = 3_000L										// délai après une modification avant d'écrire le fichier
 
@@ -114,6 +115,7 @@ interface SyncHooks
 	inHooks    : actions autour d'un import
 	inChanges  : signal de modification des données (une valeur à chaque changement)
 	inClock    : horloge
+	inAuthor   : auteur des changements envoyés (historique) ; null : pas d'historique
 */
 class Syncer(
 	private val inBackup  : BackupRepository,
@@ -121,7 +123,8 @@ class Syncer(
 	private val inFolders : SyncFolderFactory,
 	private val inHooks   : SyncHooks,
 	private val inChanges : kotlinx.coroutines.flow.Flow<Any>,
-	private val inClock   : Clock
+	private val inClock   : Clock,
+	private val inAuthor  : suspend () -> HistoryAuthor? = { null }
 ) : DefaultLifecycleObserver
 {
 	private val fLock    = Mutex()													// une synchronisation à la fois
@@ -177,7 +180,7 @@ class Syncer(
 					}
 				}																	// contenu du fichier
 				val vLocal  = inBackup.snapshot()									// données du téléphone
-				apply(vFolder, vLocal, vFile, planSync(inStore.fingerprint(), inStore.base(), vLocal, vFile))
+				apply(vFolder, vLocal, vFile, planSync(inStore.fingerprint(), inStore.base(), vLocal, vFile, inAuthor = inAuthor(), inNow = inClock.millis()))
 			}
 			catch (inError: Exception)
 			{
@@ -204,7 +207,11 @@ class Syncer(
 		{
 			SyncPlan.Nothing   -> idle()
 			SyncPlan.Record    -> record(syncFingerprint(inLocal), inLocal)
-			is SyncPlan.Export -> export(inFolder, inLocal, syncFingerprint(inLocal))
+			is SyncPlan.Export ->
+			{
+				inBackup.setHistory(inPlan.file.history)										// historique complété de l'envoi, gardé
+				export(inFolder, inPlan.file, syncFingerprint(inPlan.file))
+			}
 			is SyncPlan.Import -> import(inPlan.file, syncFingerprint(inPlan.file), syncFingerprint(inLocal))
 			is SyncPlan.Merge  ->
 			{
@@ -239,7 +246,7 @@ class Syncer(
 				val vFolder = inFolders.open(vUri)											// dossier
 				val vFile   = vFolder.read()?.let { (readBackupXlsx(ByteArrayInputStream(it)) as? BackupRead.Valid)?.file } ?: vSeen	// contenu actuel du fichier
 				val vLocal  = inBackup.snapshot()											// données du téléphone
-				apply(vFolder, vLocal, vFile, planSync(inStore.fingerprint(), inStore.base(), vLocal, vFile, inChoices))
+				apply(vFolder, vLocal, vFile, planSync(inStore.fingerprint(), inStore.base(), vLocal, vFile, inChoices, inAuthor(), inClock.millis()))
 			}
 			catch (inError: Exception)
 			{

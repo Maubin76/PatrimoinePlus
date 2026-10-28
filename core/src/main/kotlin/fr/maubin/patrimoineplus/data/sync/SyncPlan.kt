@@ -18,7 +18,7 @@ sealed interface SyncPlan
 
 	/*
 		Seules les données locales ont changé : les envoyer à l'autre côté.
-		file : données à envoyer
+		file : données à envoyer (historique complété de l'envoi)
 	*/
 	data class Export(val file: BackupFile) : SyncPlan
 
@@ -75,13 +75,17 @@ sealed interface SyncPlan
 	inLocal   : données locales
 	inRemote  : données de l'autre côté ; null s'il n'en a pas encore
 	inChoices : versions choisies pour les conflits, par clé
+	inAuthor  : auteur des changements envoyés (historique) ; null : pas d'historique
+	inNow     : instant de l'envoi (ms)
 */
 fun planSync(
 	inLastFp  : String?,
 	inBase    : BackupFile?,
 	inLocal   : BackupFile,
 	inRemote  : BackupFile?,
-	inChoices : Map<String, MergeSide> = emptyMap()
+	inChoices : Map<String, MergeSide> = emptyMap(),
+	inAuthor  : HistoryAuthor?         = null,
+	inNow     : Long                   = 0
 ): SyncPlan
 {
 	val vLocalFp  = syncFingerprint(inLocal)											// empreinte locale
@@ -90,7 +94,7 @@ fun planSync(
 	{
 		SyncAction.NOTHING  -> SyncPlan.Nothing
 		SyncAction.RECORD   -> SyncPlan.Record
-		SyncAction.EXPORT   -> SyncPlan.Export(inLocal)
+		SyncAction.EXPORT   -> SyncPlan.Export(withAuthor(inLocal, inBase, inAuthor, inNow))
 		SyncAction.IMPORT   -> SyncPlan.Import(inRemote!!)
 		SyncAction.CONFLICT ->
 		{
@@ -104,7 +108,11 @@ fun planSync(
 				{
 					when (val vRead = validateBackup(vMerge.file))
 					{
-						is BackupRead.Valid   -> SyncPlan.Merge(vRead.file, vMerge.restored, vMerge.merged)
+						is BackupRead.Valid   ->
+						{
+							val vMine = withAuthor(inLocal, inBase, inAuthor, inNow).history				// historique avec les changements de cet appareil
+							SyncPlan.Merge(vRead.file.copy(history = joinHistory(vMine, vRead.file.history)), vMerge.restored, vMerge.merged)
+						}
 						is BackupRead.Invalid -> SyncPlan.Whole(vRemote, "fusion incohérente : ${vRead.message}")
 					}
 				}

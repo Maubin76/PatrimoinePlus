@@ -32,17 +32,25 @@ import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
 import fr.maubin.patrimoineplus.desktop.ui.components.FloatingCard
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import fr.maubin.patrimoineplus.ui.components.SectionHeader
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import androidx.compose.foundation.layout.width
+
+private val kHistoryTime = DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH:mm")		// heure d'une modification
 
 /*
 	Page « Appareils » : synchronisation avec le téléphone. Pour l'instant
 	(phase d'essai) : ce PC (nom montré au téléphone, réseau auquel il est
-	relié, adresses) et le diagnostic réseau, qui vérifie que le téléphone
+	relié, adresses), l'historique des modifications envoyées par les appareils
+	et le diagnostic réseau, qui vérifie que le téléphone
 	trouve ce PC et peut lui parler. L'appairage viendra ensuite ici.
 	inController : contrôleur
 */
 @Composable
 fun DevicesScreen(inController: DesktopController)
 {
+	val vSpace    by inController.workspace.collectAsState()							// données (historique)
 	val vSettings by inController.settings.collectAsState()							// réglages (nom du PC)
 	val vState    by inController.diagnostic.state.collectAsState()					// diagnostic
 	val vColors   = MaterialTheme.colorScheme											// palette courante
@@ -77,6 +85,24 @@ fun DevicesScreen(inController: DesktopController)
 					style = MaterialTheme.typography.bodyMedium,
 					color = vColors.onSurfaceVariant
 				)
+			}
+		}
+		Spacer(Modifier.height(32.dp))
+		SectionHeader(inTitle = "Historique des modifications", inModifier = Modifier.tourAnchor("devices.history"))
+		Spacer(Modifier.height(12.dp))
+		FloatingCard {
+			Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+				if (vSpace.data.history.isEmpty())
+				{
+					Text("Aucune modification envoyée pour l’instant : chaque synchronisation qui envoie des changements y laisse une ligne (appareil, heure, changements).", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+				}
+				vSpace.data.history.forEach { inEntry ->
+					Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+						Text(Instant.ofEpochMilli(inEntry.at).atZone(ZoneId.systemDefault()).format(kHistoryTime), style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant, modifier = Modifier.width(150.dp))
+						Text(inEntry.device, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(180.dp))
+						Text(inEntry.summary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+					}
+				}
 			}
 		}
 		Spacer(Modifier.height(32.dp))

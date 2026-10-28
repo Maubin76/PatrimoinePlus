@@ -30,6 +30,7 @@ object Tours
 		{
 			Screen.DEVICES.name    -> listOf(
 				TourStep("devices.this", "Ce PC sur le réseau", "Son nom, tel que le téléphone le verra, et le réseau auquel il est relié : la synchronisation ne fonctionnera que sur le réseau de la maison."),
+				TourStep("devices.history", "Historique", "Chaque envoi de modifications y laisse une ligne : quel appareil, quand, et combien d'éléments ajoutés, modifiés ou supprimés."),
 				TourStep("devices.diagnostic", "Diagnostic réseau", "Avant la synchronisation, vérifiez que le téléphone trouve ce PC : lancez le diagnostic ici, puis celui du téléphone dans ses Réglages.")
 			)
 			Screen.DASHBOARD.name  -> listOf(

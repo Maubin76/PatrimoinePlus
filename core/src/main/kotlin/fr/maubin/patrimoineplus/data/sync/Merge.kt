@@ -102,7 +102,8 @@ fun mergeBackups(
 		monthGoals   = vMerger.list("mois", "Objectifs du mois", { months(it.monthGoals) }, { it.key }, { "Objectifs de ${it.key.substringAfter('/')}" }, { inPlan -> "Fixés le ${inPlan.rows.first().confirmed}, ${inPlan.rows.count { it.kind != null }} objectif(s)" }).flatMap { it.rows }
 	)																					// fusion sans les rétablissements
 	val vRestored = mutableListOf<String>()												// éléments rétablis
-	return MergeResult(restore(vFile, inMine, inTheirs, inBase, vRestored), vMerger.conflicts, vRestored, vMerger.merged)
+	val vJoined   = vFile.copy(history = joinHistory(inMine.history, inTheirs.history))	// historiques réunis
+	return MergeResult(restore(vJoined, inMine, inTheirs, inBase, vRestored), vMerger.conflicts, vRestored, vMerger.merged)
 }
 
 /*

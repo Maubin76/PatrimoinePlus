@@ -38,6 +38,7 @@ import java.security.MessageDigest
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
+import fr.maubin.patrimoineplus.data.backup.kBackupVersion
 
 /*
 	Mises à jour du PC (sans écran, réseau local) : fenêtre proposée au
@@ -92,7 +93,7 @@ class UpdatesUiTest
 	*/
 	private fun release(
 		inSha    : String = MessageDigest.getInstance("SHA-256").digest(kPayload).joinToString("") { "%02x".format(it) },
-		inFormat : Int    = 8
+		inFormat : Int    = kBackupVersion
 	) = Release("1.3", inFormat, listOf(
 		ReleaseAsset("PatrimoinePlus-1.3.apk", 5_100_305, "http://127.0.0.1:${fServer.address.port}/apk", null),
 		ReleaseAsset("PatrimoinePlus-1.3-windows.zip", kPayload.size.toLong(), "http://127.0.0.1:${fServer.address.port}/zip", inSha)
@@ -162,7 +163,7 @@ class UpdatesUiTest
 	@Test
 	fun formatAndIgnore()
 	{
-		val vApp = controller(release(inFormat = 9))										// release au format 9
+		val vApp = controller(release(inFormat = kBackupVersion + 1))										// release d'un format plus récent
 		fCompose.setContent { App(vApp) { null } }
 		vApp.checkForUpdates()
 		fCompose.waitUntil(5_000) { vApp.update.value != null }
@@ -172,7 +173,7 @@ class UpdatesUiTest
 		fCompose.waitForIdle()
 		assertNull(vApp.update.value)
 		assertEquals("1.3", vApp.settings.value.ignored)
-		val vNext = controller(release(inFormat = 9))										// lancement suivant
+		val vNext = controller(release(inFormat = kBackupVersion + 1))										// lancement suivant
 		vNext.checkForUpdates()
 		Thread.sleep(500)
 		assertNull(vNext.update.value)

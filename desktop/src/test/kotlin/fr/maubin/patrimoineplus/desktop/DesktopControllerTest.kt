@@ -115,7 +115,7 @@ class DesktopControllerTest
 		assertTrue(vApp.flush())
 		val vOnDisk = java.nio.file.Files.newInputStream(vFolder.resolve(kSyncFileName)).use { readBackupXlsx(it) } as BackupRead.Valid	// fichier écrit
 		assertEquals(listOf("f1"), vOnDisk.file.budget.map { it.id })
-		assertEquals(8, vOnDisk.file.version)
+		assertEquals(fr.maubin.patrimoineplus.data.backup.kBackupVersion, vOnDisk.file.version)
 		assertTrue(java.nio.file.Files.exists(vDir.resolve("budget-famille.json.avant-format-8")))
 		assertTrue(java.nio.file.Files.exists(vDir.resolve("budget.json.avant-format-8")))		// gardé sur le disque, inutilisé
 		vApp.setBudget(Budget())

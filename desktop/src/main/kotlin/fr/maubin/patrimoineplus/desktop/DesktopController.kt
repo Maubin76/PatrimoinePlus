@@ -554,6 +554,7 @@ class DesktopController(
 	init
 	{
 		if (fSettings.value.deviceId.isEmpty()) update(fSettings.value.copy(deviceId = UUID.randomUUID().toString()))	// identifiant de ce PC, tiré une fois
+		inWorkspace.author = fr.maubin.patrimoineplus.data.sync.HistoryAuthor(fSettings.value.deviceId, fSettings.value.deviceName.ifBlank { fr.maubin.patrimoineplus.desktop.data.defaultPcName() })	// auteur des envois (historique)
 		inWorkspace.open(fSettings.value.source, inScope)
 		importLegacyPlans(fSettings.value.source)
 		backupIfDue()
@@ -1008,7 +1009,11 @@ class DesktopController(
 		Renomme ce PC (nom montré au téléphone) ; vide : nom de Windows.
 		inName : nom
 	*/
-	fun setDeviceName(inName: String) = update(fSettings.value.copy(deviceName = inName.trim()))
+	fun setDeviceName(inName: String)
+	{
+		update(fSettings.value.copy(deviceName = inName.trim()))
+		inWorkspace.author = fr.maubin.patrimoineplus.data.sync.HistoryAuthor(fSettings.value.deviceId, fSettings.value.deviceName.ifBlank { fr.maubin.patrimoineplus.desktop.data.defaultPcName() })
+	}
 
 	/*
 		Récupère les cours si la dernière récupération réussie date de plus

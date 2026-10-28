@@ -27,6 +27,7 @@ import java.nio.file.Files
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
+import fr.maubin.patrimoineplus.data.backup.kBackupVersion
 
 /*
 	Fichier d'échange écrit par une version plus récente (le téléphone a été
@@ -45,14 +46,14 @@ class NewerFormatUiTest
 	private val kClock = Clock.fixed(Instant.parse("2026-10-28T09:00:00Z"), ZoneId.of("Europe/Paris"))	// horloge figée
 
 	/*
-		Dossier synchronisé dont le fichier annonce le format 9.
+		Dossier synchronisé dont le fichier annonce un format plus récent.
 	*/
 	private fun folder(): java.nio.file.Path
 	{
 		val vFolder = fTemp.newFolder("Synchro").toPath()									// dossier synchronisé
 		val vFile   = Sheet("Fichier", listOf(Column("Clé", 16.0), Column("Valeur", 40.0)), listOf(
 			listOf(Cell.Text("Format"), Cell.Text("patrimoineplus")),
-			listOf(Cell.Text("Version"), Cell.Number(BigDecimal(9)))
+			listOf(Cell.Text("Version"), Cell.Number(BigDecimal(kBackupVersion + 1)))
 		))																				// page de signature d'un format futur
 		Files.newOutputStream(vFolder.resolve(kSyncFileName)).use { writeXlsx(listOf(vFile, Sheet("Nouveauté", listOf(Column("Inconnue", 10.0)), emptyList())), it) }
 		return vFolder
@@ -66,8 +67,8 @@ class NewerFormatUiTest
 	{
 		val vFolder = folder()																// dossier
 		val vBefore = Files.readAllBytes(vFolder.resolve(kSyncFileName))					// fichier avant
-		val vApp    = DesktopController(DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")), Workspace(kClock), null, kClock).apply { setAppearance(ThemeMode.LIGHT); openFolder(vFolder) }	// PC resté au format 8
-		assertEquals(9, (vApp.workspace.value.status as LoadStatus.Invalid).newerFormat)
+		val vApp    = DesktopController(DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")), Workspace(kClock), null, kClock).apply { setAppearance(ThemeMode.LIGHT); openFolder(vFolder) }	// PC resté au format courant
+		assertEquals(kBackupVersion + 1, (vApp.workspace.value.status as LoadStatus.Invalid).newerFormat)
 		fCompose.setContent { App(vApp) { null } }
 		fCompose.waitForIdle()
 		fCompose.onNodeWithText("Mise à jour nécessaire").assertExists()

@@ -36,7 +36,8 @@ import fr.maubin.patrimoineplus.data.demo.withDemoFamily
 import fr.maubin.patrimoineplus.data.sync.MergeConflict
 import fr.maubin.patrimoineplus.data.sync.MergeSide
 import fr.maubin.patrimoineplus.data.sync.SyncPlan
-import fr.maubin.patrimoineplus.data.sync.planSync
+import fr.maubin.patrimoineplus.data.sync.planSync
+import fr.maubin.patrimoineplus.data.sync.HistoryAuthor
 
 private const val kPollMillis  = 2_000L											// intervalle de surveillance du fichier
 private const val kFlushMillis = 1_500L											// délai entre une modification et l'écriture
@@ -141,6 +142,9 @@ class Workspace(private val inClock: Clock)
 	private var fWatch    : Job? = null												// surveillance du fichier
 	private var fFlush    : Job? = null												// écriture programmée
 	private val fEditor   = DataEditor(inClock)										// création des échéances
+
+	// Auteur des changements envoyés (historique du fichier) ; null : pas d'historique.
+	var author: HistoryAuthor? = null
 
 	// État courant.
 	val state: StateFlow<WorkspaceState> = fState
@@ -260,7 +264,7 @@ class Workspace(private val inClock: Clock)
 		}
 		val vOnDisk = if (vStamp == null) null else readFile(vPath, vStamp) ?: return	// contenu du fichier (null : absent)
 		fStamp = vStamp
-		apply(vPath, planSync(fLastFp, fBase, fFile, vOnDisk), vOnDisk)
+		apply(vPath, planSync(fLastFp, fBase, fFile, vOnDisk, inAuthor = author, inNow = inClock.millis()), vOnDisk)
 	}
 
 	/*
@@ -279,7 +283,15 @@ class Workspace(private val inClock: Clock)
 		{
 			SyncPlan.Nothing   -> settle(if (inOnDisk == null) LoadStatus.Waiting else LoadStatus.Synced(inClock.millis()))
 			SyncPlan.Record    -> record(syncFingerprint(fFile), fFile)
-			is SyncPlan.Export -> export(inPath, syncFingerprint(fFile))
+			is SyncPlan.Export ->
+			{
+				if (inPlan.file.history != fFile.history)
+				{
+					fFile = inPlan.file															// historique complété de l'envoi
+					fState.value = fState.value.copy(data = fFile.toDataSet())
+				}
+				export(inPath, syncFingerprint(fFile))
+			}
 			is SyncPlan.Import -> adopt(inPlan.file, syncFingerprint(inPlan.file))
 			is SyncPlan.Merge  ->
 			{
@@ -316,7 +328,7 @@ class Workspace(private val inClock: Clock)
 		val vNow    = if (vStamp == null) null else readFile(vPath, vStamp) ?: return	// contenu actuel (illisible : on attend)
 		fAsk   = null
 		fStamp = vStamp
-		apply(vPath, planSync(fLastFp, fBase, fFile, vNow ?: vSeen, inChoices), vNow ?: vSeen)
+		apply(vPath, planSync(fLastFp, fBase, fFile, vNow ?: vSeen, inChoices, author, inClock.millis()), vNow ?: vSeen)
 	}
 
 	/*

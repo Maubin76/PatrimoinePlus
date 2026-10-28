@@ -45,6 +45,8 @@ import fr.maubin.patrimoineplus.data.sync.MergeSide
 import fr.maubin.patrimoineplus.data.backup.PriceDto
 import fr.maubin.patrimoineplus.data.repo.MarketRepository
 import kotlinx.coroutines.flow.first
+import fr.maubin.patrimoineplus.data.backup.kBackupVersion
+import fr.maubin.patrimoineplus.data.sync.HistoryAuthor
 
 /*
 	Dossier synchronisé en mémoire.
@@ -83,6 +85,8 @@ class MemorySyncStore(inFolder: String?) : SyncStore
 	override suspend fun fingerprint(): String? = fFingerprint
 
 	override suspend fun base(): BackupFile? = fBase
+
+	override suspend fun deviceId(): String = "tel-test"
 
 	/*
 		Choisit le dossier et oublie l'empreinte.
@@ -256,6 +260,26 @@ class SyncerTest
 	}
 
 	/*
+		Historique : chaque envoi du téléphone y laisse une ligne à son nom,
+		gardée sur le téléphone (le prochain envoi la conserve).
+	*/
+	@Test
+	fun historyIsRecorded() = runTest {
+		val vSyncer = Syncer(fBackup, fStore, { fFolder }, object : SyncHooks
+		{
+			override suspend fun beforeImport(): Boolean = true
+			override suspend fun afterImport() {}
+		}, emptyFlow(), kClock) { HistoryAuthor("tel-1", "Pixel") }						// service avec un auteur
+		vSyncer.sync()
+		AccountRepository(fDb, kClock).create("Créé sur le téléphone", AccountType.CHECKING, null, 100)
+		vSyncer.sync()
+		assertEquals(listOf("première synchronisation"), fileContent().history.drop(1).map { it.summary })
+		assertEquals("1 ajout", fileContent().history.first().summary)
+		assertEquals(listOf("Pixel", "Pixel"), fileContent().history.map { it.device })
+		assertEquals(fileContent().history, fBackup.snapshot().history)
+	}
+
+	/*
 		Même compte renommé des deux côtés : choix par élément, rien n'est
 		modifié avant ; « le fichier » adopte le nom du PC des deux côtés.
 	*/
@@ -336,11 +360,11 @@ class SyncerTest
 		val vBefore = syncFingerprint(fBackup.snapshot())						// téléphone avant
 		val vSign   = Sheet("Fichier", listOf(Column("Clé", 16.0), Column("Valeur", 40.0)), listOf(
 			listOf(Cell.Text("Format"), Cell.Text("patrimoineplus")),
-			listOf(Cell.Text("Version"), Cell.Number(java.math.BigDecimal(9)))
+			listOf(Cell.Text("Version"), Cell.Number(java.math.BigDecimal(kBackupVersion + 1)))
 		))																		// page de signature d'un format futur
 		fFolder.bytes = ByteArrayOutputStream().also { writeXlsx(listOf(vSign), it) }.toByteArray()
 		val vStatus = fSyncer.sync() as SyncStatus.Failed						// refus
-		assertEquals(9, vStatus.newerFormat)
+		assertEquals(kBackupVersion + 1, vStatus.newerFormat)
 		assertEquals(vBefore, syncFingerprint(fBackup.snapshot()))
 		assertEquals(1, fFolder.writes)
 	}
