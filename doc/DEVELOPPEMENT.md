@@ -601,7 +601,8 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   Membre du classeur) et le cashflow fait un thème par membre
   (« Investissements · Alex ») ; « Exporter » (tuile Cashflow) ouvre une
   **prévisualisation** : l'image exacte, et le choix de son apparence (clair
-  ou sombre, Monochrome / Minimal / Coloré, effet verre, palette par défaut
+  ou sombre, Minimal ou Coloré — Monochrome, au schéma identique, n'est pas
+  proposé —, effet verre, palette par défaut
   ou thème enregistré, proposés d'après les réglages) ; « Exporter… »
   l'enregistre en PNG (tuile du schéma sur le fond de l'appli, 1 200 dp en
   double résolution, mode discret respecté ; `ui/components/SankeyExport.kt`

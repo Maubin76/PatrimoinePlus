@@ -53,10 +53,12 @@ import fr.maubin.patrimoineplus.ui.theme.kColorfulLight
 import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.layout.widthIn
 
+private val kExportThemes = listOf(ColorTheme.MINIMAL, ColorTheme.COLORFUL)		// thèmes proposés (Monochrome : même schéma que Minimal)
+
 /*
 	Prévisualisation avant l'export du cashflow en image : l'image telle
 	qu'elle sera enregistrée, et le choix de son apparence (clair ou sombre,
-	thème, effet verre, palette par défaut ou thème enregistré), proposée
+	thème Minimal ou Coloré, Monochrome donnant le même schéma que Minimal ; effet verre, palette par défaut ou thème enregistré), proposée
 	d'après les réglages de l'appli. Choisir un thème enregistré passe au thème
 	Coloré, dont il prend les rôles. L'image est recalculée à chaque choix.
 	inDiagram     : diagramme
@@ -78,7 +80,7 @@ fun SankeyExportDialog(
 	inOnDismiss   : () -> Unit
 )
 {
-	var vStyle   by remember { mutableStateOf(inStart) }										// apparence choisie
+	var vStyle   by remember { mutableStateOf(if (inStart.theme == ColorTheme.MONOCHROME) inStart.copy(theme = ColorTheme.MINIMAL) else inStart) }	// apparence choisie (Monochrome : même schéma que Minimal)
 	var vPreview by remember { mutableStateOf<ImageBitmap?>(null) }							// image prévisualisée (gardée pendant le calcul suivant)
 	var vBusy    by remember { mutableStateOf(true) }											// image en cours de calcul
 	LaunchedEffect(vStyle) {
@@ -103,7 +105,7 @@ fun SankeyExportDialog(
 						PillChoice(listOf(false, true), vStyle.dark, { if (it) "Sombre" else "Clair" }, { vStyle = vStyle.copy(dark = it) })
 						Spacer(Modifier.height(6.dp))
 						Text("Thème", style = MaterialTheme.typography.titleMedium)
-						PillChoice(ColorTheme.entries, if (vStyle.palette != null) ColorTheme.COLORFUL else vStyle.theme, { it.label }, { vStyle = vStyle.copy(theme = it, palette = if (it == ColorTheme.COLORFUL) vStyle.palette else null) })
+						PillChoice(kExportThemes, if (vStyle.palette != null) ColorTheme.COLORFUL else vStyle.theme, { it.label }, { vStyle = vStyle.copy(theme = it, palette = if (it == ColorTheme.COLORFUL) vStyle.palette else null) })
 						Spacer(Modifier.height(6.dp))
 						Row(verticalAlignment = Alignment.CenterVertically) {
 							Text("Effet verre", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
