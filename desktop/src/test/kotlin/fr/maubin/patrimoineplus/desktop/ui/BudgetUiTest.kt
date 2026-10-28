@@ -34,6 +34,10 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.graphics.asSkiaBitmap
 import androidx.compose.ui.test.onNodeWithContentDescription
 import fr.maubin.patrimoineplus.data.budgetOf
+import fr.maubin.patrimoineplus.data.demo.kDemoPartnerId
+import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onFirst
 
 /*
 	Budget prévisionnel dans l'interface du PC (sans écran), page de
@@ -116,5 +120,45 @@ class BudgetUiTest
 		fCompose.waitForIdle()
 		assertTrue(vApp.budget.value.lines.any { it.name == "Netflix" && it.amount == 3_000L && it.theme == ExpenseTheme.SUBSCRIPTIONS && it.categoryId == null })
 		assertEquals(vApp.budget.value, vApp.currentFile().budgetOf())					// rangé dans les données (fichier d'échange)
+	}
+	/*
+		Investissements par membre (démonstration à deux profils) : un groupe
+		par membre avec son total et son « + », schéma « Investissements ·
+		Alex » ; une ligne change de membre par son menu. Capture
+		`32-budget-membres.png`.
+	*/
+	@Test
+	fun investmentsByMember()
+	{
+		val vApp = demo()																	// démonstration à deux profils
+		vApp.setBudget(Budget(listOf(
+			BudgetLine("1", BudgetSection.INCOME, "Salaires", 520_000),
+			BudgetLine("2", BudgetSection.INVESTMENT, "Livret A", 30_000),
+			BudgetLine("3", BudgetSection.INVESTMENT, "PEA d'Alex", 20_000, profileId = kDemoPartnerId)
+		)))
+		vApp.show(Screen.BUDGET)
+		fCompose.setContent { App(vApp) { null } }
+		fCompose.waitForIdle()
+		fCompose.onNodeWithText("Commun à toute la famille").assertExists()
+		fCompose.onNodeWithContentDescription("Ajouter une ligne à Alex").assertExists()
+		fCompose.onNodeWithContentDescription("Cashflow", substring = true).assertTextOrDescription("Investissements · Alex")
+		capture(vApp, "32-budget-membres")
+		fCompose.onAllNodesWithContentDescription("Changer de membre").onFirst().performScrollTo().performClick()
+		fCompose.waitForIdle()
+		fCompose.onNodeWithText("Passer à Alex").performClick()
+		fCompose.waitForIdle()
+		assertEquals(kDemoPartnerId, vApp.budget.value.lines.single { it.id == "2" }.profileId)
+		fCompose.onNodeWithContentDescription("Ajouter une ligne à Moi").performScrollTo().performClick()
+		fCompose.waitForIdle()
+		assertEquals(kDefaultProfileId, vApp.budget.value.lines.last().profileId)
+	}
+
+	/*
+		Vérifie qu'un nœud porte un texte dans sa description.
+		inText : texte attendu
+	*/
+	private fun androidx.compose.ui.test.SemanticsNodeInteraction.assertTextOrDescription(inText: String)
+	{
+		assertTrue(fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].any { it.contains(inText) })
 	}
 }

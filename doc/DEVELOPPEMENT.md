@@ -595,6 +595,11 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   étiquettes « Nom : montant » ; déficit visible. **Un seul budget pour toute
   la famille** (le même dans toutes les vues, comparé au réel de toute la
   famille), rangé dans le **fichier d'échange** (format 8, onglet Budget) ;
+  dès deux profils, les **investissements sont rangés par membre** (membre
+  choisi, sinon titulaire principal du compte suivi, sinon premier profil ;
+  « + » par membre, menu « Changer de membre » sur chaque ligne ; colonne
+  Membre du classeur) et le cashflow fait un thème par membre
+  (« Investissements · Alex ») ;
   le téléphone le garde sans l'afficher (base v8, table `plan`, texte
   `PlansDto`) et le rend tel quel au fichier.
 - **Objectifs** (rail, PC), en deux sections. **Objectifs

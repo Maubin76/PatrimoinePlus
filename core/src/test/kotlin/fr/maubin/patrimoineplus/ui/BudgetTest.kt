@@ -26,6 +26,12 @@ import org.junit.Test
 import java.time.YearMonth
 import fr.maubin.patrimoineplus.ui.budget.ExpenseTheme
 import fr.maubin.patrimoineplus.ui.budget.themeOfCategory
+import fr.maubin.patrimoineplus.ui.budget.investmentMember
+import fr.maubin.patrimoineplus.ui.budget.investmentMembers
+import fr.maubin.patrimoineplus.domain.model.Profile
+import fr.maubin.patrimoineplus.domain.model.Account
+import fr.maubin.patrimoineplus.domain.model.Ownership
+import fr.maubin.patrimoineplus.domain.model.AccountType
 
 /*
 	Budget prévisionnel (appli PC) : totaux, comparaison au réel du mois,
@@ -164,5 +170,34 @@ class BudgetTest
 		assertEquals(ExpenseTheme.CREDIT, themeOfCategory("Emprunts"))
 		assertEquals(ExpenseTheme.DAILY, themeOfCategory("Prêt-à-porter"))					// vêtements, pas un crédit
 		assertEquals(ExpenseTheme.DAILY, themeOfCategory("Accréditation"))				// « crédit » au milieu d'un mot
+	}
+	/*
+		Investissements par membre de la famille : membre choisi, sinon
+		titulaire principal du compte suivi, sinon premier profil ; le
+		cashflow fait un thème par membre ; un seul profil : un seul thème.
+	*/
+	@Test
+	fun investmentsByMember()
+	{
+		val vMe      = Profile("moi", "Moi", 0)												// premier profil
+		val vAlex    = Profile("alex", "Alex", 1)											// second profil
+		val vPea     = Account("pea", "PEA", AccountType.BROKERAGE, owners = listOf(Ownership("alex", 100)))	// compte d'Alex
+		val vJoint   = Account("joint", "Livret joint", AccountType.SAVINGS, owners = listOf(Ownership("moi", 50), Ownership("alex", 50)))	// compte à parts égales
+		val vBudget  = Budget(listOf(
+			BudgetLine("1", BudgetSection.INCOME, "Salaires", eur(4_000.0)),
+			BudgetLine("2", BudgetSection.INVESTMENT, "PEA", eur(300.0), accountId = vPea.id),
+			BudgetLine("3", BudgetSection.INVESTMENT, "Livret", eur(200.0), accountId = vJoint.id),
+			BudgetLine("4", BudgetSection.INVESTMENT, "Assurance vie", eur(100.0), accountId = vPea.id, profileId = "moi"),
+			BudgetLine("5", BudgetSection.INVESTMENT, "Crypto", eur(50.0))
+		))																					// budget de la famille
+		val vFamily  = listOf(vMe, vAlex)													// profils
+		assertEquals(listOf("alex", "moi", "moi", "moi"), vBudget.lines.drop(1).map { investmentMember(it, listOf(vPea, vJoint), vFamily) })
+		val vMembers = investmentMembers(vBudget, listOf(vPea, vJoint), vFamily)			// noms des membres
+		val vDiagram = cashFlow(compareBudget(vBudget, DataSet.kEmpty, YearMonth.of(2026, 10)), inActual = false, inMembers = vMembers)	// diagramme prévu
+		assertEquals(listOf("Investissements · Moi", "Investissements · Alex", "Reste"), vDiagram.groups.map { it.name })
+		assertEquals(listOf("Livret", "Assurance vie", "Crypto"), vDiagram.groups[0].items.map { it.name })
+		assertEquals(listOf("PEA"), vDiagram.groups[1].items.map { it.name })
+		assertTrue(investmentMembers(vBudget, listOf(vPea), listOf(vMe)).isEmpty())	// un seul profil : pas de membres
+		assertEquals(listOf("Investissements", "Reste"), cashFlow(compareBudget(vBudget, DataSet.kEmpty, YearMonth.of(2026, 10)), inActual = false).groups.map { it.name })
 	}
 }

@@ -7,6 +7,9 @@ import fr.maubin.patrimoineplus.domain.model.TransactionKind
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.time.YearMonth
+import fr.maubin.patrimoineplus.domain.model.Account
+import fr.maubin.patrimoineplus.domain.model.Ownership
+import fr.maubin.patrimoineplus.domain.model.Profile
 
 private val kJson = Json { ignoreUnknownKeys = true; prettyPrint = true; encodeDefaults = true }	// format du fichier du budget
 
@@ -307,26 +310,70 @@ data class CashFlowDiagram(
 }
 
 /*
+	Membre de la famille d'une ligne d'investissement : celui choisi, sinon
+	le titulaire principal du compte suivi (plus grande part, puis ordre des
+	profils), sinon le premier profil ; null sans profils.
+	inLine     : ligne du budget
+	inAccounts : comptes
+	inProfiles : profils, dans l'ordre
+*/
+fun investmentMember(
+	inLine     : BudgetLine,
+	inAccounts : List<Account>,
+	inProfiles : List<Profile>
+): String?
+{
+	val vIds    = inProfiles.map { it.id }												// profils connus
+	val vChosen = inLine.profileId?.takeIf { it in vIds }								// membre choisi
+	val vHolder = inAccounts.firstOrNull { it.id == inLine.accountId }?.owners
+		?.filter { it.profileId in vIds }
+		?.sortedWith(compareByDescending<Ownership> { it.percent }.thenBy { vIds.indexOf(it.profileId) })
+		?.firstOrNull()?.profileId														// titulaire principal du compte suivi
+	return vChosen ?: vHolder ?: vIds.firstOrNull()
+}
+
+/*
+	Nom du membre de chaque ligne d'investissement, par identifiant de ligne,
+	quand la famille a plusieurs profils (vide sinon) : le cashflow range
+	alors les investissements par membre.
+	inBudget   : budget
+	inAccounts : comptes
+	inProfiles : profils, dans l'ordre
+*/
+fun investmentMembers(
+	inBudget   : Budget,
+	inAccounts : List<Account>,
+	inProfiles : List<Profile>
+): Map<String, String> =
+	if (inProfiles.size < 2) emptyMap()
+	else inBudget.lines.filter { it.section == BudgetSection.INVESTMENT }.associate { inLine ->
+		inLine.id to (investmentMember(inLine, inAccounts, inProfiles)?.let { inId -> inProfiles.first { it.id == inId }.name }.orEmpty())
+	}
+
+/*
 	Construit le diagramme de cashflow : prévu (inActual faux) ou réel du
 	mois (lignes et thèmes suivis seulement). Lignes nulles ignorées. Les
 	investissements forment le premier thème (« Investissements ») ; les
 	dépenses sont regroupées par thème (prévu : détail des lignes ; réel :
 	thème seul, son réel ne se répartit pas entre ses lignes) ; le reste
-	ferme la marche.
-	inView   : budget comparé
-	inActual : vrai pour le réel du mois
+	ferme la marche. Avec des membres (famille à plusieurs profils), les
+	investissements forment un thème par membre (« Investissements · Alex »).
+	inView    : budget comparé
+	inActual  : vrai pour le réel du mois
+	inMembers : nom du membre de chaque ligne d'investissement (voir investmentMembers)
 */
 fun cashFlow(
-	inView   : BudgetView,
-	inActual : Boolean
+	inView    : BudgetView,
+	inActual  : Boolean,
+	inMembers : Map<String, String> = emptyMap()
 ): CashFlowDiagram
 {
 	val vAmount = { inLine: BudgetLineView -> if (inActual) (inLine.actual ?: 0L) else inLine.line.amount }	// montant retenu
 	val vLines  = { inSection: BudgetSection -> inView.section(inSection).filter { vAmount(it) > 0 } }	// lignes non nulles d'une rubrique
 	val vFlow   = { inLine: BudgetLineView -> CashFlow(inLine.line.name.ifBlank { inLine.line.section.label }, vAmount(inLine), inLine.line.section) }	// flux d'une ligne
-	val vGroups = { inSection: BudgetSection, inDefault: String? ->
+	val vGroups = { inSection: BudgetSection, inDefault: ((BudgetLineView) -> String)? ->
 		vLines(inSection)
-			.groupBy { inLine -> inDefault ?: inLine.theme?.label ?: "\u0000${inLine.line.id}" }
+			.groupBy { inLine -> inDefault?.invoke(inLine) ?: inLine.theme?.label ?: "\u0000${inLine.line.id}" }
 			.map { (inKey, inMembers) ->
 				val vItems = inMembers.map(vFlow).sortedByDescending { it.amount }			// lignes du thème
 				val vName  = if (inKey.startsWith("\u0000")) vItems.single().name else inKey	// nom du thème
@@ -337,7 +384,8 @@ fun cashFlow(
 	val vIn      = vLines(BudgetSection.INCOME).map(vFlow).sortedByDescending { it.amount }	// entrées
 	val vSpend   = if (inActual) inView.themes.filter { it.actual > 0 }.map { CashGroup(it.theme.label, BudgetSection.EXPENSE, emptyList(), it.actual) }.sortedByDescending { it.amount }
 		else vGroups(BudgetSection.EXPENSE, null)										// dépenses par thème
-	val vOut     = vGroups(BudgetSection.INVESTMENT, BudgetSection.INVESTMENT.label) + vSpend	// sorties par thème
+	val vInvest  = { inLine: BudgetLineView -> inMembers[inLine.line.id]?.takeIf { it.isNotEmpty() }?.let { "${BudgetSection.INVESTMENT.label} · $it" } ?: BudgetSection.INVESTMENT.label }	// thème d'un investissement : par membre
+	val vOut     = vGroups(BudgetSection.INVESTMENT, vInvest) + vSpend					// sorties par thème
 	val vInSum   = vIn.sumOf { it.amount }												// total des entrées
 	val vOutSum  = vOut.sumOf { it.amount }												// total des sorties
 	return CashFlowDiagram(

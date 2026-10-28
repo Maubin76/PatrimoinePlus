@@ -72,7 +72,12 @@ import fr.maubin.patrimoineplus.ui.components.heroFilled
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import fr.maubin.patrimoineplus.desktop.ui.AssistantHint
 import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
-import fr.maubin.patrimoineplus.data.DataSet
+import fr.maubin.patrimoineplus.data.DataSet
+import fr.maubin.patrimoineplus.ui.budget.investmentMember
+import fr.maubin.patrimoineplus.ui.budget.investmentMembers
+import fr.maubin.patrimoineplus.domain.model.Profile
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 
 private const val kNameWeight   = 2.4f											// largeur relative de la colonne du nom
 private const val kAmountWeight = 1.2f											// largeur relative de la colonne du montant
@@ -98,7 +103,8 @@ fun BudgetScreen(
 	val vBudget  by inController.budget.collectAsState()								// budget
 	var vMonth   by remember { mutableStateOf(YearMonth.from(inSpace.today)) }		// mois dont on fixe les objectifs
 	val vView    = remember(vBudget, inFamily) { compareBudget(vBudget, inFamily, YearMonth.from(inSpace.today)) }	// budget rangé par thème
-	val vDiagram = remember(vView) { cashFlow(vView, false) }							// diagramme du budget
+	val vMembers = remember(vBudget, inFamily) { investmentMembers(vBudget, inFamily.accounts, inFamily.profiles) }	// membre de chaque investissement (famille à plusieurs profils)
+	val vDiagram = remember(vView, vMembers) { cashFlow(vView, false, vMembers) }		// diagramme du budget
 	val vUpdate  = { inLines: List<BudgetLine> -> inController.setBudget(Budget(inLines)) }	// enregistre les lignes
 	Column(
 		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp).padding(bottom = LocalAssistantRoom.current),
@@ -124,7 +130,7 @@ fun BudgetScreen(
 		Box(Modifier.tourAnchor("budget.lines")) {
 			TileRow(
 				Cell(1f) { inMod -> SectionTile(BudgetSection.INCOME, vView, vBudget, vUpdate, inMod) },
-				Cell(1f) { inMod -> SectionTile(BudgetSection.INVESTMENT, vView, vBudget, vUpdate, inMod) },
+				Cell(1f) { inMod -> SectionTile(BudgetSection.INVESTMENT, vView, vBudget, vUpdate, inMod, inFamily) },
 				inMinWidth = 760.dp
 			)																				// entrées et investissements côte à côte
 		}
@@ -166,6 +172,7 @@ private fun Figures(inBudget: Budget)
 	inBudget   : budget
 	inUpdate   : enregistre les lignes
 	inModifier : place de la tuile
+	inFamily   : données de la famille (investissements rangés par membre dès deux profils)
 */
 @Composable
 private fun SectionTile(
@@ -173,11 +180,13 @@ private fun SectionTile(
 	inView     : BudgetView,
 	inBudget   : Budget,
 	inUpdate   : (List<BudgetLine>) -> Unit,
-	inModifier : Modifier = Modifier
+	inModifier : Modifier = Modifier,
+	inFamily   : DataSet? = null
 )
 {
+	val vProfiles = inFamily?.profiles.orEmpty().takeIf { it.size > 1 && inSection == BudgetSection.INVESTMENT }	// membres : investissements rangés par membre
 	val vChange = { inLineView: BudgetLineView -> { inNew: BudgetLine? -> inUpdate(inBudget.lines.mapNotNull { if (it.id == inLineView.line.id) inNew else it }) } }	// modification d'une ligne
-	val vAdd    = { inTheme: ExpenseTheme? -> inUpdate(inBudget.lines + BudgetLine(UUID.randomUUID().toString(), inSection, "", 0, theme = inTheme)) }	// ajout d'une ligne
+	val vAdd    = { inTheme: ExpenseTheme?, inMember: String? -> inUpdate(inBudget.lines + BudgetLine(UUID.randomUUID().toString(), inSection, "", 0, theme = inTheme, profileId = inMember)) }	// ajout d'une ligne
 	Tile(
 		inModifier   = inModifier,
 		inTitle      = inSection.label,
@@ -186,7 +195,7 @@ private fun SectionTile(
 		inAction     = {
 			Text("Total ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			AmountText(inCents = inBudget.total(inSection), inStyle = MaterialTheme.typography.titleMedium)
-			if (inSection != BudgetSection.EXPENSE) AddButton("Ajouter une ligne aux ${inSection.label.lowercase()}") { vAdd(null) }
+			if (inSection != BudgetSection.EXPENSE && vProfiles == null) AddButton("Ajouter une ligne aux ${inSection.label.lowercase()}") { vAdd(null, null) }
 		}
 	) {
 		if (inSection == BudgetSection.EXPENSE)
@@ -196,11 +205,21 @@ private fun SectionTile(
 					Column(Modifier.weight(1f)) {
 						inColumn.forEach { inTheme ->
 							val vTheme = inView.themes.firstOrNull { it.theme == inTheme }		// lignes du thème
-							ThemeRow(inTheme, vTheme?.planned ?: 0L) { vAdd(inTheme) }
+							GroupRow(inTheme.label, vTheme?.planned ?: 0L) { vAdd(inTheme, null) }
 							vTheme?.lines.orEmpty().forEach { inLineView -> LineRow(inLineView, vChange(inLineView)) }
 						}
 					}
 				}
+			}
+		}
+		else if (vProfiles != null)
+		{
+			val vLines = inView.section(inSection)											// investissements
+			val vOf    = { inLine: BudgetLineView -> investmentMember(inLine.line, inFamily!!.accounts, vProfiles) }	// membre d'une ligne
+			vProfiles.forEach { inProfile ->
+				val vMine = vLines.filter { vOf(it) == inProfile.id }							// investissements du membre
+				GroupRow(inProfile.name, vMine.sumOf { it.line.amount }, inMenu = true) { vAdd(null, inProfile.id) }
+				vMine.forEach { inLineView -> LineRow(inLineView, vChange(inLineView), vProfiles.filter { it.id != inProfile.id }) }
 			}
 		}
 		else
@@ -231,38 +250,45 @@ private fun AddButton(
 }
 
 /*
-	Ligne d'un thème de dépenses : nom du thème, total de ses lignes et « + »
-	qui ajoute une ligne dans ce thème.
-	inTheme   : thème
-	inPlanned : total des lignes du thème
-	inOnAdd   : ajout d'une ligne au thème
+	Ligne d'un groupe (thème de dépenses, ou membre de la famille pour les
+	investissements) : nom, total de ses lignes et « + » qui ajoute une
+	ligne dans ce groupe.
+	inLabel   : nom du groupe
+	inPlanned : total des lignes du groupe
+	inMenu    : lignes avec un menu (membre) : total aligné sur leurs montants
+	inOnAdd   : ajout d'une ligne au groupe
 */
 @Composable
-private fun ThemeRow(
-	inTheme   : ExpenseTheme,
+private fun GroupRow(
+	inLabel   : String,
 	inPlanned : Long,
+	inMenu    : Boolean = false,
 	inOnAdd   : () -> Unit
 )
 {
 	Row(Modifier.fillMaxWidth().padding(top = 14.dp), verticalAlignment = Alignment.CenterVertically) {
 		val vStyle = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp, lineHeight = 24.sp)	// sous-titre : entre le texte des lignes et le titre de rubrique
-		Text(inTheme.label, style = vStyle, modifier = Modifier.weight(kNameWeight).padding(end = 12.dp))
+		Text(inLabel, style = vStyle, modifier = Modifier.weight(kNameWeight).padding(end = 12.dp))
 		Box(Modifier.weight(kAmountWeight).padding(end = 12.dp), contentAlignment = Alignment.CenterEnd) { AmountText(inCents = inPlanned, inStyle = vStyle) }
-		AddButton("Ajouter une ligne à ${inTheme.label}", inOnAdd)
+		if (inMenu) Spacer(Modifier.width(40.dp))
+		AddButton("Ajouter une ligne à $inLabel", inOnAdd)
 	}
 	HorizontalDivider(thickness = 1.5.dp, color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f))	// trait sous le thème, plus marqué qu'un filet
 }
 
 /*
 	Ligne de budget modifiable : nom et montant, sans filets ; « × » la
-	retire. Une dépense reste dans le thème où elle a été ajoutée.
+	retire. Une dépense reste dans le thème où elle a été ajoutée ; un
+	investissement change de membre par son menu (icône famille).
 	inView     : ligne
 	inOnChange : nouvelle ligne ; null pour la retirer
+	inMoveTo   : autres membres où déplacer la ligne ; vide sans menu
 */
 @Composable
 private fun LineRow(
 	inView     : BudgetLineView,
-	inOnChange : (BudgetLine?) -> Unit
+	inOnChange : (BudgetLine?) -> Unit,
+	inMoveTo   : List<Profile> = emptyList()
 )
 {
 	val vLine   = inView.line																// ligne
@@ -280,6 +306,18 @@ private fun LineRow(
 				inUnderline = false
 			)
 			Text("$kCurrencySeparator€", style = MaterialTheme.typography.bodyLarge)						// même fin que les totaux : chiffres alignés
+		}
+		if (inMoveTo.isNotEmpty())
+		{
+			var vMenu by remember { mutableStateOf(false) }									// menu des membres ouvert
+			Box(Modifier.width(40.dp)) {
+				IconButton(onClick = { vMenu = true }) { Icon(LineIcons.Family, contentDescription = "Changer de membre", modifier = Modifier.size(18.dp)) }
+				DropdownMenu(expanded = vMenu, onDismissRequest = { vMenu = false }) {
+					inMoveTo.forEach { inProfile ->
+						DropdownMenuItem(text = { Text("Passer à ${inProfile.name}") }, onClick = { vMenu = false; inOnChange(vLine.copy(profileId = inProfile.id)) })
+					}
+				}
+			}
 		}
 		Box(Modifier.width(40.dp)) {
 			IconButton(onClick = { inOnChange(null) }) { Icon(LineIcons.Close, contentDescription = "Retirer la ligne", modifier = Modifier.size(16.dp)) }
