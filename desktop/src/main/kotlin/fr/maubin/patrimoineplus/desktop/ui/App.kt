@@ -152,7 +152,8 @@ import kotlinx.coroutines.flow.first
 import fr.maubin.patrimoineplus.ui.components.LocalPointer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerEventType
+import fr.maubin.patrimoineplus.ui.components.LocalProfiles
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -199,7 +200,7 @@ fun App(
 	val vLaunch   = rememberLaunch(inWindowShown)												// lancement : fond seul, puis arrivée des éléments
 	val vPointer  = remember { mutableStateOf<Offset?>(null) }									// pointeur dans la fenêtre (regard de l'assistant)
 	DeskTheme(inDarkTheme = vDark, inColorTheme = vSettings.colors, inGlass = vSettings.glass, inPalette = vPalette) {
-		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie), LocalTourAnchors provides remember { TourAnchors() }, LocalLaunch provides vLaunch, LocalPointer provides remember { { vPointer.value } }, LocalAssistant provides (if (vSettings.assistant) vSettings.calm else null), LocalAssistantRoom provides (if (vSettings.assistant) kAssistantRoom else 0.dp)) {
+		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie), LocalTourAnchors provides remember { TourAnchors() }, LocalLaunch provides vLaunch, LocalPointer provides remember { { vPointer.value } }, LocalAssistant provides (if (vSettings.assistant) vSettings.calm else null), LocalAssistantRoom provides (if (vSettings.assistant) kAssistantRoom else 0.dp), LocalProfiles provides vSpace.data.profiles) {
 			AppGround(vDark, vSettings.glass)												// fond pastel, ou formes floues derrière le verre
 			Surface(
 				modifier     = Modifier.fillMaxSize().pointerInput(Unit) {

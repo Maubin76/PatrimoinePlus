@@ -77,6 +77,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.mutableIntStateOf
 import fr.maubin.patrimoineplus.desktop.ui.AssistantHint
 import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
+import fr.maubin.patrimoineplus.ui.components.accountLabel
 
 private val kRowDate   = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)	// date d'une ligne
 private const val kPage = 20														// opérations affichées d'abord, puis à chaque « Afficher 20 de plus »
@@ -209,7 +210,7 @@ private fun Filters(
 		}
 		Spacer(Modifier.padding(top = 12.dp))
 		Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-			Dropdown("Compte", listOf(null to "Tous les comptes") + inSpace.data.accounts.map { it.id to it.name }, inQuery.accountId, Modifier.weight(1.2f)) { inOnQuery(inQuery.copy(accountId = it)) }
+			Dropdown("Compte", listOf(null to "Tous les comptes") + inSpace.data.accounts.map { it.id to accountLabel(it) }, inQuery.accountId, Modifier.weight(1.2f)) { inOnQuery(inQuery.copy(accountId = it)) }
 			Dropdown("Catégorie", listOf(null to "Toutes les catégories") + inSpace.data.categories.sortedWith(compareBy({ it.kind }, { it.sortOrder })).map { it.id to if (it.kind == CategoryKind.INCOME) "${it.name} (revenu)" else it.name }, inQuery.categoryId, Modifier.weight(1.2f)) { inOnQuery(inQuery.copy(categoryId = it)) }
 			OutlinedTextField(
 				value         = vFrom,

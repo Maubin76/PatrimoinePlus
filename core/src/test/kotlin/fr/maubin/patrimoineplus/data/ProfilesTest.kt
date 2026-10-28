@@ -34,6 +34,9 @@ import java.time.ZoneId
 import fr.maubin.patrimoineplus.data.sync.syncFingerprint
 import fr.maubin.patrimoineplus.domain.calc.profileRemoval
 import fr.maubin.patrimoineplus.data.edit.OpeningBalance
+import fr.maubin.patrimoineplus.domain.calc.holderLabel
+import fr.maubin.patrimoineplus.domain.calc.accountLabel
+import fr.maubin.patrimoineplus.domain.model.Account
 
 /*
 	Profils : reprise des données d'avant les profils (tout au profil
@@ -153,4 +156,29 @@ class ProfilesTest
 		assertEquals(vFile.accounts.map { it.owners }, vRead.accounts.map { it.owners })
 		assertEquals(listOf("Mathieu", "Julie"), vFile.profiles.map { it.name })
 	}
+
+	/*
+		Titulaire d'un compte, déduit de ses propriétaires : un profil, ou
+		plusieurs réunis (dans l'ordre des profils) ; rien avec un seul profil ;
+		nom du compte suivi du titulaire dans les listes.
+	*/
+	@Test
+	fun holders()
+	{
+		val vMe    = Profile("p1", "Moi", 0)													// profils
+		val vAlex  = Profile("p2", "Alex", 1)
+		val vSam   = Profile("p3", "Sam", 2)
+		val vAll   = listOf(vSam, vAlex, vMe)													// dans le désordre
+		val vSolo  = Account("a", "Compte courant", AccountType.CHECKING, owners = listOf(Ownership("p2", 100)))	// compte d'Alex
+		val vJoint = Account("b", "Compte joint", AccountType.CHECKING, owners = listOf(Ownership("p2", 50), Ownership("p1", 50)))	// compte partagé
+		val vThree = vJoint.copy(owners = listOf(Ownership("p3", 40), Ownership("p1", 30), Ownership("p2", 30)))	// à trois
+		assertEquals("Alex", holderLabel(vSolo, vAll))
+		assertEquals("Moi et Alex", holderLabel(vJoint, vAll))
+		assertEquals("Moi, Alex et Sam", holderLabel(vThree, vAll))
+		assertEquals(null, holderLabel(vSolo, listOf(vAlex)))
+		assertEquals(null, holderLabel(vSolo.copy(owners = emptyList()), vAll))
+		assertEquals("Compte courant · Alex", accountLabel(vSolo, vAll))
+		assertEquals("Compte courant", accountLabel(vSolo, listOf(vAlex)))
+	}
 }
+

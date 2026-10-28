@@ -19,6 +19,7 @@ import fr.maubin.patrimoineplus.ui.planning.RecurrenceErrors
 import fr.maubin.patrimoineplus.ui.planning.RecurrenceForm
 import fr.maubin.patrimoineplus.ui.planning.buildRecurrence
 import fr.maubin.patrimoineplus.ui.planning.checkRecurrence
+import fr.maubin.patrimoineplus.ui.components.accountLabel
 
 /*
 	Nature d'une récurrence dans le panneau.
@@ -52,7 +53,7 @@ fun RecurrencePanel(
 	var vBadDay  by remember(inStart) { mutableStateOf(false) }						// première échéance illisible
 	var vEndText by remember(inStart) { mutableStateOf(inStart.end?.let(::formatFrenchDate).orEmpty()) }	// fin tapée
 	val vKind    = when { vForm.transfer -> RecurringKind.TRANSFER; vForm.expense -> RecurringKind.EXPENSE; else -> RecurringKind.INCOME }	// nature
-	val vAccounts = vData.accounts.filter { !it.type.isProperty && (!it.archived || it.id == vForm.accountId || it.id == vForm.toAccountId) }.map { it.id to it.name }	// comptes proposés
+	val vAccounts = vData.accounts.filter { !it.type.isProperty && (!it.archived || it.id == vForm.accountId || it.id == vForm.toAccountId) }.map { it.id to accountLabel(it) }	// comptes proposés
 
 	/*
 		Enregistre la récurrence si la saisie est valide.

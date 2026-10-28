@@ -51,6 +51,7 @@ import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
 import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
 import fr.maubin.patrimoineplus.domain.calc.PropertyItem
 import fr.maubin.patrimoineplus.ui.account.AccountExtras
+import fr.maubin.patrimoineplus.ui.components.accountLabel
 
 private val kDay = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)			// date d'une échéance
 
@@ -142,10 +143,10 @@ fun RecurrenceSheet(
 		SegmentedChoice(vKinds.indices.toList(), vKind, { vKinds[it] }, { inKind -> vForm = vForm.copy(transfer = inKind == 2, expense = inKind == 0, categoryId = null) })
 		TextInput(vForm.label, { vForm = vForm.copy(label = it) }, "Libellé", vErrors.label)
 		AmountInput(vForm.amount, { vForm = vForm.copy(amount = it.replace("-", "")) }, "Montant", vErrors.amount)
-		Picker(if (vForm.transfer) "Depuis" else "Compte", vUsable.map { it.id as String? to it.name }, vForm.accountId, vErrors.account) { vForm = vForm.copy(accountId = it) }
+		Picker(if (vForm.transfer) "Depuis" else "Compte", vUsable.map { it.id as String? to accountLabel(it) }, vForm.accountId, vErrors.account) { vForm = vForm.copy(accountId = it) }
 		if (vForm.transfer)
 		{
-			Picker("Vers", vUsable.map { it.id as String? to it.name }, vForm.toAccountId, vErrors.target) { vForm = vForm.copy(toAccountId = it) }
+			Picker("Vers", vUsable.map { it.id as String? to accountLabel(it) }, vForm.toAccountId, vErrors.target) { vForm = vForm.copy(toAccountId = it) }
 		}
 		else
 		{
@@ -200,7 +201,7 @@ fun LoanFields(
 	TextInput(inForm.months, { inOnChange(inForm.copy(months = it.filter(Char::isDigit))) }, "Durée (mois)", inErrors.months, "240 pour 20 ans")
 	DateInput(inForm.firstDue, { inOnChange(inForm.copy(firstDue = it)) }, "Première mensualité")
 	AmountInput(inForm.insurance, { inOnChange(inForm.copy(insurance = it)) }, "Assurance mensuelle (facultatif)", inErrors.insurance)
-	Picker("Payé depuis", inAccounts.filter { !it.archived && !it.type.isProperty && it.type != AccountType.LOAN }.map { it.id as String? to it.name }, inForm.payFrom, inErrors.payFrom) { inOnChange(inForm.copy(payFrom = it)) }
+	Picker("Payé depuis", inAccounts.filter { !it.archived && !it.type.isProperty && it.type != AccountType.LOAN }.map { it.id as String? to accountLabel(it) }, inForm.payFrom, inErrors.payFrom) { inOnChange(inForm.copy(payFrom = it)) }
 	Picker("Catégorie des intérêts", listOf<Pair<String?, String>>(null to "Crédit (créée si besoin)") + inCategories.filter { it.kind == CategoryKind.EXPENSE && !it.archived }.map { it.id to it.name }, inForm.categoryId, null) { inOnChange(inForm.copy(categoryId = it)) }
 	Picker("Bien financé", listOf<Pair<String?, String>>(null to "Aucun (auto, prêt personnel…)") + inProperties.map { it.acquisition.id to it.name }, inForm.propertyId, null) { inOnChange(inForm.copy(propertyId = it)) }
 	Text(

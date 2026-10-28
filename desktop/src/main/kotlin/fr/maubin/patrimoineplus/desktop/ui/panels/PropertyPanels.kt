@@ -27,6 +27,7 @@ import fr.maubin.patrimoineplus.ui.property.checkPurchase
 import fr.maubin.patrimoineplus.ui.property.checkSale
 import fr.maubin.patrimoineplus.ui.property.propertyNoun
 import fr.maubin.patrimoineplus.ui.property.saleGain
+import fr.maubin.patrimoineplus.ui.components.accountLabel
 
 private const val kOwned = "__deja_possede__"										// choix « Déjà possédé » / « Aucun versement »
 
@@ -75,12 +76,12 @@ fun PurchasePanel(
 		}
 	) {
 		FormError(vGeneral)
-		Picker("Compte", vData.accounts.filter { it.type.isProperty && (!it.archived || it.id == vForm.accountId) }.map { it.id to it.name }, vForm.accountId, { vForm = vForm.copy(accountId = it) }, vErrors.account.takeIf { vAccount == null }, inEnabled = vSale == null)
+		Picker("Compte", vData.accounts.filter { it.type.isProperty && (!it.archived || it.id == vForm.accountId) }.map { it.id to accountLabel(it) }, vForm.accountId, { vForm = vForm.copy(accountId = it) }, vErrors.account.takeIf { vAccount == null }, inEnabled = vSale == null)
 		FormField(vForm.name, { vForm = vForm.copy(name = it) }, "Nom", vErrors.name, inSupport = if (vNoun == "bien") "Par exemple « Appartement Lyon 3e »" else "Par exemple « Montre de 1968 »")
 		FormField(vForm.price, { vForm = vForm.copy(price = it) }, "Prix d’achat (€)", vErrors.price, inSupport = if (vSale != null) "Vendu : annulez d’abord la vente pour changer le prix." else "Compté à ce prix dans le patrimoine", inNumeric = true)
 		Picker(
 			inLabel    = "Payé depuis",
-			inOptions  = listOf(kOwned to "Déjà possédé (aucun compte débité)") + vData.accounts.filter { !it.type.isProperty && (!it.archived || it.id == vForm.paidFrom) }.map { it.id to it.name },
+			inOptions  = listOf(kOwned to "Déjà possédé (aucun compte débité)") + vData.accounts.filter { !it.type.isProperty && (!it.archived || it.id == vForm.paidFrom) }.map { it.id to accountLabel(it) },
 			inSelected = vForm.paidFrom ?: kOwned,
 			inOnSelect = { vForm = vForm.copy(paidFrom = it.takeIf { inId -> inId != kOwned }) },
 			inError    = vErrors.account.takeIf { vAccount != null }
@@ -174,7 +175,7 @@ fun SalePanel(
 		)
 		Picker(
 			inLabel    = "Prix versé sur",
-			inOptions  = listOf(kOwned to "Aucun compte (don, perte)") + vData.accounts.filter { !it.type.isProperty && (!it.archived || it.id == vForm.soldTo) }.map { it.id to it.name },
+			inOptions  = listOf(kOwned to "Aucun compte (don, perte)") + vData.accounts.filter { !it.type.isProperty && (!it.archived || it.id == vForm.soldTo) }.map { it.id to accountLabel(it) },
 			inSelected = vForm.soldTo ?: kOwned,
 			inOnSelect = { vForm = vForm.copy(soldTo = it.takeIf { inId -> inId != kOwned }) },
 			inError    = vErrors.account

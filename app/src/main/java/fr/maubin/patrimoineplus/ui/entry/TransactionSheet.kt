@@ -68,6 +68,7 @@ import fr.maubin.patrimoineplus.ui.components.Picker
 import fr.maubin.patrimoineplus.domain.model.Frequency
 import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
 import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
+import fr.maubin.patrimoineplus.ui.components.accountLabel
 
 /*
 	Feuille de saisie d'une opération : dépense, revenu, virement entre deux
@@ -408,7 +409,7 @@ private fun AccountPicker(
 	inOnSelect : (String) -> Unit
 )
 {
-	Picker(inLabel, inAccounts.map { it.id as String? to "${it.name}  ·  ${it.type.label}" }, inSelected, inError) { it?.let(inOnSelect) }
+	Picker(inLabel, inAccounts.map { it.id as String? to "${accountLabel(it)}  ·  ${it.type.label}" }, inSelected, inError) { it?.let(inOnSelect) }
 }
 
 /*

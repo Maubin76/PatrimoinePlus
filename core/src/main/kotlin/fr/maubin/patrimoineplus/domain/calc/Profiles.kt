@@ -175,3 +175,39 @@ fun profileRemoval(
 	)
 }
 
+/*
+	Titulaire d'un compte, déduit de ses propriétaires : le nom du profil
+	(« Alex »), ou les noms réunis pour un compte partagé (« Moi et Alex »),
+	dans l'ordre des profils ; null avec un seul profil (rien à distinguer)
+	ou sans propriétaire connu.
+	inAccount  : compte
+	inProfiles : profils de la famille
+*/
+fun holderLabel(
+	inAccount  : Account,
+	inProfiles : List<Profile>
+): String?
+{
+	if (inProfiles.size < 2) return null
+	val vIds   = inAccount.owners.filter { it.percent > 0 }.map { it.profileId }.toSet()	// propriétaires
+	val vNames = inProfiles.sortedBy { it.sortOrder }.filter { it.id in vIds }.map { it.name }	// leurs noms, dans l'ordre
+	return when (vNames.size)
+	{
+		0    -> null
+		1    -> vNames.single()
+		else -> vNames.dropLast(1).joinToString(", ") + " et " + vNames.last()
+	}
+}
+
+/*
+	Nom d'un compte suivi de son titulaire quand la famille a plusieurs
+	profils (« Compte courant · Alex ») : deux comptes de même nom se
+	distinguent partout où l'on choisit un compte.
+	inAccount  : compte
+	inProfiles : profils de la famille
+*/
+fun accountLabel(
+	inAccount  : Account,
+	inProfiles : List<Profile>
+): String = holderLabel(inAccount, inProfiles)?.let { "${inAccount.name} · $it" } ?: inAccount.name
+

@@ -33,6 +33,7 @@ import fr.maubin.patrimoineplus.ui.property.checkPurchase
 import fr.maubin.patrimoineplus.ui.property.checkSale
 import fr.maubin.patrimoineplus.ui.property.propertyNoun
 import fr.maubin.patrimoineplus.ui.property.saleGain
+import fr.maubin.patrimoineplus.ui.components.accountLabel
 
 /*
 	Feuille d'achat d'un bien (compte Immobilier ou Collection) : nom, prix,
@@ -65,7 +66,7 @@ fun PurchaseSheet(
 		AmountInput(vForm.price, { vForm = vForm.copy(price = it) }, "Prix d’achat", vErrors.price, if (inSold) "Vendu : annulez d’abord la vente pour changer le prix." else "Compté à ce prix dans le patrimoine.")
 		Picker(
 			inLabel    = "Payé depuis",
-			inOptions  = listOf<Pair<String?, String>>(null to "Déjà possédé (aucun compte débité)") + inAccounts.filter { !it.type.isProperty && (!it.archived || it.id == vForm.paidFrom) }.map { it.id to it.name },
+			inOptions  = listOf<Pair<String?, String>>(null to "Déjà possédé (aucun compte débité)") + inAccounts.filter { !it.type.isProperty && (!it.archived || it.id == vForm.paidFrom) }.map { it.id to accountLabel(it) },
 			inSelected = vForm.paidFrom,
 			inError    = vErrors.account
 		) { vForm = vForm.copy(paidFrom = it) }
@@ -151,7 +152,7 @@ fun SaleSheet(
 		)
 		Picker(
 			inLabel    = "Prix versé sur",
-			inOptions  = listOf<Pair<String?, String>>(null to "Aucun compte (don, perte)") + inAccounts.filter { !it.type.isProperty && (!it.archived || it.id == vForm.soldTo) }.map { it.id to it.name },
+			inOptions  = listOf<Pair<String?, String>>(null to "Aucun compte (don, perte)") + inAccounts.filter { !it.type.isProperty && (!it.archived || it.id == vForm.soldTo) }.map { it.id to accountLabel(it) },
 			inSelected = vForm.soldTo,
 			inError    = vErrors.account
 		) { vForm = vForm.copy(soldTo = it) }

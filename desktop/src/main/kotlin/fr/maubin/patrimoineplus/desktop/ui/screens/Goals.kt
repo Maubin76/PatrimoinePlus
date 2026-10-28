@@ -102,6 +102,7 @@ import fr.maubin.patrimoineplus.ui.components.glassWell
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import fr.maubin.patrimoineplus.desktop.ui.AssistantHint
 import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
+import fr.maubin.patrimoineplus.ui.components.accountLabel
 
 private const val kBarMillis = 420														// remplissage de la barre d'avancement
 
@@ -504,7 +505,7 @@ private fun Editor(
 		FormField(inDraft.title, { inChange(inDraft.copy(title = it)) }, "Intitulé", inSupport = "Par exemple « Apport pour un achat »")
 		when (inDraft.kind)
 		{
-			GoalKind.ACCOUNT -> Picker("Compte suivi", inSpace.data.accounts.filter { !it.archived || it.id == inDraft.accountId }.map { it.id to it.name }, inDraft.accountId, { inChange(inDraft.copy(accountId = it)) })
+			GoalKind.ACCOUNT -> Picker("Compte suivi", inSpace.data.accounts.filter { !it.archived || it.id == inDraft.accountId }.map { it.id to accountLabel(it) }, inDraft.accountId, { inChange(inDraft.copy(accountId = it)) })
 			GoalKind.TYPE    -> Choice(AccountType.entries.map { it to it.label }, inDraft.accountType, { inChange(inDraft.copy(accountType = it)) })
 			else             -> Unit
 		}

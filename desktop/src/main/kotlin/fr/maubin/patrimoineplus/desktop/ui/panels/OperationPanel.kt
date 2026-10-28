@@ -51,6 +51,7 @@ import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
 import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import fr.maubin.patrimoineplus.ui.components.accountLabel
 
 /*
 	Saisie ou modification d'une opération dans le panneau latéral : dépense
@@ -142,7 +143,7 @@ fun OperationPanel(
 						Text("Remboursement (montant reçu, déduit des dépenses de la catégorie)", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
 					}
 				}
-				Picker("Compte", vEntry.accounts.map { it.id to it.name }, vForm.accountId, { vForm = vForm.copy(accountId = it) }, vErrors.account)
+				Picker("Compte", vEntry.accounts.map { it.id to accountLabel(it) }, vForm.accountId, { vForm = vForm.copy(accountId = it) }, vErrors.account)
 				FormField(vForm.label, { vForm = vForm.copy(label = it) }, "Libellé", vErrors.label)
 				val vHints = if (vForm.id == null && vForm.label.isNotBlank()) labelSuggestions(vEntry.transactions, vForm.label).take(6) else emptyList()	// suggestions
 				if (vHints.isNotEmpty())
@@ -166,13 +167,13 @@ fun OperationPanel(
 			EntryMode.TRANSFER                  ->
 			{
 				FormField(vForm.amount, { vForm = vForm.copy(amount = it.replace("-", "")) }, "Montant (€)", vErrors.amount, inNumeric = true)
-				Picker("Depuis", vEntry.accounts.map { it.id to it.name }, vForm.accountId, { vForm = vForm.copy(accountId = it) }, vErrors.account)
-				Picker("Vers", vEntry.accounts.map { it.id to it.name }, vForm.toAccountId, { vForm = vForm.copy(toAccountId = it) }, vErrors.target)
+				Picker("Depuis", vEntry.accounts.map { it.id to accountLabel(it) }, vForm.accountId, { vForm = vForm.copy(accountId = it) }, vErrors.account)
+				Picker("Vers", vEntry.accounts.map { it.id to accountLabel(it) }, vForm.toAccountId, { vForm = vForm.copy(toAccountId = it) }, vErrors.target)
 				FormField(vForm.label, { vForm = vForm.copy(label = it) }, "Libellé (facultatif)", inSupport = "Vide : « ${proposedLabel(vForm, vEntry)} »")
 			}
 			EntryMode.TRADE                     ->
 			{
-				Picker("Compte Bourse", vEntry.accounts.filter { it.type == AccountType.BROKERAGE }.map { it.id to it.name }, vForm.accountId, { vForm = vForm.copy(accountId = it) }, vErrors.account)
+				Picker("Compte Bourse", vEntry.accounts.filter { it.type == AccountType.BROKERAGE }.map { it.id to accountLabel(it) }, vForm.accountId, { vForm = vForm.copy(accountId = it) }, vErrors.account)
 				Choice(listOf(TradeSide.BUY to "Achat", TradeSide.SELL to "Vente"), vForm.side, { vForm = vForm.copy(side = it) })
 				Picker("Actif", vEntry.assets.filterNot { it.archived }.map { it.id to it.name } + (kNewAsset to "Nouvel actif…"), vForm.assetId, { vForm = vForm.copy(assetId = it) }, vErrors.asset.takeIf { vForm.assetId != kNewAsset })
 				if (vForm.assetId == kNewAsset)
@@ -188,8 +189,8 @@ fun OperationPanel(
 			EntryMode.LOAN                      ->
 			{
 				val vCharge = loanCharge(vForm)																// intérêts et assurance
-				Picker("Crédit remboursé", vEntry.accounts.filter { it.type == AccountType.LOAN }.map { it.id to it.name }, vForm.toAccountId, { vForm = suggestLoanPayment(vForm.copy(toAccountId = it), vEntry) }, vErrors.target)
-				Picker("Payé depuis", vEntry.accounts.filter { it.type != AccountType.LOAN }.map { it.id to it.name }, vForm.accountId, { vForm = vForm.copy(accountId = it) }, vErrors.account)
+				Picker("Crédit remboursé", vEntry.accounts.filter { it.type == AccountType.LOAN }.map { it.id to accountLabel(it) }, vForm.toAccountId, { vForm = suggestLoanPayment(vForm.copy(toAccountId = it), vEntry) }, vErrors.target)
+				Picker("Payé depuis", vEntry.accounts.filter { it.type != AccountType.LOAN }.map { it.id to accountLabel(it) }, vForm.accountId, { vForm = vForm.copy(accountId = it) }, vErrors.account)
 				FormField(vForm.amount, { vForm = vForm.copy(amount = it.replace("-", "")) }, "Montant payé (€)", vErrors.amount, inNumeric = true, inSupport = "Mensualité complète : capital, intérêts et assurance.")
 				FormField(vForm.capital, { vForm = vForm.copy(capital = it.replace("-", "")) }, "Dont capital remboursé (€)", vErrors.capital, inNumeric = true,
 					inSupport = when

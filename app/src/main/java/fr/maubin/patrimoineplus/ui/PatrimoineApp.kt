@@ -66,7 +66,8 @@ import fr.maubin.patrimoineplus.ui.settings.ProfilesActions
 import fr.maubin.patrimoineplus.ui.settings.ThemesActions
 import fr.maubin.patrimoineplus.ui.update.UpdateViewModel
 import fr.maubin.patrimoineplus.ui.update.UpdatePrompt
-import fr.maubin.patrimoineplus.ui.settings.UpdatesActions
+import fr.maubin.patrimoineplus.ui.settings.UpdatesActions
+import fr.maubin.patrimoineplus.ui.components.LocalProfiles
 
 private const val kSlideMillis = 260									// entrée et sortie de la vue d'un compte
 
@@ -92,7 +93,8 @@ fun PatrimoineApp(
 	val vHidden        by inAppViewModel.amountsHidden.collectAsStateWithLifecycle()	// mode discret
 	val vPies          by inAppViewModel.pieCharts.collectAsStateWithLifecycle()		// répartitions en cercle
 
-	CompositionLocalProvider(LocalAmountsHidden provides vHidden, LocalProportionStyle provides ProportionStyle(vPies, inAppViewModel::setPieChart)) {
+	val vFamily        by hiltViewModel<ProfilesViewModel>().view.collectAsStateWithLifecycle()	// profils de la famille (titulaire des comptes)
+	CompositionLocalProvider(LocalAmountsHidden provides vHidden, LocalProportionStyle provides ProportionStyle(vPies, inAppViewModel::setPieChart), LocalProfiles provides vFamily.profiles) {
 		NavHost(
 			navController      = vNavController,
 			startDestination   = MainRoute,

@@ -29,6 +29,7 @@ import fr.maubin.patrimoineplus.domain.model.CategoryKind
 import fr.maubin.patrimoineplus.domain.calc.propertyItems
 import fr.maubin.patrimoineplus.ui.accounts.parseOwners
 import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
+import fr.maubin.patrimoineplus.ui.components.accountLabel
 
 /*
 	Création ou modification d'un compte dans le panneau latéral : nom, type
@@ -159,7 +160,7 @@ fun AccountPanel(
 			FormField(vLoan.months, { vLoan = vLoan.copy(months = it) }, "Durée (mois)", vLoanErr.months, inSupport = "240 pour 20 ans", inNumeric = true)
 			DateField(vLoan.firstDue, { inDate -> inDate?.let { vLoan = vLoan.copy(firstDue = it) } }, "Date de la première mensualité")
 			FormField(vLoan.insurance, { vLoan = vLoan.copy(insurance = it) }, "Assurance mensuelle (€, facultatif)", vLoanErr.insurance, inNumeric = true)
-			Picker("Payé depuis", vSpace.data.accounts.filter { !it.archived && !it.type.isProperty && it.type != AccountType.LOAN }.map { it.id to it.name }, vLoan.payFrom, { vLoan = vLoan.copy(payFrom = it) }, vLoanErr.payFrom)
+			Picker("Payé depuis", vSpace.data.accounts.filter { !it.archived && !it.type.isProperty && it.type != AccountType.LOAN }.map { it.id to accountLabel(it) }, vLoan.payFrom, { vLoan = vLoan.copy(payFrom = it) }, vLoanErr.payFrom)
 			Picker("Catégorie des intérêts", listOf<Pair<String?, String>>(null to "Crédit (créée si besoin)") + vSpace.data.categories.filter { it.kind == CategoryKind.EXPENSE && !it.archived }.map { it.id to it.name }, vLoan.categoryId, { vLoan = vLoan.copy(categoryId = it) })
 			Picker("Bien financé", listOf<Pair<String?, String>>(null to "Aucun (auto, prêt personnel…)") + propertyItems(vSpace.data.transactions, vSpace.data.accounts).filter { it.heldAt(inController.today()) }.map { it.acquisition.id to it.name }, vLoan.propertyId, { vLoan = vLoan.copy(propertyId = it) })
 			Text(
