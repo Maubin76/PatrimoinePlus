@@ -38,6 +38,15 @@ import fr.maubin.patrimoineplus.data.demo.kDemoPartnerId
 import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onFirst
+import fr.maubin.patrimoineplus.data.edit.EditResult
+import fr.maubin.patrimoineplus.data.backup.ThemeDto
+import fr.maubin.patrimoineplus.desktop.ui.components.SankeyExportDialog
+import fr.maubin.patrimoineplus.desktop.ui.components.SankeyStyle
+import fr.maubin.patrimoineplus.ui.theme.ColorTheme
+import fr.maubin.patrimoineplus.ui.theme.DeskTheme
+import fr.maubin.patrimoineplus.ui.budget.cashFlow
+import fr.maubin.patrimoineplus.ui.budget.compareBudget
+import fr.maubin.patrimoineplus.ui.budget.investmentMembers
 
 /*
 	Budget prévisionnel dans l'interface du PC (sans écran), page de
@@ -162,9 +171,11 @@ class BudgetUiTest
 		assertTrue(fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].any { it.contains(inText) })
 	}
 	/*
-		Export du cashflow en image : nom proposé, PNG écrit (titre et schéma,
-		largeur fixe en double résolution), message de réussite. Image déposée
-		dans build/captures-desktop pour relecture.
+		Export du cashflow en image : « Exporter » ouvre la prévisualisation
+		(apparence de l'appli proposée) ; sombre, effet verre et thème
+		enregistré choisis ; « Exporter… » : nom proposé, PNG écrit (largeur
+		fixe en double résolution, fond sombre), message de réussite. Captures
+		`33-*.png` (fenêtre et image exportée).
 	*/
 	@Test
 	fun exportCashflowImage()
@@ -177,18 +188,50 @@ class BudgetUiTest
 			BudgetLine("4", BudgetSection.INVESTMENT, "Livret A", 30_000),
 			BudgetLine("5", BudgetSection.INVESTMENT, "PEA d'Alex", 20_000, profileId = kDemoPartnerId)
 		)))
+		vApp.edit { EditResult.Done(it.copy(themes = it.themes + ThemeDto("t1", "Océan", listOf("#1F6FB2", "#2A9D8F", "#E9C46A", "#E76F51", "#8E7DBE"), 0))) }
 		vApp.show(Screen.BUDGET)
 		val vTarget = File("build/captures-desktop/33-cashflow-export.png").absoluteFile	// image exportée
 		vTarget.delete()
 		var vProposed = ""																	// nom proposé
 		fCompose.setContent { App(vApp, inOnPickSave = { inName -> vProposed = inName; vTarget.toPath() }) { null } }
 		fCompose.waitForIdle()
-		fCompose.onNodeWithText("Exporter en image…").performScrollTo().performClick()
+		fCompose.onNodeWithText("Exporter").performScrollTo().performClick()
+		fCompose.waitForIdle()
+		fCompose.onNodeWithText("Exporter le cashflow").assertExists()
+		fCompose.onNodeWithText("Sombre").performClick()
+		fCompose.onNodeWithContentDescription("Effet verre de l’image").performClick()
+		fCompose.onNodeWithText("Océan").performClick()
+		fCompose.waitUntil(10_000) { Thread.sleep(200); true }
+		fCompose.waitForIdle()
+		captureDialog(vApp)
+		fCompose.onNodeWithText("Exporter…").performClick()
 		fCompose.waitForIdle()
 		assertEquals("cashflow-budget-2026-10.png", vProposed)
 		assertEquals("Image enregistrée : ${vTarget.toPath()}", vApp.notice.value)
 		val vImage = org.jetbrains.skia.Image.makeFromEncoded(vTarget.readBytes())		// image relue
 		assertEquals(2400, vImage.width)
 		assertTrue(vImage.height in 600..2400)
+		val vPixel = org.jetbrains.skia.Bitmap.makeFromImage(vImage).getColor(10, 10)		// coin de l'image : fond sombre
+		assertTrue((vPixel shr 16 and 0xFF) < 80)
+		fCompose.onNodeWithText("Exporter le cashflow").assertDoesNotExist()
+	}
+	/*
+		Fenêtre de prévisualisation rendue seule, en grand (relecture
+		humaine) : sombre, effet verre, thème « Océan ».
+		inApp : contrôleur (budget et thèmes)
+	*/
+	private fun captureDialog(inApp: DesktopController)
+	{
+		val vData    = inApp.workspace.value.data											// données
+		val vDiagram = cashFlow(compareBudget(inApp.budget.value, vData, java.time.YearMonth.of(2026, 10)), false, investmentMembers(inApp.budget.value, vData.accounts, vData.profiles))	// schéma
+		val vStyle   = SankeyStyle(true, ColorTheme.COLORFUL, true, vData.themes.first(), false)	// apparence choisie
+		val vScene   = ImageComposeScene(width = 1440, height = 900, density = Density(1f)) {
+			DeskTheme(inDarkTheme = false, inColorTheme = ColorTheme.MONOCHROME) {
+				SankeyExportDialog(vDiagram, "Budget", "Budget prévisionnel : cashflow mensuel", vStyle, vData.themes, {}, {})
+			}
+		}																					// scène hors écran
+		repeat(20) { inFrame -> vScene.render(inFrame * 100_000_000L); Thread.sleep(100) }	// aperçu calculé en arrière-plan
+		File("build/captures-desktop/33-cashflow-apercu.png").writeBytes(vScene.render(3_000_000_000L).encodeToData(EncodedImageFormat.PNG)!!.bytes)
+		vScene.close()
 	}
 }

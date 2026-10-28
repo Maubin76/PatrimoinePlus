@@ -79,10 +79,13 @@ import fr.maubin.patrimoineplus.domain.model.Profile
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import fr.maubin.patrimoineplus.desktop.ui.LocalSavePicker
-import fr.maubin.patrimoineplus.desktop.ui.components.currentSankeyLook
-import fr.maubin.patrimoineplus.desktop.ui.components.exportSankeyPng
+import fr.maubin.patrimoineplus.desktop.ui.components.exportSankeyPng
+import fr.maubin.patrimoineplus.desktop.ui.components.SankeyExportDialog
+import fr.maubin.patrimoineplus.desktop.ui.components.SankeyStyle
+import fr.maubin.patrimoineplus.ui.theme.isDark
 
 private const val kNameWeight   = 2.4f											// largeur relative de la colonne du nom
+private const val kExportHeading = "Budget prévisionnel : cashflow mensuel"		// titre de l'image exportée
 private const val kAmountWeight = 1.2f											// largeur relative de la colonne du montant
 
 /*
@@ -110,7 +113,9 @@ fun BudgetScreen(
 	val vDiagram = remember(vView, vMembers) { cashFlow(vView, false, vMembers) }		// diagramme du budget
 	val vUpdate  = { inLines: List<BudgetLine> -> inController.setBudget(Budget(inLines)) }	// enregistre les lignes
 	val vPick    = LocalSavePicker.current													// choix du fichier de l'image
-	val vLook    = currentSankeyLook()														// apparence reprise dans l'image
+	val vSet     by inController.settings.collectAsState()									// réglages (apparence proposée pour l'image)
+	val vDark    = vSet.appearance.isDark()													// mode sombre effectif
+	var vExport  by remember { mutableStateOf(false) }										// prévisualisation de l'export ouverte
 	Column(
 		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
@@ -125,14 +130,7 @@ fun BudgetScreen(
 			inTitle    = "Cashflow",
 			inModifier = Modifier.tourAnchor("budget.cashflow"),
 			inAction   = {
-				TextButton(
-					onClick = {
-						vPick("cashflow-budget-${YearMonth.from(inSpace.today)}.png")?.let { inPath ->
-							inController.showNotice(exportSankeyPng(vDiagram, "Budget", "Budget prévisionnel : cashflow mensuel", vLook, inPath)?.let { "Export impossible : $it" } ?: "Image enregistrée : $inPath")
-						}
-					},
-					enabled = vDiagram.total > 0L
-				) { Text("Exporter en image…") }
+				TextButton(onClick = { vExport = true }, enabled = vDiagram.total > 0L) { Text("Exporter") }
 			}
 		) {
 			if (vDiagram.total <= 0L)
@@ -153,6 +151,23 @@ fun BudgetScreen(
 			)																				// entrées et investissements côte à côte
 		}
 		SectionTile(BudgetSection.EXPENSE, vView, vBudget, vUpdate)
+	}
+	if (vExport)
+	{
+		SankeyExportDialog(
+			inDiagram     = vDiagram,
+			inCenterTitle = "Budget",
+			inHeading     = kExportHeading,
+			inStart       = SankeyStyle(vDark, vSet.colors, vSet.glass, inFamily.themes.firstOrNull { it.id == vSet.palette }, vSet.hidden),
+			inThemes      = inFamily.themes,
+			inOnExport    = { inStyle ->
+				vPick("cashflow-budget-${YearMonth.from(inSpace.today)}.png")?.let { inPath ->
+					vExport = false
+					inController.showNotice(exportSankeyPng(vDiagram, "Budget", kExportHeading, inStyle, inPath)?.let { "Export impossible : $it" } ?: "Image enregistrée : $inPath")
+				}
+			},
+			inOnDismiss   = { vExport = false }
+		)
 	}
 }
 
