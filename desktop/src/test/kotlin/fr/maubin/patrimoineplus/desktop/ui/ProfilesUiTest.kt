@@ -38,7 +38,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 /*
 	Profils sur le PC (sans écran), sur la démonstration à deux profils
 	(« Moi » et « Alex ») : sélecteur de vue mémorisé ; la famille est la
-	somme des profils ; budget propre à chaque vue ; profils ajoutés,
+	somme des profils ; budget commun à toutes les vues ; profils ajoutés,
 	renommés, retrait refusé pour le seul propriétaire d'un compte ; parts
 	du compte joint dans son panneau. Captures `28-*.png`.
 */
@@ -81,7 +81,7 @@ class ProfilesUiTest
 
 	/*
 		Vues : « Moi » par défaut, puis la famille et « Alex » choisis dans le
-		sélecteur et mémorisés ; famille = Moi + Alex ; budget propre à la vue.
+		sélecteur et mémorisés ; famille = Moi + Alex ; budget commun à toutes les vues.
 	*/
 	@Test
 	fun views()
@@ -98,7 +98,7 @@ class ProfilesUiTest
 		fCompose.waitForIdle()
 		assertEquals(null, vApp.viewProfile())
 		assertEquals(kFamilyView, DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")).load().view)
-		assertTrue(vApp.budget.value.lines.isEmpty())									// budget de la famille, distinct
+		assertEquals(listOf("Salaire"), vApp.budget.value.lines.map { it.name })		// budget commun à la famille
 		val vFamily = wealth(vApp)															// patrimoine de la famille
 		assertTrue(fCompose.onAllNodesWithText("Titulaire : Moi").fetchSemanticsNodes().isNotEmpty())	// comptes à 100 % à « Moi » : titulaire en bas de la tuile
 		assertTrue(fCompose.onAllNodesWithText("Titulaire : Alex").fetchSemanticsNodes().isEmpty())	// Alex ne détient seul aucun compte
@@ -111,7 +111,7 @@ class ProfilesUiTest
 		assertTrue(kotlin.math.abs(vFamily - (vMine + wealth(vApp))) <= 3)			// parts de 50 % arrondies au centime : un centime au plus par compte partagé (3)
 		capture(vApp, "28-tableau-de-bord-alex")
 		vApp.setView(kDefaultProfileId)
-		assertEquals(listOf("Salaire"), vApp.budget.value.lines.map { it.name })		// budget de « Moi » retrouvé
+		assertEquals(listOf("Salaire"), vApp.budget.value.lines.map { it.name })		// même budget
 	}
 
 	/*

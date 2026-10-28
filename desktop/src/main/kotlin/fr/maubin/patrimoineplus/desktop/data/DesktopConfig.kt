@@ -13,7 +13,8 @@ import fr.maubin.patrimoineplus.ui.goals.encodeGoals
 import java.nio.file.StandardCopyOption
 import java.util.Properties
 import fr.maubin.patrimoineplus.ui.theme.ColorTheme
-import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
+import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
+import fr.maubin.patrimoineplus.domain.calc.kFamilyView
 
 /*
 	Source des données de l'appli PC.
@@ -160,17 +161,6 @@ class DesktopConfig(private val inFile: Path)
 		readFor(inSource, "budget" + scopeSuffix(inProfile))?.let { runCatching { decodeBudget(it) }.getOrNull() } ?: Budget()
 
 	/*
-		Enregistre le budget prévisionnel d'une source.
-		inSource : source des données
-		inBudget : budget
-	*/
-	fun saveBudget(
-		inSource  : Source,
-		inBudget  : Budget,
-		inProfile : String? = kDefaultProfileId
-	) = write(fileFor(inSource, "budget" + scopeSuffix(inProfile)), encodeBudget(inBudget))
-
-	/*
 		Lit les objectifs d'une source (goals.json pour vos données,
 		goals-demo.json pour la démonstration) ; aucun s'il est absent ou
 		illisible.
@@ -183,15 +173,35 @@ class DesktopConfig(private val inFile: Path)
 		readFor(inSource, "goals" + scopeSuffix(inProfile))?.let { runCatching { decodeGoals(it) }.getOrNull() } ?: Goals()
 
 	/*
-		Enregistre les objectifs d'une source.
-		inSource : source des données
-		inGoals  : objectifs
+		Budget et objectifs d'avant le format 8, rangés à côté des réglages,
+		à reprendre dans le fichier d'échange : le budget de la vue Famille,
+		sinon celui du premier profil qui en a un (les autres restent sur le
+		disque, inutilisés) ; les objectifs de chaque vue. Null s'il n'y a
+		rien à reprendre.
+		inSource   : source des données
+		inProfiles : identifiants des profils, dans l'ordre
 	*/
-	fun saveGoals(
-		inSource  : Source,
-		inGoals   : Goals,
-		inProfile : String? = kDefaultProfileId
-	) = write(fileFor(inSource, "goals" + scopeSuffix(inProfile)), encodeGoals(inGoals))
+	fun legacyPlans(
+		inSource   : Source,
+		inProfiles : List<String>
+	): LegacyPlans?
+	{
+		val vScopes = listOf<String?>(null) + inProfiles.ifEmpty { listOf(kDefaultProfileId) }	// vues : famille puis profils
+		val vBudget = vScopes.map { loadBudget(inSource, it) }.firstOrNull { it.lines.isNotEmpty() }	// budget repris
+		val vGoals  = vScopes.associate { (it ?: kFamilyView) to loadGoals(inSource, it) }.filterValues { it != Goals() }	// objectifs repris, par vue
+		val vFiles  = vScopes.flatMap { inScope -> listOf("budget", "goals").map { fileFor(inSource, it + scopeSuffix(inScope)) } }.filter { Files.isRegularFile(it) }	// fichiers d'avant
+		return if (vBudget == null && vGoals.isEmpty()) null else LegacyPlans(vBudget ?: Budget(), vGoals, vFiles)
+	}
+
+	/*
+		Écarte les fichiers repris (renommés « .avant-format-8 », gardés sur le
+		disque) : ils ne seront plus repris.
+		inPlans : budget et objectifs repris
+	*/
+	fun retireLegacyPlans(inPlans: LegacyPlans)
+	{
+		inPlans.files.forEach { inPath -> runCatching { Files.move(inPath, inPath.resolveSibling("${inPath.fileName}.avant-format-8"), StandardCopyOption.REPLACE_EXISTING) } }
+	}
 
 	/*
 		Suffixe des fichiers d'une vue : aucun pour le profil « Moi » (fichiers
@@ -264,3 +274,15 @@ class DesktopConfig(private val inFile: Path)
 		}
 	}
 }
+
+/*
+	Budget et objectifs d'avant le format 8, à reprendre dans le fichier d'échange.
+	budget : budget de la famille
+	goals  : objectifs par vue (identifiant du profil, ou kFamilyView)
+	files  : fichiers lus
+*/
+data class LegacyPlans(
+	val budget : Budget,
+	val goals  : Map<String, Goals>,
+	val files  : List<Path>
+)

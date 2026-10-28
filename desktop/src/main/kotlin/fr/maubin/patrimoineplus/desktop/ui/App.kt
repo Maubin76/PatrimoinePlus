@@ -329,7 +329,7 @@ private fun Shell(
 							inScreen == Screen.OPERATIONS    -> EntriesScreen(vView, inController)
 							inScreen == Screen.REPORT        -> ReportScreen(vView, inController)
 							inScreen == Screen.PROJECTION    -> ProjectionScreen(vView, inController)
-							inScreen == Screen.BUDGET        -> BudgetScreen(vView, inController)
+							inScreen == Screen.BUDGET        -> BudgetScreen(vView, inController, inSpace.data)
 							inScreen == Screen.GOALS         -> GoalsScreen(vView, inController)
 							else                             -> SettingsScreen(vView, inController, inOnPickFolder)
 						}

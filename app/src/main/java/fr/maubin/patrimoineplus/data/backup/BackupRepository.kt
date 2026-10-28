@@ -28,7 +28,11 @@ import fr.maubin.patrimoineplus.data.backup.withProfiles
 import fr.maubin.patrimoineplus.data.db.ProfileEntity
 import fr.maubin.patrimoineplus.domain.model.Ownership
 import fr.maubin.patrimoineplus.data.backup.ThemeDto
-import fr.maubin.patrimoineplus.data.db.ThemeEntity
+import fr.maubin.patrimoineplus.data.db.ThemeEntity
+import fr.maubin.patrimoineplus.data.backup.decodePlans
+import fr.maubin.patrimoineplus.data.backup.encodePlans
+import fr.maubin.patrimoineplus.data.backup.PlansDto
+import fr.maubin.patrimoineplus.data.db.PlanEntity
 
 /*
 	Export et import de toute la base, sous forme de fichier JSON versionné.
@@ -72,7 +76,10 @@ class BackupRepository @Inject constructor(
 				prices       = fDao.prices().map { PriceDto(it.id, it.assetId, it.date.toString(), it.unitPrice) },
 				recurrences  = inDb.planningDao().recurrences().map { it.toDomain().toDto() },
 				loans        = inDb.planningDao().loans().map { it.toDomain().toDto() }
-			).withProfiles()														// base d'avant les profils : profil « Moi »
+			).let { inFile ->
+				val vPlans = fDao.plans()?.let(::decodePlans) ?: return@let inFile				// budget et objectifs du PC, gardés tels quels
+				inFile.copy(budget = vPlans.budget, goals = vPlans.goals, monthGoals = vPlans.monthGoals)
+			}.withProfiles()														// base d'avant les profils : profil « Moi »
 		}
 
 	/*
@@ -98,6 +105,7 @@ class BackupRepository @Inject constructor(
 			fDao.insertPrices(inFile.prices.map { AssetPriceEntity(it.id, it.assetId, LocalDate.parse(it.date), it.unitPrice) })
 			inDb.planningDao().upsertRecurrences(inFile.recurrences.map { it.toDomain().toEntity() })
 			inDb.planningDao().upsertLoans(inFile.loans.map { it.toDomain().toEntity() })
+			if (inFile.plans != PlansDto()) fDao.insertPlan(PlanEntity("plans", encodePlans(inFile.plans)))
 			true
 		}
 }

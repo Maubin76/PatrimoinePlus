@@ -23,6 +23,14 @@ import java.time.Clock
 import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
+import fr.maubin.patrimoineplus.ui.budget.encodeBudget
+import fr.maubin.patrimoineplus.data.demo.kDemoPartnerId
+import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
+import fr.maubin.patrimoineplus.data.sync.kSyncFileName
+import fr.maubin.patrimoineplus.data.backup.writeBackupXlsx
+import fr.maubin.patrimoineplus.data.backup.readBackupXlsx
+import fr.maubin.patrimoineplus.data.backup.BackupRead
+import fr.maubin.patrimoineplus.data.demoBackupFile
 
 /*
 	Tests du contrôleur de l'appli PC : source mémorisée et rouverte,
@@ -74,33 +82,47 @@ class DesktopControllerTest
 	}
 
 	/*
-		Budget et objectifs propres à chaque source : ceux de la démonstration
-		ne se mêlent pas à ceux de vos données, chacun est retrouvé en
-		changeant de source et au lancement suivant ; la première fois, la
-		démonstration reprend le fichier commun d'avant la séparation.
+		Budget et objectifs d'avant le format 8 (fichiers à côté des réglages)
+		repris dans le fichier d'échange : budget de la vue Famille (celui de
+		« Moi » ignoré), objectifs de chaque vue ; la démonstration les relit à
+		chaque ouverture ; un dossier synchronisé les reprend une fois, écrits
+		dans le fichier, puis les fichiers d'avant sont écartés (renommés). Le
+		budget est le même dans toutes les vues, les objectifs changent.
 	*/
 	@Test
-	fun budgetAndGoalsPerSource()
+	fun legacyPlansMovedToExchangeFile()
 	{
 		val vDir    = fTemp.root.toPath()														// dossier des réglages
-		java.nio.file.Files.writeString(vDir.resolve("goals.json"), encodeGoals(Goals(listOf(Goal("ancien", GoalKind.TASK, "Objectif d'avant")))))	// fichier commun d'avant
+		java.nio.file.Files.writeString(vDir.resolve("goals.json"), encodeGoals(Goals(listOf(Goal("ancien", GoalKind.TASK, "Objectif d'avant")))))	// objectifs de « Moi »
+		java.nio.file.Files.writeString(vDir.resolve("budget-famille.json"), encodeBudget(Budget(listOf(BudgetLine("f1", BudgetSection.INCOME, "Salaires", 500_000)))))	// budget de la famille
+		java.nio.file.Files.writeString(vDir.resolve("budget.json"), encodeBudget(Budget(listOf(BudgetLine("m1", BudgetSection.INCOME, "Salaire", 300_000)))))	// budget de « Moi », ignoré
 		val vApp    = controller()																	// premier lancement
 		vApp.openDemo()
-		assertEquals(listOf("ancien"), vApp.goals.value.goals.map { it.id })					// repris par la démonstration
-		vApp.setGoals(Goals(listOf(Goal("demo", GoalKind.TASK, "Objectif de démo"))))
-		vApp.setBudget(Budget(listOf(BudgetLine("d1", BudgetSection.INCOME, "Salaire démo", 100))))
-		val vFolder = fTemp.newFolder("Synchro").toPath()											// dossier synchronisé
+		assertEquals(listOf("ancien"), vApp.goals.value.goals.map { it.id })
+		assertEquals(listOf("f1"), vApp.budget.value.lines.map { it.id })
+		vApp.setView(kDemoPartnerId)
+		assertEquals(listOf("f1"), vApp.budget.value.lines.map { it.id })						// budget commun
+		assertTrue(vApp.goals.value.goals.isEmpty())											// objectifs propres à la vue
+		vApp.setGoals(Goals(listOf(Goal("alex", GoalKind.TASK, "Objectif d'Alex"))))
+		assertEquals(listOf("alex"), vApp.goals.value.goals.map { it.id })
+		vApp.setView(kDefaultProfileId)
+		assertEquals(listOf("ancien"), vApp.goals.value.goals.map { it.id })
+		val vFolder = fTemp.newFolder("Synchro").toPath()											// dossier synchronisé, avec son fichier
+		java.nio.file.Files.newOutputStream(vFolder.resolve(kSyncFileName)).use { writeBackupXlsx(demoBackupFile(), it) }
 		vApp.openFolder(vFolder)
-		assertEquals(listOf("ancien"), vApp.goals.value.goals.map { it.id })					// vos données : fichier commun intact
-		assertTrue(vApp.budget.value.lines.isEmpty())
-		vApp.setGoals(Goals(listOf(Goal("reel", GoalKind.TASK, "Objectif réel"))))
-		vApp.openDemo()
-		assertEquals(listOf("demo"), vApp.goals.value.goals.map { it.id })
-		assertEquals(listOf("d1"), vApp.budget.value.lines.map { it.id })
-		val vNext   = controller()																	// lancement suivant (démonstration)
-		assertEquals(listOf("demo"), vNext.goals.value.goals.map { it.id })
-		vNext.openFolder(vFolder)
-		assertEquals(listOf("reel"), vNext.goals.value.goals.map { it.id })
+		assertEquals(listOf("ancien"), vApp.goals.value.goals.map { it.id })
+		assertEquals(listOf("f1"), vApp.budget.value.lines.map { it.id })
+		assertTrue(vApp.flush())
+		val vOnDisk = java.nio.file.Files.newInputStream(vFolder.resolve(kSyncFileName)).use { readBackupXlsx(it) } as BackupRead.Valid	// fichier écrit
+		assertEquals(listOf("f1"), vOnDisk.file.budget.map { it.id })
+		assertEquals(8, vOnDisk.file.version)
+		assertTrue(java.nio.file.Files.exists(vDir.resolve("budget-famille.json.avant-format-8")))
+		assertTrue(java.nio.file.Files.exists(vDir.resolve("budget.json.avant-format-8")))		// gardé sur le disque, inutilisé
+		vApp.setBudget(Budget())
+		assertTrue(vApp.flush())
+		val vNext   = controller()																	// lancement suivant : rien n'est repris de nouveau
+		assertTrue(vNext.budget.value.lines.isEmpty())
+		assertEquals(listOf("ancien"), vNext.goals.value.goals.map { it.id })
 	}
 
 	/*

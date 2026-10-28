@@ -71,7 +71,8 @@ import fr.maubin.patrimoineplus.domain.format.kCurrencySeparator
 import fr.maubin.patrimoineplus.ui.components.heroFilled
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import fr.maubin.patrimoineplus.desktop.ui.AssistantHint
-import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
+import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
+import fr.maubin.patrimoineplus.data.DataSet
 
 private const val kNameWeight   = 2.4f											// largeur relative de la colonne du nom
 private const val kAmountWeight = 1.2f											// largeur relative de la colonne du montant
@@ -81,19 +82,22 @@ private const val kAmountWeight = 1.2f											// largeur relative de la colon
 	d'entrées, de dépenses (rangées par thème) et d'investissements, chiffres
 	clés et diagramme de cashflow ; le bandeau des objectifs fixe, pour le
 	mois choisi, les objectifs du mois suivis dans la page Objectifs. Le
-	budget est enregistré sur le PC à chaque modification.
-	inSpace      : données
+	budget, commun à toute la famille, est comparé au réel de toute la
+	famille et enregistré dans le fichier d'échange à chaque modification.
+	inSpace      : données de la vue (objectifs du mois)
 	inController : contrôleur
+	inFamily     : données de toute la famille (réel comparé au budget)
 */
 @Composable
 fun BudgetScreen(
 	inSpace      : WorkspaceState,
-	inController : DesktopController
+	inController : DesktopController,
+	inFamily     : DataSet = inSpace.data
 )
 {
 	val vBudget  by inController.budget.collectAsState()								// budget
 	var vMonth   by remember { mutableStateOf(YearMonth.from(inSpace.today)) }		// mois dont on fixe les objectifs
-	val vView    = remember(vBudget, inSpace.data) { compareBudget(vBudget, inSpace.data, YearMonth.from(inSpace.today)) }	// budget rangé par thème
+	val vView    = remember(vBudget, inFamily) { compareBudget(vBudget, inFamily, YearMonth.from(inSpace.today)) }	// budget rangé par thème
 	val vDiagram = remember(vView) { cashFlow(vView, false) }							// diagramme du budget
 	val vUpdate  = { inLines: List<BudgetLine> -> inController.setBudget(Budget(inLines)) }	// enregistre les lignes
 	Column(
@@ -102,6 +106,7 @@ fun BudgetScreen(
 	) {
 		Column {
 			Text("Budget prévisionnel", style = MaterialTheme.typography.displaySmall)
+			if (inFamily.profiles.size > 1) Text("Commun à toute la famille", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		}
 		Box(Modifier.tourAnchor("budget.figures")) { Figures(vBudget) }
 		Box(Modifier.tourAnchor("budget.goals")) { MonthGoalsBar(vMonth, { vMonth = it }, inSpace, inController, vBudget) }

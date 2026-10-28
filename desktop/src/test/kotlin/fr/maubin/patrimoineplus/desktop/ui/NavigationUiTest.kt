@@ -290,6 +290,6 @@ class NavigationUiTest
 		capture(vApp, "26-objectifs")
 		vApp.setGoals(vApp.goals.value.copy(goals = listOf(fr.maubin.patrimoineplus.ui.goals.Goal("g", fr.maubin.patrimoineplus.ui.goals.GoalKind.WEALTH, "Patrimoine", target = 10_000_000))))
 		assertEquals(2, vApp.goals.value.months.size)														// l'historique reste
-		assertEquals(2, DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")).loadGoals(vApp.settings.value.source).months.size)	// enregistré
+		assertEquals(2, vApp.currentFile().monthGoals.map { it.month }.distinct().size)					// rangé dans les données (fichier d'échange)
 	}
 }

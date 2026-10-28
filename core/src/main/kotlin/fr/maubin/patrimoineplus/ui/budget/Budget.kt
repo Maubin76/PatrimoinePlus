@@ -71,6 +71,8 @@ fun themeOfCategory(inName: String): ExpenseTheme
 	accountId  : compte suivi (investissements : versements reçus) ; null sinon
 	theme      : thème d'une dépense ; null pour une entrée, un investissement,
 	             ou une dépense d'un ancien budget (thème tiré de sa catégorie)
+	profileId  : membre de la famille d'un investissement ; null : celui du
+	             compte suivi (premier propriétaire), ou aucun
 */
 @Serializable
 data class BudgetLine(
@@ -80,11 +82,12 @@ data class BudgetLine(
 	val amount     : Long,
 	val categoryId : String? = null,
 	val accountId  : String? = null,
-	val theme      : ExpenseTheme? = null
+	val theme      : ExpenseTheme? = null,
+	val profileId  : String?       = null
 )
 
 /*
-	Budget prévisionnel mensuel (enregistré sur le PC).
+	Budget prévisionnel mensuel, commun à toute la famille (fichier d'échange).
 	lines : lignes, dans l'ordre de saisie
 */
 @Serializable

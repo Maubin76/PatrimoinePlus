@@ -20,7 +20,9 @@ import fr.maubin.patrimoineplus.data.backup.toDomain
 import fr.maubin.patrimoineplus.domain.model.Ownership
 import fr.maubin.patrimoineplus.domain.model.Profile
 import fr.maubin.patrimoineplus.domain.calc.withProfiles
-import fr.maubin.patrimoineplus.domain.model.CustomTheme
+import fr.maubin.patrimoineplus.domain.model.CustomTheme
+import fr.maubin.patrimoineplus.ui.budget.Budget
+import fr.maubin.patrimoineplus.ui.goals.Goals
 
 /*
 	Toutes les données de l'appli, en modèles du domaine : ce que lisent les
@@ -36,6 +38,8 @@ import fr.maubin.patrimoineplus.domain.model.CustomTheme
 	loans        : crédits
 	profiles     : membres de la famille (vide : données d'avant les profils, voir withProfiles)
 	themes       : thèmes de couleurs créés par l'utilisateur
+	budget       : budget de la famille (PC ; le téléphone le garde sans l'afficher)
+	goals        : objectifs par vue (identifiant du profil, ou kFamilyView)
 */
 data class DataSet(
 	val accounts     : List<Account>,
@@ -47,7 +51,9 @@ data class DataSet(
 	val recurrences  : List<Recurrence> = emptyList(),
 	val loans        : List<Loan>       = emptyList(),
 	val profiles     : List<Profile>    = emptyList(),
-	val themes       : List<CustomTheme> = emptyList()
+	val themes       : List<CustomTheme> = emptyList(),
+	val budget       : Budget             = Budget(),
+	val goals        : Map<String, Goals> = emptyMap()
 )
 {
 	companion object
@@ -86,5 +92,7 @@ fun BackupFile.toDataSet(): DataSet =
 		prices       = prices.map { AssetPrice(it.id, it.assetId, LocalDate.parse(it.date), it.unitPrice) },
 		statements   = statements.map { AccountStatement(it.id, it.accountId, LocalDate.parse(it.date), it.balanceCents) },
 		recurrences  = recurrences.map { it.toDomain() },
-		loans        = loans.map { it.toDomain() }
+		loans        = loans.map { it.toDomain() },
+		budget       = budgetOf(),
+		goals        = goalsByScope()
 	).withProfiles()

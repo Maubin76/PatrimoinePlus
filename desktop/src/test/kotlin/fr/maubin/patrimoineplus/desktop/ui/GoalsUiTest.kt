@@ -33,6 +33,7 @@ import java.io.File
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
+import fr.maubin.patrimoineplus.data.goalsByScope
 
 /*
 	Objectifs dans l'interface du PC (sans écran) : premier pas, objectifs
@@ -111,7 +112,6 @@ class GoalsUiTest
 		assertEquals(GoalKind.WEALTH, vNew.kind)
 		assertEquals(5_000_000L, vNew.target)
 		assertEquals("2027-12-31", vNew.deadline)
-		val vNext = DesktopController(DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")), Workspace(kClock), null, kClock)	// lancement suivant
-		assertEquals(vApp.goals.value, vNext.goals.value)
+		assertEquals(vApp.goals.value, vApp.currentFile().goalsByScope()[vApp.viewProfile()])	// rangés dans les données (fichier d'échange)
 	}
 }

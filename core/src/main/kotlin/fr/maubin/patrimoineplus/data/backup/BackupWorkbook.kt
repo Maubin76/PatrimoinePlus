@@ -21,7 +21,12 @@ import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import fr.maubin.patrimoineplus.domain.model.Frequency
-import fr.maubin.patrimoineplus.domain.calc.kThemeRoles
+import fr.maubin.patrimoineplus.domain.calc.kThemeRoles
+import fr.maubin.patrimoineplus.ui.budget.BudgetSection
+import fr.maubin.patrimoineplus.ui.budget.ExpenseTheme
+import fr.maubin.patrimoineplus.ui.goals.GoalKind
+import fr.maubin.patrimoineplus.ui.goals.MonthGoalKind
+import fr.maubin.patrimoineplus.domain.calc.kFamilyView
 
 // Intitulés des colonnes : ils servent aussi de clés à la lecture (l'ordre des colonnes est libre).
 private const val kDate        = "Date"										// date
@@ -76,6 +81,26 @@ private const val kSheetLoans      = "Crédits"									// onglet des crédits (
 private const val kSheetProfiles   = "Profils"									// onglet des profils (format 6)
 private const val kSheetThemes     = "Thèmes"										// onglet des thèmes de couleurs (format 7)
 private const val kThemeId         = "ID thème"									// identifiant du thème (format 7)
+private const val kSheetBudget     = "Budget"									// onglet du budget de la famille (format 8)
+private const val kSheetGoals      = "Objectifs"									// onglet des objectifs globaux (format 8)
+private const val kSheetMonthGoals = "Objectifs du mois"							// onglet des objectifs fixés mois par mois (format 8)
+private const val kSection         = "Rubrique"									// rubrique du budget
+private const val kTheme           = "Thème"										// thème d'une dépense
+private const val kMember          = "Membre"										// membre de la famille d'un investissement
+private const val kView            = "Vue"										// vue d'un objectif (profil ou Famille)
+private const val kTitle           = "Intitulé"									// intitulé d'un objectif
+private const val kTarget          = "Cible"										// cible (euros, ou % pour un taux d'épargne)
+private const val kCurrent         = "Avancement"								// avancement saisi à la main
+private const val kDeadline        = "Échéance"									// échéance d'un objectif
+private const val kDone            = "Fait"										// objectif à cocher fait (Oui / Non)
+private const val kMonth           = "Mois"										// mois d'un objectif du mois (AAAA-MM)
+private const val kConfirmed       = "Fixé le"									// date où le mois a été fixé
+private const val kBudgetId        = "ID budget"									// identifiant de la ligne du budget
+private const val kGoalId          = "ID objectif"								// identifiant de l'objectif
+private const val kScopeId         = "ID vue"										// vue de l'objectif : identifiant du profil, « * » pour la famille
+private const val kFamilyLabel     = "Famille"									// vue de la famille, en clair
+private const val kSavingLabel     = "Épargne"									// objectif d'épargne du mois, en clair
+private const val kSpendingLabel   = "Dépenses"									// objectif de dépenses du mois, en clair
 private const val kProperty        = "Bien financé"								// bien financé par un crédit (format 5)
 private const val kPropertyId      = "ID bien"									// identifiant de l'achat du bien financé (format 5)
 private const val kTo           = "Vers"											// compte d'arrivée d'un virement
@@ -273,11 +298,52 @@ internal fun backupSheets(inFile: BackupFile): List<Sheet>
 			inFile.themes.sortedBy { it.sortOrder }.map { inTheme -> listOf(text(inTheme.name)) + inTheme.colors.map { text(it) } + listOf(techText(inTheme.id), techNumber(inTheme.sortOrder.toLong())) }
 		),
 		Sheet(
+			kSheetBudget,
+			listOf(Column(kSection, 16.0), Column(kName, 28.0), Column(kAmount, 15.0), Column(kTheme, 18.0), Column(kCategory, 20.0), Column(kAccount, 22.0), Column(kMember, 16.0)) +
+				tech(kBudgetId, kCategoryId, kAccountId, kProfileId),
+			inFile.budget.map { inLine ->
+				listOf(
+					text(BudgetSection.valueOf(inLine.section).label), text(inLine.name), euros(inLine.amount),
+					text(inLine.theme?.let { ExpenseTheme.valueOf(it).label }.orEmpty()), text(inLine.categoryId?.let { vCategories[it]?.name }.orEmpty()),
+					text(inLine.accountId?.let { vAccounts[it]?.name }.orEmpty()), text(inLine.profileId?.let { inId -> inFile.profiles.firstOrNull { it.id == inId }?.name }.orEmpty()),
+					techText(inLine.id), techText(inLine.categoryId.orEmpty()), techText(inLine.accountId.orEmpty()), techText(inLine.profileId.orEmpty())
+				)
+			}
+		),
+		Sheet(
+			kSheetGoals,
+			listOf(Column(kView, 14.0), Column(kNature, 20.0), Column(kTitle, 30.0), Column(kTarget, 15.0), Column(kAccount, 22.0), Column(kType, 14.0),
+				Column(kCurrent, 15.0), Column(kDeadline, 12.0), Column(kDone, 8.0), Column(kNotes, 30.0)) + tech(kGoalId, kScopeId, kAccountId),
+			inFile.goals.map { inGoal ->
+				val vKind = GoalKind.valueOf(inGoal.kind)												// nature
+				listOf(
+					text(scopeLabel(inGoal.scope, inFile)), text(vKind.label), text(inGoal.title),
+					if (vKind == GoalKind.RATE) Cell.Number(BigDecimal.valueOf(inGoal.target, 1), CellStyle.NUMBER) else euros(inGoal.target),
+					text(inGoal.accountId?.let { vAccounts[it]?.name }.orEmpty()), text(inGoal.accountType?.let { AccountType.valueOf(it).label }.orEmpty()),
+					euros(inGoal.current), inGoal.deadline?.let { inDue -> runCatching { Cell.Date(LocalDate.parse(inDue)) }.getOrNull() } ?: Cell.Empty,
+					text(yesNo(inGoal.done)), text(inGoal.note),
+					techText(inGoal.id), techText(inGoal.scope), techText(inGoal.accountId.orEmpty())
+				)
+			}
+		),
+		Sheet(
+			kSheetMonthGoals,
+			listOf(Column(kView, 14.0), Column(kMonth, 10.0), Column(kConfirmed, 14.0), Column(kNature, 12.0), Column(kTheme, 18.0), Column(kTarget, 15.0)) + tech(kGoalId, kScopeId),
+			inFile.monthGoals.map { inRow ->
+				listOf(
+					text(scopeLabel(inRow.scope, inFile)), text(inRow.month), text(inRow.confirmed),
+					text(when (inRow.kind?.let { MonthGoalKind.valueOf(it) }) { MonthGoalKind.SAVING -> kSavingLabel; MonthGoalKind.SPENDING -> kSpendingLabel; null -> "" }),
+					text(inRow.theme?.let { ExpenseTheme.valueOf(it).label }.orEmpty()), if (inRow.kind == null) Cell.Empty else euros(inRow.target),
+					techText(inRow.id.orEmpty()), techText(inRow.scope)
+				)
+			}
+		),
+		Sheet(
 			kSheetFile,
 			listOf(Column(kKey, 16.0), Column(kValue, 70.0)),
 			listOf(
 				listOf(text(kKeyFormat), text(inFile.format)),
-				listOf(text(kKeyVersion), Cell.Number(BigDecimal(inFile.version))),
+				listOf(text(kKeyVersion), Cell.Number(BigDecimal(kBackupVersion))),	// écrit au format courant (un fichier relu d'un format plus ancien est réécrit au format courant)
 				listOf(text(kKeyExported), text(inFile.exportedAt)),
 				listOf(text("Restauration"), text("Réglages › Données › Importer. Ne modifiez pas les colonnes repliées (identifiants).")),
 				listOf(text("Résumé"), text(inFile.summary))
@@ -285,6 +351,16 @@ internal fun backupSheets(inFile: BackupFile): List<Sheet>
 		)
 	)
 }
+
+/*
+	Vue d'un objectif, en clair : nom du profil, ou « Famille ».
+	inScope : identifiant du profil, ou « * »
+	inFile  : contenu (profils)
+*/
+private fun scopeLabel(
+	inScope : String,
+	inFile  : BackupFile
+): String = if (inScope == kFamilyView) kFamilyLabel else inFile.profiles.firstOrNull { it.id == inScope }?.name ?: inScope
 
 /*
 	Colonnes d'un onglet d'opérations : les colonnes d'ordre de bourse
@@ -503,6 +579,53 @@ internal fun backupFromSheets(inSheets: List<ReadSheet>): BackupFile
 		},
 		themes       = vByName[kSheetThemes]?.also { requireColumns(it, kName, kThemeId) }?.rows.orEmpty().map { inRow ->
 			ThemeDto(inRow.req(kThemeId), inRow.req(kName), kThemeRoles.map { inRow[it].orEmpty() }, inRow.opt(kSortOrder)?.let { decimal(it).toInt() } ?: 0)
+		},
+		budget       = vByName[kSheetBudget]?.also { requireColumns(it, kSection, kAmount, kBudgetId) }?.rows.orEmpty().map { inRow ->
+			BudgetLineDto(
+				id         = inRow.req(kBudgetId),
+				section    = enumName(inRow.req(kSection), BudgetSection.entries.map { it.name to it.label }),
+				name       = inRow[kName].orEmpty(),
+				amount     = cents(inRow.req(kAmount)),
+				categoryId = inRow.opt(kCategoryId),
+				accountId  = inRow.opt(kAccountId),
+				theme      = inRow.opt(kTheme)?.let { enumName(it, ExpenseTheme.entries.map { inTheme -> inTheme.name to inTheme.label }) },
+				profileId  = inRow.opt(kProfileId)
+			)
+		},
+		goals        = vByName[kSheetGoals]?.also { requireColumns(it, kNature, kGoalId, kScopeId) }?.rows.orEmpty().map { inRow ->
+			val vKind = GoalKind.valueOf(enumName(inRow.req(kNature), GoalKind.entries.map { it.name to it.label }))	// nature
+			GoalDto(
+				scope       = inRow.req(kScopeId),
+				id          = inRow.req(kGoalId),
+				kind        = vKind.name,
+				title       = inRow[kTitle].orEmpty(),
+				target      = inRow.opt(kTarget)?.let { if (vKind == GoalKind.RATE) decimal(it).setScale(1, RoundingMode.HALF_UP).movePointRight(1).longValueExact() else cents(it) } ?: 0L,
+				accountId   = inRow.opt(kAccountId),
+				accountType = inRow.opt(kType)?.let { typeName(it) },
+				current     = inRow.opt(kCurrent)?.let { cents(it) } ?: 0L,
+				deadline    = inRow.opt(kDeadline)?.let { date(it).toString() },
+				done        = yes(inRow[kDone]),
+				note        = inRow[kNotes].orEmpty()
+			)
+		},
+		monthGoals   = vByName[kSheetMonthGoals]?.also { requireColumns(it, kMonth, kConfirmed, kScopeId) }?.rows.orEmpty().map { inRow ->
+			val vKind = inRow.opt(kNature)?.let { inText ->
+				when (inText.lowercase())
+				{
+					kSavingLabel.lowercase(), "saving"     -> MonthGoalKind.SAVING.name
+					kSpendingLabel.lowercase(), "spending" -> MonthGoalKind.SPENDING.name
+					else                                   -> throw WorkbookException("Objectif du mois inconnu : « $inText ».")
+				}
+			}																// nature ; null : mois fixé sans objectif
+			MonthGoalDto(
+				scope     = inRow.req(kScopeId),
+				month     = inRow.req(kMonth),
+				confirmed = inRow.req(kConfirmed),
+				id        = inRow.opt(kGoalId),
+				kind      = vKind,
+				target    = inRow.opt(kTarget)?.let { cents(it) } ?: 0L,
+				theme     = inRow.opt(kTheme)?.let { enumName(it, ExpenseTheme.entries.map { inTheme -> inTheme.name to inTheme.label }) }
+			)
 		}
 	)
 }
@@ -605,6 +728,18 @@ private fun natureKind(inText: String): String =
 		"mensualité", "loan_payment"    -> TransactionKind.LOAN_PAYMENT.name
 		else                            -> throw WorkbookException("Nature d’opération inconnue : « $inText ».")
 	}
+
+/*
+	Valeur d'une liste fermée lue (libellé français ou nom interne).
+	inText    : valeur brute
+	inChoices : noms internes et leur libellé
+*/
+private fun enumName(
+	inText    : String,
+	inChoices : List<Pair<String, String>>
+): String =
+	inChoices.firstOrNull { it.first.equals(inText.trim(), ignoreCase = true) || it.second.equals(inText.trim(), ignoreCase = true) }?.first
+		?: throw WorkbookException("Valeur inconnue : « $inText ».")
 
 /*
 	Fréquence lue (libellé français ou nom interne).

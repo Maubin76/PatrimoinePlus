@@ -59,6 +59,10 @@ import fr.maubin.patrimoineplus.domain.calc.amortization
 import fr.maubin.patrimoineplus.data.db.toHeaderEntity
 import fr.maubin.patrimoineplus.data.db.toPostingEntities
 import fr.maubin.patrimoineplus.data.db.toTradeEntities
+import fr.maubin.patrimoineplus.data.backup.PlansDto
+import fr.maubin.patrimoineplus.data.backup.BudgetLineDto
+import fr.maubin.patrimoineplus.data.backup.GoalDto
+import fr.maubin.patrimoineplus.data.backup.MonthGoalDto
 
 /*
 	Tests de la couche données sur une base Room en mémoire (Robolectric) :
@@ -174,6 +178,28 @@ class DataLayerTest
 		assertEquals(3, fAccounts.observeAccounts().first().size)						// rien n'a été remplacé
 		assertTrue(vBackup.replaceAll(vFile, syncFingerprint(vBackup.snapshot())))
 		assertEquals(1, fPlanning.observeRecurrences().first().size)
+	}
+
+	/*
+		Budget et objectifs du PC (format 8) : gardés par le téléphone sans
+		les afficher, rendus tels quels après une saisie sur le téléphone ;
+		un fichier sans budget les efface.
+	*/
+	@Test
+	fun plansKeptForThePc() = runTest {
+		val vChecking = account("Courant", AccountType.CHECKING)					// compte
+		val vBackup   = BackupRepository(fDb, kClock)										// sauvegarde
+		val vPlans    = PlansDto(
+			budget     = listOf(BudgetLineDto("b1", "INVESTMENT", "Livret", 20_000, accountId = vChecking.id, profileId = "profil:moi")),
+			goals      = listOf(GoalDto("*", "g1", "TASK", "Faire le point")),
+			monthGoals = listOf(MonthGoalDto("profil:moi", "2026-10", "2026-10-01", "m1", "SAVING", 20_000))
+		)																					// budget et objectifs du PC
+		val vFile     = vBackup.snapshot().let { it.copy(budget = vPlans.budget, goals = vPlans.goals, monthGoals = vPlans.monthGoals) }	// fichier du PC
+		assertTrue(vBackup.replaceAll(vFile))
+		category("Courses")																// saisie sur le téléphone
+		assertEquals(vPlans, vBackup.snapshot().plans)
+		assertTrue(vBackup.replaceAll(vFile.copy(budget = emptyList(), goals = emptyList(), monthGoals = emptyList())))
+		assertEquals(PlansDto(), vBackup.snapshot().plans)
 	}
 
 	/*

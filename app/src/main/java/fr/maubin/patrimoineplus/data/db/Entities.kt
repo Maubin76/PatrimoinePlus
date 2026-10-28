@@ -31,6 +31,17 @@ data class AccountEntity(
 )
 
 /*
+	Table du budget et des objectifs du PC (version 8) : le téléphone ne les
+	affiche pas, il les garde pour les rendre au fichier d'échange. Une seule
+	ligne, « plans », en texte (voir encodePlans).
+*/
+@Entity(tableName = "plan")
+data class PlanEntity(
+	@PrimaryKey val key  : String,											// clé (« plans »)
+	val content          : String											// budget et objectifs, en texte
+)
+
+/*
 	Table des thèmes de couleurs créés par l'utilisateur (version 7).
 */
 @Entity(tableName = "theme")

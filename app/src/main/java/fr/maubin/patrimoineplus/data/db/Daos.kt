@@ -397,6 +397,21 @@ interface BackupDao
 	@Query("DELETE FROM theme")
 	suspend fun deleteThemes()
 
+	// Budget et objectifs du PC, en texte ; null sans.
+	@Query("SELECT content FROM plan WHERE `key` = 'plans'")
+	suspend fun plans(): String?
+
+	/*
+		Enregistre le budget et les objectifs du PC.
+		inPlan : ligne « plans »
+	*/
+	@Insert(onConflict = OnConflictStrategy.REPLACE)
+	suspend fun insertPlan(inPlan: PlanEntity)
+
+	// Efface le budget et les objectifs du PC.
+	@Query("DELETE FROM plan")
+	suspend fun deletePlans()
+
 	/*
 		Efface toutes les données, dans l'ordre qu'imposent les clés étrangères.
 	*/
@@ -415,6 +430,7 @@ interface BackupDao
 		deleteAccounts()
 		deleteProfiles()
 		deleteThemes()
+		deletePlans()
 	}
 
 	// Efface les opérations récurrentes.

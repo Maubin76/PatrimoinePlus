@@ -25,12 +25,15 @@ import fr.maubin.patrimoineplus.domain.model.Ownership
 import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
 import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileName
 import fr.maubin.patrimoineplus.domain.rules.ownersError
-import fr.maubin.patrimoineplus.domain.calc.themeError
+import fr.maubin.patrimoineplus.domain.calc.themeError
+import fr.maubin.patrimoineplus.data.budgetOf
+import fr.maubin.patrimoineplus.data.goalsByScope
 
 const val kBackupFormat  = "patrimoineplus"										// signature du fichier
-const val kBackupVersion = 7													// version du format (2 : symbole de cotation des actifs ; 3 : comptes de biens ; 4 : opérations récurrentes et crédits ; 5 : mensualités en une opération, bien financé ; 6 : profils et propriétaires des comptes ; 7 : thèmes de couleurs)
+const val kBackupVersion = 8													// version du format (2 : symbole de cotation des actifs ; 3 : comptes de biens ; 4 : opérations récurrentes et crédits ; 5 : mensualités en une opération, bien financé ; 6 : profils et propriétaires des comptes ; 7 : thèmes de couleurs ; 8 : budget et objectifs)
 
 private val kJson = Json { prettyPrint = true; ignoreUnknownKeys = false }		// lecteur et écrivain JSON
+private val kCompact = Json { ignoreUnknownKeys = true }						// budget et objectifs en base (téléphone)
 
 /*
 	Compte exporté.
@@ -68,6 +71,106 @@ data class ThemeDto(
 	val colors    : List<String>,
 	val sortOrder : Int
 )
+
+/*
+	Ligne du budget de la famille, exportée (format 8).
+	id         : identifiant
+	section    : rubrique (INCOME, EXPENSE, INVESTMENT)
+	name       : nom libre
+	amount     : montant mensuel prévu, en centimes
+	categoryId : catégorie suivie ; null sinon
+	accountId  : compte suivi (investissement) ; null sinon
+	theme      : thème d'une dépense ; null sinon
+	profileId  : membre de la famille d'un investissement ; null sinon
+*/
+@Serializable
+data class BudgetLineDto(
+	val id         : String,
+	val section    : String,
+	val name       : String,
+	val amount     : Long,
+	val categoryId : String? = null,
+	val accountId  : String? = null,
+	val theme      : String? = null,
+	val profileId  : String? = null
+)
+
+/*
+	Objectif global d'une vue, exporté (format 8).
+	scope       : vue (identifiant du profil, ou « * » pour la famille)
+	id          : identifiant
+	kind        : nature (GoalKind)
+	title       : intitulé
+	target      : cible ; en centimes, ou en pour mille pour un taux d'épargne
+	accountId   : compte suivi ; null sinon
+	accountType : type de placement suivi ; null sinon
+	current     : avancement saisi à la main, en centimes
+	deadline    : échéance, date ISO ; null sans
+	done        : fait (à cocher)
+	note        : note libre
+*/
+@Serializable
+data class GoalDto(
+	val scope       : String,
+	val id          : String,
+	val kind        : String,
+	val title       : String,
+	val target      : Long    = 0,
+	val accountId   : String? = null,
+	val accountType : String? = null,
+	val current     : Long    = 0,
+	val deadline    : String? = null,
+	val done        : Boolean = false,
+	val note        : String  = ""
+)
+
+/*
+	Objectif fixé pour un mois, exporté (format 8) : une ligne par objectif ;
+	un mois fixé sans objectif a une ligne sans nature.
+	scope     : vue (identifiant du profil, ou « * » pour la famille)
+	month     : mois, AAAA-MM
+	confirmed : date où le mois a été fixé
+	id        : identifiant de l'objectif ; null sans objectif
+	kind      : nature (SPENDING, SAVING) ; null sans objectif
+	target    : cible, en centimes
+	theme     : thème des dépenses suivies ; null pour l'épargne
+*/
+@Serializable
+data class MonthGoalDto(
+	val scope     : String,
+	val month     : String,
+	val confirmed : String,
+	val id        : String? = null,
+	val kind      : String? = null,
+	val target    : Long    = 0,
+	val theme     : String? = null
+)
+
+/*
+	Budget et objectifs ensemble, tels que le téléphone les garde sans les
+	afficher (une seule valeur en base).
+	budget     : lignes du budget de la famille
+	goals      : objectifs globaux de toutes les vues
+	monthGoals : objectifs fixés mois par mois de toutes les vues
+*/
+@Serializable
+data class PlansDto(
+	val budget     : List<BudgetLineDto> = emptyList(),
+	val goals      : List<GoalDto>       = emptyList(),
+	val monthGoals : List<MonthGoalDto>  = emptyList()
+)
+
+/*
+	Budget et objectifs en texte (base du téléphone).
+	inPlans : budget et objectifs
+*/
+fun encodePlans(inPlans: PlansDto): String = kCompact.encodeToString(PlansDto.serializer(), inPlans)
+
+/*
+	Budget et objectifs lus d'un texte ; aucun s'il est illisible.
+	inText : texte enregistré
+*/
+fun decodePlans(inText: String): PlansDto = runCatching { kCompact.decodeFromString(PlansDto.serializer(), inText) }.getOrDefault(PlansDto())
 
 /*
 	Profil (membre de la famille) exporté.
@@ -225,9 +328,15 @@ data class BackupFile(
 	val recurrences  : List<RecurrenceDto> = emptyList(),
 	val loans        : List<LoanDto>       = emptyList(),
 	val profiles     : List<ProfileDto>    = emptyList(),
-	val themes       : List<ThemeDto>      = emptyList()
+	val themes       : List<ThemeDto>      = emptyList(),
+	val budget       : List<BudgetLineDto> = emptyList(),
+	val goals        : List<GoalDto>       = emptyList(),
+	val monthGoals   : List<MonthGoalDto>  = emptyList()
 )
 {
+	// Budget et objectifs, tels que le téléphone les garde.
+	val plans: PlansDto get() = PlansDto(budget, goals, monthGoals)
+
 	// Contenu en nombres d'éléments (fenêtre de conflit : la date d'export n'y a pas de sens).
 	val contents: String
 		get() = "${accounts.size} compte(s), ${categories.size} catégorie(s), ${transactions.size} opération(s), " +
@@ -350,6 +459,16 @@ fun validateBackup(inFile: BackupFile): BackupRead
 	}
 	if ((vFile.recurrences.map { it.id } + vFile.loans.map { it.id }).let { it.size != it.toSet().size }) return BackupRead.Invalid("Identifiants en double dans le fichier.")
 	if (vFile.prices.any { it.assetId !in vAssets }) return BackupRead.Invalid("Cours d’un actif inconnu.")
+	try
+	{
+		vFile.budgetOf()
+		vFile.goalsByScope()
+	}
+	catch (inError: IllegalArgumentException)
+	{
+		return BackupRead.Invalid("Budget ou objectif illisible dans le fichier : ${inError.message}")
+	}
+	if ((vFile.budget.map { it.id } + vFile.goals.map { it.scope + "/" + it.id }).let { it.size != it.toSet().size }) return BackupRead.Invalid("Identifiants en double dans le fichier.")
 	if (vFile.prices.groupBy { it.assetId to it.date }.any { it.value.size > 1 }) return BackupRead.Invalid("Deux cours pour un même actif et un même jour.")
 	val vValidator = TransactionValidator(vAccounts, vCategories, vAssets)	// règles de saisie
 	val vDone      = mutableListOf<Transaction>()								// opérations déjà vérifiées

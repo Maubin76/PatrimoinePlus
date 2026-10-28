@@ -78,7 +78,9 @@ import fr.maubin.patrimoineplus.desktop.data.PcBackup
 import fr.maubin.patrimoineplus.desktop.data.PcBackupResult
 import fr.maubin.patrimoineplus.desktop.data.kPcBackupFolder
 import fr.maubin.patrimoineplus.desktop.data.kPcBackupKept
-import fr.maubin.patrimoineplus.desktop.data.LoadStatus
+import fr.maubin.patrimoineplus.desktop.data.LoadStatus
+import fr.maubin.patrimoineplus.data.withBudget
+import fr.maubin.patrimoineplus.data.withGoals
 
 private const val kDayCheckMillis = 60_000L										// contrôle du changement de jour
 
@@ -269,8 +271,6 @@ class DesktopController(
 	private val fBatch      = MutableStateFlow<List<BatchRow>>(emptyList())	// lignes de la saisie en grille
 	private val fReportTab  = MutableStateFlow(ReportTab.ANNUAL)				// onglet affiché du bilan
 	private val fProjection = MutableStateFlow<ProjectionInput?>(null)			// hypothèses de la projection ; null : par défaut
-	private val fBudget     = MutableStateFlow(inConfig.loadBudget(fSettings.value.source, scopeOf(fSettings.value.view, emptyList())))	// budget prévisionnel de la vue
-	private val fGoals      = MutableStateFlow(inConfig.loadGoals(fSettings.value.source, scopeOf(fSettings.value.view, emptyList())))		// objectifs de la vue
 	private val fUpdate     = MutableStateFlow<UpdateUiState?>(null)			// fenêtre de mise à jour ; null sans
 	private val fExit       = MutableStateFlow(false)							// fermeture demandée (remplacement par la nouvelle version)
 	private var fDownload   : Job? = null										// téléchargement en cours
@@ -519,11 +519,11 @@ class DesktopController(
 	// Hypothèses de la projection ; null pour celles par défaut.
 	val projection: StateFlow<ProjectionInput?> = fProjection
 
-	// Budget prévisionnel mensuel (enregistré sur le PC).
-	val budget: StateFlow<Budget> = fBudget
+	// Budget prévisionnel mensuel, commun à toute la famille (fichier d'échange).
+	val budget: StateFlow<Budget> = DerivedFlow(listOf(inWorkspace.state)) { inWorkspace.state.value.data.budget }
 
-	// Objectifs sur le patrimoine (enregistrés sur le PC).
-	val goals: StateFlow<Goals> = fGoals
+	// Objectifs sur le patrimoine de la vue affichée (fichier d'échange).
+	val goals: StateFlow<Goals> = DerivedFlow(listOf(inWorkspace.state, fSettings)) { inWorkspace.state.value.data.goals[viewScope()] ?: Goals() }
 
 	// Relevé de la banque en cours de rapprochement ; null sinon.
 	val bank: StateFlow<BankSession?> = fBank
@@ -531,6 +531,7 @@ class DesktopController(
 	init
 	{
 		inWorkspace.open(fSettings.value.source, inScope)
+		importLegacyPlans(fSettings.value.source)
 		backupIfDue()
 		inScope?.launch {
 			while (isActive)
@@ -752,14 +753,19 @@ class DesktopController(
 	fun viewData(): fr.maubin.patrimoineplus.data.DataSet = workspace.value.data.scoped(viewProfile())
 
 	/*
-		Change de vue (mémorisée) : profil, ou famille ; le budget et les
-		objectifs sont ceux de la vue.
+		Vue affichée, telle qu'elle range les objectifs : identifiant du
+		profil, ou kFamilyView.
+	*/
+	private fun viewScope(): String = viewProfile() ?: kFamilyView
+
+	/*
+		Change de vue (mémorisée) : profil, ou famille ; les objectifs sont
+		ceux de la vue, le budget est celui de toute la famille.
 		inProfile : profil ; null pour la famille
 	*/
 	fun setView(inProfile: String?)
 	{
 		update(fSettings.value.copy(view = inProfile ?: kFamilyView))
-		reloadPlans()
 	}
 
 	/*
@@ -796,12 +802,21 @@ class DesktopController(
 		}
 
 	/*
-		Relit le budget et les objectifs de la vue affichée.
+		Reprend dans le fichier d'échange le budget et les objectifs d'avant le
+		format 8 (fichiers à côté des réglages), une seule fois : seulement si
+		le fichier n'en a pas encore et qu'il a été lu sans erreur ni conflit.
+		inSource : source ouverte
 	*/
-	private fun reloadPlans()
+	private fun importLegacyPlans(inSource: Source)
 	{
-		fBudget.value = inConfig.loadBudget(fSettings.value.source, viewProfile())
-		fGoals.value  = inConfig.loadGoals(fSettings.value.source, viewProfile())
+		val vState = inWorkspace.state.value													// données lues
+		val vReady = vState.status is fr.maubin.patrimoineplus.desktop.data.LoadStatus.Synced || vState.status is fr.maubin.patrimoineplus.desktop.data.LoadStatus.Demo || vState.status is fr.maubin.patrimoineplus.desktop.data.LoadStatus.Waiting	// lecture sans erreur ni conflit
+		val vFile  = inWorkspace.file															// contenu courant
+		if (!vReady || vFile.budget.isNotEmpty() || vFile.goals.isNotEmpty() || vFile.monthGoals.isNotEmpty()) return
+		val vPlans = inConfig.legacyPlans(inSource, vState.data.profiles.map { it.id }) ?: return	// budget et objectifs d'avant
+		val vResult = edit { inData -> EditResult.Done(vPlans.goals.entries.fold(inData.withBudget(vPlans.budget)) { inAcc, (inScope, inGoals) -> inAcc.withGoals(inScope, inGoals) }) }	// repris dans le fichier
+		val vRead   = vState.status is fr.maubin.patrimoineplus.desktop.data.LoadStatus.Synced		// fichier d'échange lu (absent : repris de nouveau quand il sera là)
+		if (vResult is EditResult.Done && inSource is Source.Folder && vRead) inConfig.retireLegacyPlans(vPlans)	// la démonstration les relit à chaque ouverture
 	}
 
 	/*
@@ -1090,8 +1105,7 @@ class DesktopController(
 	*/
 	fun setBudget(inBudget: Budget)
 	{
-		fBudget.value = inBudget
-		runCatching { inConfig.saveBudget(fSettings.value.source, inBudget, viewProfile()) }.onFailure { fNotice.value = "Budget non enregistré : ${it.message}" }
+		edit { EditResult.Done(it.withBudget(inBudget)) }
 	}
 
 	/*
@@ -1100,8 +1114,7 @@ class DesktopController(
 	*/
 	fun setGoals(inGoals: Goals)
 	{
-		fGoals.value = inGoals
-		runCatching { inConfig.saveGoals(fSettings.value.source, inGoals, viewProfile()) }.onFailure { fNotice.value = "Objectifs non enregistrés : ${it.message}" }
+		edit { EditResult.Done(it.withGoals(viewScope(), inGoals)) }
 	}
 
 	/*
@@ -1253,19 +1266,19 @@ class DesktopController(
 
 	/*
 		Ouvre une source, la mémorise et revient au tableau de bord ; le budget
-		et les objectifs sont ceux de la source (la démonstration a les siens).
+		et les objectifs sont ceux de son fichier (ceux d'avant le format 8 y
+		sont repris).
 		inSource : source
 	*/
 	private fun openSource(inSource: Source)
 	{
 		fBank.value = null
 		update(fSettings.value.copy(source = inSource))
-		fBudget.value = inConfig.loadBudget(inSource, scopeOf(fSettings.value.view, emptyList()))
-		fGoals.value  = inConfig.loadGoals(inSource, scopeOf(fSettings.value.view, emptyList()))
 		fProjection.value = null													// hypothèses de l'autre source
 		fBatch.value      = emptyList()												// lignes saisies sur les comptes de l'autre source
 		fQuery.value      = SearchQuery()											// critères sur les comptes de l'autre source
 		inWorkspace.open(inSource, inScope)
+		importLegacyPlans(inSource)
 		fNavigation.value = Navigation()
 		fPanel.value      = null
 		backupIfDue()

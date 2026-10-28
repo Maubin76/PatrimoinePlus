@@ -92,7 +92,7 @@ class UpdatesUiTest
 	*/
 	private fun release(
 		inSha    : String = MessageDigest.getInstance("SHA-256").digest(kPayload).joinToString("") { "%02x".format(it) },
-		inFormat : Int    = 7
+		inFormat : Int    = 8
 	) = Release("1.3", inFormat, listOf(
 		ReleaseAsset("PatrimoinePlus-1.3.apk", 5_100_305, "http://127.0.0.1:${fServer.address.port}/apk", null),
 		ReleaseAsset("PatrimoinePlus-1.3-windows.zip", kPayload.size.toLong(), "http://127.0.0.1:${fServer.address.port}/zip", inSha)
@@ -162,7 +162,7 @@ class UpdatesUiTest
 	@Test
 	fun formatAndIgnore()
 	{
-		val vApp = controller(release(inFormat = 8))										// release au format 8
+		val vApp = controller(release(inFormat = 9))										// release au format 9
 		fCompose.setContent { App(vApp) { null } }
 		vApp.checkForUpdates()
 		fCompose.waitUntil(5_000) { vApp.update.value != null }
@@ -172,7 +172,7 @@ class UpdatesUiTest
 		fCompose.waitForIdle()
 		assertNull(vApp.update.value)
 		assertEquals("1.3", vApp.settings.value.ignored)
-		val vNext = controller(release(inFormat = 8))										// lancement suivant
+		val vNext = controller(release(inFormat = 9))										// lancement suivant
 		vNext.checkForUpdates()
 		Thread.sleep(500)
 		assertNull(vNext.update.value)

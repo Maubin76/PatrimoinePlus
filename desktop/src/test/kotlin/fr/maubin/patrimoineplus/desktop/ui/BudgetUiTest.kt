@@ -33,6 +33,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.graphics.asSkiaBitmap
 import androidx.compose.ui.test.onNodeWithContentDescription
+import fr.maubin.patrimoineplus.data.budgetOf
 
 /*
 	Budget prévisionnel dans l'interface du PC (sans écran), page de
@@ -114,7 +115,6 @@ class BudgetUiTest
 		vFields[vCount - 7].performTextInput("30")
 		fCompose.waitForIdle()
 		assertTrue(vApp.budget.value.lines.any { it.name == "Netflix" && it.amount == 3_000L && it.theme == ExpenseTheme.SUBSCRIPTIONS && it.categoryId == null })
-		val vNext = DesktopController(DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")), Workspace(kClock), null, kClock)	// lancement suivant
-		assertEquals(vApp.budget.value, vNext.budget.value)
+		assertEquals(vApp.budget.value, vApp.currentFile().budgetOf())					// rangé dans les données (fichier d'échange)
 	}
 }

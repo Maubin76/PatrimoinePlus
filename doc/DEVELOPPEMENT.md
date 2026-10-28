@@ -592,9 +592,11 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   quatre colonnes : entrées → budget → investissements (en haut) puis
   thèmes de dépenses (du plus fort au plus faible), puis reste →
   détail de chaque groupe ; rubans en courbes douces, teintes pastel par thème,
-  étiquettes « Nom : montant » ; déficit visible. Enregistré sur le PC
-  (`%APPDATA%\PatrimoinePlus\budget.json` ; `budget-demo.json` pour la démonstration), pas dans le fichier
-  synchronisé.
+  étiquettes « Nom : montant » ; déficit visible. **Un seul budget pour toute
+  la famille** (le même dans toutes les vues, comparé au réel de toute la
+  famille), rangé dans le **fichier d'échange** (format 8, onglet Budget) ;
+  le téléphone le garde sans l'afficher (base v8, table `plan`, texte
+  `PlansDto`) et le rend tel quel au fichier.
 - **Objectifs** (rail, PC), en deux sections. **Objectifs
   globaux** : cibles suivies sur les données (patrimoine, compte, type de
   placement, épargne mensuelle, taux d'épargne), mises à jour à la main ou à
@@ -606,8 +608,17 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   égale aux investissements prévus ; suivis automatiquement sur les
   opérations (dépenses du thème, mis de côté), états En cours, Tenu,
   Dépassé, Atteint, Manqué ; navigation par mois et **historique** des mois
-  écoulés (réussis sur fixés), figé une fois le mois passé. Enregistrés dans
-  le fichier d'objectifs du PC (propre à chaque source).
+  écoulés (réussis sur fixés), figé une fois le mois passé. Propres à chaque
+  vue (profil ou Famille), rangés dans le fichier d'échange (format 8,
+  onglets Objectifs et Objectifs du mois, colonne « ID vue » : identifiant du
+  profil, « * » pour la famille).
+- **Reprise des fichiers d'avant le format 8** : au lancement et à
+  l'ouverture d'une source, si le fichier d'échange n'a ni budget ni
+  objectifs, le PC reprend `budget-famille.json` (sinon le budget du premier
+  profil qui en a un) et les `goals*.json` de chaque vue, rangés à côté des
+  réglages ; une fois le fichier relu et complété, ces fichiers sont renommés
+  `*.avant-format-8` (gardés, plus jamais repris). La démonstration les relit
+  à chaque ouverture (elle n'est jamais enregistrée).
 - **Synchronisation côté PC** : le fichier d'échange est lu, puis surveillé
   (2 s) ; une modification du PC est écrite 1,5 s plus tard (fichier
   temporaire ignoré par Syncthing, puis remplacement atomique), une

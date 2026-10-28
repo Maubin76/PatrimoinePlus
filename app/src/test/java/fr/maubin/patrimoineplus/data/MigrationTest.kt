@@ -175,4 +175,23 @@ class MigrationTest
 		assertEquals(listOf("Julie"), vDb.backupDao().profiles().map { it.name })
 		vDb.close()
 	}
+
+	/*
+		Version 7 → 8 : table du budget et des objectifs ajoutée, vide ; thèmes
+		et profils intacts.
+	*/
+	@Test
+	fun version7To8AddsPlans() = runTest {
+		val vContext = ApplicationProvider.getApplicationContext<Context>()		// contexte
+		oldDatabase(
+			7, "migration-test-8.db",
+			"INSERT INTO profile (id, name, sortOrder) VALUES ('p1', 'Julie', 0)",
+			"INSERT INTO theme (id, name, colors, sortOrder) VALUES ('t1', 'Océan', '#112233;#223344;#334455;#445566;#556677', 0)"
+		)
+		val vDb = Room.databaseBuilder(vContext, PatrimoineDatabase::class.java, "migration-test-8.db").allowMainThreadQueries().build()	// version actuelle
+		assertEquals(null, vDb.backupDao().plans())
+		assertEquals(listOf("Océan"), vDb.backupDao().themes().map { it.name })
+		assertEquals(listOf("Julie"), vDb.backupDao().profiles().map { it.name })
+		vDb.close()
+	}
 }
