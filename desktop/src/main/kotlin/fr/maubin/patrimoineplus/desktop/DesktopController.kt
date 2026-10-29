@@ -85,11 +85,11 @@ import fr.maubin.patrimoineplus.data.market.QuoteSource
 import fr.maubin.patrimoineplus.data.market.QuoteOutcome
 import fr.maubin.patrimoineplus.data.market.fetchQuotes
 import fr.maubin.patrimoineplus.data.market.withQuotes
-import fr.maubin.patrimoineplus.data.market.kQuotesStaleMillis
+import fr.maubin.patrimoineplus.data.market.kQuotesStaleMillis
 import fr.maubin.patrimoineplus.desktop.data.NetworkDiagnostic
 import fr.maubin.patrimoineplus.desktop.data.pcInfo
 import fr.maubin.patrimoineplus.desktop.update.appVersion
-import java.util.UUID
+import java.util.UUID
 import fr.maubin.patrimoineplus.desktop.data.PeerService
 import fr.maubin.patrimoineplus.desktop.data.PeerStore
 import fr.maubin.patrimoineplus.desktop.data.PeerData
@@ -266,6 +266,8 @@ data class BankSession(
 	val skipped   : Int
 )
 
+private val kLocalNetwork = fr.maubin.patrimoineplus.data.link.NetworkId(fr.maubin.patrimoineplus.data.link.NetworkId.kKindWifi, "Réseau de test")	// réseau simulé de l'écoute locale (tests)
+
 /*
 	Contrôleur de l'appli PC : source des données (dossier des données ou
 	démonstration), réglages mémorisés (apparence, mode discret, couleurs),
@@ -276,7 +278,7 @@ data class BankSession(
 	inClock     : horloge (horodatages des modifications, date du jour)
 	inUpdater   : mises à jour (GitHub, dossier de l'appli) ; null : pas de vérification
 	inQuotes    : source des cours automatiques ; null : pas de cours automatiques
-	inLocalOnly : écoute Wi-Fi sur la boucle locale et un port libre seulement (tests : rien sur le réseau, pas de fenêtre du pare-feu)
+	inLocalOnly : écoute Wi-Fi sur la boucle locale et un port libre seulement, sur un réseau simulé (tests : rien sur le réseau, pas de fenêtre du pare-feu, même résultat sur toute machine)
 	inStartup   : inscrit ou retire le démarrage avec Windows ; rend la raison d'un échec, null si c'est fait
 */
 class DesktopController(
@@ -312,9 +314,9 @@ class DesktopController(
 	private val fExitWait   = MutableStateFlow<ExitWait?>(null)				// fermeture en attente du téléphone ; null sans
 	private var fExitAction : (() -> Unit)? = null								// fermeture retenue
 	private val fPeers      = PeerService(
-		inInfo   = { pcInfo(fSettings.value, inUpdater?.version ?: appVersion()) },
-		inStore  = PeerStore(inConfig.folder),
-		inData   = object : PeerData
+		inInfo     = { pcInfo(fSettings.value, inUpdater?.version ?: appVersion()) },
+		inStore    = PeerStore(inConfig.folder),
+		inData     = object : PeerData
 		{
 			override fun read(): BackupFile = onUi { inWorkspace.file }
 			override fun adopt(inFile: BackupFile, inNote: String?)
@@ -322,11 +324,12 @@ class DesktopController(
 				onUi { inWorkspace.edit { EditResult.Done(inFile) }; inNote?.let { fNotice.value = it } }
 			}
 		},
-		inAuthor = { inWorkspace.author },
-		inClock  = inClock,
-		inPort   = if (inLocalOnly) 0 else fr.maubin.patrimoineplus.data.link.kLinkPort,
-		inBeacon = if (inLocalOnly) 0 else fr.maubin.patrimoineplus.data.link.kDiscoveryPort,
-		inBind   = if (inLocalOnly) java.net.InetAddress.getLoopbackAddress() else null
+		inAuthor   = { inWorkspace.author },
+		inClock    = inClock,
+		inPort     = if (inLocalOnly) 0 else fr.maubin.patrimoineplus.data.link.kLinkPort,
+		inBeacon   = if (inLocalOnly) 0 else fr.maubin.patrimoineplus.data.link.kDiscoveryPort,
+		inBind     = if (inLocalOnly) java.net.InetAddress.getLoopbackAddress() else null,
+		inNetworks = if (inLocalOnly) { { listOf(kLocalNetwork) } } else { { fr.maubin.patrimoineplus.desktop.data.currentNetworks() } }
 	)																			// synchronisation Wi-Fi avec le téléphone
 	private val fDiagnostic = NetworkDiagnostic({ pcInfo(fSettings.value, inUpdater?.version ?: appVersion()) }, inClock, inShared = { fPeers.port.takeIf { it > 0 } }).also { inDiag -> fPeers.onHello = inDiag::noteVisit }	// diagnostic réseau (se sert du serveur de la synchronisation s'il écoute)
 	private val fDirty      = MutableStateFlow(false)							// saisie du panneau ouvert modifiée et pas enregistrée
