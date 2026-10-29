@@ -214,7 +214,7 @@ Nouvelle entrée du rail d'icônes ; tout l'appairage s'y configure.
 - Retrait d'un appareil : il n'est plus accepté ; il garde sa copie locale
   (effacement à distance impossible).
 
-### Phase 3 — Serveur du PC (`desktop`) — fait (sauf zone de notification et démarrage avec Windows)
+### Phase 3 — Serveur du PC (`desktop`) — fait
 
 - Serveur intégré, démarré avec l'appli, en tâche de fond ; port fixe avec
   repli ; annonce sur le réseau local, **seulement sur le réseau familial**
@@ -239,7 +239,7 @@ Nouvelle entrée du rail d'icônes ; tout l'appairage s'y configure.
   dans `Documents/PatrimoinePlus`, puisqu'il n'y a plus de dossier
   synchronisé.
 
-### Phase 5 — Interface
+### Phase 5 — Interface — fait (fenêtre de fermeture, bandeau d'ouverture, diagnostic sur le serveur de la synchronisation)
 
 - Page **Appareils** du PC (section 3), indicateur dans la barre d'état.
 - Réglages du téléphone : scan, appareils connus, état, synchronisation

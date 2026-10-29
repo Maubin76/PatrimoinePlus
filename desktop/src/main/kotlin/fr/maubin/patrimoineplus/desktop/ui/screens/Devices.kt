@@ -135,7 +135,7 @@ fun DevicesScreen(inController: DesktopController)
 				vState.error?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = vColors.error) }
 				if (vState.running)
 				{
-					Text("En attente du téléphone (port ${vState.port}). Si Windows demande d’autoriser PatrimoinePlus, cochez « Réseaux privés ».", style = MaterialTheme.typography.bodyLarge)
+					Text("En attente du téléphone (port ${vState.port}${if (vState.shared) ", serveur de la synchronisation Wi-Fi" else ""}). Si Windows demande d’autoriser PatrimoinePlus, cochez « Réseaux privés ».", style = MaterialTheme.typography.bodyLarge)
 				}
 				if (vState.visits.isEmpty())
 				{

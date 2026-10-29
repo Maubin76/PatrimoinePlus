@@ -166,6 +166,7 @@ class PeerStore(private val inFolder: Path)
 	paired   : téléphone appairé à l'instant (message) ; null sans
 	choice   : choix attendu sur le PC ; null sans
 	error    : échec du démarrage ; null sinon
+	exchanged : synchronisations réussies depuis l'ouverture du PC, par nom de téléphone (ms)
 */
 data class PeerState(
 	val running  : Boolean            = false,
@@ -176,7 +177,8 @@ data class PeerState(
 	val offer    : PairingOffer?      = null,
 	val paired   : String?            = null,
 	val choice   : PendingChoice?     = null,
-	val error    : String?            = null
+	val error    : String?            = null,
+	val exchanged : Map<String, Long> = emptyMap()
 )
 
 /*
@@ -212,12 +214,16 @@ class PeerService(
 	private var fServer : LinkServer? = null										// serveur démarré
 	private var fFinder : DiscoveryResponder? = null								// répondeur démarré
 	private val fSync   = PeerSyncServer(Host(), inAuthor, inClock::millis)			// décisions de synchronisation
+	private val fBases  = mutableMapOf<String, String?>()							// empreinte de la dernière version commune, par téléphone (lue une fois)
 
 	// État de la synchronisation Wi-Fi.
 	val state: StateFlow<PeerState> = fState
 
 	// Port du serveur ; 0 à l'arrêt.
 	val port: Int get() = fServer?.port ?: 0
+
+	// Présentation reçue en clair (diagnostic du téléphone), pour le journal du diagnostic.
+	var onHello: (DeviceInfo, InetAddress) -> Unit = { _, _ -> }
 
 	// Port du répondeur de découverte ; 0 à l'arrêt.
 	val beaconPort: Int get() = fFinder?.port ?: 0
@@ -272,6 +278,7 @@ class PeerService(
 		val vGone  = inStore.load().phones.firstOrNull { it.id == inId }						// téléphone retiré
 		inStore.save(vPeers)
 		inStore.forget(inId)
+		fBases.remove(inId)
 		fState.update { it.copy(phones = vPeers.phones) }
 		vGone?.let { link(it, inRemoved = true) }
 		refresh()
@@ -305,6 +312,20 @@ class PeerService(
 	) = fSync.resolve(inChoices, inKeepPc)
 
 	/*
+		Téléphones appairés qui n'ont pas encore les dernières données du PC
+		(leur dernière version commune diffère des données du PC) ; vide si la
+		synchronisation n'écoute pas (rien ne pourrait leur parvenir).
+		inLocal : données du PC
+	*/
+	@Synchronized
+	fun untransmitted(inLocal: fr.maubin.patrimoineplus.data.backup.BackupFile): List<String>
+	{
+		if (fServer == null) return emptyList()
+		val vFp = syncFingerprint(inLocal)															// empreinte des données du PC
+		return fState.value.phones.filter { inPhone -> fBases.getOrPut(inPhone.id) { inStore.base(inPhone.id)?.fingerprint } != vFp }.map { it.name }
+	}
+
+	/*
 		Arrête l'écoute (fermeture de l'appli).
 	*/
 	@Synchronized
@@ -323,7 +344,7 @@ class PeerService(
 	private fun start()
 	{
 		if (fServer != null) return
-		val vServer = LinkServer(inInfo, ::keyOf, ::handle, inNow = inClock::millis)			// serveur
+		val vServer = LinkServer(inInfo, ::keyOf, ::handle, { inPeer, inAddress -> onHello(inPeer, inAddress) }, inClock::millis)	// serveur
 		val vFinder = DiscoveryResponder { Beacon(inInfo().id, inInfo().name, vServer.port) }	// répondeur de découverte
 		try
 		{
@@ -387,6 +408,7 @@ class PeerService(
 		val vNext   = PeersFile(vPeers.phones.filter { it.id != vDevice.id } + vPhone, (vPeers.home + inRequest.home + fState.value.networks).distinct())	// appareils et réseaux familiaux
 		inStore.save(vNext)
 		inStore.forget(vDevice.id)
+		fBases.remove(vDevice.id)
 		fState.update { it.copy(phones = vNext.phones, home = vNext.home, offer = null, paired = vDevice.name) }
 		link(vPhone)
 		refresh()
@@ -406,7 +428,8 @@ class PeerService(
 	{
 		val vPeers = inStore.load().let { it.copy(phones = it.phones.map { inPhone -> if (inPhone.id == inId) inPhone.copy(lastSync = inClock.millis(), lastAddress = inAddress) else inPhone }) }	// appareils
 		inStore.save(vPeers)
-		fState.update { it.copy(phones = vPeers.phones) }
+		val vName  = vPeers.phones.firstOrNull { it.id == inId }?.name ?: inId						// nom du téléphone
+		fState.update { it.copy(phones = vPeers.phones, exchanged = it.exchanged + (vName to inClock.millis())) }
 		vPeers.phones.firstOrNull { it.id == inId }?.let { link(it) }
 	}
 
@@ -441,7 +464,7 @@ class PeerService(
 		override fun local() = inData.read()
 		override fun adopt(inFile: fr.maubin.patrimoineplus.data.backup.BackupFile, inNote: String?) = inData.adopt(inFile, inNote)
 		override fun base(inPeerId: String): PeerBase? = inStore.base(inPeerId)
-		override fun record(inPeerId: String, inBase: PeerBase) = inStore.record(inPeerId, inBase)
+		override fun record(inPeerId: String, inBase: PeerBase) { inStore.record(inPeerId, inBase); synchronized(this@PeerService) { fBases[inPeerId] = inBase.fingerprint } }
 		override fun ask(inChoice: PendingChoice?) { fState.update { it.copy(choice = inChoice) } }
 	}
 }

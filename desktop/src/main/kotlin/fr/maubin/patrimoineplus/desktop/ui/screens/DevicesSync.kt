@@ -58,6 +58,8 @@ fun PhoneSyncCard(inController: DesktopController)
 		Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
 			WifiSyncSwitch(vSettings.wifiSync, inController::setWifiSync)
 			if (!vSettings.wifiSync) return@Column
+			BackgroundOptions(inController)
+			HorizontalDivider(color = vColors.outlineVariant)
 			Text(statusText(vState, vFolder), style = MaterialTheme.typography.bodyLarge)
 			vState.error?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = vColors.error) }
 			if (vFolder) Button(onClick = inController.peers::startPairing) { Text(if (vState.phones.isEmpty()) "Appairer le téléphone" else "Appairer un autre téléphone") }
@@ -117,6 +119,33 @@ fun WifiSyncSwitch(
 			Text(if (inOn) "Activée : le téléphone appairé se synchronise avec ce PC sur le Wi-Fi de la maison." else "Désactivée : rien n’écoute sur le réseau. Activez-la pour appairer le téléphone.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		}
 		Switch(checked = inOn, onCheckedChange = inOnChange, modifier = Modifier.semantics { contentDescription = "Synchronisation Wi-Fi" })
+	}
+}
+
+/*
+	Options de fond du PC : rester dans la zone de notification à la
+	fermeture, démarrer avec Windows (désactivées par défaut). Le téléphone ne
+	se synchronise qu'avec un PC dont l'appli tourne.
+	inController : contrôleur
+*/
+@Composable
+fun BackgroundOptions(inController: DesktopController)
+{
+	val vSettings by inController.settings.collectAsState()								// réglages
+	val vMuted    = MaterialTheme.colorScheme.onSurfaceVariant								// texte secondaire
+	Row(verticalAlignment = Alignment.CenterVertically) {
+		Column(Modifier.weight(1f)) {
+			Text("Rester dans la zone de notification à la fermeture", style = MaterialTheme.typography.titleMedium)
+			Text("Fermer la fenêtre garde PatrimoinePlus près de l’horloge : le téléphone peut toujours se synchroniser avec ce PC.", style = MaterialTheme.typography.bodyMedium, color = vMuted)
+		}
+		Switch(checked = vSettings.tray, onCheckedChange = inController::setTray, modifier = Modifier.semantics { contentDescription = "Rester dans la zone de notification" })
+	}
+	Row(verticalAlignment = Alignment.CenterVertically) {
+		Column(Modifier.weight(1f)) {
+			Text("Démarrer avec Windows", style = MaterialTheme.typography.titleMedium)
+			Text("PatrimoinePlus s’ouvre à l’ouverture de session (dans la zone de notification si l’option ci-dessus est activée).", style = MaterialTheme.typography.bodyMedium, color = vMuted)
+		}
+		Switch(checked = vSettings.autostart, onCheckedChange = inController::setAutostart, modifier = Modifier.semantics { contentDescription = "Démarrer avec Windows" })
 	}
 }
 

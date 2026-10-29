@@ -46,7 +46,10 @@ import fr.maubin.patrimoineplus.desktop.update.appVersion
 import fr.maubin.patrimoineplus.data.backup.writeBackupXlsx
 import fr.maubin.patrimoineplus.data.toDataSet
 import fr.maubin.patrimoineplus.ui.dashboard.buildDashboard
-import fr.maubin.patrimoineplus.data.market.YahooQuoteSource
+import fr.maubin.patrimoineplus.data.market.YahooQuoteSource
+import androidx.compose.ui.window.Tray
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 /*
 	Point d'entrée de l'appli PC : fenêtre unique, réglages mémorisés dans
@@ -69,8 +72,23 @@ fun main(inArgs: Array<String>)
 		val vExit       by vController.exitRequested.collectAsState()				// fermeture pour la mise à jour
 		LaunchedEffect(Unit) { vController.checkForUpdates() }
 		LaunchedEffect(vExit) { if (vExit) vController.requestExit(::exitApplication) }
+		val vSet        by vController.settings.collectAsState()					// réglages (zone de notification)
+		var vVisible    by remember { mutableStateOf(!(inArgs.contains(kStartupArg) && vController.settings.value.tray)) }	// fenêtre affichée (au démarrage avec Windows : dans la zone de notification)
+		if (vSet.tray)
+		{
+			Tray(
+				icon    = BitmapPainter(windowIcon()),
+				tooltip = "PatrimoinePlus",
+				onAction = { vVisible = true },
+				menu    = {
+					Item("Ouvrir PatrimoinePlus", onClick = { vVisible = true })
+					Item("Quitter", onClick = { vVisible = true; vController.requestExit(::exitApplication) })
+				}
+			)
+		}
 		Window(
-			onCloseRequest    = { vController.requestExit(::exitApplication) },
+			visible           = vVisible,
+			onCloseRequest    = { if (vSet.tray) vVisible = false else vController.requestExit(::exitApplication) },
 			title             = "PatrimoinePlus",
 			icon              = BitmapPainter(windowIcon()),
 			state             = rememberWindowState(placement = WindowPlacement.Maximized, size = DpSize(1440.dp, 900.dp)),	// agrandie à chaque lancement ; 1440 × 900 une fois restaurée
@@ -85,9 +103,10 @@ fun main(inArgs: Array<String>)
 			}
 		) {
 			window.minimumSize = Dimension(980, 640)
-			LaunchedEffect(Unit) {
+			LaunchedEffect(vVisible) {
+				if (!vVisible) return@LaunchedEffect											// dans la zone de notification : rien à montrer
 				withTimeoutOrNull(2_000) { while (!window.isShowing) delay(16) }			// fenêtre réellement affichée
-				WindowFront.bring(window)													// au lancement : fenêtre au premier plan
+				if (window.isShowing) WindowFront.bring(window)								// au lancement et à la réouverture : fenêtre au premier plan
 			}
 			val vSettings by vController.settings.collectAsState()					// réglages (apparence)
 			val vDark     = vSettings.appearance.isDark()								// mode sombre effectif

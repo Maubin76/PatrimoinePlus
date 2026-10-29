@@ -22,6 +22,7 @@ import java.time.LocalTime
 	port      : port du serveur ; 0 à l'arrêt
 	visits    : appareils qui se sont présentés, du plus récent au plus ancien
 	error     : échec du démarrage ; null sinon
+	shared    : vrai si le diagnostic se sert du serveur de la synchronisation Wi-Fi
 */
 data class DiagnosticState(
 	val running   : Boolean         = false,
@@ -29,7 +30,8 @@ data class DiagnosticState(
 	val addresses : List<String>    = emptyList(),
 	val port      : Int             = 0,
 	val visits    : List<String>    = emptyList(),
-	val error     : String?         = null
+	val error     : String?         = null,
+	val shared    : Boolean         = false
 )
 
 /*
@@ -43,6 +45,7 @@ data class DiagnosticState(
 	inPort     : port du serveur (0 : port libre, tests)
 	inBeacon   : port de découverte (0 : port libre, tests)
 	inBind     : adresse d'écoute ; null pour toutes les interfaces (boucle locale en test : pas de fenêtre du pare-feu)
+	inShared   : port du serveur de la synchronisation Wi-Fi s'il écoute déjà (le diagnostic s'en sert) ; null sinon
 */
 class NetworkDiagnostic(
 	private val inInfo     : () -> DeviceInfo,
@@ -50,7 +53,8 @@ class NetworkDiagnostic(
 	private val inNetworks : () -> List<NetworkId> = ::currentNetworks,
 	private val inPort     : Int = kLinkPort,
 	private val inBeacon   : Int = kDiscoveryPort,
-	private val inBind     : java.net.InetAddress? = null
+	private val inBind     : java.net.InetAddress? = null,
+	private val inShared   : () -> Int? = { null }
 )
 {
 	private val fState  = MutableStateFlow(DiagnosticState())							// état
@@ -70,14 +74,15 @@ class NetworkDiagnostic(
 	fun start()
 	{
 		if (fServer != null) return
+		inShared()?.let { inPort ->
+			fState.value = DiagnosticState(running = true, networks = inNetworks(), addresses = localAddresses(), port = inPort, shared = true)	// la synchronisation écoute déjà
+			return
+		}
 		val vServer = LinkServer(
 			inInfo    = inInfo,
 			inKeyOf   = { null },
 			inHandler = { error("appareil non appairé") },
-			inOnHello = { inPeer, inAddress ->
-				val vLine = "${LocalTime.now(inClock).withNano(0)} — ${inPeer.name} (${if (inPeer.platform == "android") "Android" else inPeer.platform}, version ${inPeer.appVersion}) depuis ${inAddress.hostAddress}"	// entrée du journal
-				fState.update { it.copy(visits = (listOf(vLine) + it.visits).take(20)) }
-			}
+			inOnHello = ::noteVisit
 		)																				// serveur : présentations seulement
 		val vFinder = DiscoveryResponder { Beacon(inInfo().id, inInfo().name, vServer.port) }	// répondeur de découverte
 		try
@@ -95,6 +100,22 @@ class NetworkDiagnostic(
 		fServer = vServer
 		fFinder = vFinder
 		fState.value = DiagnosticState(running = true, networks = inNetworks(), addresses = localAddresses(), port = vServer.port)
+	}
+
+	/*
+		Note au journal un appareil qui s'est présenté (diagnostic du
+		téléphone), reçu par le serveur du diagnostic ou par celui de la
+		synchronisation Wi-Fi.
+		inPeer    : appareil
+		inAddress : son adresse
+	*/
+	fun noteVisit(
+		inPeer    : DeviceInfo,
+		inAddress : java.net.InetAddress
+	)
+	{
+		val vLine = "${LocalTime.now(inClock).withNano(0)} — ${inPeer.name} (${if (inPeer.platform == "android") "Android" else inPeer.platform}, version ${inPeer.appVersion}) depuis ${inAddress.hostAddress}"	// entrée du journal
+		fState.update { it.copy(visits = (listOf(vLine) + it.visits).take(20)) }
 	}
 
 	/*

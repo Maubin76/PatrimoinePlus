@@ -97,6 +97,17 @@ import fr.maubin.patrimoineplus.desktop.data.PeerData
 private const val kDayCheckMillis = 60_000L										// contrôle du changement de jour
 
 /*
+	Fermeture retenue le temps que le téléphone reçoive les dernières
+	modifications du PC.
+	phones : téléphones qui ne les ont pas encore
+	done   : vrai une fois tout transmis (fermeture imminente)
+*/
+data class ExitWait(
+	val phones : List<String>,
+	val done   : Boolean
+)
+
+/*
 	Écran principal de l'appli PC.
 	label : libellé de la barre latérale
 */
@@ -266,6 +277,7 @@ data class BankSession(
 	inUpdater   : mises à jour (GitHub, dossier de l'appli) ; null : pas de vérification
 	inQuotes    : source des cours automatiques ; null : pas de cours automatiques
 	inLocalOnly : écoute Wi-Fi sur la boucle locale et un port libre seulement (tests : rien sur le réseau, pas de fenêtre du pare-feu)
+	inStartup   : inscrit ou retire le démarrage avec Windows ; rend la raison d'un échec, null si c'est fait
 */
 class DesktopController(
 	private val inConfig    : DesktopConfig,
@@ -274,7 +286,8 @@ class DesktopController(
 	private val inClock     : Clock = Clock.systemDefaultZone(),
 	private val inUpdater   : DesktopUpdater? = null,
 	private val inQuotes    : QuoteSource?    = null,
-	private val inLocalOnly : Boolean         = false
+	private val inLocalOnly : Boolean         = false,
+	private val inStartup   : (Boolean) -> String? = WindowsStartup::set
 )
 {
 	private val fSettings   = MutableStateFlow(inConfig.load())					// réglages
@@ -296,6 +309,8 @@ class DesktopController(
 	private var fRowKeys    = 0L												// identifiants des lignes de la grille
 	private var fTokens     = 0L												// numéros d'ouverture des panneaux
 	private val fQuoting    = MutableStateFlow(false)							// cours en cours de récupération
+	private val fExitWait   = MutableStateFlow<ExitWait?>(null)				// fermeture en attente du téléphone ; null sans
+	private var fExitAction : (() -> Unit)? = null								// fermeture retenue
 	private val fPeers      = PeerService(
 		inInfo   = { pcInfo(fSettings.value, inUpdater?.version ?: appVersion()) },
 		inStore  = PeerStore(inConfig.folder),
@@ -313,7 +328,7 @@ class DesktopController(
 		inBeacon = if (inLocalOnly) 0 else fr.maubin.patrimoineplus.data.link.kDiscoveryPort,
 		inBind   = if (inLocalOnly) java.net.InetAddress.getLoopbackAddress() else null
 	)																			// synchronisation Wi-Fi avec le téléphone
-	private val fDiagnostic = NetworkDiagnostic({ pcInfo(fSettings.value, inUpdater?.version ?: appVersion()) }, inClock)	// diagnostic réseau (essai de la synchronisation)
+	private val fDiagnostic = NetworkDiagnostic({ pcInfo(fSettings.value, inUpdater?.version ?: appVersion()) }, inClock, inShared = { fPeers.port.takeIf { it > 0 } }).also { inDiag -> fPeers.onHello = inDiag::noteVisit }	// diagnostic réseau (se sert du serveur de la synchronisation s'il écoute)
 	private val fDirty      = MutableStateFlow(false)							// saisie du panneau ouvert modifiée et pas enregistrée
 	private val fDiscard    = MutableStateFlow<(() -> Unit)?>(null)			// action qui perdrait la saisie, en attente de confirmation
 
@@ -328,6 +343,9 @@ class DesktopController(
 
 	// Diagnostic réseau (essai de la synchronisation).
 	val diagnostic: NetworkDiagnostic get() = fDiagnostic
+
+	// Fermeture en attente du téléphone ; null sans.
+	val exitWait: StateFlow<ExitWait?> = fExitWait
 
 	// Vrai pendant la récupération des cours.
 	val quoting: StateFlow<Boolean> = fQuoting
@@ -619,7 +637,47 @@ class DesktopController(
 		l'utilisateur (copie, fermer quand même, annuler).
 		inOnExit : ferme l'appli
 	*/
-	fun requestExit(inOnExit: () -> Unit) = whenDiscarded { guard("Fermer l’appli") { fPeers.stop(); inOnExit() } }
+	fun requestExit(inOnExit: () -> Unit) = whenDiscarded {
+		guard("Fermer l’appli") {
+			val vWaiting = fPeers.untransmitted(inWorkspace.file)										// téléphones sans les dernières données
+			if (vWaiting.isEmpty()) { fPeers.stop(); inOnExit() }
+			else { fExitAction = inOnExit; fExitWait.value = ExitWait(vWaiting, false) }
+		}
+	}
+
+	/*
+		Fenêtre de fermeture en attente du téléphone : relit si les téléphones
+		ont reçu les dernières données ; une fois transmises, « Transmis » puis
+		fermeture (voir closeNow).
+	*/
+	fun checkExitWait()
+	{
+		val vWait = fExitWait.value ?: return														// attente en cours
+		val vLeft = fPeers.untransmitted(inWorkspace.file)											// téléphones encore en attente
+		fExitWait.value = vWait.copy(phones = vLeft.ifEmpty { vWait.phones }, done = vLeft.isEmpty())
+	}
+
+	/*
+		Ferme l'appli sans attendre le téléphone (les modifications partiront
+		à la prochaine ouverture) ou une fois les données transmises.
+	*/
+	fun closeNow()
+	{
+		val vExit = fExitAction ?: return															// fermeture retenue
+		fExitAction    = null
+		fExitWait.value = null
+		fPeers.stop()
+		vExit()
+	}
+
+	/*
+		Annule la fermeture en attente du téléphone.
+	*/
+	fun cancelExit()
+	{
+		fExitAction    = null
+		fExitWait.value = null
+	}
 
 	/*
 		Relit le réseau du PC et démarre ou arrête l'écoute Wi-Fi (en tâche de
@@ -1060,6 +1118,25 @@ class DesktopController(
 			fPanel.value  = null
 			fNotice.value = "Saisie fermée : l’élément a été supprimé sur l’autre appareil."
 		}
+	}
+
+	/*
+		Fermer la fenêtre garde PatrimoinePlus dans la zone de notification
+		(le téléphone peut toujours se synchroniser), ou ferme l'appli.
+		inOn : vrai pour rester dans la zone de notification
+	*/
+	fun setTray(inOn: Boolean) = update(fSettings.value.copy(tray = inOn))
+
+	/*
+		Démarre PatrimoinePlus avec la session Windows, ou plus ; l'échec
+		(appli lancée hors de son dossier) est signalé.
+		inOn : vrai pour démarrer avec Windows
+	*/
+	fun setAutostart(inOn: Boolean)
+	{
+		val vError = inStartup(inOn)														// échec ; null si c'est fait
+		if (vError != null) { showNotice("Démarrage avec Windows impossible : $vError."); return }
+		update(fSettings.value.copy(autostart = inOn))
 	}
 
 	/*

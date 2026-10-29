@@ -64,7 +64,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.size
 import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
-import fr.maubin.patrimoineplus.desktop.ui.screens.WifiSyncSwitch
+import fr.maubin.patrimoineplus.desktop.ui.screens.WifiSyncSwitch
+import fr.maubin.patrimoineplus.desktop.ui.screens.BackgroundOptions
 
 /*
 	Réglages de l'appli PC : source des données (dossier synchronisé,
@@ -142,6 +143,7 @@ fun SettingsScreen(
 		FloatingCard {
 			Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
 				WifiSyncSwitch(vSettings.wifiSync, inController::setWifiSync)
+				BackgroundOptions(inController)
 				TextButton(onClick = { inController.show(fr.maubin.patrimoineplus.desktop.Screen.DEVICES) }) { Text("Appairage et appareils : page Appareils") }
 			}
 		}

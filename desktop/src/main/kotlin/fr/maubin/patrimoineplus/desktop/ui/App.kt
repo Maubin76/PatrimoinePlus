@@ -159,7 +159,9 @@ import fr.maubin.patrimoineplus.desktop.ui.panels.PanelGuard
 import fr.maubin.patrimoineplus.data.backup.newerFormatText
 import fr.maubin.patrimoineplus.desktop.ui.screens.DevicesScreen
 import fr.maubin.patrimoineplus.ui.components.MergeConflictsDialog
-import fr.maubin.patrimoineplus.desktop.ui.screens.PhoneChoiceDialogs
+import fr.maubin.patrimoineplus.desktop.ui.screens.PhoneChoiceDialogs
+import fr.maubin.patrimoineplus.desktop.ExitWait
+import fr.maubin.patrimoineplus.desktop.data.PeerState
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -239,6 +241,8 @@ fun App(
 				if (vNewer != null && vNewer != vSeen) NewerFormatDialog(vNewer, { vSeen = vNewer; inController.checkUpdatesNow() }, { vSeen = vNewer })
 				val vDiscard by inController.discard.collectAsState()						// abandon de la saisie à confirmer
 				if (vDiscard != null) DiscardDialog(inController::confirmDiscard, inController::cancelDiscard)
+				val vExitWait by inController.exitWait.collectAsState()					// fermeture en attente du téléphone
+				vExitWait?.let { inWait -> ExitWaitDialog(inWait, inController) }
 				val vUpdate by inController.update.collectAsState()						// fenêtre de mise à jour
 				vUpdate?.let { inState ->
 					UpdateDialog(inState, inController::startUpdate, inController::postponeUpdate, inController::ignoreUpdate, inController::cancelUpdate)
@@ -437,6 +441,53 @@ internal fun NewerFormatDialog(
 		dismissButton    = { TextButton(onClick = inOnLater) { Text("Plus tard") } }
 	)
 }
+
+/*
+	Fermeture retenue : les dernières modifications n'ont pas encore été
+	transmises au téléphone. La fenêtre vérifie chaque seconde ; une fois
+	transmises, « Transmis » puis l'appli se ferme. « Fermer quand même » :
+	elles partiront à la prochaine ouverture.
+	inWait       : attente
+	inController : contrôleur
+*/
+@Composable
+private fun ExitWaitDialog(
+	inWait       : ExitWait,
+	inController : DesktopController
+)
+{
+	LaunchedEffect(inWait.done) {
+		if (inWait.done) { delay(1_200); inController.closeNow(); return@LaunchedEffect }
+		while (true) { delay(1_000); inController.checkExitWait() }
+	}
+	AlertDialog(
+		onDismissRequest = inController::cancelExit,
+		title            = { Text(if (inWait.done) "Transmis ✓" else "Modifications pas encore transmises") },
+		text             = {
+			Text(
+				if (inWait.done) "Le téléphone a reçu les dernières modifications : PatrimoinePlus se ferme."
+				else "Ces modifications n’ont pas encore été transmises à ${inWait.phones.joinToString(" et ")}. Ouvrez PatrimoinePlus sur le téléphone (sur le Wi-Fi de la maison) : la fenêtre se fermera d’elle-même une fois la synchronisation faite.\n\nSi vous fermez quand même, elles partiront à la prochaine ouverture de ce PC."
+			)
+		},
+		confirmButton    = { if (!inWait.done) TextButton(onClick = inController::closeNow) { Text("Fermer quand même") } },
+		dismissButton    = { if (!inWait.done) TextButton(onClick = inController::cancelExit) { Text("Annuler") } }
+	)
+}
+
+/*
+	Bandeau de la synchronisation Wi-Fi : vérification auprès du téléphone
+	tant qu'il n'est pas passé depuis l'ouverture, puis dernière
+	synchronisation ; hors du réseau familial, en pause.
+	inPeers : état de la synchronisation Wi-Fi
+*/
+private fun wifiBanner(inPeers: PeerState): String =
+	when
+	{
+		!inPeers.onHome              -> "Hors du réseau familial : synchronisation avec le téléphone en pause."
+		!inPeers.running             -> "Synchronisation Wi-Fi en démarrage…"
+		inPeers.exchanged.isEmpty()  -> "Vérification auprès du téléphone… Ouvrez PatrimoinePlus sur le téléphone pour synchroniser tout de suite."
+		else                         -> inPeers.exchanged.maxBy { it.value }.let { (inName, inAt) -> "Synchronisé avec $inName à ${Instant.ofEpochMilli(inAt).atZone(ZoneId.systemDefault()).format(kTimeFormat)}." }
+	}
 
 /*
 	Confirmation avant de perdre la saisie d'un panneau (croix, Échap, autre
@@ -647,7 +698,10 @@ private fun StatusBar(
 )
 {
 	val vColors = MaterialTheme.colorScheme										// palette courante
-	val vText   = inNotice ?: when (val vStatus = inSpace.status)				// état, en clair
+	val vSet    by inController.settings.collectAsState()						// réglages (synchronisation Wi-Fi)
+	val vPeers  by inController.peers.state.collectAsState()					// synchronisation Wi-Fi
+	val vWifi   = if (vSet.wifiSync && vPeers.phones.isNotEmpty() && inSpace.source is Source.Folder && inSpace.status is LoadStatus.Synced) wifiBanner(vPeers) else null	// bandeau de la synchronisation Wi-Fi
+	val vText   = inNotice ?: vWifi ?: when (val vStatus = inSpace.status)		// état, en clair
 	{
 		LoadStatus.Demo           -> "Démonstration : données fictives, modifiables, jamais enregistrées."
 		LoadStatus.Waiting        -> "Dossier ${(inSpace.source as? Source.Folder)?.path} : fichier d’échange pas encore présent. Activez la synchronisation sur le téléphone, ou saisissez ici."
