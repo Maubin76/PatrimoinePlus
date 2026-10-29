@@ -186,9 +186,8 @@ Nouvelle entrée du rail d'icônes ; tout l'appairage s'y configure.
   par exemple.
 - **Auteur et date** de la dernière modification, **historique** des
   20 dernières.
-- Interface **transport** qui sépare l'arbitrage de la façon d'échanger (le
-  dossier synchronisé sert de premier transport le temps du passage, puis est
-  retiré en phase 6).
+- Interface **transport** qui sépare l'arbitrage de la façon d'échanger
+  (`planSync` sert au Wi-Fi et au dossier des données du PC).
 - Tests JVM nombreux : c'est le cœur de la sûreté des données.
 
 ### Phase 2 — Identité, appairage, protocole (`core`) — protocole fait
@@ -247,19 +246,24 @@ Nouvelle entrée du rail d'icônes ; tout l'appairage s'y configure.
 - Fenêtre de conflit par élément (« Modifié sur le téléphone le … / sur le PC
   du bureau le … ») ; elle indique d'où vient chaque version.
 
-### Phase 6 — Passage depuis Syncthing, puis retrait du mode dossier
+### Phase 6 — Passage depuis Syncthing, retrait du mode dossier — fait
 
-- Assistant au premier lancement de la nouvelle version : une dernière
-  synchronisation par le dossier, puis appairage ; les données à jour
-  deviennent la version de référence du téléphone.
-- Retrait du mode dossier (réglages, surveillance du fichier, textes et
-  README) une fois le passage fait ; le classeur Excel reste le format des
-  exports et des sauvegardes, et l'import d'un classeur reste possible.
-- Sans mode de secours, la **saisie manuelle de l'adresse du PC** devient
-  indispensable (Wi-Fi qui bloque la découverte), et l'utilitaire de
-  diagnostic de la phase 0 reste livré.
+- Mode dossier **retiré** du téléphone (réglages, service par fichier,
+  fenêtre de conflit) : aucun code ni appli extérieure. Sur le PC, le dossier
+  reste le **dossier des données** (fichier d'échange, `Sauvegardes PC`),
+  surveillé pour une modification faite en dehors de l'appli. Le classeur
+  Excel reste le format des exports et des sauvegardes ; l'import d'un
+  classeur reste possible.
+- Pas d'assistant de passage : faire **une dernière synchronisation
+  Syncthing avant la mise à jour**, mettre à jour les deux applis, puis
+  appairer. Au premier échange, des données identiques ne demandent rien ;
+  un téléphone vide reçoit celles du PC ; sinon le PC demande quelle version
+  garder. Syncthing peut ensuite être désinstallé.
+- Pas de saisie manuelle de l'adresse : le QR code porte les adresses du PC,
+  essayées directement même si la découverte est bloquée ; la dernière
+  adresse qui a répondu est essayée d'abord. Le diagnostic reste livré.
 
-### Phase 7 — Tests, documentation, release
+### Phase 7 — Tests, documentation, release — fait, publication à faire
 
 - Tests serveur et client dans le même processus, sur l'interface réseau
   locale (sans réseau réel) ; Robolectric côté Android.

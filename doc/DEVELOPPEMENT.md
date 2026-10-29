@@ -7,9 +7,9 @@ l'application est dans le [README](../README.md).
 Deux applications partagent le même cœur Kotlin : **Android** (`:app`) et
 **PC Windows** (`:desktop`), avec l'interface commune `:ui` et le cœur `:core`.
 Les données restent sur les appareils ; elles passent de l'un à l'autre par
-un fichier d'échange dans un dossier synchronisé (Syncthing). Seules sorties
-réseau : les cours des titres (Yahoo Finance, téléphone) et la recherche des
-mises à jour (GitHub).
+la synchronisation Wi-Fi intégrée, sur le réseau de la maison seulement (le
+téléphone sert de relais entre les PC). Seules sorties vers internet : les
+cours des titres (Yahoo Finance) et la recherche des mises à jour (GitHub).
 
 La spécification complète (besoins, modèle de données, plan des étapes) est
 dans [`SPEC.md`](SPEC.md) ; la couverture des tests dans
@@ -82,7 +82,7 @@ fichier altéré est refusé. Hors ligne, rien ne s'affiche.
   (`<dossier>.new`), puis un script PowerShell attend la fermeture de
   l'appli, met le nouveau dossier à la place de l'ancien (même nom), relance
   l'appli et supprime l'ancien ; en cas d'échec il remet l'ancien en place.
-  Réglages (`%APPDATA%\PatrimoinePlus`) et données (dossier synchronisé) ne
+  Réglages (`%APPDATA%\PatrimoinePlus`) et données (dossier des données) ne
   bougent pas. Si le dossier n'est pas modifiable (par exemple sous
   `Program Files`) ou si l'appli n'est pas lancée par `PatrimoinePlus.exe`,
   le zip est seulement téléchargé dans Téléchargements. Version installée :
@@ -150,7 +150,8 @@ frontières :
         data/backup/   format de sauvegarde (classeur Excel, ancien JSON), rotation
         data/demo/     données de démonstration
         data/market/   analyse des cours, client Yahoo Finance
-        data/sync/     synchronisation par fichier : empreintes, décision
+        data/sync/     synchronisation : empreintes, fusion, décision, historique
+        data/link/     liaison Wi-Fi : chiffrement, découverte, appairage, protocole
         data/DataSet   toutes les données en modèles du domaine (base, fichier, démo)
         testFixtures/  aides de test partagées (fausse source de cours, réponses enregistrées)
         ui/            états des écrans (accueil, comptes, vue d'un compte, tableau
@@ -279,7 +280,7 @@ Détail complet : [`doc/SPEC.md` § 2](SPEC.md#2-modèle-de-données).
   collection), et **Crédit** (solde négatif : capital restant dû, déduit du
   patrimoine) ; établissement facultatif ; **propriétaires** : la part de
   chaque profil (50 et 50 pour un compte joint du couple).
-- **Profils** (membres de la famille, un seul fichier synchronisé pour tous) :
+- **Profils** (membres de la famille, un seul fichier d'échange pour tous) :
   chaque profil voit ses comptes à sa part ; la vue **Famille** rassemble
   tous les comptes, chacun pour le total des parts de la famille. Sur le PC,
   sélecteur de vue en haut (à partir de deux profils), section Profils des
@@ -407,7 +408,7 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   installation ni droits administrateur). Non signé : Windows peut afficher un
   avertissement au premier lancement (« Informations complémentaires ›
   Exécuter quand même »). En développement : `./gradlew :desktop:run`.
-- **Écran d'accueil** : choisir le dossier synchronisé avec le téléphone, ou
+- **Écran d'accueil** : choisir le dossier des données du PC, ou
   **essayer avec la démonstration** (données fictives en mémoire, modifiables,
   jamais enregistrées). Le choix est mémorisé et rouvert au lancement suivant.
 - **Tableau de bord** (Accueil et Comptes réunis) : patrimoine et variation du
@@ -679,11 +680,11 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   réglages ; une fois le fichier relu et complété, ces fichiers sont renommés
   `*.avant-format-8` (gardés, plus jamais repris). La démonstration les relit
   à chaque ouverture (elle n'est jamais enregistrée).
-- **Synchronisation côté PC** : le fichier d'échange est lu, puis surveillé
+- **Dossier des données du PC** : le fichier d'échange est lu, puis surveillé
   (2 s) ; une modification du PC est écrite 1,5 s plus tard (fichier
-  temporaire ignoré par Syncthing, puis remplacement atomique), une
-  modification du téléphone est relue ; même décision par empreintes que le
-  téléphone, même fenêtre de conflit (le fichier est relu avant d'écraser).
+  temporaire, puis remplacement atomique), une modification faite en dehors
+  de l'appli est relue et fusionnée par empreintes (le fichier est relu avant
+  d'écraser). Le téléphone, lui, passe par la synchronisation Wi-Fi.
   Un fichier illisible n'est jamais écrasé. Si des modifications ne peuvent
   pas être écrites (conflit, fichier refusé), la fermeture et le changement de
   source proposent d'en **enregistrer une copie**. Les **cours automatiques**
@@ -693,8 +694,7 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   montre une date en français (contrôle de la JVM embarquée).
 - **Sauvegardes automatiques du PC** : une par jour (au lancement, à
   l'ouverture d'un dossier et au changement de jour), dans le sous-dossier
-  `Sauvegardes PC` du dossier synchronisé (donc copiées aussi sur le
-  téléphone par Syncthing) : `patrimoineplus-pc-AAAA-MM-JJ.xlsx`, même
+  `Sauvegardes PC` du dossier des données : `patrimoineplus-pc-AAAA-MM-JJ.xlsx`, même
   classeur que le fichier d'échange, écrit dans un fichier temporaire puis
   renommé ; les **7 plus récentes** gardées, les autres fichiers jamais
   touchés (noms distincts de ceux du téléphone : aucun conflit). Rien en
@@ -706,55 +706,65 @@ bord** de pilotage plutôt qu'une suite d'écrans.
 
 ## Synchronisation avec le PC
 
-Les données sont partagées avec l'appli PC (branche `desktop`) par un
-**fichier d'échange** déposé dans un dossier que
-synchronise un outil comme Syncthing (gratuit, sans cloud).
+Le téléphone et les PC se synchronisent **directement par le Wi-Fi de la
+maison**, sans appli tierce ni serveur sur internet (`core/data/link`,
+conception détaillée dans `doc/PLAN_SYNCHRO.md`). **Désactivée par défaut**
+des deux côtés.
 
-- **Dossier** : choisi une fois dans Réglages › Synchronisation (sélecteur du
-  système, ouvert sur `Documents/PatrimoinePlus`) ; Android mémorise
-  l'autorisation, ce qui permet de lire les fichiers déposés par Syncthing.
-- **Fichier** : `patrimoineplus-donnees.xlsx`, même classeur que les
-  sauvegardes. Réécrit 3 s après chaque modification, relu au démarrage et à
-  chaque retour dans l'appli.
-- **Décision** (`:core`, `data/sync/SyncLogic.kt`) : par **empreintes de
-  contenu** (SHA-256 de la forme canonique), sans aucune date — les horloges
-  des appareils peuvent différer. Dernière synchronisation, téléphone et
-  fichier : seul le téléphone a changé → le fichier est réécrit ; seul le
-  fichier → les données du téléphone sont remplacées (après une sauvegarde de
-  sécurité) ; les deux, différemment → **conflit** : une fenêtre demande
-  quelle version garder, rien n'est modifié avant. Un téléphone vide (nouvelle
-  installation) reprend le fichier sans conflit.
-- **Fichier illisible** (copie interrompue) : refusé, rien n'est modifié.
-- La rotation des sauvegardes ne compte que les fichiers datés : le fichier
-  d'échange et les copies de conflit de Syncthing ne sont jamais supprimés.
+- **Rôles** : chaque PC est un petit serveur (port TCP 47801, découverte
+  UDP 47800) qui écoute seulement quand la synchronisation est activée, sur
+  un réseau familial, avec un téléphone appairé (ou pendant un appairage).
+  Le téléphone est le **relais** : il passe d'un PC à l'autre et porte les
+  modifications. Le PC décide (`PeerSyncServer`) ; le téléphone applique.
+- **Appairage** : PC › page Appareils › « Appairer le téléphone » affiche un
+  QR code (adresse, port, clé de la paire, valable 5 min) ; le téléphone le
+  scanne (Réglages › Synchronisation Wi-Fi). La clé est gardée en clair dans
+  les réglages de chaque appareil (usage familial). Un PC de plus = un
+  appairage de plus avec le même téléphone.
+- **Réseau familial** : le Wi-Fi de l'appairage (nom du réseau et box) est
+  retenu ; ailleurs, ou sur un Wi-Fi facturé, rien n'est tenté. Le téléphone
+  demande la localisation à l'appairage (Android l'exige pour lire le nom du
+  Wi-Fi).
+- **Échanges** : messages chiffrés (AES-GCM, clé de la paire), protégés du
+  rejeu (±5 min). Le téléphone se synchronise au premier plan, quelques
+  secondes après chaque saisie, et en tâche de fond (WorkManager, toutes les
+  15 min, Wi-Fi non facturé).
+- **Décision** (`core/data/sync`) : par **empreintes de contenu** (SHA-256 de
+  la forme canonique), jamais par les dates. Version commune connue : seul un
+  côté a changé → il est adopté ; les deux → **fusion élément par élément** ;
+  un même élément modifié des deux côtés, ou supprimé d'un côté et modifié de
+  l'autre → le **PC demande** lequel garder (le téléphone attend). Un
+  appareil neuf (vide) reçoit les données de l'autre sans question. La
+  version commune n'est retenue qu'après l'accusé de réception du téléphone.
+- **Avant tout remplacement** des données du téléphone, une sauvegarde de
+  sécurité est faite dans `Documents/PatrimoinePlus`.
+- **Fermeture du PC** : si le téléphone n'a pas encore reçu les dernières
+  modifications, la fermeture attend son passage (« Transmis ✓ »), ou
+  « Fermer quand même ». En option : rester dans la zone de notification à la
+  fermeture, démarrer avec Windows (clé `Run` de l'utilisateur, argument
+  `--demarrage`).
+- **Diagnostic** : page Appareils du PC et Réglages du téléphone ; le
+  diagnostic se sert du serveur de la synchronisation s'il écoute déjà.
 
-### Mise en place avec Syncthing
+### Mise en place de la synchronisation Wi-Fi
 
-Syncthing est gratuit et libre ; il synchronise le dossier directement entre
-le téléphone et le PC (Wi‑Fi local), sans serveur intermédiaire.
+1. **PC** : ouvrir le dossier des données (par exemple
+   `Documents\PatrimoinePlus`), puis page **Appareils** › « Activer ». Si
+   Windows demande d'autoriser PatrimoinePlus, cocher **Réseaux privés**.
+2. « **Appairer le téléphone** » : un QR code s'affiche.
+3. **Téléphone**, sur le Wi-Fi de la maison : Réglages › Synchronisation
+   Wi-Fi › « Scanner le QR code » ; autoriser l'appareil photo et la
+   localisation.
+4. **Vérifier** : la page Appareils du PC montre le téléphone et l'heure de
+   la dernière synchronisation ; une dépense saisie sur le téléphone apparaît
+   sur le PC quelques secondes plus tard.
+5. **Autres PC** : recommencer les étapes 1 à 3 sur chacun ; le schéma de
+   l'écosystème les montre tous autour du téléphone.
 
-1. **Téléphone** : installer **Syncthing-Fork** depuis le Google Play Store
-   (l'ancienne appli « Syncthing » n'y est plus disponible).
-2. **PC (Windows)** : installer Syncthing avec **Syncthing Windows Setup**,
-   l'installateur listé sur la page de téléchargement de syncthing.net
-   (`github.com/Bill-Stewart/SyncthingWindowsSetup`). L'interface de Syncthing
-   s'ouvre ensuite dans le navigateur.
-3. **Associer les appareils** : dans Syncthing-Fork, ajouter le PC en scannant
-   le QR code de son identifiant (interface PC : Actions › Afficher
-   l'identifiant), puis accepter l'appareil côté PC.
-4. **Partager le dossier** : sur le téléphone, partager
-   `Documents/PatrimoinePlus` avec le PC ; côté PC, accepter le partage et
-   choisir son emplacement (par exemple `Documents\PatrimoinePlus`).
-5. **Dans PatrimoinePlus** : Réglages › Synchronisation › « Choisir le dossier »,
-   sélectionner `Documents/PatrimoinePlus` et autoriser.
-6. **Vérifier** : `patrimoineplus-donnees.xlsx` apparaît dans le dossier du PC
-   au bout de quelques secondes et suit chaque modification faite sur le
-   téléphone.
-
-Si la synchronisation tarde, vérifier dans Syncthing-Fork les conditions
-d'exécution (Wi‑Fi seulement, en charge…) et l'autoriser à fonctionner en
-arrière-plan : Android peut le mettre en pause. Dans un tableur, ne jamais
-modifier les colonnes repliées (identifiants) du fichier d'échange.
+En cas d'échec, lancer le **diagnostic** des deux côtés (page Appareils du
+PC, Réglages du téléphone) : il montre si le téléphone voit le PC sur le
+réseau. Dans un tableur, ne jamais modifier les colonnes repliées
+(identifiants) du fichier d'échange.
 
 ## Cours automatiques
 
@@ -780,7 +790,7 @@ Les comptes Bourse se valorisent seuls : il suffit de saisir les ordres.
   et le dernier cours.
 - **Sans réseau ou titre introuvable** : le dernier cours connu reste utilisé ;
   « Saisir des cours » permet toujours la saisie manuelle.
-- **Sur le PC** (dossier synchronisé seulement, jamais en démonstration) :
+- **Sur le PC** (dossier des données seulement, jamais en démonstration) :
   mêmes règles, partagées dans `core` (`data/market/QuoteFetch.kt` :
   `fetchQuotes`, `withQuotes`, `startDate`) ; au lancement, à l'ouverture
   d'un dossier puis à chaque contrôle du jour (chaque minute), au plus

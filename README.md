@@ -41,9 +41,10 @@ biens immobiliers, objets de collection et crédits, et calcule votre
   chaque compte, cours de bourse mis à jour tout seuls.
 - **Pour piloter, sur le PC** : un tableau de bord sur grand écran, le
   budget, les objectifs, les bilans et la projection.
-- **Les deux restent synchronisés** par un dossier partagé (Syncthing, sans
-  serveur) : une seule base pour toute la famille, avec un profil par
-  personne et une vue Famille.
+- **Les deux restent synchronisés** par le Wi-Fi de la maison, sans serveur
+  ni appli tierce : le téléphone fait le relais entre les PC de la famille.
+  Une seule base pour toute la famille, avec un profil par personne et une
+  vue Famille.
 - **Vos données restent privées** : elles ne quittent pas vos appareils.
   Seuls les cours des titres (codes ISIN, jamais de montant) et la recherche
   des mises à jour passent par internet.
@@ -71,7 +72,9 @@ biens immobiliers, objets de collection et crédits, et calcule votre
 | **Projection** | Patrimoine estimé à 5, 10, 20 ou 30 ans selon trois scénarios | — | ✅ |
 | **Recherche** | Recherche multicritère dans toutes les opérations, modification ou suppression groupée | — | ✅ |
 | **Rapprochement bancaire** | Comparaison avec le relevé CSV de la banque, création des opérations manquantes | — | ✅ |
-| **Synchronisation** | Fichier d'échange dans un dossier partagé par Syncthing ; conflits détectés, jamais d'écrasement silencieux | ✅ | ✅ |
+| **Synchronisation Wi-Fi** | Appairage par QR code, échanges chiffrés sur le Wi-Fi de la maison seulement, en tâche de fond ; fusion élément par élément, choix demandé si un même élément a changé des deux côtés | ✅ | ✅ |
+| **Écosystème** | Schéma des PC et téléphones appairés, date de leur dernière synchronisation, historique des modifications | — | ✅ |
+| **Zone de notification** | Fermer la fenêtre garde l'appli près de l'horloge pour le téléphone ; démarrage avec Windows au choix | — | ✅ |
 | **Sauvegarde automatique** | Une sauvegarde par jour en classeur Excel lisible (téléphone : les 3 dernières ; PC : les 7 dernières, dans « Sauvegardes PC ») | ✅ | ✅ |
 | **Import d'une sauvegarde** | Restauration d'un classeur, entièrement vérifiée avant de remplacer les données | ✅ | — |
 | **Mode discret** | Masque tous les montants d'un geste | ✅ | ✅ |
@@ -99,9 +102,11 @@ Ensuite, chaque application propose elle-même les nouvelles versions.
 Mettez à jour le téléphone et le PC ensemble : ils doivent lire le même
 format de fichier.
 
-Pour relier le téléphone et le PC, partagez le dossier
-`Documents/PatrimoinePlus` avec [Syncthing](https://syncthing.net) : voir la
-[mise en place pas à pas](doc/DEVELOPPEMENT.md#mise-en-place-avec-syncthing).
+Pour relier le téléphone et un PC : sur le PC, page **Appareils** ›
+« Activer » puis « Appairer le téléphone » ; sur le téléphone, Réglages ›
+Synchronisation Wi-Fi › « Scanner le QR code ». Recommencez avec chaque PC :
+le téléphone porte ensuite les modifications de l'un à l'autre (voir la
+[mise en place pas à pas](doc/DEVELOPPEMENT.md#mise-en-place-de-la-synchronisation-wi-fi)).
 
 ## Développement
 
