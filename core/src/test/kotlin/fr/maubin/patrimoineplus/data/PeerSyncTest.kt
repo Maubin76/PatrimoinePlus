@@ -233,4 +233,21 @@ class PeerSyncTest
 		assertNull(PairingOffer.decode(vOffer.encode().replace(Regex("cle=[^&]+"), "cle=abc")))
 		assertNotNull(syncFingerprint(kBase))
 	}
+	/*
+		Téléphone neuf (vide) appairé avec un PC rempli : il reçoit les données
+		du PC sans question ; PC neuf (vide) : il adopte celles du téléphone.
+	*/
+	@Test
+	fun newDeviceTakesTheData()
+	{
+		val vEmpty = kBase.copy(accounts = emptyList(), transactions = emptyList(), statements = emptyList(), prices = emptyList(), recurrences = emptyList(), loans = emptyList())	// appareil neuf
+		val vPc    = FakePc("PC du bureau", kBase)												// PC rempli
+		val vPhone = FakePhone(vEmpty)																// téléphone neuf
+		assertTrue(vPhone.sync(vPc) is PhoneStep.Adopt)
+		assertEquals(ids(kBase), ids(vPhone.data))
+		assertNull(vPc.choice)
+		val vNewPc = FakePc("PC neuf", vEmpty)														// PC neuf
+		assertEquals(PhoneStep.Done, FakePhone(kBase).sync(vNewPc))
+		assertEquals(ids(kBase), ids(vNewPc.data))
+	}
 }

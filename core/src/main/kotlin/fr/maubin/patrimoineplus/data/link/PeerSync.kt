@@ -236,6 +236,7 @@ class PeerSyncServer(
 		val vLinks = joinDevices(inHost.local().devices, vRemote.devices)						// couples d'appareils réunis
 		if (vLinks != inHost.local().devices) inHost.adopt(inHost.local().copy(devices = vLinks), null)
 		val vBase = inHost.base(inPeerId)														// version commune
+		if (vBase == null && vRemote.accounts.isEmpty() && inHost.local().accounts.isNotEmpty()) return send(inPeerId, inHost.local())	// téléphone neuf (vide) : il reçoit les données du PC, sans question
 		return when (val vPlan = planSync(vBase?.fingerprint, vBase?.base, inHost.local(), vRemote, inAuthor = inAuthor(), inNow = inNow()))
 		{
 			SyncPlan.Nothing   -> PeerReply(kActSame)
