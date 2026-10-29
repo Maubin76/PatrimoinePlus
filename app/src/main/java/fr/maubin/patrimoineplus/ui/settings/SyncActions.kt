@@ -106,16 +106,19 @@ fun SyncConflictDialog(inViewModel: SyncViewModel = hiltViewModel())
 	ne revient pas pour ce format avant le prochain lancement ; rien n'est
 	modifié en attendant.
 	inOnCheck   : recherche de la mise à jour
-	inViewModel : ViewModel de la synchronisation
+	inViewModel : ViewModel de la synchronisation par dossier
+	inWifi      : ViewModel de la synchronisation Wi-Fi
 */
 @Composable
 fun SyncVersionDialog(
 	inOnCheck   : () -> Unit,
-	inViewModel : SyncViewModel = hiltViewModel()
+	inViewModel : SyncViewModel = hiltViewModel(),
+	inWifi      : WifiSyncViewModel = hiltViewModel()
 )
 {
-	val vStatus by inViewModel.status.collectAsStateWithLifecycle()			// état
-	val vFormat = (vStatus as? SyncStatus.Failed)?.newerFormat ?: return		// format plus récent ; rien sinon
+	val vStatus by inViewModel.status.collectAsStateWithLifecycle()			// état du dossier
+	val vRadio  by inWifi.status.collectAsStateWithLifecycle()				// état du Wi-Fi
+	val vFormat = (vStatus as? SyncStatus.Failed)?.newerFormat ?: (vRadio as? fr.maubin.patrimoineplus.data.link.WifiStatus.Failed)?.newerFormat ?: return	// format plus récent ; rien sinon
 	var vSeen   by rememberSaveable { mutableStateOf<Int?>(null) }			// format dont la fenêtre a été fermée
 	if (vSeen == vFormat) return
 	AlertDialog(

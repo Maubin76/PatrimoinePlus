@@ -13,7 +13,9 @@ import fr.maubin.patrimoineplus.data.repo.PlanningRepository
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.launch
+import fr.maubin.patrimoineplus.data.link.WifiSyncer
+import fr.maubin.patrimoineplus.data.link.scheduleWifiSync
 
 /*
 	Point d'entrée de l'application : initialise le graphe d'injection Hilt et
@@ -26,6 +28,7 @@ class PatrimoineApplication : Application(), Configuration.Provider
 {
 	@Inject lateinit var fAppLock: AppLock										// verrou de l'application
 	@Inject lateinit var fSyncer: Syncer										// synchronisation par fichier
+	@Inject lateinit var fWifi: WifiSyncer										// synchronisation Wi-Fi avec les PC
 	@Inject lateinit var fPlanning: PlanningRepository						// échéances des récurrences et des crédits
 
 	// Configuration de WorkManager, initialisé à la première demande (et non au démarrage).
@@ -35,7 +38,8 @@ class PatrimoineApplication : Application(), Configuration.Provider
 	/*
 		Démarrage : le verrou observe les passages au premier plan ; la
 		sauvegarde du jour est planifiée (et rattrapée si elle manque), ainsi
-		que la mise à jour des cours ; la synchronisation par fichier démarre.
+		que la mise à jour des cours ; la synchronisation par fichier et la synchronisation Wi-Fi
+	(au premier plan, après chaque saisie, en tâche de fond) démarrent.
 	*/
 	override fun onCreate()
 	{
@@ -43,6 +47,8 @@ class PatrimoineApplication : Application(), Configuration.Provider
 		ProcessLifecycleOwner.get().lifecycle.addObserver(fAppLock)
 		ProcessLifecycleOwner.get().lifecycle.addObserver(fSyncer)
 		fSyncer.start()
+		ProcessLifecycleOwner.get().lifecycle.addObserver(fWifi)
+		fWifi.start(fSyncer.changes)
 		ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver
 		{
 			/*
@@ -56,5 +62,6 @@ class PatrimoineApplication : Application(), Configuration.Provider
 		})
 		scheduleBackups(this)
 		scheduleQuotes(this)
+		scheduleWifiSync(this)
 	}
 }

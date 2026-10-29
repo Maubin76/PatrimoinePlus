@@ -1,5 +1,6 @@
 [versions]
 zxing                 = "3.5.3"
+camerax               = "1.4.2"
 agp                   = "9.2.1"
 kotlin                = "2.4.20"
 composeMultiplatform  = "1.12.1"
@@ -29,6 +30,9 @@ espressoCore          = "3.7.0"
 
 [libraries]
 zxing-core                             = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
+androidx-camera-camera2                = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
+androidx-camera-lifecycle              = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
+androidx-camera-view                   = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
 androidx-core-ktx                      = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-core-splashscreen             = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
 androidx-activity-compose              = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }

@@ -135,6 +135,9 @@ class Syncer(
 	// État de la synchronisation.
 	val status: StateFlow<SyncStatus> = fStatus
 
+	// Signal de modification des données (partagé avec la synchronisation Wi-Fi).
+	val changes: kotlinx.coroutines.flow.Flow<Any> get() = inChanges
+
 	/*
 		Démarre la synchronisation automatique : à chaque changement de dossier,
 		et quelques secondes après chaque modification des données.

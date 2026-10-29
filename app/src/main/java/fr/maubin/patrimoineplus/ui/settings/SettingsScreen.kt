@@ -242,7 +242,7 @@ fun SettingsScreen(
 			if (inDiagnostic != null)
 			{
 				Spacer(Modifier.height(32.dp))
-				SectionHeader(inTitle = "Synchronisation Wi-Fi (essai)")
+				SectionHeader(inTitle = "Synchronisation Wi-Fi")
 				Spacer(Modifier.height(8.dp))
 				BorderedCard { inDiagnostic() }
 			}

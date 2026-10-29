@@ -101,6 +101,10 @@ dependencies {
 	implementation(libs.androidx.fragment.ktx)
 	implementation(libs.androidx.lifecycle.process)
 	implementation(libs.androidx.work.runtime)
+	implementation(libs.zxing.core)													// lecture du QR code d'appairage du PC
+	implementation(libs.androidx.camera.camera2)									// appareil photo (scan du QR code)
+	implementation(libs.androidx.camera.lifecycle)
+	implementation(libs.androidx.camera.view)
 	implementation(libs.androidx.room.ktx)
 	ksp(libs.androidx.room.compiler)
 	debugImplementation(libs.androidx.compose.ui.tooling)

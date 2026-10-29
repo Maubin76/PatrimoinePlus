@@ -227,7 +227,7 @@ Nouvelle entrée du rail d'icônes ; tout l'appairage s'y configure.
   (`PcBackup`) déplacées dans `Documents\PatrimoinePlus\Sauvegardes PC`,
   puisqu'il n'y a plus de dossier synchronisé.
 
-### Phase 4 — Client du téléphone (`app`)
+### Phase 4 — Client du téléphone (`app`) — fait, à valider chez soi
 
 - Scan du QR code ; saisie manuelle de l'adresse en secours.
 - **Seulement sur le réseau familial** (nom du Wi-Fi reconnu, Wi-Fi non

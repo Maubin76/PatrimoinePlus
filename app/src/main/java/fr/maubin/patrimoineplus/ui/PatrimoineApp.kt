@@ -72,6 +72,7 @@ import fr.maubin.patrimoineplus.ui.settings.SyncVersionDialog
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
 import fr.maubin.patrimoineplus.ui.settings.NetworkDiagnosticEntry
+import fr.maubin.patrimoineplus.ui.settings.WifiSyncSection
 
 private const val kSlideMillis = 260									// entrée et sortie de la vue d'un compte
 
@@ -242,7 +243,7 @@ private fun MainTabs(
 					inUpdates      = UpdatesActions(vChecking, inUpdates.version, inUpdates::setEnabled) {
 						inUpdates.checkNow { inMessage -> vScope.launch { vSnackbar.showSnackbar(inMessage) } }
 					},
-					inDiagnostic   = { NetworkDiagnosticEntry() }
+					inDiagnostic   = { WifiSyncSection(); NetworkDiagnosticEntry() }
 				)
 			}
 		}
