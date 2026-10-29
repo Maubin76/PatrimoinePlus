@@ -63,7 +63,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.size
-import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
+import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
+import fr.maubin.patrimoineplus.desktop.ui.screens.WifiSyncSwitch
 
 /*
 	Réglages de l'appli PC : source des données (dossier synchronisé,
@@ -133,6 +134,15 @@ fun SettingsScreen(
 					Text("Panneaux translucides sur un fond de formes floues ; en sombre, noir profond et accent violet.", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
 				}
 				Switch(checked = vSettings.glass, onCheckedChange = inController::setGlass, modifier = Modifier.semantics { contentDescription = "Effet verre" })
+			}
+		}
+		Spacer(Modifier.height(32.dp))
+		SectionHeader(inTitle = "Synchronisation avec le téléphone")
+		Spacer(Modifier.height(12.dp))
+		FloatingCard {
+			Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+				WifiSyncSwitch(vSettings.wifiSync, inController::setWifiSync)
+				TextButton(onClick = { inController.show(fr.maubin.patrimoineplus.desktop.Screen.DEVICES) }) { Text("Appairage et appareils : page Appareils") }
 			}
 		}
 		Spacer(Modifier.height(32.dp))

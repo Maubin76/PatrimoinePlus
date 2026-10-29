@@ -94,8 +94,8 @@ fun planSync(
 	{
 		SyncAction.NOTHING  -> SyncPlan.Nothing
 		SyncAction.RECORD   -> SyncPlan.Record
-		SyncAction.EXPORT   -> SyncPlan.Export(withAuthor(inLocal, inBase, inAuthor, inNow))
-		SyncAction.IMPORT   -> SyncPlan.Import(inRemote!!)
+		SyncAction.EXPORT   -> SyncPlan.Export(withAuthor(inLocal, inBase, inAuthor, inNow).let { it.copy(devices = joinDevices(it.devices, inRemote?.devices.orEmpty())) })
+		SyncAction.IMPORT   -> SyncPlan.Import(inRemote!!.copy(devices = joinDevices(inLocal.devices, inRemote.devices)))
 		SyncAction.CONFLICT ->
 		{
 			val vRemote = inRemote!!															// données de l'autre côté

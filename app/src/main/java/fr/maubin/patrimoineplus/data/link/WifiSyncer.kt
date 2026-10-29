@@ -29,6 +29,7 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
+import fr.maubin.patrimoineplus.data.backup.DeviceLinkDto
 
 private val kJson = Json { ignoreUnknownKeys = true; encodeDefaults = true }		// fichier des appareils et messages
 
@@ -53,13 +54,15 @@ data class PairedPc(
 
 /*
 	Appareils du téléphone.
-	pcs  : PC appairés
-	home : réseaux familiaux
+	pcs     : PC appairés
+	home    : réseaux familiaux
+	enabled : synchronisation Wi-Fi activée (désactivée par défaut)
 */
 @Serializable
 data class PhonePeers(
-	val pcs  : List<PairedPc>   = emptyList(),
-	val home : List<NetworkId>  = emptyList()
+	val pcs     : List<PairedPc>   = emptyList(),
+	val home    : List<NetworkId>  = emptyList(),
+	val enabled : Boolean          = false
 )
 
 /*
@@ -67,6 +70,9 @@ data class PhonePeers(
 */
 sealed interface WifiStatus
 {
+	// Synchronisation Wi-Fi désactivée (réglage).
+	data object Disabled : WifiStatus
+
 	// Aucun PC appairé.
 	data object Unpaired : WifiStatus
 
@@ -131,7 +137,7 @@ class WifiSyncer @Inject constructor(
 	private val fScope  = CoroutineScope(SupervisorJob() + Dispatchers.Default)		// portée des synchronisations automatiques
 	private val fFile   = File(inContext.filesDir, "appareils.json")				// PC appairés et réseaux familiaux
 	private val fLock   = Mutex()														// une synchronisation à la fois
-	private val fStatus = MutableStateFlow<WifiStatus>(if (load().pcs.isEmpty()) WifiStatus.Unpaired else WifiStatus.Away("En attente de la première synchronisation (au premier plan, sur le Wi-Fi de la maison)."))	// état
+	private val fStatus = MutableStateFlow<WifiStatus>(if (!load().enabled) WifiStatus.Disabled else if (load().pcs.isEmpty()) WifiStatus.Unpaired else WifiStatus.Away("En attente de la première synchronisation (au premier plan, sur le Wi-Fi de la maison)."))	// état
 	private val fPeers  = MutableStateFlow(load())										// appareils
 
 	// État de la synchronisation Wi-Fi.
@@ -187,7 +193,8 @@ class WifiSyncer @Inject constructor(
 				val vOk    = vReply.getOrNull() ?: continue										// réponse lue
 				if (vOk.action == kActRefused) return@withContext vOk.message ?: "appairage refusé"
 				val vPc    = PairedPc(inOffer.pcId, vOk.pc?.name ?: inOffer.pcName, toBase64(inOffer.key), inOffer.port, listOf(vHost) + inOffer.addresses.filter { it != vHost })	// PC appairé
-				save(load().let { inPeers -> PhonePeers(inPeers.pcs.filter { it.id != vPc.id } + vPc, (inPeers.home + listOf(vWifi) + vOk.home).distinct()) })
+				save(load().let { inPeers -> inPeers.copy(pcs = inPeers.pcs.filter { it.id != vPc.id } + vPc, home = (inPeers.home + listOf(vWifi) + vOk.home).distinct()) })	// interrupteur gardé
+				link(vPc)
 				return@withContext null
 			}
 			"Appairage impossible : $vError. Vérifiez que les deux appareils sont sur le même Wi-Fi et que le QR code est encore valable."
@@ -197,9 +204,37 @@ class WifiSyncer @Inject constructor(
 		Retire un PC appairé (il n'est plus joint).
 		inId : PC
 	*/
-	fun remove(inId: String)
+	suspend fun remove(inId: String)
 	{
+		val vGone = load().pcs.firstOrNull { it.id == inId }										// PC retiré
 		save(load().let { it.copy(pcs = it.pcs.filter { inPc -> inPc.id != inId }) })
+		vGone?.let { link(it, inRemoved = true) }
+	}
+
+	/*
+		Inscrit dans les données du téléphone le couple avec un PC (schéma de
+		l'écosystème, réuni par les synchronisations).
+		inPc      : PC
+		inRemoved : vrai si le couple est retiré
+	*/
+	private suspend fun link(
+		inPc      : PairedPc,
+		inRemoved : Boolean = false
+	)
+	{
+		val vMe = phoneInfo(inContext, inStore.deviceId())											// ce téléphone
+		inBackup.addDevices(listOf(DeviceLinkDto(inPc.id, inPc.name, vMe.id, vMe.name, inClock.millis(), inPc.lastSync, inRemoved, inClock.millis())))
+	}
+
+	/*
+		Active ou désactive la synchronisation Wi-Fi (désactivée par défaut) ;
+		désactivée, rien n'est tenté.
+		inOn : vrai pour l'activer
+	*/
+	fun setEnabled(inOn: Boolean)
+	{
+		save(load().copy(enabled = inOn))
+		fStatus.value = if (!inOn) WifiStatus.Disabled else if (load().pcs.isEmpty()) WifiStatus.Unpaired else WifiStatus.Away("En attente de la première synchronisation.")
 	}
 
 	/*
@@ -222,6 +257,7 @@ class WifiSyncer @Inject constructor(
 				val vNet   = network()																	// réseau du téléphone
 				val vNext  = when
 				{
+					!vPeers.enabled                                   -> WifiStatus.Disabled
 					vPeers.pcs.isEmpty()                              -> WifiStatus.Unpaired
 					!vNet.onWifi                                      -> WifiStatus.Away("Pas de Wi-Fi : synchronisation au retour à la maison.")
 					!vNet.unmetered                                   -> WifiStatus.Away("Wi-Fi facturé à l’usage : pas de synchronisation.")
@@ -259,6 +295,7 @@ class WifiSyncer @Inject constructor(
 			}.isSuccess } ?: continue																	// adresse qui a répondu
 			vReached += vPc.name
 			save(load().let { inNow -> inNow.copy(pcs = inNow.pcs.map { if (it.id == vPc.id) it.copy(lastSync = inClock.millis(), addresses = (listOf(vHost) + it.addresses).distinct().take(4), port = vPort) else it }) })
+			load().pcs.firstOrNull { it.id == vPc.id }?.let { link(it) }
 		}
 		return when
 		{
@@ -312,6 +349,6 @@ class WifiSyncer @Inject constructor(
 		vTemp.writeText(kJson.encodeToString(PhonePeers.serializer(), inPeers))
 		if (!vTemp.renameTo(fFile)) { fFile.delete(); vTemp.renameTo(fFile) }
 		fPeers.value = inPeers
-		if (inPeers.pcs.isEmpty()) fStatus.value = WifiStatus.Unpaired
+		if (inPeers.enabled && inPeers.pcs.isEmpty()) fStatus.value = WifiStatus.Unpaired
 	}
 }

@@ -43,6 +43,8 @@ import java.nio.file.StandardCopyOption
 import java.time.Clock
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
+import fr.maubin.patrimoineplus.data.backup.DeviceLinkDto
+import fr.maubin.patrimoineplus.data.sync.joinDevices
 
 private val kPeersJson = Json { ignoreUnknownKeys = true; encodeDefaults = true; prettyPrint = true }	// fichier des appareils
 private val kPeerJson  = Json { ignoreUnknownKeys = true; encodeDefaults = true }					// messages du protocole
@@ -267,9 +269,11 @@ class PeerService(
 	fun removePhone(inId: String)
 	{
 		val vPeers = inStore.load().let { it.copy(phones = it.phones.filter { inPhone -> inPhone.id != inId }) }	// appareils restants
+		val vGone  = inStore.load().phones.firstOrNull { it.id == inId }						// téléphone retiré
 		inStore.save(vPeers)
 		inStore.forget(inId)
 		fState.update { it.copy(phones = vPeers.phones) }
+		vGone?.let { link(it, inRemoved = true) }
 		refresh()
 	}
 
@@ -384,6 +388,7 @@ class PeerService(
 		inStore.save(vNext)
 		inStore.forget(vDevice.id)
 		fState.update { it.copy(phones = vNext.phones, home = vNext.home, offer = null, paired = vDevice.name) }
+		link(vPhone)
 		refresh()
 		return PeerReply(kActSame, pc = inInfo(), home = vNext.home)
 	}
@@ -402,6 +407,23 @@ class PeerService(
 		val vPeers = inStore.load().let { it.copy(phones = it.phones.map { inPhone -> if (inPhone.id == inId) inPhone.copy(lastSync = inClock.millis(), lastAddress = inAddress) else inPhone }) }	// appareils
 		inStore.save(vPeers)
 		fState.update { it.copy(phones = vPeers.phones) }
+		vPeers.phones.firstOrNull { it.id == inId }?.let { link(it) }
+	}
+
+	/*
+		Inscrit dans les données du PC le couple avec un téléphone (schéma de
+		l'écosystème, réuni par le fichier d'échange).
+		inPhone   : téléphone
+		inRemoved : vrai si le couple est retiré
+	*/
+	private fun link(
+		inPhone   : PairedPhone,
+		inRemoved : Boolean = false
+	)
+	{
+		val vLink = DeviceLinkDto(inInfo().id, inInfo().name, inPhone.id, inPhone.name, inPhone.pairedAt, inPhone.lastSync, inRemoved, inClock.millis())	// couple
+		val vData = inData.read()																// données du PC
+		runCatching { inData.adopt(vData.copy(devices = joinDevices(vData.devices, listOf(vLink))), null) }
 	}
 
 	/*

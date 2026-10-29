@@ -23,7 +23,8 @@ import fr.maubin.patrimoineplus.domain.calc.withProfiles
 import fr.maubin.patrimoineplus.domain.model.CustomTheme
 import fr.maubin.patrimoineplus.ui.budget.Budget
 import fr.maubin.patrimoineplus.ui.goals.Goals
-import fr.maubin.patrimoineplus.data.backup.HistoryDto
+import fr.maubin.patrimoineplus.data.backup.HistoryDto
+import fr.maubin.patrimoineplus.data.backup.DeviceLinkDto
 
 /*
 	Toutes les données de l'appli, en modèles du domaine : ce que lisent les
@@ -42,6 +43,7 @@ import fr.maubin.patrimoineplus.data.backup.HistoryDto
 	budget       : budget de la famille (PC ; le téléphone le garde sans l'afficher)
 	goals        : objectifs par vue (identifiant du profil, ou kFamilyView)
 	history      : dernières modifications envoyées par les appareils, de la plus récente à la plus ancienne
+	devices      : couples d'appareils appairés (PC ↔ téléphone)
 */
 data class DataSet(
 	val accounts     : List<Account>,
@@ -56,7 +58,8 @@ data class DataSet(
 	val themes       : List<CustomTheme> = emptyList(),
 	val budget       : Budget             = Budget(),
 	val goals        : Map<String, Goals> = emptyMap(),
-	val history      : List<HistoryDto>   = emptyList()
+	val history      : List<HistoryDto>   = emptyList(),
+	val devices      : List<DeviceLinkDto> = emptyList()
 )
 {
 	companion object
@@ -98,5 +101,6 @@ fun BackupFile.toDataSet(): DataSet =
 		loans        = loans.map { it.toDomain() },
 		budget       = budgetOf(),
 		goals        = goalsByScope(),
-		history      = history
+		history      = history,
+		devices      = devices
 	).withProfiles()

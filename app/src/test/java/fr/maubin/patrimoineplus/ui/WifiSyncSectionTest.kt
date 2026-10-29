@@ -56,7 +56,7 @@ class WifiSyncSectionTest
 	@Test
 	fun section()
 	{
-		fFile.writeText("""{"pcs":[{"id":"pc-1","name":"PC du bureau","key":"x","port":47801,"lastSync":1792134000000},{"id":"pc-2","name":"PC du salon","key":"x","port":47801}],"home":[{"kind":"wifi","value":"Maison"}]}""")
+		fFile.writeText("""{"pcs":[{"id":"pc-1","name":"PC du bureau","key":"x","port":47801,"lastSync":1792134000000},{"id":"pc-2","name":"PC du salon","key":"x","port":47801}],"home":[{"kind":"wifi","value":"Maison"}],"enabled":true}""")
 		val vDb     = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), PatrimoineDatabase::class.java).allowMainThreadQueries().build()	// base vide
 		val vSyncer = WifiSyncer(ApplicationProvider.getApplicationContext(), BackupRepository(vDb, Clock.systemDefaultZone()), MemorySyncStore(null), object : SyncHooks
 		{

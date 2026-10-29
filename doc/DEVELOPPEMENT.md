@@ -646,6 +646,18 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   historiques des deux côtés réunis à la fusion. L'historique est hors de
   l'empreinte : il ne déclenche jamais de synchronisation ni de conflit. PC :
   page Appareils ; téléphone : gardé avec le budget (table `plan`).
+- **Synchronisation Wi-Fi** (`core/data/link`, page Appareils du PC, Réglages ›
+  Synchronisation Wi-Fi du téléphone) : **désactivée par défaut** des deux
+  côtés (interrupteur page Appareils ou Réglages sur le PC, réglages du
+  téléphone) ; désactivée, rien n'écoute ni n'est tenté. Voir
+  `doc/PLAN_SYNCHRO.md`.
+- **Couples d'appareils** (format 9, onglet Appareils) : chaque PC inscrit ses
+  couples avec les téléphones (appairage, dernière synchronisation, retrait),
+  le téléphone les siens avec les PC ; les listes sont réunies à chaque
+  échange (la ligne la plus récente l'emporte), hors de l'empreinte. La page
+  Appareils du PC en tire le schéma de l'écosystème (téléphone au centre, PC
+  autour, dernière synchronisation sur chaque trait, pointillés après une
+  semaine sans synchronisation).
 - **Appareils à des versions différentes** : un fichier d'échange écrit par
   une version plus récente (format plus grand que `kBackupVersion`, lu dans
   l'onglet Fichier avant tout le reste, ou dans le champ `version` d'un export

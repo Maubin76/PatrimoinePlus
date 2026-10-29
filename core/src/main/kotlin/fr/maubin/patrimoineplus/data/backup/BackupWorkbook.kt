@@ -85,6 +85,17 @@ private const val kSheetBudget     = "Budget"									// onglet du budget de la 
 private const val kSheetGoals      = "Objectifs"									// onglet des objectifs globaux (format 8)
 private const val kSheetMonthGoals = "Objectifs du mois"							// onglet des objectifs fixés mois par mois (format 8)
 private const val kSheetHistory    = "Historique"									// onglet des dernières modifications (format 9)
+private const val kSheetDevices    = "Appareils"									// onglet des couples d'appareils appairés (format 9)
+private const val kPcName         = "PC"											// nom du PC
+private const val kPhoneName      = "Téléphone"									// nom du téléphone
+private const val kPairedAt       = "Appairés le"								// date de l'appairage
+private const val kLastSync       = "Dernière synchronisation"					// date de la dernière synchronisation
+private const val kRemoved        = "Retiré"										// couple retiré (Oui / Non)
+private const val kPcId           = "ID PC"										// identifiant du PC
+private const val kPhoneId        = "ID téléphone"								// identifiant du téléphone
+private const val kPairedMs       = "Appairés (ms)"								// instant de l'appairage
+private const val kSyncedMs       = "Synchronisés (ms)"							// instant de la dernière synchronisation
+private const val kLinkUpdated    = "Mis à jour (ms)"								// instant de la mise à jour de la ligne
 private const val kWhen           = "Quand"											// date et heure d'une modification
 private const val kDevice         = "Appareil"										// appareil qui l'a envoyée
 private const val kChanges        = "Changements"									// changements, en clair
@@ -356,6 +367,17 @@ internal fun backupSheets(inFile: BackupFile): List<Sheet>
 				listOf(
 					text(java.time.Instant.ofEpochMilli(inEntry.at).atZone(java.time.ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))),
 					text(inEntry.device), text(inEntry.summary), techText(inEntry.deviceId), techNumber(inEntry.at)
+				)
+			}
+		),
+		Sheet(
+			kSheetDevices,
+			listOf(Column(kPcName, 24.0), Column(kPhoneName, 24.0), Column(kPairedAt, 18.0), Column(kLastSync, 22.0), Column(kRemoved, 10.0)) + tech(kPcId, kPhoneId, kPairedMs, kSyncedMs, kLinkUpdated),
+			inFile.devices.map { inLink ->
+				val vWhen = { inMs: Long -> java.time.Instant.ofEpochMilli(inMs).atZone(java.time.ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) }	// date en clair
+				listOf(
+					text(inLink.pcName), text(inLink.phoneName), text(vWhen(inLink.pairedAt)), text(inLink.lastSync?.let(vWhen).orEmpty()), text(yesNo(inLink.removed)),
+					techText(inLink.pcId), techText(inLink.phoneId), techNumber(inLink.pairedAt), inLink.lastSync?.let { techNumber(it) } ?: Cell.Empty, techNumber(inLink.updatedAt)
 				)
 			}
 		),
@@ -650,6 +672,18 @@ internal fun backupFromSheets(inSheets: List<ReadSheet>): BackupFile
 		},
 		history      = vByName[kSheetHistory]?.also { requireColumns(it, kDeviceId, kInstant) }?.rows.orEmpty().map { inRow ->
 			HistoryDto(inRow.req(kDeviceId), inRow[kDevice].orEmpty(), decimal(inRow.req(kInstant)).toLong(), inRow[kChanges].orEmpty())
+		},
+		devices      = vByName[kSheetDevices]?.also { requireColumns(it, kPcId, kPhoneId, kPairedMs) }?.rows.orEmpty().map { inRow ->
+			DeviceLinkDto(
+				pcId      = inRow.req(kPcId),
+				pcName    = inRow[kPcName].orEmpty(),
+				phoneId   = inRow.req(kPhoneId),
+				phoneName = inRow[kPhoneName].orEmpty(),
+				pairedAt  = decimal(inRow.req(kPairedMs)).toLong(),
+				lastSync  = inRow.opt(kSyncedMs)?.let { decimal(it).toLong() },
+				removed   = yes(inRow[kRemoved]),
+				updatedAt = inRow.opt(kLinkUpdated)?.let { decimal(it).toLong() } ?: 0L
+			)
 		}
 	)
 }

@@ -13,6 +13,7 @@ import fr.maubin.patrimoineplus.data.sync.syncFingerprint
 import kotlinx.serialization.Serializable
 import fr.maubin.patrimoineplus.data.sync.withAuthor
 import fr.maubin.patrimoineplus.data.sync.joinHistory
+import fr.maubin.patrimoineplus.data.sync.joinDevices
 
 const val kOpPair = "pair"															// appairage du téléphone
 const val kOpSync = "sync"															// synchronisation : le téléphone envoie ses données
@@ -232,6 +233,8 @@ class PeerSyncServer(
 			is BackupRead.Invalid -> return PeerReply(kActRefused, message = vRead.message, newerFormat = vRead.newerFormat)
 		}																						// données du téléphone, vérifiées
 		fChoice?.takeIf { it.peerId == inPeerId }?.let { return PeerReply(kActWait, message = waitText(it)) }
+		val vLinks = joinDevices(inHost.local().devices, vRemote.devices)						// couples d'appareils réunis
+		if (vLinks != inHost.local().devices) inHost.adopt(inHost.local().copy(devices = vLinks), null)
 		val vBase = inHost.base(inPeerId)														// version commune
 		return when (val vPlan = planSync(vBase?.fingerprint, vBase?.base, inHost.local(), vRemote, inAuthor = inAuthor(), inNow = inNow()))
 		{

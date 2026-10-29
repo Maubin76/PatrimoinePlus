@@ -92,6 +92,15 @@ fun DevicesScreen(inController: DesktopController)
 		Spacer(Modifier.height(12.dp))
 		PhoneSyncCard(inController)
 		Spacer(Modifier.height(32.dp))
+		SectionHeader(inTitle = "Écosystème", inModifier = Modifier.tourAnchor("devices.ecosystem"))
+		Spacer(Modifier.height(12.dp))
+		FloatingCard {
+			Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+				Text("Tous les couples connus, réunis par le fichier d’échange : chaque PC ne connaît que le téléphone, le téléphone relaie entre les PC.", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+				EcosystemDiagram(vSpace.data.devices, vSettings.deviceId, inController.now())
+			}
+		}
+		Spacer(Modifier.height(32.dp))
 		SectionHeader(inTitle = "Historique des modifications", inModifier = Modifier.tourAnchor("devices.history"))
 		Spacer(Modifier.height(12.dp))
 		FloatingCard {

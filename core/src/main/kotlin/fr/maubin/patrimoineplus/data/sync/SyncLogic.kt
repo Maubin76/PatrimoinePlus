@@ -34,8 +34,8 @@ fun syncFingerprint(inFile: BackupFile): String
 
 /*
 	Forme canonique d'un contenu : listes triées par identifiant, textes
-	nettoyés comme à l'écriture du classeur, date d'export et historique
-	ignorés (l'historique ne déclenche jamais de synchronisation). Deux
+	nettoyés comme à l'écriture du classeur, date d'export, historique et
+	couples d'appareils ignorés (ils ne déclenchent jamais de synchronisation). Deux
 	contenus identiques ont la même forme canonique, quel que soit l'ordre de
 	lecture ou l'appareil qui les a écrits (empreintes, fusion).
 	inFile : contenu
@@ -53,7 +53,8 @@ fun canonicalBackup(inFile: BackupFile): BackupFile =
 		prices       = inFile.prices.sortedBy { it.id },
 		recurrences  = inFile.recurrences.sortedBy { it.id }.map { it.copy(label = it.label.canonical(), notes = it.notes.canonicalOrNull()) },
 		loans        = inFile.loans.sortedBy { it.id },
-		history      = emptyList()
+		history      = emptyList(),
+		devices      = emptyList()
 	)
 
 /*

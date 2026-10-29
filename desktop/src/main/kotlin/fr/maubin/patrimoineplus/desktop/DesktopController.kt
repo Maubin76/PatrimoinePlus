@@ -624,22 +624,24 @@ class DesktopController(
 	/*
 		Relit le réseau du PC et démarre ou arrête l'écoute Wi-Fi (en tâche de
 		fond : la lecture du réseau lance des commandes de Windows). Seulement
-		sur un dossier de données (jamais en démonstration).
+		si la synchronisation Wi-Fi est activée, sur un dossier de données
+		(jamais en démonstration).
 	*/
 	fun refreshPeers()
 	{
 		val vScope = inScope ?: return													// portée (sans : tests, pas d'écoute)
-		vScope.launch(Dispatchers.IO) { if (workspace.value.source is Source.Folder) fPeers.refresh() else fPeers.stop() }
+		vScope.launch(Dispatchers.IO) { if (fSettings.value.wifiSync && workspace.value.source is Source.Folder) fPeers.refresh() else fPeers.stop() }
 	}
 
 	/*
 		Exécute sur le fil de l'interface une lecture ou une modification des
-		données demandée par le serveur Wi-Fi (fil d'arrière-plan) ; sans
-		portée (tests), tout de suite.
+		données demandée par le serveur Wi-Fi (fil d'arrière-plan) ; déjà sur
+		ce fil, ou sans portée (tests), tout de suite.
 		inBlock : action
 	*/
 	private fun <T> onUi(inBlock: () -> T): T
 	{
+		if (javax.swing.SwingUtilities.isEventDispatchThread()) return inBlock()			// déjà sur le fil de l'interface (retrait d'un téléphone…)
 		val vDispatcher = inScope?.coroutineContext?.get(kotlin.coroutines.ContinuationInterceptor) ?: return inBlock()	// fil de l'interface
 		return kotlinx.coroutines.runBlocking { withContext(vDispatcher) { inBlock() } }
 	}
@@ -1058,6 +1060,18 @@ class DesktopController(
 			fPanel.value  = null
 			fNotice.value = "Saisie fermée : l’élément a été supprimé sur l’autre appareil."
 		}
+	}
+
+	/*
+		Active ou désactive la synchronisation Wi-Fi avec le téléphone
+		(désactivée par défaut) ; désactivée, rien n'écoute sur le réseau.
+		inOn : vrai pour l'activer
+	*/
+	fun setWifiSync(inOn: Boolean)
+	{
+		update(fSettings.value.copy(wifiSync = inOn))
+		if (!inOn) fPeers.stop()
+		refreshPeers()
 	}
 
 	/*

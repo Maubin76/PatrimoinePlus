@@ -67,7 +67,8 @@ data class DesktopSettings(
 	val calm       : Boolean   = false,
 	val quotesAt   : Long?     = null,
 	val deviceId   : String    = "",
-	val deviceName : String    = ""
+	val deviceName : String    = "",
+	val wifiSync   : Boolean   = false
 )
 
 /*
@@ -116,7 +117,8 @@ class DesktopConfig(private val inFile: Path)
 			calm       = vProps.getProperty("assistant_calm") == "true",
 			quotesAt   = vProps.getProperty("quotes_at")?.toLongOrNull(),
 			deviceId   = vProps.getProperty("device_id").orEmpty(),
-			deviceName = vProps.getProperty("device_name").orEmpty()
+			deviceName = vProps.getProperty("device_name").orEmpty(),
+			wifiSync   = vProps.getProperty("wifi_sync") == "true"
 		)
 	}
 
@@ -154,6 +156,7 @@ class DesktopConfig(private val inFile: Path)
 		inSettings.quotesAt?.let { vProps.setProperty("quotes_at", it.toString()) }
 		vProps.setProperty("device_id", inSettings.deviceId)
 		vProps.setProperty("device_name", inSettings.deviceName)
+		vProps.setProperty("wifi_sync", inSettings.wifiSync.toString())
 		inFile.parent?.let { Files.createDirectories(it) }
 		val vTemp = inFile.resolveSibling("${inFile.fileName}.tmp")				// écriture provisoire
 		Files.newBufferedWriter(vTemp, Charsets.UTF_8).use { vProps.store(it, "Réglages de PatrimoinePlus (PC)") }

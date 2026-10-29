@@ -114,6 +114,7 @@ class PeerServiceTest
 		assertEquals(listOf("Pixel"), vService.state.value.phones.map { it.name })
 		assertNull(vService.state.value.offer)
 		assertEquals("Pixel", vService.state.value.paired)
+		assertEquals(listOf("pc-1|tel-1"), fData.devices.map { it.key })					// couple inscrit dans les données (fichier d'échange)
 		assertTrue(vService.state.value.running)												// sur le réseau familial, téléphone appairé
 		val vPhoneData = fData.copy(accounts = fData.accounts + fData.accounts.first().copy(id = "tel-compte", name = "Créé sur le téléphone"))	// données du téléphone
 		assertEquals(PhoneStep.Done, phoneStep(call(vService, vOffer.key, PeerRequest(kOpSync, file = encodeBackup(fData)))))	// première fois : mêmes données
@@ -144,6 +145,7 @@ class PeerServiceTest
 		call(vService, vKey, PeerRequest(kOpPair, device = kPhone, home = listOf(kHome)))
 		vService.removePhone(kPhone.id)
 		assertTrue(vService.state.value.phones.isEmpty())
+		assertTrue(fData.devices.single().removed)													// couple marqué retiré
 		assertFalse(vService.state.value.running)
 		vService.startPairing()
 		val vAfter   = call(vService, vService.state.value.offer!!.key, PeerRequest(kOpSync, file = encodeBackup(fData)))	// téléphone retiré, même avec la clé de l'offre

@@ -120,6 +120,8 @@ class WifiSyncerTest
 	*/
 	@Test
 	fun pairThenSync() = runTest {
+		assertEquals(WifiStatus.Disabled, fSyncer.sync())										// désactivée par défaut : rien
+		fSyncer.setEnabled(true)
 		assertEquals(WifiStatus.Unpaired, fSyncer.sync())
 		assertNull(fSyncer.pair(offer()))
 		assertTrue(fPaired)
@@ -139,6 +141,7 @@ class WifiSyncerTest
 		val vPhone = BackupRepository(fDb, kClock).snapshot()									// données du téléphone
 		assertTrue(vPhone.accounts.any { it.name == "Créé sur le PC" })							// le téléphone l'a adopté
 		assertTrue(fSyncer.peers.value.pcs.single().lastSync != null)
+		assertEquals(listOf("pc-1"), vPhone.devices.map { it.pcId })								// couple inscrit sur le téléphone
 		fSyncer.remove(kPc.id)
 		assertEquals(WifiStatus.Unpaired, fSyncer.sync())
 	}
@@ -148,6 +151,7 @@ class WifiSyncerTest
 	*/
 	@Test
 	fun unreachablePc() = runTest {
+		fSyncer.setEnabled(true)
 		assertNull(fSyncer.pair(offer()))
 		fServer.stop()
 		assertTrue((fSyncer.sync() as WifiStatus.Failed).message.contains("Aucun PC joignable"))

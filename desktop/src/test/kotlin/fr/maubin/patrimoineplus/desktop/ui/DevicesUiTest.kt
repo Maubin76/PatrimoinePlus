@@ -28,6 +28,8 @@ import fr.maubin.patrimoineplus.desktop.ui.components.qrModules
 import fr.maubin.patrimoineplus.data.link.PairingOffer
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
+import fr.maubin.patrimoineplus.data.backup.DeviceLinkDto
+import fr.maubin.patrimoineplus.data.edit.EditResult
 
 /*
 	Page « Appareils » du PC (sans écran) : entrée du rail, ce PC (nom
@@ -82,6 +84,10 @@ class DevicesUiTest
 		val vApp    = DesktopController(DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")), Workspace(kClock), null, kClock, inLocalOnly = true).apply { setAppearance(ThemeMode.LIGHT); openFolder(vFolder); show(Screen.DEVICES) }	// contrôleur
 		fCompose.setContent { App(vApp) { null } }
 		fCompose.waitForIdle()
+		fCompose.onNodeWithText("Appairer le téléphone").assertDoesNotExist()						// désactivée par défaut
+		fCompose.onNodeWithContentDescription("Synchronisation Wi-Fi").performScrollTo().performClick()
+		fCompose.waitForIdle()
+		assertTrue(vApp.settings.value.wifiSync)
 		fCompose.onNodeWithText("Appairer le téléphone").performScrollTo().performClick()
 		fCompose.waitForIdle()
 		val vOffer  = vApp.peers.state.value.offer!!												// offre affichée
@@ -108,5 +114,32 @@ class DevicesUiTest
 	{
 		override fun getRow(inY: Int, inRow: ByteArray?): ByteArray = ByteArray(width) { inX -> if (inMatrix[inX, inY]) 0 else -1 }
 		override fun getMatrix(): ByteArray = ByteArray(width * height) { inI -> if (inMatrix[inI % width, inI / width]) 0 else -1 }
+	}
+	/*
+		Schéma de l'écosystème : trois PC et le téléphone, d'après les couples
+		du fichier d'échange ; ce PC mis en avant ; couple retiré absent.
+		Capture `38-ecosysteme.png`.
+	*/
+	@Test
+	fun ecosystem()
+	{
+		val vApp  = DesktopController(DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")), Workspace(kClock), null, kClock).apply { openDemo(); setAppearance(ThemeMode.LIGHT); setWifiSync(true); show(Screen.DEVICES) }	// démonstration
+		val vSelf = vApp.settings.value.deviceId													// ce PC
+		val vNow  = kClock.millis()																	// maintenant
+		vApp.edit { EditResult.Done(it.copy(devices = listOf(
+			DeviceLinkDto(vSelf, "PC du bureau", "tel-1", "Pixel 8", vNow - 9_000_000, vNow - 3_600_000, updatedAt = vNow),
+			DeviceLinkDto("pc-2", "PC du salon", "tel-1", "Pixel 8", vNow - 9_000_000, vNow - 86_400_000, updatedAt = vNow),
+			DeviceLinkDto("pc-3", "PC portable", "tel-1", "Pixel 8", vNow - 9_000_000, null, updatedAt = vNow),
+			DeviceLinkDto("pc-4", "Ancien PC", "tel-1", "Pixel 8", vNow - 9_000_000, null, removed = true, updatedAt = vNow)
+		))) }
+		fCompose.setContent { App(vApp) { null } }
+		fCompose.waitForIdle()
+		fCompose.onNodeWithText("Téléphone (relais)").assertExists()
+		fCompose.onNodeWithText("PC portable").assertExists()
+		fCompose.onNodeWithText("Ancien PC").assertDoesNotExist()
+		val vScene = ImageComposeScene(width = 1440, height = 1500, density = Density(1f)) { App(vApp) { null } }	// capture (relecture humaine)
+		listOf(0L, 500L, 1_500L).forEach { vScene.render(it * 1_000_000L) }
+		File("build/captures-desktop/38-ecosysteme.png").writeBytes(vScene.render(2_000_000_000L).encodeToData(EncodedImageFormat.PNG)!!.bytes)
+		vScene.close()
 	}
 }

@@ -2,6 +2,7 @@ package fr.maubin.patrimoineplus.data.sync
 
 import fr.maubin.patrimoineplus.data.backup.BackupFile
 import fr.maubin.patrimoineplus.data.backup.HistoryDto
+import fr.maubin.patrimoineplus.data.backup.DeviceLinkDto
 
 const val kHistoryKept = 20															// modifications gardées dans l'historique
 
@@ -123,3 +124,12 @@ fun withAuthor(
 	val vEntry  = HistoryDto(vAuthor.id, vAuthor.name, inNow, vCount?.label ?: "première synchronisation")	// entrée
 	return inFile.copy(history = joinHistory(listOf(vEntry), inFile.history))
 }
+
+/*
+	Couples d'appareils réunis : pour chaque couple, la ligne la plus récente
+	(un retrait l'emporte s'il est plus récent qu'une synchronisation ; à
+	instant égal, la dernière liste l'emporte : la nouvelle ligne).
+	inLists : listes de couples
+*/
+fun joinDevices(vararg inLists: List<DeviceLinkDto>): List<DeviceLinkDto> =
+	inLists.flatMap { it }.groupBy { it.key }.map { (_, inLinks) -> inLinks.asReversed().maxBy { it.updatedAt } }.sortedWith(compareBy({ it.pcName }, { it.phoneName }))

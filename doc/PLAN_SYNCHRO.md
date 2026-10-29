@@ -273,6 +273,11 @@ morceau), phases 2 à 4 en 3 à 4 sessions, phases 5 à 7 en 2 sessions.
 
 ## 6. Décisions
 
+Ajouts après le plan initial : synchronisation **désactivée par défaut** (PC :
+page Appareils ou Réglages ; téléphone : ses réglages) ; **couples
+d'appareils** dans le fichier d'échange (onglet Appareils) et **schéma de
+l'écosystème** sur la page Appareils du PC.
+
 | # | Question | Décision |
 |---|---|---|
 | 1 | Organisation | Téléphone relais ; le PC reste le serveur ; pas de PC ↔ PC |

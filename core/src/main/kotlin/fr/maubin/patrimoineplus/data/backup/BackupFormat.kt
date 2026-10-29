@@ -165,19 +165,50 @@ data class HistoryDto(
 )
 
 /*
+	Couple d'appareils appairés (PC ↔ téléphone), dans le fichier d'échange
+	(format 9) : chaque PC ne connaît que ses téléphones, le fichier réunit
+	tous les couples (schéma de l'écosystème).
+	pcId      : identifiant du PC
+	pcName    : nom du PC
+	phoneId   : identifiant du téléphone
+	phoneName : nom du téléphone
+	pairedAt  : instant de l'appairage (ms)
+	lastSync  : dernière synchronisation réussie (ms) ; null avant la première
+	removed   : couple retiré (d'un côté ou de l'autre)
+	updatedAt : instant de la dernière mise à jour de la ligne (ms) : la plus récente l'emporte
+*/
+@Serializable
+data class DeviceLinkDto(
+	val pcId      : String,
+	val pcName    : String,
+	val phoneId   : String,
+	val phoneName : String,
+	val pairedAt  : Long,
+	val lastSync  : Long?   = null,
+	val removed   : Boolean = false,
+	val updatedAt : Long    = 0
+)
+{
+	// Clé du couple.
+	val key: String get() = "$pcId|$phoneId"
+}
+
+/*
 	Budget et objectifs ensemble, tels que le téléphone les garde sans les
 	afficher (une seule valeur en base).
 	budget     : lignes du budget de la famille
 	goals      : objectifs globaux de toutes les vues
 	monthGoals : objectifs fixés mois par mois de toutes les vues
 	history    : dernières modifications envoyées (format 9)
+	devices    : couples d'appareils appairés (format 9)
 */
 @Serializable
 data class PlansDto(
 	val budget     : List<BudgetLineDto> = emptyList(),
 	val goals      : List<GoalDto>       = emptyList(),
 	val monthGoals : List<MonthGoalDto>  = emptyList(),
-	val history    : List<HistoryDto>    = emptyList()
+	val history    : List<HistoryDto>    = emptyList(),
+	val devices    : List<DeviceLinkDto> = emptyList()
 )
 
 /*
@@ -352,11 +383,12 @@ data class BackupFile(
 	val budget       : List<BudgetLineDto> = emptyList(),
 	val goals        : List<GoalDto>       = emptyList(),
 	val monthGoals   : List<MonthGoalDto>  = emptyList(),
-	val history      : List<HistoryDto>    = emptyList()
+	val history      : List<HistoryDto>    = emptyList(),
+	val devices      : List<DeviceLinkDto> = emptyList()
 )
 {
-	// Budget, objectifs et historique, tels que le téléphone les garde.
-	val plans: PlansDto get() = PlansDto(budget, goals, monthGoals, history)
+	// Budget, objectifs, historique et couples d'appareils, tels que le téléphone les garde.
+	val plans: PlansDto get() = PlansDto(budget, goals, monthGoals, history, devices)
 
 	// Contenu en nombres d'éléments (fenêtre de conflit : la date d'export n'y a pas de sens).
 	val contents: String

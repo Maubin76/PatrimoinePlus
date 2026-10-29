@@ -33,6 +33,9 @@ import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import androidx.compose.material3.Switch
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 
 private val kSyncTime = DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH:mm")		// heure d'une synchronisation
 
@@ -50,8 +53,11 @@ fun PhoneSyncCard(inController: DesktopController)
 	val vSpace  by inController.workspace.collectAsState()								// source des données
 	val vColors = MaterialTheme.colorScheme													// palette courante
 	val vFolder = vSpace.source is Source.Folder											// dossier de données ouvert
+	val vSettings by inController.settings.collectAsState()								// réglages (synchronisation activée)
 	FloatingCard {
 		Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+			WifiSyncSwitch(vSettings.wifiSync, inController::setWifiSync)
+			if (!vSettings.wifiSync) return@Column
 			Text(statusText(vState, vFolder), style = MaterialTheme.typography.bodyLarge)
 			vState.error?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = vColors.error) }
 			if (vFolder) Button(onClick = inController.peers::startPairing) { Text(if (vState.phones.isEmpty()) "Appairer le téléphone" else "Appairer un autre téléphone") }
@@ -92,6 +98,26 @@ fun PhoneSyncCard(inController: DesktopController)
 		}
 	}
 	vState.offer?.let { inOffer -> PairingDialog(inOffer, inController) }
+}
+
+/*
+	Interrupteur de la synchronisation Wi-Fi (page Appareils et Réglages).
+	inOn       : synchronisation activée
+	inOnChange : nouvel état
+*/
+@Composable
+fun WifiSyncSwitch(
+	inOn       : Boolean,
+	inOnChange : (Boolean) -> Unit
+)
+{
+	Row(verticalAlignment = Alignment.CenterVertically) {
+		Column(Modifier.weight(1f)) {
+			Text("Synchronisation Wi-Fi", style = MaterialTheme.typography.titleMedium)
+			Text(if (inOn) "Activée : le téléphone appairé se synchronise avec ce PC sur le Wi-Fi de la maison." else "Désactivée : rien n’écoute sur le réseau. Activez-la pour appairer le téléphone.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+		}
+		Switch(checked = inOn, onCheckedChange = inOnChange, modifier = Modifier.semantics { contentDescription = "Synchronisation Wi-Fi" })
+	}
 }
 
 /*

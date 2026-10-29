@@ -33,7 +33,9 @@ import fr.maubin.patrimoineplus.data.backup.decodePlans
 import fr.maubin.patrimoineplus.data.backup.encodePlans
 import fr.maubin.patrimoineplus.data.backup.PlansDto
 import fr.maubin.patrimoineplus.data.db.PlanEntity
-import fr.maubin.patrimoineplus.data.backup.HistoryDto
+import fr.maubin.patrimoineplus.data.backup.HistoryDto
+import fr.maubin.patrimoineplus.data.backup.DeviceLinkDto
+import fr.maubin.patrimoineplus.data.sync.joinDevices
 
 /*
 	Export et import de toute la base, sous forme de fichier JSON versionné.
@@ -79,7 +81,7 @@ class BackupRepository @Inject constructor(
 				loans        = inDb.planningDao().loans().map { it.toDomain().toDto() }
 			).let { inFile ->
 				val vPlans = fDao.plans()?.let(::decodePlans) ?: return@let inFile				// budget et objectifs du PC, gardés tels quels
-				inFile.copy(budget = vPlans.budget, goals = vPlans.goals, monthGoals = vPlans.monthGoals, history = vPlans.history)
+				inFile.copy(budget = vPlans.budget, goals = vPlans.goals, monthGoals = vPlans.monthGoals, history = vPlans.history, devices = vPlans.devices)
 			}.withProfiles()														// base d'avant les profils : profil « Moi »
 		}
 
@@ -93,6 +95,19 @@ class BackupRepository @Inject constructor(
 		inDb.withTransaction {
 			val vPlans = fDao.plans()?.let(::decodePlans) ?: PlansDto()						// budget, objectifs, historique
 			fDao.insertPlan(PlanEntity("plans", encodePlans(vPlans.copy(history = inHistory))))
+		}
+	}
+
+	/*
+		Réunit des couples d'appareils à ceux gardés avec le budget (appairage,
+		synchronisation ou retrait d'un PC).
+		inLinks : couples
+	*/
+	suspend fun addDevices(inLinks: List<DeviceLinkDto>)
+	{
+		inDb.withTransaction {
+			val vPlans = fDao.plans()?.let(::decodePlans) ?: PlansDto()						// budget, objectifs, historique, couples
+			fDao.insertPlan(PlanEntity("plans", encodePlans(vPlans.copy(devices = joinDevices(vPlans.devices, inLinks)))))
 		}
 	}
 

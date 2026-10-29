@@ -38,6 +38,9 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
+import androidx.compose.material3.Switch
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 
 private val kSyncTime = DateTimeFormatter.ofPattern("dd/MM 'à' HH:mm")				// heure d'une synchronisation
 
@@ -93,7 +96,20 @@ class WifiSyncViewModel @Inject constructor(
 		Retire un PC appairé.
 		inId : PC
 	*/
-	fun remove(inId: String) = inSyncer.remove(inId)
+	fun remove(inId: String)
+	{
+		viewModelScope.launch { inSyncer.remove(inId) }
+	}
+
+	/*
+		Active ou désactive la synchronisation Wi-Fi, puis synchronise.
+		inOn : vrai pour l'activer
+	*/
+	fun setEnabled(inOn: Boolean)
+	{
+		inSyncer.setEnabled(inOn)
+		if (inOn) viewModelScope.launch { inSyncer.sync() }
+	}
 
 	/*
 		Retire un réseau familial.
@@ -109,6 +125,7 @@ class WifiSyncViewModel @Inject constructor(
 fun wifiStatusText(inStatus: WifiStatus): String =
 	when (inStatus)
 	{
+		WifiStatus.Disabled   -> "Désactivée : rien n’est tenté. Activez-la pour appairer ce téléphone avec les PC de la maison."
 		WifiStatus.Unpaired   -> "Aucun PC appairé : affichez le QR code sur un PC (page Appareils), puis scannez-le ici."
 		is WifiStatus.Away    -> inStatus.reason
 		WifiStatus.Working    -> "Synchronisation en cours…"
@@ -134,7 +151,12 @@ fun WifiSyncSection(inViewModel: WifiSyncViewModel = hiltViewModel())
 	val vAsk     = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { vScan = true }	// autorisation de localisation, puis lecteur
 	val vMuted   = MaterialTheme.colorScheme.onSurfaceVariant								// texte secondaire
 	Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+		Row(verticalAlignment = Alignment.CenterVertically) {
+			Text("Synchronisation Wi-Fi", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+			Switch(checked = vPeers.enabled, onCheckedChange = inViewModel::setEnabled, modifier = Modifier.semantics { contentDescription = "Synchronisation Wi-Fi" })
+		}
 		Text(wifiStatusText(vStatus), style = MaterialTheme.typography.bodyLarge)
+		if (!vPeers.enabled) return@Column
 		vMessage?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = vMuted) }
 		Text("Seulement sur le Wi-Fi de la maison ; ailleurs, rien n’est tenté. L’autorisation de localisation sert à reconnaître ce Wi-Fi (son nom), jamais votre position.", style = MaterialTheme.typography.bodyMedium, color = vMuted)
 		Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

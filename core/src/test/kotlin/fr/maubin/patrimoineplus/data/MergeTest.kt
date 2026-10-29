@@ -21,6 +21,8 @@ import fr.maubin.patrimoineplus.data.sync.countChanges
 import fr.maubin.patrimoineplus.data.backup.HistoryDto
 import fr.maubin.patrimoineplus.data.backup.readBackupXlsx
 import fr.maubin.patrimoineplus.data.backup.writeBackupXlsx
+import fr.maubin.patrimoineplus.data.backup.DeviceLinkDto
+import fr.maubin.patrimoineplus.data.sync.joinDevices
 
 /*
 	Fusion élément par élément à partir de la dernière version commune :
@@ -224,5 +226,25 @@ class MergeTest
 		val vRead   = readBackupXlsx(java.io.ByteArrayInputStream(java.io.ByteArrayOutputStream().also { writeBackupXlsx(vMerged, it) }.toByteArray())) as BackupRead.Valid	// classeur relu
 		assertEquals(vMerged.history, vRead.file.history)
 		assertTrue(planSync(vFp, kBase, kBase, kBase, inAuthor = vPc, inNow = 2_000) is SyncPlan.Nothing)
+	}
+	/*
+		Couples d'appareils : la ligne la plus récente l'emporte (retrait
+		compris) ; réunis par la décision, hors de l'empreinte ; aller-retour
+		par le classeur.
+	*/
+	@Test
+	fun deviceLinks()
+	{
+		val vOld    = DeviceLinkDto("pc-1", "PC du bureau", "tel-1", "Pixel", 100, 200, updatedAt = 200)	// couple synchronisé
+		val vGone   = vOld.copy(removed = true, updatedAt = 300)								// puis retiré
+		val vOther  = DeviceLinkDto("pc-2", "PC du salon", "tel-1", "Pixel", 150, updatedAt = 150)	// autre PC
+		assertEquals(listOf(vGone, vOther), joinDevices(listOf(vOld, vOther), listOf(vGone)))
+		assertEquals(syncFingerprint(kBase), syncFingerprint(kBase.copy(devices = listOf(vOld))))
+		val vFp     = syncFingerprint(kBase)													// empreinte commune
+		val vMine   = kBase.copy(transactions = kBase.transactions + expense("t-pc", "Courses PC"), devices = listOf(vOld))	// PC
+		val vSent   = (planSync(vFp, kBase, vMine, kBase.copy(devices = listOf(vOther))) as SyncPlan.Export).file	// envoi
+		assertEquals(setOf("pc-1|tel-1", "pc-2|tel-1"), vSent.devices.map { it.key }.toSet())
+		val vRead   = readBackupXlsx(java.io.ByteArrayInputStream(java.io.ByteArrayOutputStream().also { writeBackupXlsx(vSent, it) }.toByteArray())) as BackupRead.Valid	// classeur relu
+		assertEquals(vSent.devices, vRead.file.devices)
 	}
 }
