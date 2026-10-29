@@ -128,6 +128,7 @@ class DevicesUiTest
 		val vNow  = kClock.millis()																	// maintenant
 		vApp.edit { EditResult.Done(it.copy(devices = listOf(
 			DeviceLinkDto(vSelf, "PC du bureau", "tel-1", "Pixel 8", vNow - 9_000_000, vNow - 3_600_000, updatedAt = vNow),
+			DeviceLinkDto("pc-5", "PC du grenier", "tel-1", "Pixel 8", vNow - 9_000_000, vNow - 600_000, updatedAt = vNow),
 			DeviceLinkDto("pc-2", "PC du salon", "tel-1", "Pixel 8", vNow - 9_000_000, vNow - 86_400_000, updatedAt = vNow),
 			DeviceLinkDto("pc-3", "PC portable", "tel-1", "Pixel 8", vNow - 9_000_000, null, updatedAt = vNow),
 			DeviceLinkDto("pc-4", "Ancien PC", "tel-1", "Pixel 8", vNow - 9_000_000, null, removed = true, updatedAt = vNow)
@@ -140,6 +141,7 @@ class DevicesUiTest
 		val vScene = ImageComposeScene(width = 1440, height = 1500, density = Density(1f)) { App(vApp) { null } }	// capture (relecture humaine)
 		listOf(0L, 500L, 1_500L).forEach { vScene.render(it * 1_000_000L) }
 		File("build/captures-desktop/38-ecosysteme.png").writeBytes(vScene.render(2_000_000_000L).encodeToData(EncodedImageFormat.PNG)!!.bytes)
+		File("build/captures-desktop/38-ecosysteme-flottement.png").writeBytes(vScene.render(4_000_000_000L).encodeToData(EncodedImageFormat.PNG)!!.bytes)	// même schéma, autre instant du flottement
 		vScene.close()
 	}
 }

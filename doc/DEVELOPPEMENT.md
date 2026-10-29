@@ -655,9 +655,12 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   couples avec les téléphones (appairage, dernière synchronisation, retrait),
   le téléphone les siens avec les PC ; les listes sont réunies à chaque
   échange (la ligne la plus récente l'emporte), hors de l'empreinte. La page
-  Appareils du PC en tire le schéma de l'écosystème (téléphone au centre, PC
-  autour, dernière synchronisation sur chaque trait, pointillés après une
-  semaine sans synchronisation).
+  Appareils du PC en tire le schéma de l'écosystème : téléphone au centre, PC
+  en cercle autour (ellipse à la largeur de la carte ; nombre pair : en
+  diagonale), liens en courbes douces avec la date de dernière
+  synchronisation dans une pastille, pointillés après une semaine sans
+  synchronisation ; chaque appareil flotte doucement à son rythme (cycle de
+  8 s, animation lue au dessin seulement, sans recomposition).
 - **Appareils à des versions différentes** : un fichier d'échange écrit par
   une version plus récente (format plus grand que `kBackupVersion`, lu dans
   l'onglet Fichier avant tout le reste, ou dans le champ `version` d'un export
