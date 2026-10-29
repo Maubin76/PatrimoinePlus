@@ -52,7 +52,6 @@ import fr.maubin.patrimoineplus.ui.home.kPreviewState
 import fr.maubin.patrimoineplus.ui.navigation.TopLevelDestination
 import fr.maubin.patrimoineplus.ui.lock.LockContent
 import fr.maubin.patrimoineplus.ui.settings.SafetyActions
-import fr.maubin.patrimoineplus.ui.settings.SyncActions
 import fr.maubin.patrimoineplus.ui.settings.SettingsScreen
 import fr.maubin.patrimoineplus.ui.shell.AppFrame
 import fr.maubin.patrimoineplus.ui.theme.PatrimoineTheme
@@ -72,18 +71,18 @@ import fr.maubin.patrimoineplus.ui.components.ProportionStyle
 import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 import fr.maubin.patrimoineplus.ui.components.AppGround
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxSize
 import fr.maubin.patrimoineplus.data.demo.withDemoFamily
 import fr.maubin.patrimoineplus.domain.calc.scoped
 import fr.maubin.patrimoineplus.ui.shell.LocalViewChip
 import fr.maubin.patrimoineplus.ui.shell.ViewChip
-import fr.maubin.patrimoineplus.ui.settings.ProfilesActions
+import fr.maubin.patrimoineplus.ui.settings.ProfilesActions
 import fr.maubin.patrimoineplus.ui.components.ProfileRemovalDialog
 import fr.maubin.patrimoineplus.domain.calc.profileRemoval
 import fr.maubin.patrimoineplus.data.demo.kDemoPartnerId
-import fr.maubin.patrimoineplus.domain.model.Ownership
+import fr.maubin.patrimoineplus.domain.model.Ownership
 import fr.maubin.patrimoineplus.ui.theme.Palette
-import fr.maubin.patrimoineplus.ui.settings.ThemeSheet
+import fr.maubin.patrimoineplus.ui.settings.ThemeSheet
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import android.graphics.drawable.AdaptiveIconDrawable
@@ -91,7 +90,7 @@ import android.graphics.drawable.Drawable
 import android.graphics.Bitmap
 import org.robolectric.RuntimeEnvironment
 import java.io.File
-import fr.maubin.patrimoineplus.R
+import fr.maubin.patrimoineplus.R
 import fr.maubin.patrimoineplus.data.update.UpdateOffer
 import fr.maubin.patrimoineplus.data.update.ReleaseAsset
 import fr.maubin.patrimoineplus.ui.components.UpdateDialog
@@ -241,7 +240,7 @@ class ScreenshotTest
 			CompositionLocalProvider(LocalViewChip provides vChip) { HomeContent(vState, {}, {}) }
 		})
 		captureRoboImage("$kOutDir/profils-reglages.png", content = shell(false, false, TopLevelDestination.Settings) {
-			SettingsScreen(ThemeMode.LIGHT, {}, false, {}, SafetyActions(true, "8 octobre 2026", "Documents/PatrimoinePlus", {}, {}, {}), null, null,
+			SettingsScreen(ThemeMode.LIGHT, {}, false, {}, SafetyActions(true, "8 octobre 2026", "Documents/PatrimoinePlus", {}, {}, {}), null,
 				inProfiles = ProfilesActions(vDemo.profiles, "Ce profil est seul propriétaire d’un compte : donnez d’abord ce compte à un autre profil.", { _, _ -> }, { _, _ -> }, {}))
 		})
 	}
@@ -476,8 +475,7 @@ class ScreenshotTest
 	@Test
 	@Config(qualifiers = "w360dp-h1700dp-xxhdpi")
 	fun settingsDark() = captureRoboImage("$kOutDir/settings-dark.png", content = shell(true, true, TopLevelDestination.Settings) {
-		SettingsScreen(ThemeMode.DARK, {}, true, {}, SafetyActions(true, "8 octobre 2026", "Documents/PatrimoinePlus", {}, {}, {}), null,
-			SyncActions("Documents/PatrimoinePlus", "À jour. Dernière synchronisation le 9 oct. à 17:35.", {}, {}, {}))
+		SettingsScreen(ThemeMode.DARK, {}, true, {}, SafetyActions(true, "8 octobre 2026", "Documents/PatrimoinePlus", {}, {}, {}), null)
 	})
 
 	/*
@@ -593,7 +591,7 @@ class ScreenshotTest
 		captureRoboImage("$kOutDir/home-verre.png", content = shell(false, false, TopLevelDestination.Home, inGlass = true) { HomeContent(vState, {}, {}) })
 		captureRoboImage("$kOutDir/home-verre-sombre.png", content = shell(true, false, TopLevelDestination.Home, inGlass = true) { HomeContent(vState, {}, {}) })
 		captureRoboImage("$kOutDir/settings-verre-sombre.png", content = shell(true, false, TopLevelDestination.Settings, inGlass = true) {
-			SettingsScreen(ThemeMode.DARK, {}, false, {}, SafetyActions(true, "8 octobre 2026", "Documents/PatrimoinePlus", {}, {}, {}), null, null, inGlass = true)
+			SettingsScreen(ThemeMode.DARK, {}, false, {}, SafetyActions(true, "8 octobre 2026", "Documents/PatrimoinePlus", {}, {}, {}), null, inGlass = true)
 		})
 	}
 

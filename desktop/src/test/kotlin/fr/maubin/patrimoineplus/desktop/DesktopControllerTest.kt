@@ -74,7 +74,7 @@ class DesktopControllerTest
 	@Test
 	fun folderIsRemembered()
 	{
-		val vFolder = fTemp.newFolder("Synchro").toPath()							// dossier synchronisé
+		val vFolder = fTemp.newFolder("Synchro").toPath()							// dossier des données
 		controller().openFolder(vFolder)
 		val vNext = controller()												// lancement suivant
 		assertEquals(Source.Folder(vFolder), vNext.workspace.value.source)
@@ -85,7 +85,7 @@ class DesktopControllerTest
 		Budget et objectifs d'avant le format 8 (fichiers à côté des réglages)
 		repris dans le fichier d'échange : budget de la vue Famille (celui de
 		« Moi » ignoré), objectifs de chaque vue ; la démonstration les relit à
-		chaque ouverture ; un dossier synchronisé les reprend une fois, écrits
+		chaque ouverture ; un dossier des données les reprend une fois, écrits
 		dans le fichier, puis les fichiers d'avant sont écartés (renommés). Le
 		budget est le même dans toutes les vues, les objectifs changent.
 	*/
@@ -107,7 +107,7 @@ class DesktopControllerTest
 		assertEquals(listOf("alex"), vApp.goals.value.goals.map { it.id })
 		vApp.setView(kDefaultProfileId)
 		assertEquals(listOf("ancien"), vApp.goals.value.goals.map { it.id })
-		val vFolder = fTemp.newFolder("Synchro").toPath()											// dossier synchronisé, avec son fichier
+		val vFolder = fTemp.newFolder("Synchro").toPath()											// dossier des données, avec son fichier
 		java.nio.file.Files.newOutputStream(vFolder.resolve(kSyncFileName)).use { writeBackupXlsx(demoBackupFile(), it) }
 		vApp.openFolder(vFolder)
 		assertEquals(listOf("ancien"), vApp.goals.value.goals.map { it.id })

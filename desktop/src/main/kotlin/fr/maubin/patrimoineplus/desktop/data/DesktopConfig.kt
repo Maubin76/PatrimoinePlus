@@ -28,7 +28,7 @@ sealed interface Source
 	data object Demo : Source
 
 	/*
-		Dossier synchronisé contenant le fichier d'échange.
+		Dossier des données contenant le fichier d'échange.
 		path : chemin du dossier
 	*/
 	data class Folder(val path: Path) : Source

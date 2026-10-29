@@ -226,7 +226,7 @@ private fun pickBankFile(): Path?
 private fun pickFolder(): Path?
 {
 	val vChooser = JFileChooser().apply {
-		dialogTitle       = "Dossier synchronisé avec le téléphone"
+		dialogTitle       = "Dossier des données PatrimoinePlus"
 		fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
 		isAcceptAllFileFilterUsed = false
 	}																			// sélecteur

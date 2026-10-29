@@ -35,14 +35,14 @@ import fr.maubin.patrimoineplus.data.sync.HistoryAuthor
 class WorkspaceSyncTest
 {
 	@get:Rule
-	val fTemp = TemporaryFolder()													// dossier synchronisé simulé
+	val fTemp = TemporaryFolder()													// dossier des données simulé
 
 	private val kClock  = Clock.fixed(Instant.parse("2026-10-12T09:00:00Z"), ZoneId.of("Europe/Paris"))	// horloge figée
 	private val kEditor = DataEditor(kClock)										// moteur de modification
 	private val kDemo   = demoBackupFile()										// démonstration (identifiants des opérations tirés une seule fois)
 
 	/*
-		Dossier synchronisé simulé.
+		Dossier des données simulé.
 	*/
 	private fun folder(): Path = fTemp.root.toPath()
 
@@ -104,7 +104,7 @@ class WorkspaceSyncTest
 		vSpace.flush()
 		assertTrue(vSpace.state.value.status is LoadStatus.Synced)
 		assertTrue(onDisk().accounts.any { it.name == "Ouvert sur le PC" })
-		assertFalse(Files.exists(folder().resolve(".syncthing.$kSyncFileName.tmp")))
+		assertFalse(Files.exists(folder().resolve(".$kSyncFileName.tmp")))
 		val vBytes = Files.readAllBytes(exchange())									// fichier écrit
 		vSpace.sync()
 		assertArrayEquals(vBytes, Files.readAllBytes(exchange()))
@@ -142,7 +142,7 @@ class WorkspaceSyncTest
 		assertTrue(vSpace.state.value.status is LoadStatus.Synced)
 		assertTrue(vSpace.state.value.data.accounts.map { it.name }.containsAll(listOf("Ouvert sur le PC", "Ouvert sur le téléphone")))
 		assertTrue(onDisk().accounts.map { it.name }.containsAll(listOf("Ouvert sur le PC", "Ouvert sur le téléphone")))
-		assertEquals("Fusion avec le fichier synchronisé : 1 changement(s) repris.", vSpace.state.value.merge)
+		assertEquals("Fusion avec le fichier du dossier : 1 changement(s) repris.", vSpace.state.value.merge)
 	}
 
 	/*

@@ -51,8 +51,6 @@ import fr.maubin.patrimoineplus.ui.settings.DemoActions
 import fr.maubin.patrimoineplus.ui.settings.DemoViewModel
 import fr.maubin.patrimoineplus.ui.settings.SettingsScreen
 import fr.maubin.patrimoineplus.ui.settings.rememberSafetyActions
-import fr.maubin.patrimoineplus.ui.settings.rememberSyncActions
-import fr.maubin.patrimoineplus.ui.settings.SyncConflictDialog
 import fr.maubin.patrimoineplus.ui.shell.AppFrame
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
@@ -118,7 +116,6 @@ fun PatrimoineApp(
 				)
 			}
 		}
-		SyncConflictDialog()
 		val vContext = LocalContext.current													// messages de la recherche de mise à jour
 		SyncVersionDialog(inOnCheck = { inUpdates.checkNow { inMessage -> Toast.makeText(vContext, inMessage, Toast.LENGTH_LONG).show() } })
 		UpdatePrompt(inUpdates)
@@ -232,7 +229,6 @@ private fun MainTabs(
 					inHidden      = vHidden,
 					inOnHidden    = inAppViewModel::setAmountsHidden,
 					inSafety      = rememberSafetyActions(vSnackbar),
-					inSync        = rememberSyncActions(vSnackbar),
 					inDemo        = demoActions(vSnackbar),
 					inColorTheme  = vColors,
 					inOnColorTheme = inAppViewModel::setColorTheme,

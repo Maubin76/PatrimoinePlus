@@ -7,27 +7,19 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import fr.maubin.patrimoineplus.data.backup.AutoBackup
 import fr.maubin.patrimoineplus.data.backup.BackupOutcome
-import fr.maubin.patrimoineplus.data.backup.BackupRepository
 import fr.maubin.patrimoineplus.data.repo.AccountRepository
 import fr.maubin.patrimoineplus.data.repo.CategoryRepository
 import fr.maubin.patrimoineplus.data.repo.MarketRepository
 import fr.maubin.patrimoineplus.data.repo.TransactionRepository
 import fr.maubin.patrimoineplus.data.settings.SettingsRepository
+import fr.maubin.patrimoineplus.data.sync.DataChanges
 import fr.maubin.patrimoineplus.data.sync.DataStoreSyncStore
-import fr.maubin.patrimoineplus.data.sync.SafSyncFolderFactory
-import fr.maubin.patrimoineplus.data.sync.SyncFolderFactory
 import fr.maubin.patrimoineplus.data.sync.SyncHooks
 import fr.maubin.patrimoineplus.data.sync.SyncStore
-import fr.maubin.patrimoineplus.data.sync.Syncer
 import fr.maubin.patrimoineplus.data.sync.dataChanges
-import java.time.Clock
 import javax.inject.Inject
 import javax.inject.Singleton
 import fr.maubin.patrimoineplus.data.repo.PlanningRepository
-import fr.maubin.patrimoineplus.data.sync.HistoryAuthor
-import fr.maubin.patrimoineplus.data.link.phoneName
-import android.content.Context
-import dagger.hilt.android.qualifiers.ApplicationContext
 
 /*
 	Actions de l'appli autour d'un import par synchronisation : sauvegarde de
@@ -60,32 +52,29 @@ class AppSyncHooks @Inject constructor(
 }
 
 /*
-	Synchronisation par fichier : service unique et ses dépendances.
+	Synchronisation Wi-Fi : signal de modification des données.
 */
 @Module
 @InstallIn(SingletonComponent::class)
 object SyncModule
 {
 	/*
-		Service de synchronisation, déclenché par les modifications des données.
+		Signal de modification des données (comptes, opérations, cours, plans).
+		inAccounts     : comptes
+		inCategories   : catégories
+		inTransactions : opérations
+		inMarket       : actifs, cours et relevés
+		inPlanning     : opérations récurrentes et crédits
 	*/
 	@Provides
 	@Singleton
-	fun provideSyncer(
-		inBackup       : BackupRepository,
-		inStore        : SyncStore,
-		inFolders      : SyncFolderFactory,
-		inHooks        : SyncHooks,
+	fun provideChanges(
 		inAccounts     : AccountRepository,
 		inCategories   : CategoryRepository,
 		inTransactions : TransactionRepository,
 		inMarket       : MarketRepository,
-		inPlanning     : PlanningRepository,
-		inClock        : Clock,
-		@ApplicationContext inContext : Context
-	): Syncer = Syncer(inBackup, inStore, inFolders, inHooks, dataChanges(inAccounts, inCategories, inTransactions, inMarket, inPlanning), inClock) {
-		HistoryAuthor(inStore.deviceId(), phoneName(inContext))
-	}
+		inPlanning     : PlanningRepository
+	): DataChanges = DataChanges(dataChanges(inAccounts, inCategories, inTransactions, inMarket, inPlanning))
 }
 
 /*
@@ -101,13 +90,6 @@ abstract class SyncBindings
 	*/
 	@Binds
 	abstract fun bindStore(inImpl: DataStoreSyncStore): SyncStore
-
-	/*
-		Dossiers choisis par le sélecteur du système.
-		inImpl : implémentation
-	*/
-	@Binds
-	abstract fun bindFolders(inImpl: SafSyncFolderFactory): SyncFolderFactory
 
 	/*
 		Actions de l'appli autour d'un import.

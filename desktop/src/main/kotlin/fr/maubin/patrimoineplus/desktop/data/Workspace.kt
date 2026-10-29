@@ -119,8 +119,8 @@ data class WorkspaceState(
 
 /*
 	Espace de travail de l'appli PC. Démonstration : données en mémoire,
-	modifiables, jamais écrites. Dossier synchronisé : le fichier d'échange est
-	lu, puis synchronisé comme sur le téléphone (empreintes de contenu,
+	modifiables, jamais écrites. Dossier des données : le fichier d'échange est
+	lu, puis tenu à jour (empreintes de contenu,
 	decideSync) : une modification du PC est écrite 1,5 s plus tard (écriture
 	atomique), une modification du fichier est relue, un conflit attend le
 	choix de l'utilisateur. Un fichier illisible n'est jamais écrasé et
@@ -336,7 +336,7 @@ class Workspace(private val inClock: Clock)
 		inPlan : fusion
 	*/
 	private fun mergeNote(inPlan: SyncPlan.Merge): String =
-		"Fusion avec le fichier synchronisé : ${inPlan.merged} changement(s) repris" +
+		"Fusion avec le fichier du dossier : ${inPlan.merged} changement(s) repris" +
 			(if (inPlan.restored.isEmpty()) "." else " ; rétabli(s), car encore utilisé(s) : ${inPlan.restored.joinToString(", ")}.")
 
 	/*
@@ -431,7 +431,7 @@ class Workspace(private val inClock: Clock)
 
 	/*
 		Écrit les données du PC dans le fichier (fichier temporaire puis
-		remplacement, pour que Syncthing ne voie jamais un fichier à moitié écrit).
+		remplacement : jamais de fichier à moitié écrit).
 		inPath        : fichier d'échange
 		inFingerprint : empreinte des données écrites
 	*/
@@ -440,7 +440,7 @@ class Workspace(private val inClock: Clock)
 		inFingerprint : String
 	)
 	{
-		val vTemp = inPath.resolveSibling(".syncthing.$kSyncFileName.tmp")		// fichier temporaire (nom ignoré par Syncthing)
+		val vTemp = inPath.resolveSibling(".$kSyncFileName.tmp")					// fichier temporaire
 		try
 		{
 			Files.newOutputStream(vTemp).use { writeBackupXlsx(fFile.copy(exportedAt = Instant.now(inClock).toString()), it) }

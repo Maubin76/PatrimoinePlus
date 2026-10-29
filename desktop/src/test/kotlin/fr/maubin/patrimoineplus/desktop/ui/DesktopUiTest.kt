@@ -19,7 +19,7 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 import java.time.Clock
 import java.time.Instant
-import java.time.ZoneId
+import java.time.ZoneId
 import androidx.compose.ui.test.onNodeWithContentDescription
 
 /*
@@ -64,7 +64,7 @@ class DesktopUiTest
 		fCompose.onNodeWithText("Solde au jour").assertExists()
 		fCompose.onNodeWithContentDescription("Réglages").performClick()					// rail d'icônes : nom de l'écran en description
 		fCompose.onNodeWithText("Fermer").performClick()
-		fCompose.onNodeWithText("Choisir le dossier synchronisé…").assertExists()
+		fCompose.onNodeWithText("Choisir le dossier des données…").assertExists()
 	}
 
 	/*

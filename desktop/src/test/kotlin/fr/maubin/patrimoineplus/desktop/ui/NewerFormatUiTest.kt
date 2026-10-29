@@ -46,11 +46,11 @@ class NewerFormatUiTest
 	private val kClock = Clock.fixed(Instant.parse("2026-10-28T09:00:00Z"), ZoneId.of("Europe/Paris"))	// horloge figée
 
 	/*
-		Dossier synchronisé dont le fichier annonce un format plus récent.
+		Dossier des données dont le fichier annonce un format plus récent.
 	*/
 	private fun folder(): java.nio.file.Path
 	{
-		val vFolder = fTemp.newFolder("Synchro").toPath()									// dossier synchronisé
+		val vFolder = fTemp.newFolder("Synchro").toPath()									// dossier des données
 		val vFile   = Sheet("Fichier", listOf(Column("Clé", 16.0), Column("Valeur", 40.0)), listOf(
 			listOf(Cell.Text("Format"), Cell.Text("patrimoineplus")),
 			listOf(Cell.Text("Version"), Cell.Number(BigDecimal(kBackupVersion + 1)))

@@ -228,14 +228,14 @@ class DesktopEditingTest
 	/*
 		Même compte renommé sur le PC et dans le fichier : fenêtre de choix par
 		élément ; « Appliquer » n'est possible qu'une fois le choix fait ; « Le
-		fichier synchronisé » adopte la version du téléphone. Capture
+		fichier du dossier » adopte la version du fichier. Capture
 		`36-fusion-choix.png`.
 	*/
 	@Test
 	fun conflictDialog()
 	{
 		val vDemo   = demoBackupFile()												// démonstration (identifiants tirés une fois)
-		val vFolder = fTemp.newFolder("synchro").toPath()							// dossier synchronisé
+		val vFolder = fTemp.newFolder("synchro").toPath()							// dossier des données
 		val vPath   = vFolder.resolve(kSyncFileName)								// fichier d'échange
 		Files.newOutputStream(vPath).use { writeBackupXlsx(vDemo, it) }
 		Files.setLastModifiedTime(vPath, FileTime.fromMillis(1_000))
@@ -255,7 +255,7 @@ class DesktopEditingTest
 		java.io.File("build/captures-desktop").mkdirs()
 		java.io.File("build/captures-desktop/36-fusion-choix.png").writeBytes(vScene.render(2_000_000_000L).encodeToData(org.jetbrains.skia.EncodedImageFormat.PNG)!!.bytes)
 		vScene.close()
-		fCompose.onNodeWithText("Le fichier synchronisé").performClick()
+		fCompose.onNodeWithText("Le fichier du dossier").performClick()
 		fCompose.onNodeWithText("Appliquer").performClick()
 		fCompose.waitForIdle()
 		assertEquals("Livret du téléphone", vApp.workspace.value.data.accounts.single { it.id == vId }.name)

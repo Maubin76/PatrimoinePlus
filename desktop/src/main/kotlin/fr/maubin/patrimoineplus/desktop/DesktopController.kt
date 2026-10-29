@@ -267,7 +267,7 @@ data class BankSession(
 )
 
 /*
-	Contrôleur de l'appli PC : source des données (dossier synchronisé ou
+	Contrôleur de l'appli PC : source des données (dossier des données ou
 	démonstration), réglages mémorisés (apparence, mode discret, couleurs),
 	navigation et panneau de saisie. Sans interface : testable seul.
 	inConfig    : fichier des réglages
@@ -350,7 +350,7 @@ class DesktopController(
 	// Vrai pendant la récupération des cours.
 	val quoting: StateFlow<Boolean> = fQuoting
 
-	// Vrai si les cours automatiques sont possibles (dossier synchronisé, source de cours).
+	// Vrai si les cours automatiques sont possibles (dossier des données, source de cours).
 	val canQuote: Boolean get() = inQuotes != null && inScope != null && workspace.value.source is Source.Folder
 
 	// Action qui ferait perdre la saisie en cours, en attente de confirmation ; null sinon.
@@ -383,7 +383,7 @@ class DesktopController(
 	// Onglet affiché de l'écran Bilan.
 	val reportTab: StateFlow<ReportTab> = fReportTab
 
-	// État des sauvegardes automatiques du PC (réglages) ; null sans dossier synchronisé.
+	// État des sauvegardes automatiques du PC (réglages) ; null sans dossier des données.
 	val backupInfo: StateFlow<String?> = fBackupInfo
 
 	/*
@@ -396,7 +396,7 @@ class DesktopController(
 	fun backupIfDue(inForce: Boolean = false)
 	{
 		val vSpace  = inWorkspace.state.value													// espace de travail
-		val vFolder = (vSpace.source as? Source.Folder)?.path ?: run { fBackupInfo.value = null; return }	// dossier synchronisé
+		val vFolder = (vSpace.source as? Source.Folder)?.path ?: run { fBackupInfo.value = null; return }	// dossier des données
 		if (vSpace.status == LoadStatus.Idle || vSpace.status == LoadStatus.Waiting) return
 		val vFile   = inWorkspace.file																// données à sauvegarder
 		val vRun    = {
@@ -414,7 +414,7 @@ class DesktopController(
 
 	/*
 		Texte de l'état des sauvegardes pour les réglages.
-		inFolder : dossier synchronisé
+		inFolder : dossier des données
 	*/
 	private fun backupText(inFolder: Path): String
 	{
@@ -425,7 +425,7 @@ class DesktopController(
 			LocalDate.now(inClock) -> "la dernière aujourd’hui"
 			else                -> "la dernière le ${fr.maubin.patrimoineplus.domain.format.formatFrenchDate(vLast)}"
 		}																						// date de la dernière
-		return "Chaque jour, une copie complète dans « $kPcBackupFolder » (dossier synchronisé, donc aussi sur le téléphone) ; les $kPcBackupKept plus récentes sont gardées ; $vWhen."
+		return "Chaque jour, une copie complète dans « $kPcBackupFolder » (dans le dossier des données) ; les $kPcBackupKept plus récentes sont gardées ; $vWhen."
 	}
 
 	// Fenêtre de mise à jour ; null sans.
@@ -621,7 +621,7 @@ class DesktopController(
 	fun openDemo() = guard("Passer en démonstration") { openSource(Source.Demo) }
 
 	/*
-		Ouvre un dossier synchronisé.
+		Ouvre un dossier des données.
 		inPath : dossier
 	*/
 	fun openFolder(inPath: Path) = guard("Ouvrir un autre dossier") { openSource(Source.Folder(inPath)) }

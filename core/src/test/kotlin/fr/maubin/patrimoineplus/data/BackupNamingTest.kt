@@ -15,7 +15,7 @@ class BackupNamingTest
 		Rotation : les trois plus récentes sont gardées, les autres supprimées ;
 		les fichiers étrangers au modèle ne sont jamais touchés ni comptés, en
 		particulier le fichier d'échange de la synchronisation et ses copies de
-		conflit (Syncthing).
+		conflit.
 	*/
 	@Test
 	fun keepsThreeMostRecent()

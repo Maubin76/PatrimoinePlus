@@ -6,7 +6,7 @@ import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
 import fr.maubin.patrimoineplus.data.backup.scheduleBackups
 import fr.maubin.patrimoineplus.data.market.scheduleQuotes
-import fr.maubin.patrimoineplus.data.sync.Syncer
+import fr.maubin.patrimoineplus.data.sync.DataChanges
 import fr.maubin.patrimoineplus.ui.lock.AppLock
 import javax.inject.Inject
 import fr.maubin.patrimoineplus.data.repo.PlanningRepository
@@ -27,7 +27,7 @@ import fr.maubin.patrimoineplus.data.link.scheduleWifiSync
 class PatrimoineApplication : Application(), Configuration.Provider
 {
 	@Inject lateinit var fAppLock: AppLock										// verrou de l'application
-	@Inject lateinit var fSyncer: Syncer										// synchronisation par fichier
+	@Inject lateinit var fChanges: DataChanges									// signal de modification des données
 	@Inject lateinit var fWifi: WifiSyncer										// synchronisation Wi-Fi avec les PC
 	@Inject lateinit var fPlanning: PlanningRepository						// échéances des récurrences et des crédits
 
@@ -38,17 +38,15 @@ class PatrimoineApplication : Application(), Configuration.Provider
 	/*
 		Démarrage : le verrou observe les passages au premier plan ; la
 		sauvegarde du jour est planifiée (et rattrapée si elle manque), ainsi
-		que la mise à jour des cours ; la synchronisation par fichier et la synchronisation Wi-Fi
-	(au premier plan, après chaque saisie, en tâche de fond) démarrent.
+		que la mise à jour des cours ; la synchronisation Wi-Fi (au premier plan,
+	après chaque saisie, en tâche de fond) démarre.
 	*/
 	override fun onCreate()
 	{
 		super.onCreate()
 		ProcessLifecycleOwner.get().lifecycle.addObserver(fAppLock)
-		ProcessLifecycleOwner.get().lifecycle.addObserver(fSyncer)
-		fSyncer.start()
 		ProcessLifecycleOwner.get().lifecycle.addObserver(fWifi)
-		fWifi.start(fSyncer.changes)
+		fWifi.start(fChanges.flow)
 		ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver
 		{
 			/*

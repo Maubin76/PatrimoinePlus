@@ -22,10 +22,10 @@ import fr.maubin.patrimoineplus.ui.components.PatrimoineLogo
 import fr.maubin.patrimoineplus.desktop.ui.launchReveal
 
 /*
-	Écran d'accueil (aucune source choisie) : ouvrir le dossier synchronisé
-	avec le téléphone, ou essayer l'appli avec des données de démonstration,
-	sans synchronisation.
-	inOnFolder : choisir le dossier synchronisé
+	Écran d'accueil (aucune source choisie) : ouvrir le dossier des données
+	du PC, ou essayer l'appli avec des données de démonstration, sans
+	synchronisation.
+	inOnFolder : choisir le dossier des données
 	inOnDemo   : ouvrir la démonstration
 */
 @Composable
@@ -41,8 +41,9 @@ fun WelcomeScreen(
 			Text("PatrimoinePlus", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.launchReveal(0.15f, inDy = 12.dp))
 			Spacer(Modifier.height(12.dp))
 			Text(
-				text      = "Ouvrez le dossier synchronisé avec votre téléphone (par exemple Documents\\PatrimoinePlus, partagé par Syncthing) : " +
-					"l’appli y lit le fichier $kSyncFileName. Ou essayez-la avec des données fictives.",
+				text      = "Choisissez le dossier où ranger vos données (par exemple Documents\\PatrimoinePlus) : " +
+					"l’appli y lit et y écrit le fichier $kSyncFileName ; le téléphone s’y synchronise ensuite par le Wi-Fi de la maison (page Appareils). " +
+					"Ou essayez-la avec des données fictives.",
 				style     = MaterialTheme.typography.bodyLarge,
 				color     = MaterialTheme.colorScheme.onSurfaceVariant,
 				textAlign = TextAlign.Center,
@@ -51,7 +52,7 @@ fun WelcomeScreen(
 			Spacer(Modifier.height(36.dp))
 			Column(Modifier.launchReveal(0.42f, inDy = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
 				Button(onClick = inOnFolder, contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp)) {
-					Text("Choisir le dossier synchronisé…")
+					Text("Choisir le dossier des données…")
 				}
 				OutlinedButton(onClick = inOnDemo, contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp)) {
 					Text("Essayer avec la démonstration")

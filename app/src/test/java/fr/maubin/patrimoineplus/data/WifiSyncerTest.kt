@@ -89,7 +89,7 @@ class WifiSyncerTest
 			if (vRequest.op == kOpPair) { fPaired = true; kJson.encodeToString(PeerReply.serializer(), PeerReply(kActSame, pc = kPc, home = listOf(kHome))) }
 			else kJson.encodeToString(PeerReply.serializer(), vSync.answer(inCall.peerId, "Pixel", vRequest))
 		}).also { it.start(0, InetAddress.getLoopbackAddress()) }
-		fSyncer  = WifiSyncer(ApplicationProvider.getApplicationContext(), vBackup, MemorySyncStore(null), object : SyncHooks
+		fSyncer  = WifiSyncer(ApplicationProvider.getApplicationContext(), vBackup, MemorySyncStore(), object : SyncHooks
 		{
 			override suspend fun beforeImport(): Boolean = true
 			override suspend fun afterImport() {}

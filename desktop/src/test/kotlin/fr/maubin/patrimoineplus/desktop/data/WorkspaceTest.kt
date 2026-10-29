@@ -18,13 +18,13 @@ import java.time.Instant
 import java.time.ZoneId
 
 /*
-	Tests de l'espace de travail de l'appli PC : démonstration, dossier
-	synchronisé (fichier absent, valide, corrompu, modifié).
+	Tests de l'espace de travail de l'appli PC : démonstration, dossier des
+	données (fichier absent, valide, corrompu, modifié).
 */
 class WorkspaceTest
 {
 	@get:Rule
-	val fTemp = TemporaryFolder()													// dossier synchronisé simulé
+	val fTemp = TemporaryFolder()													// dossier des données simulé
 
 	private val kClock = Clock.fixed(Instant.parse("2026-10-12T09:00:00Z"), ZoneId.of("Europe/Paris"))	// horloge figée
 
@@ -62,13 +62,13 @@ class WorkspaceTest
 	}
 
 	/*
-		Dossier sans fichier : en attente ; le fichier arrive (Syncthing) : il
+		Dossier sans fichier : en attente ; le fichier arrive : il
 		est lu au rechargement suivant.
 	*/
 	@Test
 	fun waitsThenLoadsExchangeFile()
 	{
-		val vFolder = fTemp.root.toPath()											// dossier synchronisé
+		val vFolder = fTemp.root.toPath()											// dossier des données
 		val vSpace  = Workspace(kClock)											// espace de travail
 		vSpace.open(Source.Folder(vFolder))
 		assertEquals(LoadStatus.Waiting, vSpace.state.value.status)
@@ -86,7 +86,7 @@ class WorkspaceTest
 	@Test
 	fun reloadsOnChangeAndKeepsDataWhenCorrupt()
 	{
-		val vFolder = fTemp.root.toPath()											// dossier synchronisé
+		val vFolder = fTemp.root.toPath()											// dossier des données
 		writeExchange(vFolder, demoBackupFile(), 1_000)
 		val vSpace = Workspace(kClock)											// espace de travail
 		vSpace.open(Source.Folder(vFolder))

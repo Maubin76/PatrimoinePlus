@@ -9,14 +9,14 @@ import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 
-const val kPcBackupFolder = "Sauvegardes PC"										// sous-dossier du dossier synchronisé
+const val kPcBackupFolder = "Sauvegardes PC"										// sous-dossier du dossier des données
 const val kPcBackupKept   = 7														// sauvegardes du PC gardées (une semaine)
 private const val kPcBackupPrefix = "patrimoineplus-pc-"							// début du nom des sauvegardes du PC
 private val kPcBackupName = Regex("""patrimoineplus-pc-\d{4}-\d{2}-\d{2}\.xlsx""")	// nom d'une sauvegarde du PC
 
 /*
 	Nom d'une sauvegarde du PC : patrimoineplus-pc-AAAA-MM-JJ.xlsx (distinct de
-	celles du téléphone : aucun conflit dans le dossier synchronisé ; l'ordre
+	celles du téléphone : aucun conflit dans le dossier des données ; l'ordre
 	alphabétique est l'ordre chronologique).
 	inDate : jour de la sauvegarde
 */
@@ -50,7 +50,7 @@ sealed interface PcBackupResult
 
 /*
 	Sauvegarde quotidienne du PC, dans le sous-dossier « Sauvegardes PC » du
-	dossier synchronisé : classeur complet (même format que le fichier
+	dossier des données : classeur complet (même format que le fichier
 	d'échange), écrit dans un fichier temporaire puis renommé (une coupure
 	n'abîme jamais une sauvegarde) ; les sept plus récentes gardées. Une
 	source sans compte n'est jamais sauvegardée (elle évincerait de bonnes
@@ -60,14 +60,14 @@ sealed interface PcBackupResult
 class PcBackup(private val inClock: Clock)
 {
 	/*
-		Dossier des sauvegardes du PC dans un dossier synchronisé.
-		inSynced : dossier synchronisé
+		Dossier des sauvegardes du PC dans un dossier des données.
+		inSynced : dossier des données
 	*/
 	fun folder(inSynced: Path): Path = inSynced.resolve(kPcBackupFolder)
 
 	/*
 		Jour de la dernière sauvegarde du PC ; null s'il n'y en a pas.
-		inSynced : dossier synchronisé
+		inSynced : dossier des données
 	*/
 	fun last(inSynced: Path): LocalDate? =
 		runCatching {
@@ -79,7 +79,7 @@ class PcBackup(private val inClock: Clock)
 	/*
 		Sauvegarde du jour : écrite si elle n'existe pas encore (ou si elle est
 		demandée), puis rotation.
-		inSynced : dossier synchronisé
+		inSynced : dossier des données
 		inFile   : données à sauvegarder
 		inForce  : réécrire même si celle du jour existe (« Sauvegarder maintenant »)
 	*/
@@ -97,7 +97,7 @@ class PcBackup(private val inClock: Clock)
 			Files.createDirectories(vFolder)
 			if (inForce || !Files.exists(vTarget))
 			{
-				val vTemp = vFolder.resolve(".${vTarget.fileName}.tmp")								// écriture provisoire (ignorée par Syncthing : nom en point)
+				val vTemp = vFolder.resolve(".${vTarget.fileName}.tmp")								// écriture provisoire
 				Files.newOutputStream(vTemp).use { writeBackupXlsx(inFile.copy(exportedAt = Instant.now(inClock).toString()), it) }
 				Files.move(vTemp, vTarget, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
 			}

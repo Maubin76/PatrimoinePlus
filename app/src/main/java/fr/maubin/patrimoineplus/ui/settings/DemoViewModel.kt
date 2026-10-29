@@ -5,36 +5,32 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import fr.maubin.patrimoineplus.data.demo.DemoRepository
 import fr.maubin.patrimoineplus.data.settings.SettingsRepository
-import fr.maubin.patrimoineplus.data.sync.SyncStore
-import fr.maubin.patrimoineplus.data.sync.Syncer
+import fr.maubin.patrimoineplus.data.link.WifiSyncer
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /*
 	Actions de démonstration, proposées dans les Réglages en version debug
 	seulement. Les deux actions arrêtent d'abord la synchronisation : des
-	données fictives ou une base vide ne doivent jamais remplacer le fichier
-	d'échange partagé avec le PC.
+	données fictives ou une base vide ne doivent jamais remplacer les
+	données des PC appairés.
 	inDemo      : dépôt des données de démonstration
 	inSettings  : réglages (assistant du premier lancement)
-	inSyncStore : mémoire de la synchronisation (dossier choisi)
-	inSyncer    : synchronisation (état affiché)
+	inWifi      : synchronisation Wi-Fi avec les PC
 */
 @HiltViewModel
 class DemoViewModel @Inject constructor(
 	private val inDemo      : DemoRepository,
 	private val inSettings  : SettingsRepository,
-	private val inSyncStore : SyncStore,
-	private val inSyncer    : Syncer
+	private val inWifi      : WifiSyncer
 ) : ViewModel()
 {
 	/*
-		Arrête la synchronisation avant de remplacer les données.
+		Désactive la synchronisation Wi-Fi avant de remplacer les données.
 	*/
-	private suspend fun stopSync()
+	private fun stopSync()
 	{
-		inSyncStore.setFolder(null)
-		inSyncer.sync()
+		inWifi.setEnabled(false)
 	}
 
 	/*

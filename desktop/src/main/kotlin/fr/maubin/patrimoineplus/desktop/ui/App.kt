@@ -377,7 +377,7 @@ private fun Shell(
 		}
 	}
 	(inSpace.status as? LoadStatus.Items)?.let { inItems ->
-		MergeConflictsDialog(inItems.conflicts, "Ce PC", "Le fichier synchronisé", inController::resolveItems)
+		MergeConflictsDialog(inItems.conflicts, "Ce PC", "Le fichier du dossier", inController::resolveItems)
 	}
 	LaunchedEffect(inSpace.merge) { inSpace.merge?.let(inController::showNotice) }
 	PhoneChoiceDialogs(inController)
@@ -389,9 +389,9 @@ private fun Shell(
 			title            = { Text("Quelle version garder ?") },
 			text             = {
 				Text(
-					"Les données ont changé à la fois sur ce PC et dans le fichier synchronisé (téléphone).\n\n" +
+					"Les données ont changé à la fois sur ce PC et dans le fichier du dossier des données (modifié en dehors de l’appli).\n\n" +
 					"Ce PC : ${inConflict.localSummary}.\n\nFichier : ${inConflict.fileSummary}.\n\n" +
-					"La version écartée est remplacée. Le téléphone garde ses sauvegardes quotidiennes dans le même dossier."
+					"La version écartée est remplacée. Les sauvegardes quotidiennes du PC sont dans « Sauvegardes PC », dans le même dossier."
 				)
 			},
 			confirmButton    = { TextButton(onClick = { inController.resolveConflict(inKeepLocal = true) }) { Text("Ce PC") } },
@@ -531,7 +531,7 @@ private fun UnsavedDialog(
 		title            = { Text("Modifications non enregistrées") },
 		text             = {
 			Text(
-				"Des modifications faites sur ce PC n’ont pas pu être écrites dans le fichier synchronisé. ${inAction.reason}\n\n" +
+				"Des modifications faites sur ce PC n’ont pas pu être écrites dans le fichier des données. ${inAction.reason}\n\n" +
 				"« ${inAction.label} » les ferait perdre. Enregistrez d’abord une copie (classeur Excel) pour les garder." +
 				(vMessage?.let { "\n\n$it" } ?: "")
 			)
@@ -705,7 +705,7 @@ private fun StatusBar(
 	{
 		LoadStatus.Demo           -> "Démonstration : données fictives, modifiables, jamais enregistrées."
 		LoadStatus.Waiting        -> "Dossier ${(inSpace.source as? Source.Folder)?.path} : fichier d’échange pas encore présent. Activez la synchronisation sur le téléphone, ou saisissez ici."
-		is LoadStatus.Synced      -> "Synchronisé avec ${(inSpace.source as? Source.Folder)?.path} à ${Instant.ofEpochMilli(vStatus.at).atZone(ZoneId.systemDefault()).format(kTimeFormat)}."
+		is LoadStatus.Synced      -> "Enregistré dans ${(inSpace.source as? Source.Folder)?.path} à ${Instant.ofEpochMilli(vStatus.at).atZone(ZoneId.systemDefault()).format(kTimeFormat)}."
 		LoadStatus.Pending        -> "Modifications en cours d’enregistrement…"
 		is LoadStatus.Invalid     -> "Fichier d’échange refusé (${vStatus.message}) : rien n’est enregistré, dernières données valides affichées."
 		is LoadStatus.Conflict    -> "Conflit : choisissez la version à garder."

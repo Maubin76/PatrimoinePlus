@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 /*
 	Cours automatiques du PC (réponses enregistrées, sans réseau) : à
-	l'ouverture d'un dossier synchronisé, cours récupérés et rangés dans le
+	l'ouverture d'un dossier des données, cours récupérés et rangés dans le
 	fichier d'échange, instant mémorisé ; pas de nouvelle demande avant
 	quatre heures ; « Actualiser les cours » à la main avec son résultat ;
 	rien en démonstration.
@@ -74,7 +74,7 @@ class DesktopQuotesTest
 	}
 
 	/*
-		Dossier synchronisé dont le fichier d'échange a un PEA : un ETF coté en
+		Dossier des données dont le fichier d'échange a un PEA : un ETF coté en
 		euros, un ETF sans correspondance directe, un fonds sans ISIN.
 	*/
 	private fun folder(): java.nio.file.Path
@@ -85,7 +85,7 @@ class DesktopQuotesTest
 			Transaction("t-${inAsset.id}", LocalDate.of(2026, 1, 15), TransactionKind.OPENING, "Position initiale",
 				postings = listOf(Posting("p-${inAsset.id}", vPea.id, 5_000_00)), trades = listOf(Trade("o-${inAsset.id}", inAsset.id, TradeSide.BUY, 10_0000, 500_0000)))
 		}																				// positions initiales
-		val vFolder = fTemp.newFolder("Synchro").toPath()									// dossier synchronisé
+		val vFolder = fTemp.newFolder("Synchro").toPath()									// dossier des données
 		Files.newOutputStream(vFolder.resolve(kSyncFileName)).use { writeBackupXlsx(backupFileOf(DataSet(listOf(vPea), emptyList(), vAssets, vTxs, emptyList(), emptyList())), it) }
 		return vFolder
 	}

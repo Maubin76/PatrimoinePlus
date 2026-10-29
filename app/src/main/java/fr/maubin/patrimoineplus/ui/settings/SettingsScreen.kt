@@ -84,7 +84,6 @@ data class SafetyActions(
 	inOnHidden    : active ou désactive le mode discret
 	inSafety      : verrou et sauvegarde
 	inDemo        : actions de démonstration ; null en version release
-	inSync        : synchronisation avec le PC ; null pour masquer la section
 	inColorTheme   : thème de couleurs choisi
 	inOnColorTheme : change le thème de couleurs
 	inGlass        : effet verre actif
@@ -101,7 +100,6 @@ fun SettingsScreen(
 	inOnHidden    : (Boolean) -> Unit,
 	inSafety      : SafetyActions,
 	inDemo        : DemoActions? = null,
-	inSync        : SyncActions? = null,
 	inColorTheme   : ColorTheme = ColorTheme.MONOCHROME,
 	inOnColorTheme : (ColorTheme) -> Unit = {},
 	inGlass        : Boolean = false,
@@ -210,34 +208,6 @@ fun SettingsScreen(
 					inDetail  = "Remplace toutes les données par celles d’une sauvegarde (classeur, ou ancien export JSON), après vérification et confirmation.",
 					inOnClick = inSafety.onImport
 				)
-			}
-			if (inSync != null)
-			{
-				Spacer(Modifier.height(32.dp))
-				SectionHeader(inTitle = "Synchronisation")
-				Spacer(Modifier.height(8.dp))
-				BorderedCard {
-					ActionRow(
-						inTitle   = inSync.folder?.let { "Dossier : $it" } ?: "Choisir le dossier",
-						inDetail  = inSync.status,
-						inOnClick = inSync.onChoose
-					)
-					if (inSync.folder != null)
-					{
-						HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = MaterialTheme.colorScheme.outlineVariant)
-						ActionRow(
-							inTitle   = "Synchroniser maintenant",
-							inDetail  = "Le fichier patrimoineplus-donnees.xlsx est réécrit après chaque modification et relu au retour dans l’appli.",
-							inOnClick = inSync.onSyncNow
-						)
-						HorizontalDivider(Modifier.padding(horizontal = 20.dp), color = MaterialTheme.colorScheme.outlineVariant)
-						ActionRow(
-							inTitle   = "Arrêter la synchronisation",
-							inDetail  = "Les données restent sur le téléphone ; le fichier reste dans le dossier.",
-							inOnClick = inSync.onStop
-						)
-					}
-				}
 			}
 			if (inDiagnostic != null)
 			{

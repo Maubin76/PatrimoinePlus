@@ -6,7 +6,7 @@ import fr.maubin.patrimoineplus.data.backup.validateBackup
 
 /*
 	Ce qu'une synchronisation doit faire, quel que soit le moyen d'échange
-	(dossier synchronisé, Wi-Fi).
+	(dossier des données du PC, Wi-Fi).
 */
 sealed interface SyncPlan
 {

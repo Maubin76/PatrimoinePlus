@@ -68,7 +68,7 @@ import fr.maubin.patrimoineplus.desktop.ui.screens.WifiSyncSwitch
 import fr.maubin.patrimoineplus.desktop.ui.screens.BackgroundOptions
 
 /*
-	Réglages de l'appli PC : source des données (dossier synchronisé,
+	Réglages de l'appli PC : source des données (dossier des données,
 	démonstration), apparence et thème de couleurs, mode discret, catégories.
 	inSpace        : données (catégories)
 	inController   : contrôleur
@@ -94,7 +94,7 @@ fun SettingsScreen(
 					text  = when (val vSource = vSettings.source)
 					{
 						Source.Demo      -> "Démonstration : données fictives en mémoire, rien n’est lu ni écrit sur le disque."
-						is Source.Folder -> "Dossier synchronisé : ${vSource.path}\nFichier lu : $kSyncFileName, relu automatiquement à chaque changement."
+						is Source.Folder -> "Dossier des données : ${vSource.path}\nFichier : $kSyncFileName, enregistré à chaque modification."
 						Source.None      -> "Aucune source."
 					},
 					style = MaterialTheme.typography.bodyLarge

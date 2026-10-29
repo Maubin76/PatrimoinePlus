@@ -22,7 +22,7 @@ import java.time.ZoneId
 
 /*
 	Sauvegardes automatiques du PC : une par jour dans « Sauvegardes PC » du
-	dossier synchronisé, réécrite à la demande, sept gardées (les autres
+	dossier des données, réécrite à la demande, sept gardées (les autres
 	fichiers, dont les sauvegardes du téléphone, jamais touchés) ; rien sans
 	compte ; relue à l'identique ; contrôleur : au lancement sur un dossier,
 	jamais en démonstration, état et « Sauvegarder maintenant » pour les
@@ -31,7 +31,7 @@ import java.time.ZoneId
 class PcBackupTest
 {
 	@get:Rule
-	val fTemp = TemporaryFolder()														// dossier synchronisé jetable
+	val fTemp = TemporaryFolder()														// dossier des données jetable
 
 	private val kToday = LocalDate.parse("2026-10-27")									// jour des sauvegardes
 	private val kClock = Clock.fixed(Instant.parse("2026-10-27T09:00:00Z"), ZoneId.of("Europe/Paris"))	// horloge figée
@@ -43,7 +43,7 @@ class PcBackupTest
 	@Test
 	fun dailyAndRotation()
 	{
-		val vSynced = fTemp.root.toPath()															// dossier synchronisé
+		val vSynced = fTemp.root.toPath()															// dossier des données
 		val vBackup = PcBackup(kClock)																// sauvegardes
 		val vFolder = vBackup.folder(vSynced)														// « Sauvegardes PC »
 		Files.createDirectories(vFolder)
@@ -80,7 +80,7 @@ class PcBackupTest
 	@Test
 	fun controller()
 	{
-		val vSynced = fTemp.newFolder("synchro").toPath()											// dossier synchronisé
+		val vSynced = fTemp.newFolder("synchro").toPath()											// dossier des données
 		Files.newOutputStream(vSynced.resolve(kSyncFileName)).use { writeBackupXlsx(kFile, it) }
 		val vConfig = DesktopConfig(fTemp.root.toPath().resolve("desktop.properties"))				// réglages
 		vConfig.save(DesktopSettings(Source.Folder(vSynced)))

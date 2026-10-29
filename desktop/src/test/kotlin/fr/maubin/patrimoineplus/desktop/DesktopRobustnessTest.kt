@@ -59,7 +59,7 @@ class DesktopRobustnessTest
 	private val kDemo   = demoBackupFile()										// démonstration (identifiants des opérations tirés une seule fois)
 
 	/*
-		Dossier synchronisé simulé.
+		Dossier des données simulé.
 	*/
 	private fun folder(): Path = fTemp.root.toPath().resolve("sync").also { Files.createDirectories(it) }
 
