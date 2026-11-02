@@ -733,9 +733,19 @@ des deux côtés.
   la forme canonique), jamais par les dates. Version commune connue : seul un
   côté a changé → il est adopté ; les deux → **fusion élément par élément** ;
   un même élément modifié des deux côtés, ou supprimé d'un côté et modifié de
-  l'autre → le **PC demande** lequel garder (le téléphone attend). Un
-  appareil neuf (vide) reçoit les données de l'autre sans question. La
+  l'autre → le **PC demande** lequel garder (le téléphone attend). La
   version commune n'est retenue qu'après l'accusé de réception du téléphone.
+- **Priorités** (`planSync`) : un appareil **sans aucun compte n'écrase
+  jamais l'autre** — celui qui a des données les transmet, deux appareils
+  vides ne font rien. Au **premier échange** d'un couple (sans version
+  commune), les données **modifiées le plus récemment** (`lastModified` : la
+  plus récente mise à jour des comptes, catégories, actifs, opérations et
+  envois de l'historique ; une suppression seule n'a pas de date) écrasent
+  les autres ; à égalité, le PC demande. Le PC écrasé en garde d'abord une
+  copie `Sauvegardes PC/patrimoineplus-pc-avant-synchro-<instant>.xlsx`
+  (jamais supprimée par la rotation). Changer de dossier des données oublie
+  les versions communes avec les téléphones. Par sécurité, le téléphone
+  refuse aussi des données sans compte s'il en a.
 - **Avant tout remplacement** des données du téléphone, une sauvegarde de
   sécurité est faite dans `Documents/PatrimoinePlus`.
 - **Fermeture du PC** : si le téléphone n'a pas encore reçu les dernières
@@ -743,7 +753,13 @@ des deux côtés.
   « Fermer quand même ». En option : rester dans la zone de notification à la
   fermeture, démarrer avec Windows (clé `Run` de l'utilisateur, argument
   `--demarrage`).
-- **Diagnostic** : page Appareils du PC et Réglages du téléphone ; le
+- **Une seule appli PC à la fois** (`SingleInstance`) : la première tient
+  un verrou sur la boucle locale (port 47799, pas de fenêtre du pare-feu) ;
+  un second lancement la remet au premier plan (restaurée si réduite) puis
+  se ferme ; au démarrage avec Windows, il se ferme sans rien afficher.
+- **Diagnostic** : lancer un appairage (ou l'écoute de la synchronisation)
+  arrête le diagnostic qui tournait avec son propre serveur ; page
+  Appareils du PC et Réglages du téléphone ; le
   diagnostic se sert du serveur de la synchronisation s'il écoute déjà.
 
 ### Mise en place de la synchronisation Wi-Fi

@@ -53,7 +53,8 @@ import androidx.compose.runtime.setValue
 
 /*
 	Point d'entrée de l'appli PC : fenêtre unique, réglages mémorisés dans
-	%APPDATA%\PatrimoinePlus, dernière source rouverte au lancement.
+	%APPDATA%\PatrimoinePlus, dernière source rouverte au lancement. Une
+	seule instance : un second lancement met la première au premier plan.
 */
 fun main(inArgs: Array<String>)
 {
@@ -65,6 +66,8 @@ fun main(inArgs: Array<String>)
 	{
 		exitProcess(selfTest())
 	}
+	val vInstance = SingleInstance()											// une seule appli à la fois
+	if (!vInstance.claim(inNotify = !inArgs.contains(kStartupArg))) exitProcess(0)	// déjà ouverte : elle passe au premier plan
 	runCatching { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()) }
 	application {
 		val vScope      = rememberCoroutineScope()									// portée de la surveillance du fichier
@@ -74,6 +77,8 @@ fun main(inArgs: Array<String>)
 		LaunchedEffect(vExit) { if (vExit) vController.requestExit(::exitApplication) }
 		val vSet        by vController.settings.collectAsState()					// réglages (zone de notification)
 		var vVisible    by remember { mutableStateOf(!(inArgs.contains(kStartupArg) && vController.settings.value.tray)) }	// fenêtre affichée (au démarrage avec Windows : dans la zone de notification)
+		val vShow       by vInstance.requests.collectAsState()						// demandes d'affichage d'une seconde instance
+		LaunchedEffect(vShow) { if (vShow > 0) vVisible = true }
 		if (vSet.tray)
 		{
 			Tray(
@@ -103,8 +108,9 @@ fun main(inArgs: Array<String>)
 			}
 		) {
 			window.minimumSize = Dimension(980, 640)
-			LaunchedEffect(vVisible) {
+			LaunchedEffect(vVisible, vShow) {
 				if (!vVisible) return@LaunchedEffect											// dans la zone de notification : rien à montrer
+				if (window.isMinimized) window.isMinimized = false						// réduite : restaurée (seconde instance)
 				withTimeoutOrNull(2_000) { while (!window.isShowing) delay(16) }			// fenêtre réellement affichée
 				if (window.isShowing) WindowFront.bring(window)								// au lancement et à la réouverture : fenêtre au premier plan
 			}
