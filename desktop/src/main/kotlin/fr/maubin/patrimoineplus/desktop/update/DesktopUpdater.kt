@@ -132,10 +132,14 @@ private fun quoted(inText: String) = "'" + inText.replace("'", "''") + "'"
 	dossier de l'appli (dossier courant hérité quand l'appli est lancée par
 	double-clic : tant qu'un processus s'y trouve, Windows refuse de le
 	renommer), attend la fin du processus, renomme le dossier actuel en
-	« .old » et le dossier neuf à sa place, relance l'appli, puis supprime
-	l'ancien dossier. Si un renommage échoue, l'ancien dossier est remis en
-	place et l'ancienne version relancée (le dossier neuf reste, signalé au
-	lancement suivant).
+	« .old-<instant> » (un ancien dossier déjà présent n'est jamais touché) et
+	le dossier neuf à sa place. Tout ce que l'utilisateur a rangé dans le
+	dossier de l'appli à côté de l'appli elle-même (PatrimoinePlus.exe, app,
+	runtime), par exemple un dossier « files », passe dans le nouveau dossier ;
+	l'appli est relancée, puis l'ancien dossier supprimé, seulement si tout a
+	pu passer (sinon il reste, code 3). Si un renommage échoue, l'ancien
+	dossier est remis en place et l'ancienne version relancée (le dossier
+	neuf reste, signalé au lancement suivant).
 	inPid      : processus de l'appli à attendre
 	inFolder   : dossier de l'appli installée
 	inNew      : dossier neuf (voir prepareUpdate)
@@ -148,7 +152,6 @@ fun swapScript(
 	inRelaunch : Boolean = true
 ): String
 {
-	val vOld = inFolder.resolveSibling("${inFolder.fileName}.old")					// ancien dossier, le temps du remplacement
 	return """
 		|# Mise à jour de PatrimoinePlus : remplacement du dossier de l'appli une fois fermée.
 		|${'$'}ErrorActionPreference = 'Stop'
@@ -156,12 +159,11 @@ fun swapScript(
 		|[System.IO.Directory]::SetCurrentDirectory([System.IO.Path]::GetTempPath())
 		|${'$'}app      = ${quoted(inFolder.toString())}
 		|${'$'}new      = ${quoted(inNew.toString())}
-		|${'$'}old      = ${quoted(vOld.toString())}
+		|${'$'}old      = ${'$'}app + '.old-' + (Get-Date -Format 'yyyyMMdd-HHmmss')
 		|${'$'}relaunch = ${'$'}${inRelaunch}
 		|function Start-App { if (${'$'}relaunch) { Start-Process -FilePath (Join-Path ${'$'}app '$kExeName') -WorkingDirectory ${'$'}app } }
 		|while (Get-Process -Id $inPid -ErrorAction SilentlyContinue) { Start-Sleep -Milliseconds 300 }
 		|Start-Sleep -Milliseconds 500
-		|if (Test-Path -LiteralPath ${'$'}old) { Remove-Item -LiteralPath ${'$'}old -Recurse -Force -ErrorAction SilentlyContinue }
 		|${'$'}moved = ${'$'}false
 		|for (${'$'}i = 0; ${'$'}i -lt 20 -and -not ${'$'}moved; ${'$'}i++) {
 		|	try { Rename-Item -LiteralPath ${'$'}app -NewName (Split-Path ${'$'}old -Leaf); ${'$'}moved = ${'$'}true } catch { Start-Sleep -Milliseconds 500 }
@@ -169,7 +171,15 @@ fun swapScript(
 		|if (-not ${'$'}moved) { Start-App; exit 1 }
 		|try { Rename-Item -LiteralPath ${'$'}new -NewName (Split-Path ${'$'}app -Leaf) }
 		|catch { Rename-Item -LiteralPath ${'$'}old -NewName (Split-Path ${'$'}app -Leaf); Start-App; exit 2 }
+		|${'$'}kept = ${'$'}true
+		|foreach (${'$'}item in Get-ChildItem -LiteralPath ${'$'}old -Force) {
+		|	${'$'}dest = Join-Path ${'$'}app ${'$'}item.Name
+		|	if (-not (Test-Path -LiteralPath ${'$'}dest)) {
+		|		try { Move-Item -LiteralPath ${'$'}item.FullName -Destination ${'$'}dest } catch { ${'$'}kept = ${'$'}false }
+		|	}
+		|}
 		|Start-App
+		|if (-not ${'$'}kept) { exit 3 }
 		|Remove-Item -LiteralPath ${'$'}old -Recurse -Force -ErrorAction SilentlyContinue
 		|exit 0
 		|""".trimMargin()

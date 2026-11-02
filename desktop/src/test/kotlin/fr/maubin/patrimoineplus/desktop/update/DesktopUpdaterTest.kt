@@ -130,6 +130,13 @@ class DesktopUpdaterTest
 	}
 
 	/*
+		Anciens dossiers « .old » restés à côté de l'appli.
+		inFolder : dossier de l'appli
+	*/
+	private fun oldFolders(inFolder: Path): List<String> =
+		Files.list(inFolder.parent).use { inList -> inList.map { it.fileName.toString() }.filter { it.startsWith("${inFolder.fileName}.old") }.toList() }
+
+	/*
 		Remplacement réel (Windows) : le dossier garde son nom et reçoit la
 		nouvelle version ; .new et .old ont disparu. Sans dossier neuf :
 		l'ancienne version est remise en place.
@@ -143,10 +150,10 @@ class DesktopUpdaterTest
 		assertEquals(0, runSwap(vFolder, vNew))
 		assertEquals("1.3", Files.readString(vFolder.resolve("app/version.txt")))
 		assertFalse(Files.exists(vNew))
-		assertFalse(Files.exists(vFolder.resolveSibling("PatrimoinePlus-1.2.old")))
+		assertEquals(emptyList<String>(), oldFolders(vFolder))
 		assertEquals(2, runSwap(vFolder, vFolder.resolveSibling("absent.new")))
 		assertEquals("1.3", Files.readString(vFolder.resolve("app/version.txt")))
-		assertFalse(Files.exists(vFolder.resolveSibling("PatrimoinePlus-1.2.old")))
+		assertEquals(emptyList<String>(), oldFolders(vFolder))
 	}
 
 	/*
@@ -178,5 +185,30 @@ class DesktopUpdaterTest
 		assertTrue(cleanLeftover(vFolder))
 		assertFalse(Files.exists(vNew))
 		assertEquals("ancien exe", Files.readString(vFolder.resolve(kExeName)))
+	}
+
+	/*
+		Fichiers rangés par l'utilisateur dans le dossier de l'appli (dossier
+		« files », fichier à la racine) : ils passent dans la nouvelle version,
+		puis l'ancien dossier est supprimé ; un ancien « .old » déjà présent
+		n'est jamais touché.
+	*/
+	@Test
+	fun userFilesAreKept()
+	{
+		assumeTrue("PowerShell (Windows) nécessaire", System.getProperty("os.name").startsWith("Windows"))
+		val vFolder = installed("1.5")																// appli installée
+		Files.createDirectories(vFolder.resolve("files/2026"))
+		Files.writeString(vFolder.resolve("files/2026/sauvegarde.xlsx"), "ma sauvegarde")
+		Files.writeString(vFolder.resolve("notes.txt"), "mes notes")
+		val vStale  = Files.createDirectories(vFolder.resolveSibling("${vFolder.fileName}.old-ancien")).also { Files.writeString(it.resolve("garde.txt"), "à garder") }	// ancien dossier déjà là
+		val vNew    = prepareUpdate(zip("ci.zip", mapOf("PatrimoinePlus/$kExeName" to "nouvel exe", "PatrimoinePlus/app/version.txt" to "1.6")), vFolder)	// dossier neuf
+		assertEquals(0, runSwap(vFolder, vNew, inCwd = vFolder))
+		assertEquals("1.6", Files.readString(vFolder.resolve("app/version.txt")))
+		assertEquals("nouvel exe", Files.readString(vFolder.resolve(kExeName)))
+		assertEquals("ma sauvegarde", Files.readString(vFolder.resolve("files/2026/sauvegarde.xlsx")))
+		assertEquals("mes notes", Files.readString(vFolder.resolve("notes.txt")))
+		assertEquals("à garder", Files.readString(vStale.resolve("garde.txt")))
+		assertEquals(listOf(vStale.fileName.toString()), oldFolders(vFolder))
 	}
 }

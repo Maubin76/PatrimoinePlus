@@ -86,6 +86,10 @@ fichier altéré est refusé. Hors ligne, rien ne s'affiche.
   un processus dont le dossier courant est celui de l'appli (cas du
   double-clic) empêche Windows de le renommer. Un `<dossier>.new` resté après
   un échec est supprimé au lancement suivant, et la mise à jour reproposée.
+  Seuls `PatrimoinePlus.exe`, `app` et `runtime` appartiennent à l'appli :
+  tout ce que l'utilisateur a rangé à côté (par exemple un dossier `files`)
+  passe dans la nouvelle version avant la suppression de l'ancienne, qui est
+  gardée (`<dossier>.old-<instant>`) si un élément n'a pas pu passer.
   Réglages (`%APPDATA%\PatrimoinePlus`) et données (dossier des données) ne
   bougent pas. Si le dossier n'est pas modifiable (par exemple sous
   `Program Files`) ou si l'appli n'est pas lancée par `PatrimoinePlus.exe`,
