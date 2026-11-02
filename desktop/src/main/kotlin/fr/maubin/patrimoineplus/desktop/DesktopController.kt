@@ -323,6 +323,8 @@ class DesktopController(
 			{
 				onUi { inWorkspace.edit { EditResult.Done(inFile) }; inNote?.let { fNotice.value = it } }
 			}
+			override fun safetyCopy() { onUi { copyBeforeReplace() } }
+			override fun notice(inText: String) { onUi { fNotice.value = inText } }
 		},
 		inAuthor   = { inWorkspace.author },
 		inClock    = inClock,
@@ -413,6 +415,21 @@ class DesktopController(
 			})
 		}
 		if (inScope != null) inScope.launch(Dispatchers.IO) { vRun() } else vRun()
+	}
+
+	/*
+		Copie de sécurité des données actuelles du PC dans « Sauvegardes PC »
+		avant leur remplacement par celles, plus récentes, d'un téléphone
+		(premier échange) : patrimoineplus-pc-avant-synchro-<instant>.xlsx,
+		jamais supprimée par la rotation. Rien sans dossier ni compte.
+	*/
+	private fun copyBeforeReplace()
+	{
+		val vFolder = (inWorkspace.state.value.source as? Source.Folder)?.path ?: return		// dossier des données
+		if (inWorkspace.file.accounts.isEmpty()) return
+		val vStamp  = java.time.LocalDateTime.now(inClock).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmmss"))	// instant
+		val vTarget = fBackup.folder(vFolder).also { java.nio.file.Files.createDirectories(it) }.resolve("patrimoineplus-pc-avant-synchro-$vStamp.xlsx")	// copie
+		inWorkspace.saveCopy(vTarget)?.let { showNotice("Copie de sécurité impossible : $it.") }
 	}
 
 	/*
@@ -1517,6 +1534,7 @@ class DesktopController(
 	*/
 	private fun openSource(inSource: Source)
 	{
+		if (inSource != fSettings.value.source) fPeers.forgetBases()				// versions communes propres à l'ancien dossier
 		fBank.value = null
 		update(fSettings.value.copy(source = inSource))
 		fProjection.value = null													// hypothèses de l'autre source

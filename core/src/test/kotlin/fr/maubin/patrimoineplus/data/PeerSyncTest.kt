@@ -18,6 +18,7 @@ import fr.maubin.patrimoineplus.data.link.newLinkKey
 import fr.maubin.patrimoineplus.data.link.phoneStep
 import fr.maubin.patrimoineplus.data.sync.HistoryAuthor
 import fr.maubin.patrimoineplus.data.sync.MergeSide
+import fr.maubin.patrimoineplus.data.sync.lastModified
 import fr.maubin.patrimoineplus.data.sync.syncFingerprint
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -46,6 +47,10 @@ private class FakePc(
 	override fun base(inPeerId: String): PeerBase? = bases[inPeerId]
 	override fun record(inPeerId: String, inBase: PeerBase) { bases[inPeerId] = inBase }
 	override fun ask(inChoice: PendingChoice?) { choice = inChoice }
+	override fun beforeReplace() { copies++ }
+	override fun notice(inText: String) { notices += inText }
+	var copies  = 0																			// copies de sécurité faites
+	val notices = mutableListOf<String>()													// messages affichés
 }
 
 /*
@@ -249,5 +254,66 @@ class PeerSyncTest
 		val vNewPc = FakePc("PC neuf", vEmpty)														// PC neuf
 		assertEquals(PhoneStep.Done, FakePhone(kBase).sync(vNewPc))
 		assertEquals(ids(kBase), ids(vNewPc.data))
+	}
+
+	/*
+		Contenu avec une dépense de plus, modifiée à un instant donné.
+		inFile  : contenu
+		inId    : identifiant
+		inAt    : instant de la modification (ms)
+	*/
+	private fun addAt(
+		inFile : BackupFile,
+		inId   : String,
+		inAt   : Long
+	): BackupFile = inFile.copy(transactions = inFile.transactions + expense(inId, "Saisie $inId").copy(updatedAt = inAt))
+
+	/*
+		Un appareil sans compte n'écrase jamais l'autre : PC qui a changé de
+		dossier (vide) avec une ancienne version commune, téléphone rempli ;
+		deux appareils vides : rien.
+	*/
+	@Test
+	fun emptyNeverOverwrites()
+	{
+		val vEmpty = kBase.copy(accounts = emptyList(), transactions = emptyList(), statements = emptyList(), prices = emptyList(), recurrences = emptyList(), loans = emptyList())	// appareil vide
+		val vPc    = FakePc("PC du salon", vEmpty)													// PC passé sur un dossier vide
+		vPc.bases["tel-1"] = PeerBase(syncFingerprint(kBase), kBase)								// version commune d'avant
+		val vPhone = FakePhone(kBase)																// téléphone rempli
+		assertEquals(PhoneStep.Done, vPhone.sync(vPc))
+		assertEquals(ids(kBase), ids(vPhone.data))
+		assertEquals(ids(kBase), ids(vPc.data))
+		val vOther = vEmpty.copy(categories = vEmpty.categories.drop(1))							// autre appareil vide, catégories différentes
+		val vPc2   = FakePc("PC neuf", vOther)
+		assertEquals(PhoneStep.Done, FakePhone(vEmpty).sync(vPc2))
+		assertEquals(vOther, vPc2.data)
+		assertNull(vPc2.choice)
+	}
+
+	/*
+		Premier échange, deux appareils remplis et différents : les données
+		modifiées le plus récemment écrasent les autres (copie de sécurité du
+		PC s'il est écrasé, message sinon) ; même instant : choix sur le PC.
+	*/
+	@Test
+	fun newestWinsWithoutCommonVersion()
+	{
+		val vLast  = lastModified(kBase)															// dernière modification de départ
+		val vPhone = FakePhone(addAt(kBase, "t-tel", vLast + 60_000))							// téléphone, modifié plus tard
+		val vPc    = FakePc("PC du bureau", addAt(kBase, "t-pc", vLast + 1_000))
+		assertTrue(vPhone.sync(vPc) is PhoneStep.Done)
+		assertEquals(ids(vPhone.data), ids(vPc.data))
+		assertEquals(1, vPc.copies)
+		assertTrue(vPc.note!!.contains("remplacées par celles de Pixel"))
+		val vPhone2 = FakePhone(addAt(kBase, "t-tel", vLast + 1_000))							// téléphone plus ancien
+		val vPc2    = FakePc("PC du salon", addAt(kBase, "t-pc", vLast + 60_000))
+		assertTrue(vPhone2.sync(vPc2) is PhoneStep.Adopt)
+		assertEquals(ids(vPc2.data), ids(vPhone2.data))
+		assertEquals(0, vPc2.copies)
+		assertTrue(vPc2.notices.single().contains("remplacent celles de Pixel"))
+		val vPhone3 = FakePhone(addAt(kBase, "t-tel", vLast + 5_000))							// même instant
+		val vPc3    = FakePc("PC du grenier", addAt(kBase, "t-pc", vLast + 5_000))
+		assertTrue(vPhone3.sync(vPc3) is PhoneStep.Wait)
+		assertNotNull(vPc3.choice)
 	}
 }

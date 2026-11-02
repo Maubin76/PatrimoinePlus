@@ -326,6 +326,18 @@ class PeerService(
 	}
 
 	/*
+		Oublie les versions communes avec tous les téléphones (autre dossier des
+		données : elles ne le concernent pas) ; le prochain échange de chaque
+		téléphone est un premier échange.
+	*/
+	@Synchronized
+	fun forgetBases()
+	{
+		fState.value.phones.forEach { inStore.forget(it.id) }
+		fBases.clear()
+	}
+
+	/*
 		Arrête l'écoute (fermeture de l'appli).
 	*/
 	@Synchronized
@@ -466,6 +478,8 @@ class PeerService(
 		override fun base(inPeerId: String): PeerBase? = inStore.base(inPeerId)
 		override fun record(inPeerId: String, inBase: PeerBase) { inStore.record(inPeerId, inBase); synchronized(this@PeerService) { fBases[inPeerId] = inBase.fingerprint } }
 		override fun ask(inChoice: PendingChoice?) { fState.update { it.copy(choice = inChoice) } }
+		override fun beforeReplace() = inData.safetyCopy()
+		override fun notice(inText: String) = inData.notice(inText)
 	}
 }
 
@@ -489,4 +503,16 @@ interface PeerData
 		inFile : fr.maubin.patrimoineplus.data.backup.BackupFile,
 		inNote : String?
 	)
+
+	/*
+		Copie de sécurité des données du PC avant qu'elles soient écrasées par
+		celles, plus récentes, d'un téléphone.
+	*/
+	fun safetyCopy() {}
+
+	/*
+		Message ponctuel pour l'utilisateur.
+		inText : message
+	*/
+	fun notice(inText: String) {}
 }

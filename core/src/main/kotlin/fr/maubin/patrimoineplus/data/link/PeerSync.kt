@@ -131,6 +131,18 @@ interface PeerHost
 		inChoice : choix attendu
 	*/
 	fun ask(inChoice: PendingChoice?)
+
+	/*
+		Avant que les données du PC soient écrasées par celles, plus récentes,
+		d'un téléphone (premier échange) : copie de sécurité.
+	*/
+	fun beforeReplace() {}
+
+	/*
+		Message ponctuel pour l'utilisateur du PC.
+		inText : message
+	*/
+	fun notice(inText: String) {}
 }
 
 /*
@@ -236,7 +248,6 @@ class PeerSyncServer(
 		val vLinks = joinDevices(inHost.local().devices, vRemote.devices)						// couples d'appareils réunis
 		if (vLinks != inHost.local().devices) inHost.adopt(inHost.local().copy(devices = vLinks), null)
 		val vBase = inHost.base(inPeerId)														// version commune
-		if (vBase == null && vRemote.accounts.isEmpty() && inHost.local().accounts.isNotEmpty()) return send(inPeerId, inHost.local())	// téléphone neuf (vide) : il reçoit les données du PC, sans question
 		return when (val vPlan = planSync(vBase?.fingerprint, vBase?.base, inHost.local(), vRemote, inAuthor = inAuthor(), inNow = inNow()))
 		{
 			SyncPlan.Nothing   -> PeerReply(kActSame)
@@ -244,11 +255,17 @@ class PeerSyncServer(
 			is SyncPlan.Import ->
 			{
 				val vFile = withAuthor(vPlan.file, vBase?.base, HistoryAuthor(inPeerId, inPeerName), inNow())	// historique : changements du téléphone
-				inHost.adopt(vFile, null)
+				if (vPlan.newer) inHost.beforeReplace()
+				inHost.adopt(vFile, if (vPlan.newer) "Données de ce PC remplacées par celles de $inPeerName, modifiées plus récemment (copie de sécurité dans « Sauvegardes PC »)." else null)
 				inHost.record(inPeerId, PeerBase(syncFingerprint(vFile), vFile))
 				PeerReply(kActStored)
 			}
-			is SyncPlan.Export -> { if (vPlan.file.history != inHost.local().history) inHost.adopt(vPlan.file, null); send(inPeerId, vPlan.file) }
+			is SyncPlan.Export ->
+			{
+				if (vPlan.file.history != inHost.local().history) inHost.adopt(vPlan.file, null)
+				if (vPlan.newer) inHost.notice("Les données de ce PC, modifiées plus récemment, remplacent celles de $inPeerName.")
+				send(inPeerId, vPlan.file)
+			}
 			is SyncPlan.Merge  ->
 			{
 				val vPhone = withAuthor(vRemote, vBase?.base, HistoryAuthor(inPeerId, inPeerName), inNow()).history	// historique : changements du téléphone

@@ -17,16 +17,30 @@ sealed interface SyncPlan
 	data object Record : SyncPlan
 
 	/*
-		Seules les données locales ont changé : les envoyer à l'autre côté.
-		file : données à envoyer (historique complété de l'envoi)
+		Seules les données locales ont changé (ou l'autre côté n'a aucun compte,
+		ou, sans version commune, les données locales sont les plus récentes) :
+		les envoyer à l'autre côté.
+		file   : données à envoyer (historique complété de l'envoi)
+		newer  : vrai si, sans version commune, les données locales l'emportent
+		         parce qu'elles sont les plus récentes (l'autre côté est écrasé)
 	*/
-	data class Export(val file: BackupFile) : SyncPlan
+	data class Export(
+		val file  : BackupFile,
+		val newer : Boolean = false
+	) : SyncPlan
 
 	/*
-		Seules les données de l'autre côté ont changé : les adopter.
-		file : données à adopter
+		Seules les données de l'autre côté ont changé (ou les données locales
+		n'ont aucun compte, ou, sans version commune, celles de l'autre côté sont
+		les plus récentes) : les adopter.
+		file  : données à adopter
+		newer : vrai si, sans version commune, l'autre côté l'emporte parce que
+		        ses données sont les plus récentes (les données locales sont écrasées)
 	*/
-	data class Import(val file: BackupFile) : SyncPlan
+	data class Import(
+		val file  : BackupFile,
+		val newer : Boolean = false
+	) : SyncPlan
 
 	/*
 		Les deux côtés ont changé, sans conflit (ou conflits tranchés) : adopter
@@ -65,11 +79,33 @@ sealed interface SyncPlan
 }
 
 /*
-	Décide d'une synchronisation : compare les empreintes (voir decideSync) ;
-	si les deux côtés ont changé, fusionne élément par élément à partir de la
-	dernière version commune (voir mergeBackups). Une fusion n'est retenue que
-	si son résultat est valide (validateBackup) ; sinon, ou sans version
-	commune connue, le choix d'une version entière est demandé.
+	Instant de la dernière modification connue des données (ms) : la plus
+	récente des mises à jour des comptes, catégories, actifs et opérations, et
+	des envois de l'historique ; 0 sans aucune. Une suppression seule n'a pas
+	de date.
+	inFile : données
+*/
+fun lastModified(inFile: BackupFile): Long =
+	maxOf(
+		inFile.accounts.maxOfOrNull { it.updatedAt } ?: 0L,
+		inFile.categories.maxOfOrNull { it.updatedAt } ?: 0L,
+		inFile.assets.maxOfOrNull { it.updatedAt } ?: 0L,
+		inFile.transactions.maxOfOrNull { it.updatedAt } ?: 0L,
+		inFile.history.maxOfOrNull { it.at } ?: 0L
+	)
+
+/*
+	Décide d'une synchronisation. Priorités :
+	- un côté sans aucun compte n'écrase jamais l'autre : le côté qui a des
+	  données les transmet (deux côtés vides : rien) ;
+	- sinon, les empreintes sont comparées (voir decideSync) ; si les deux
+	  côtés ont changé, fusion élément par élément à partir de la dernière
+	  version commune (voir mergeBackups), retenue seulement si son résultat
+	  est valide (validateBackup) ;
+	- sans version commune connue (premier échange d'un couple), les données
+	  modifiées le plus récemment (lastModified) écrasent les autres ; à
+	  égalité, ou si la fusion est incohérente, le choix d'une version entière
+	  est demandé.
 	inLastFp  : empreinte de la dernière version commune ; null avant la première synchronisation
 	inBase    : dernière version commune ; null si elle n'est pas connue
 	inLocal   : données locales
@@ -90,16 +126,39 @@ fun planSync(
 {
 	val vLocalFp  = syncFingerprint(inLocal)											// empreinte locale
 	val vRemoteFp = inRemote?.let { syncFingerprint(it) }								// empreinte de l'autre côté
+	val vExport   = { inNewer: Boolean -> SyncPlan.Export(withAuthor(inLocal, inBase, inAuthor, inNow).let { it.copy(devices = joinDevices(it.devices, inRemote?.devices.orEmpty())) }, inNewer) }	// envoi des données locales
+	val vImport   = { inNewer: Boolean -> SyncPlan.Import(inRemote!!.copy(devices = joinDevices(inLocal.devices, inRemote.devices)), inNewer) }	// adoption de l'autre côté
+	if (inRemote != null && vLocalFp != vRemoteFp)
+	{
+		val vLocalEmpty  = inLocal.accounts.isEmpty()										// aucun compte ici
+		val vRemoteEmpty = inRemote.accounts.isEmpty()										// aucun compte de l'autre côté
+		when
+		{
+			vLocalEmpty && vRemoteEmpty -> return SyncPlan.Nothing
+			vRemoteEmpty                -> return vExport(false)
+			vLocalEmpty                 -> return vImport(false)
+		}
+	}
 	return when (decideSync(inLastFp, vLocalFp, vRemoteFp, inLocal.accounts.isEmpty()))
 	{
 		SyncAction.NOTHING  -> SyncPlan.Nothing
 		SyncAction.RECORD   -> SyncPlan.Record
-		SyncAction.EXPORT   -> SyncPlan.Export(withAuthor(inLocal, inBase, inAuthor, inNow).let { it.copy(devices = joinDevices(it.devices, inRemote?.devices.orEmpty())) })
-		SyncAction.IMPORT   -> SyncPlan.Import(inRemote!!.copy(devices = joinDevices(inLocal.devices, inRemote.devices)))
+		SyncAction.EXPORT   -> vExport(false)
+		SyncAction.IMPORT   -> vImport(false)
 		SyncAction.CONFLICT ->
 		{
 			val vRemote = inRemote!!															// données de l'autre côté
-			if (inBase == null || syncFingerprint(inBase) != inLastFp) return SyncPlan.Whole(vRemote, "dernière version commune inconnue")
+			if (inBase == null || syncFingerprint(inBase) != inLastFp)
+			{
+				val vMine   = lastModified(inLocal)												// dernière modification ici
+				val vTheirs = lastModified(vRemote)												// dernière modification de l'autre côté
+				return when
+				{
+					vMine > vTheirs -> vExport(true)
+					vTheirs > vMine -> vImport(true)
+					else            -> SyncPlan.Whole(vRemote, "dernière version commune inconnue, modifiées au même instant")
+				}
+			}
 			val vMerge  = mergeBackups(inBase, inLocal, vRemote, inChoices)					// fusion
 			when
 			{

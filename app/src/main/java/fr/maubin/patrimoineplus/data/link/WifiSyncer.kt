@@ -325,7 +325,7 @@ class WifiSyncer @Inject constructor(
 		val vLocal  = inBackup.snapshot()																// données du téléphone
 		val vLocalFp = syncFingerprint(vLocal)															// leur empreinte
 		val vReply  = kJson.decodeFromString(PeerReply.serializer(), vClient.call(inHost, inPort, inPc.id, inKey, kJson.encodeToString(PeerRequest.serializer(), PeerRequest(kOpSync, file = encodeBackup(vLocal)))))	// réponse
-		val vStep   = phoneStep(vReply)																	// suite à donner
+		val vStep   = phoneStep(vReply).let { if (it is PhoneStep.Adopt && it.file.accounts.isEmpty() && vLocal.accounts.isNotEmpty()) PhoneStep.Done else it }	// suite à donner (des données sans compte n'écrasent jamais celles du téléphone, même envoyées par un PC d'une ancienne version)
 		if (vStep is PhoneStep.Adopt && inHooks.beforeImport() && inBackup.replaceAll(vStep.file, vLocalFp))
 		{
 			inHooks.afterImport()

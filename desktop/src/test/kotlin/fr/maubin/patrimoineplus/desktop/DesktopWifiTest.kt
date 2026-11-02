@@ -63,10 +63,13 @@ class DesktopWifiTest
 		écoute sur la boucle locale seulement.
 		inStartup : réponse du démarrage avec Windows
 	*/
-	private fun controller(inStartup: (Boolean) -> String? = { fStartup += it; null }): DesktopController
+	private fun controller(
+		inStartup : (Boolean) -> String? = { fStartup += it; null },
+		inEmpty   : Boolean              = false
+	): DesktopController
 	{
 		val vFolder = fTemp.newFolder("donnees").toPath()										// dossier de données
-		Files.newOutputStream(vFolder.resolve(kSyncFileName)).use { writeBackupXlsx(demoBackupFile(), it) }
+		if (!inEmpty) Files.newOutputStream(vFolder.resolve(kSyncFileName)).use { writeBackupXlsx(demoBackupFile(), it) }
 		return DesktopController(DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")), Workspace(kClock), null, kClock, inLocalOnly = true, inStartup = inStartup)
 			.apply { openFolder(vFolder); setWifiSync(true) }.also { fApp = it }
 	}
@@ -165,5 +168,62 @@ class DesktopWifiTest
 		vFail.setAutostart(true)
 		assertFalse(vFail.settings.value.autostart)
 		assertEquals("Démarrage avec Windows impossible : chemin inconnu.", vFail.notice.value)
+	}
+
+	/*
+		Appaire le téléphone simulé ; rend la clé de la paire.
+		inApp : contrôleur
+	*/
+	private fun pair(inApp: DesktopController): ByteArray
+	{
+		inApp.peers.startPairing()
+		val vKey  = inApp.peers.state.value.offer!!.key												// clé de la paire
+		val vPcId = fr.maubin.patrimoineplus.desktop.data.pcInfo(inApp.settings.value, null).id	// ce PC
+		LinkClient(kPhone, kClock::millis).call("127.0.0.1", inApp.peers.port, vPcId, vKey, kJson.encodeToString(PeerRequest.serializer(), PeerRequest(kOpPair, device = kPhone)))
+		return vKey
+	}
+
+	/*
+		PC synchronisé avec le téléphone, puis ouvert sur un dossier vide (PC
+		neuf) : le PC prend les données du téléphone, qui n'est jamais vidé,
+		passage après passage.
+	*/
+	@Test
+	fun emptyFolderNeverEmptiesThePhone()
+	{
+		val vApp   = controller()																	// PC rempli
+		val vKey   = pair(vApp)																	// clé de la paire
+		var vPhone = encodeBackup(vApp.currentFile())												// téléphone : mêmes données
+		assertEquals(PhoneStep.Done, phoneSync(vApp, vKey, vPhone))
+		val vCount = vApp.currentFile().accounts.size												// comptes
+		vApp.openFolder(fTemp.newFolder("vide").toPath())
+		vApp.peers.startPairing()																	// écoute (pas de réseau familial en test)
+		repeat(3) { inRound ->
+			val vStep = phoneSync(vApp, vKey, vPhone)												// passage du téléphone
+			if (vStep is PhoneStep.Adopt) vPhone = encodeBackup(vStep.file)
+			assertEquals("passage ${inRound + 1}", vCount, (decodeBackup(vPhone) as BackupRead.Valid).file.accounts.size)
+			assertEquals("passage ${inRound + 1}", vCount, vApp.currentFile().accounts.size)
+		}
+	}
+
+	/*
+		Premier échange, téléphone modifié plus récemment que le PC : ses
+		données remplacent celles du PC, après une copie de sécurité dans
+		« Sauvegardes PC » ; message dans le bandeau.
+	*/
+	@Test
+	fun newerPhoneReplacesThePcAfterACopy()
+	{
+		val vApp   = controller()																	// PC rempli
+		val vKey   = pair(vApp)																	// clé de la paire
+		val vPc    = vApp.currentFile()																// données du PC
+		val vLast  = fr.maubin.patrimoineplus.data.sync.lastModified(vPc)							// dernière modification du PC
+		val vMine  = vPc.accounts.first().let { it.copy(name = "Renommé sur le téléphone", updatedAt = vLast + 60_000) }	// compte renommé plus tard
+		val vPhone = vPc.copy(accounts = listOf(vMine) + vPc.accounts.drop(1))						// téléphone
+		assertEquals(PhoneStep.Done, phoneSync(vApp, vKey, encodeBackup(vPhone)))
+		assertTrue(vApp.currentFile().accounts.any { it.name == "Renommé sur le téléphone" })
+		val vCopies = Files.list(fTemp.root.toPath().resolve("donnees").resolve("Sauvegardes PC")).use { inFiles -> inFiles.toList().map { it.fileName.toString() } }	// copies
+		assertTrue(vCopies.toString(), vCopies.any { it.startsWith("patrimoineplus-pc-avant-synchro-") })
+		assertTrue(vApp.notice.value!!.contains("remplacées par celles de Pixel"))
 	}
 }
