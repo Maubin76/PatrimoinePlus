@@ -82,6 +82,10 @@ fichier altéré est refusé. Hors ligne, rien ne s'affiche.
   (`<dossier>.new`), puis un script PowerShell attend la fermeture de
   l'appli, met le nouveau dossier à la place de l'ancien (même nom), relance
   l'appli et supprime l'ancien ; en cas d'échec il remet l'ancien en place.
+  Le script est lancé hors du dossier de l'appli et s'en détache d'abord :
+  un processus dont le dossier courant est celui de l'appli (cas du
+  double-clic) empêche Windows de le renommer. Un `<dossier>.new` resté après
+  un échec est supprimé au lancement suivant, et la mise à jour reproposée.
   Réglages (`%APPDATA%\PatrimoinePlus`) et données (dossier des données) ne
   bougent pas. Si le dossier n'est pas modifiable (par exemple sous
   `Program Files`) ou si l'appli n'est pas lancée par `PatrimoinePlus.exe`,

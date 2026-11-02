@@ -1,11 +1,11 @@
 # Tests
 
-Tous les tests tournent sur la JVM, sans émulateur (393 tests au total) :
+Tous les tests tournent sur la JVM, sans émulateur (395 tests au total) :
 
 ```sh
 ./gradlew :core:test                    # module commun : 205 tests, Kotlin pur (core/src/test)
 ./gradlew :app:testDebugUnitTest        # appli Android : 84 tests, Robolectric (app/src/test)
-./gradlew :desktop:test                 # appli PC : 104 tests (desktop/src/test)
+./gradlew :desktop:test                 # appli PC : 106 tests (desktop/src/test)
 ./gradlew :app:recordRoborazziDebug     # régénère les captures d'écran
 ```
 
@@ -75,7 +75,7 @@ communes (fausse source de cours, réponses Yahoo enregistrées) sont dans
 | `PcBackupTest` (2) | `:desktop` sauvegardes du PC | une par jour dans « Sauvegardes PC », relue à l'identique, réécrite à la demande, sept gardées (autres fichiers et sauvegardes du téléphone jamais touchés), rien sans compte ; contrôleur : sauvegarde au lancement sur un dossier, état pour les réglages, « Sauvegarder maintenant », rien en démonstration |
 | `ci/release-smoke-android.sh` (CI) | APK release sur émulateur | APK réduit par R8 installé et lancé (Android 14) : « Entrer », assistant du premier lancement passé, accueil « Patrimoine », onglet Réglages « Apparence », retour à l'accueil ; aucun plantage (journal crash vide, processus vivant) ; fenêtre de mise à jour refermée si besoin |
 | `PatrimoinePlus.exe --autotest` (CI) | zip PC sous Windows | exécutable empaqueté (JVM embarquée) : version embarquée lue, démonstration écrite en classeur puis relue à l'identique, tableau de bord calculé, dates en français, icône présente |
-| `UpdatesUiTest` (5), `DesktopUpdaterTest` (3) | `:desktop` mises à jour | fenêtre au lancement (version, taille, rappel de l'autre appareil, sans liste des commits), « Mettre à jour » : zip vérifié, installation et fermeture demandée ; changement de format appuyé ; « Ignorer » mémorisé ; empreinte fausse : échec, « Réessayer », rien d'installé ; dossier non remplaçable : téléchargement seul ; réglages : interrupteur, « Vérifier maintenant » (fenêtre, à jour, injoignable) ; préparation du dossier neuf (zip de la CI ou à plat, chemin piégé et exe absent refusés) ; script PowerShell exécuté pour de vrai sous Windows (remplacement, retour à l'ancien dossier ; sauté ailleurs) ; captures `31-*.png` |
+| `UpdatesUiTest` (5), `DesktopUpdaterTest` (5) | `:desktop` mises à jour | fenêtre au lancement (version, taille, rappel de l'autre appareil, sans liste des commits), « Mettre à jour » : zip vérifié, installation et fermeture demandée ; changement de format appuyé ; « Ignorer » mémorisé ; empreinte fausse : échec, « Réessayer », rien d'installé ; dossier non remplaçable : téléchargement seul ; réglages : interrupteur, « Vérifier maintenant » (fenêtre, à jour, injoignable) ; préparation du dossier neuf (zip de la CI ou à plat, chemin piégé et exe absent refusés) ; script PowerShell exécuté pour de vrai sous Windows (remplacement, retour à l'ancien dossier ; sauté ailleurs) ; captures `31-*.png` ; **script lancé depuis le dossier de l'appli** (cas du double-clic : il s'en détache, sinon le dossier ne peut pas être renommé), dossier « .new » resté après un échec supprimé au lancement suivant |
 | `ThemesUiTest` (1) | `:desktop` thèmes personnalisés | création depuis les réglages (nom, codes, code illisible signalé, aperçu), thème créé choisi et mémorisé, tableau de bord à ses couleurs en clair et en sombre, thème fixe choisi : personnalisé quitté, suppression du thème choisi : retour à Coloré ; captures `30-*.png` |
 | `ProfileRepositoryTest` (1) | `:app` dépôt des profils (Room en mémoire) | base d'avant les profils : « Moi » présenté puis enregistré au premier ajout ; nom vide ou en double refusé ; compte joint à deux ; récapitulatif de retrait (comptes seuls, parts retirées) ; retrait : ses comptes seuls supprimés avec leurs opérations, sa part des comptes partagés retirée ; dernier profil refusé ; vue choisie mémorisée, famille = null, profil disparu = premier ; instantané avec profils et parts |
 | `PlansTest` (4) | `:core` budget et objectifs (format 8) | aller-retour exact par le classeur et par le texte gardé sur le téléphone ; onglets Budget, Objectifs, Objectifs du mois lisibles (rubriques, thèmes, membre, vue, taux en %) ; rubrique inconnue refusée ; empreinte qui change avec le budget ; fichier du format 7 : budget vide |

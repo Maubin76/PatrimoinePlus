@@ -477,6 +477,10 @@ class DesktopController(
 	fun checkForUpdates()
 	{
 		val vUpdater = inUpdater ?: return												// mises à jour
+		if (vUpdater.folder?.let { fr.maubin.patrimoineplus.desktop.update.cleanLeftover(it) } == true)
+		{
+			showNotice("La dernière mise à jour n’avait pas pu remplacer l’appli : elle va vous être reproposée.")
+		}
 		val vVersion = vUpdater.version ?: return										// version installée
 		if (!fSettings.value.updates || inScope == null) return
 		inScope.launch {

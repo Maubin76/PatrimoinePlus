@@ -99,6 +99,19 @@ fun prepareUpdate(
 }
 
 /*
+	Supprime le dossier neuf laissé par une mise à jour qui n'a pas pu
+	remplacer l'appli (« <nom>.new » à côté du dossier de l'appli) ; vrai s'il
+	y en avait un. La mise à jour est simplement reproposée ensuite.
+	inFolder : dossier de l'appli installée
+*/
+fun cleanLeftover(inFolder: Path): Boolean
+{
+	val vLeft = inFolder.resolveSibling("${inFolder.fileName}.new")				// dossier neuf resté
+	if (!Files.isDirectory(vLeft)) return false
+	return runCatching { deleteTree(vLeft); true }.getOrDefault(false)
+}
+
+/*
 	Supprime un dossier et son contenu ; sans effet s'il n'existe pas.
 	inPath : dossier
 */
@@ -115,10 +128,14 @@ internal fun deleteTree(inPath: Path)
 private fun quoted(inText: String) = "'" + inText.replace("'", "''") + "'"
 
 /*
-	Script PowerShell qui remplace l'appli une fois fermée : attend la fin du
-	processus, renomme le dossier actuel en « .old » et le dossier neuf à sa
-	place, relance l'appli, puis supprime l'ancien dossier. Si un renommage
-	échoue, l'ancien dossier est remis en place et l'ancienne version relancée.
+	Script PowerShell qui remplace l'appli une fois fermée : quitte d'abord le
+	dossier de l'appli (dossier courant hérité quand l'appli est lancée par
+	double-clic : tant qu'un processus s'y trouve, Windows refuse de le
+	renommer), attend la fin du processus, renomme le dossier actuel en
+	« .old » et le dossier neuf à sa place, relance l'appli, puis supprime
+	l'ancien dossier. Si un renommage échoue, l'ancien dossier est remis en
+	place et l'ancienne version relancée (le dossier neuf reste, signalé au
+	lancement suivant).
 	inPid      : processus de l'appli à attendre
 	inFolder   : dossier de l'appli installée
 	inNew      : dossier neuf (voir prepareUpdate)
@@ -135,6 +152,8 @@ fun swapScript(
 	return """
 		|# Mise à jour de PatrimoinePlus : remplacement du dossier de l'appli une fois fermée.
 		|${'$'}ErrorActionPreference = 'Stop'
+		|Set-Location -LiteralPath ([System.IO.Path]::GetTempPath())
+		|[System.IO.Directory]::SetCurrentDirectory([System.IO.Path]::GetTempPath())
 		|${'$'}app      = ${quoted(inFolder.toString())}
 		|${'$'}new      = ${quoted(inNew.toString())}
 		|${'$'}old      = ${quoted(vOld.toString())}
@@ -170,6 +189,7 @@ fun launchSwap(
 	val vScript = Files.createTempFile("patrimoineplus-maj-", ".ps1")				// script écrit
 	Files.writeString(vScript, "\uFEFF" + swapScript(ProcessHandle.current().pid(), inFolder, inNew))
 	ProcessBuilder("powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", vScript.toString())
+		.directory(vScript.parent.toFile())														// hors du dossier de l'appli (sinon il ne peut pas être renommé)
 		.redirectErrorStream(true)
 		.redirectOutput(ProcessBuilder.Redirect.DISCARD)
 		.start()

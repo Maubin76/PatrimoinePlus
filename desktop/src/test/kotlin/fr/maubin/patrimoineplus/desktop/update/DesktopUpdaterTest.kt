@@ -111,16 +111,18 @@ class DesktopUpdaterTest
 		l'appli, en attendant un processus court ; renvoie son code de sortie.
 		inFolder : dossier de l'appli
 		inNew    : dossier neuf
+		inCwd    : dossier courant du script (comme lancé par l'appli : son propre dossier) ; null : celui des tests
 	*/
 	private fun runSwap(
 		inFolder : Path,
-		inNew    : Path
+		inNew    : Path,
+		inCwd    : Path? = null
 	): Int
 	{
 		val vWaited = ProcessBuilder("powershell.exe", "-NoProfile", "-Command", "Start-Sleep -Milliseconds 800").start()	// « appli » à attendre
 		val vScript = fTemp.root.toPath().resolve("maj.ps1")								// script
 		Files.writeString(vScript, "\uFEFF" + swapScript(vWaited.pid(), inFolder, inNew, inRelaunch = false))
-		val vRun = ProcessBuilder("powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", vScript.toString()).redirectErrorStream(true).start()	// script lancé
+		val vRun = ProcessBuilder("powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", vScript.toString()).directory(inCwd?.toFile()).redirectErrorStream(true).start()	// script lancé
 		val vOutput = vRun.inputStream.bufferedReader().readText()							// sortie (diagnostic)
 		assertTrue("script trop long : $vOutput", vRun.waitFor(60, TimeUnit.SECONDS))
 		assertFalse("le script n'a pas attendu l'appli", vWaited.isAlive)
@@ -145,5 +147,36 @@ class DesktopUpdaterTest
 		assertEquals(2, runSwap(vFolder, vFolder.resolveSibling("absent.new")))
 		assertEquals("1.3", Files.readString(vFolder.resolve("app/version.txt")))
 		assertFalse(Files.exists(vFolder.resolveSibling("PatrimoinePlus-1.2.old")))
+	}
+
+	/*
+		Script lancé depuis le dossier de l'appli (double-clic sur
+		PatrimoinePlus.exe : c'est le dossier courant qu'il hérite) : il s'en
+		détache et le remplacement réussit.
+	*/
+	@Test
+	fun swapFromTheAppFolder()
+	{
+		assumeTrue("PowerShell (Windows) nécessaire", System.getProperty("os.name").startsWith("Windows"))
+		val vFolder = installed("1.5")																// appli installée
+		val vNew    = prepareUpdate(zip("ci.zip", mapOf("PatrimoinePlus/$kExeName" to "nouvel exe", "PatrimoinePlus/app/version.txt" to "1.6")), vFolder)	// dossier neuf
+		assertEquals(0, runSwap(vFolder, vNew, inCwd = vFolder))
+		assertEquals("1.6", Files.readString(vFolder.resolve("app/version.txt")))
+		assertFalse(Files.exists(vNew))
+	}
+
+	/*
+		Dossier neuf resté après une mise à jour ratée : supprimé au lancement
+		suivant ; rien sans lui.
+	*/
+	@Test
+	fun leftoverIsCleaned()
+	{
+		val vFolder = installed("1.5")																// appli installée
+		assertFalse(cleanLeftover(vFolder))
+		val vNew    = prepareUpdate(zip("ci.zip", mapOf("PatrimoinePlus/$kExeName" to "nouvel exe")), vFolder)	// dossier neuf resté
+		assertTrue(cleanLeftover(vFolder))
+		assertFalse(Files.exists(vNew))
+		assertEquals("ancien exe", Files.readString(vFolder.resolve(kExeName)))
 	}
 }
