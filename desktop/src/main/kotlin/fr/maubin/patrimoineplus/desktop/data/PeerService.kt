@@ -225,6 +225,12 @@ class PeerService(
 	// Présentation reçue en clair (diagnostic du téléphone), pour le journal du diagnostic.
 	var onHello: (DeviceInfo, InetAddress) -> Unit = { _, _ -> }
 
+	// Juste avant de démarrer l'écoute (appairage, réseau familial) : libère les ports (arrêt du diagnostic).
+	var beforeListen: () -> Unit = {}
+
+	// Après l'arrêt de l'écoute : le diagnostic qui s'en servait s'arrête aussi.
+	var afterStop: () -> Unit = {}
+
 	// Port du répondeur de découverte ; 0 à l'arrêt.
 	val beaconPort: Int get() = fFinder?.port ?: 0
 
@@ -343,11 +349,13 @@ class PeerService(
 	@Synchronized
 	fun stop()
 	{
+		val vWasRunning = fServer != null												// écoute active
 		fServer?.stop()
 		fFinder?.stop()
 		fServer = null
 		fFinder = null
 		fState.update { it.copy(running = false) }
+		if (vWasRunning) afterStop()
 	}
 
 	/*
@@ -356,6 +364,7 @@ class PeerService(
 	private fun start()
 	{
 		if (fServer != null) return
+		beforeListen()
 		val vServer = LinkServer(inInfo, ::keyOf, ::handle, { inPeer, inAddress -> onHello(inPeer, inAddress) }, inClock::millis)	// serveur
 		val vFinder = DiscoveryResponder { Beacon(inInfo().id, inInfo().name, vServer.port) }	// répondeur de découverte
 		try

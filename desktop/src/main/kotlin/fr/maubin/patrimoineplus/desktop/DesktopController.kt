@@ -333,7 +333,19 @@ class DesktopController(
 		inBind     = if (inLocalOnly) java.net.InetAddress.getLoopbackAddress() else null,
 		inNetworks = if (inLocalOnly) { { listOf(kLocalNetwork) } } else { { fr.maubin.patrimoineplus.desktop.data.currentNetworks() } }
 	)																			// synchronisation Wi-Fi avec le téléphone
-	private val fDiagnostic = NetworkDiagnostic({ pcInfo(fSettings.value, inUpdater?.version ?: appVersion()) }, inClock, inShared = { fPeers.port.takeIf { it > 0 } }).also { inDiag -> fPeers.onHello = inDiag::noteVisit }	// diagnostic réseau (se sert du serveur de la synchronisation s'il écoute)
+	private val fDiagnostic = NetworkDiagnostic(
+		inInfo     = { pcInfo(fSettings.value, inUpdater?.version ?: appVersion()) },
+		inClock    = inClock,
+		inNetworks = if (inLocalOnly) { { listOf(kLocalNetwork) } } else { { fr.maubin.patrimoineplus.desktop.data.currentNetworks() } },
+		inPort     = if (inLocalOnly) 0 else fr.maubin.patrimoineplus.data.link.kLinkPort,
+		inBeacon   = if (inLocalOnly) 0 else fr.maubin.patrimoineplus.data.link.kDiscoveryPort,
+		inBind     = if (inLocalOnly) java.net.InetAddress.getLoopbackAddress() else null,
+		inShared   = { fPeers.port.takeIf { it > 0 } }
+	).also { inDiag ->
+		fPeers.onHello      = inDiag::noteVisit
+		fPeers.beforeListen = { if (inDiag.state.value.running && !inDiag.state.value.shared) inDiag.stop() }	// le diagnostic rend les ports à la synchronisation (appairage)
+		fPeers.afterStop    = { if (inDiag.state.value.shared) inDiag.stop() }		// plus de serveur partagé
+	}																			// diagnostic réseau (se sert du serveur de la synchronisation s'il écoute)
 	private val fDirty      = MutableStateFlow(false)							// saisie du panneau ouvert modifiée et pas enregistrée
 	private val fDiscard    = MutableStateFlow<(() -> Unit)?>(null)			// action qui perdrait la saisie, en attente de confirmation
 

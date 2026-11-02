@@ -226,4 +226,25 @@ class DesktopWifiTest
 		assertTrue(vCopies.toString(), vCopies.any { it.startsWith("patrimoineplus-pc-avant-synchro-") })
 		assertTrue(vApp.notice.value!!.contains("remplacées par celles de Pixel"))
 	}
+
+	/*
+		Diagnostic lancé avec son propre serveur, puis appairage : le
+		diagnostic s'arrête et rend les ports ; diagnostic relancé sur le
+		serveur de la synchronisation, puis écoute arrêtée : il s'arrête aussi.
+	*/
+	@Test
+	fun pairingStopsTheDiagnostic()
+	{
+		val vApp = controller()																		// contrôleur, rien n'écoute
+		vApp.diagnostic.start()
+		assertTrue(vApp.diagnostic.state.value.running)
+		assertFalse(vApp.diagnostic.state.value.shared)
+		vApp.peers.startPairing()
+		assertFalse(vApp.diagnostic.state.value.running)
+		assertTrue(vApp.peers.state.value.running)
+		vApp.diagnostic.start()
+		assertTrue(vApp.diagnostic.state.value.shared)
+		vApp.peers.stop()
+		assertFalse(vApp.diagnostic.state.value.running)
+	}
 }
