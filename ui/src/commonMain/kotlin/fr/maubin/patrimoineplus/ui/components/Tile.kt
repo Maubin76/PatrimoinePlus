@@ -54,7 +54,7 @@ import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.text.style.TextAlign
 
-private val kTileShape = RoundedCornerShape(28.dp)								// forme d'une tuile : panneau très arrondi
+private val kTileShape = RoundedCornerShape(18.dp)								// forme d'une tuile : panneau de verre de la brume
 private val kShadowTint = Color(0xFF5B4E9E)										// ombre teintée de lavande (clair)
 private const val kHoverMillis = 160												// fondu du survol
 private const val kPressMillis = 90												// enfoncement au clic
@@ -138,13 +138,13 @@ fun Tile(
 		MaterialTheme(colorScheme = vColors) {
 			CompositionLocalProvider(LocalColorTheme provides if (inFilled) ColorTheme.MONOCHROME else LocalColorTheme.current) {	// tuile pleine : variations à l'encre de la tuile (lisibles sur l'aplat), signe écrit
 				Column {
-					Column(if (inFooter != null) Modifier.fillMaxHeight().padding(26.dp) else Modifier.padding(26.dp)) {
+					Column(if (inFooter != null) Modifier.fillMaxHeight().padding(22.dp) else Modifier.padding(22.dp)) {
 						if (inTitle != null || inAction != null)
 						{
-							Row(Modifier.fillMaxWidth().heightIn(min = 32.dp), verticalAlignment = Alignment.CenterVertically) {
+							Row(Modifier.fillMaxWidth().heightIn(min = 28.dp), verticalAlignment = Alignment.CenterVertically) {
 								Text(
 									text     = inTitle.orEmpty(),
-									style    = inTitleStyle ?: MaterialTheme.typography.titleMedium,
+									style    = inTitleStyle ?: MaterialTheme.typography.titleMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Normal),
 									maxLines = 1,
 									overflow = TextOverflow.Ellipsis,
 									modifier = Modifier.weight(1f)

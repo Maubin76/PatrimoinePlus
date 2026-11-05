@@ -25,9 +25,9 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 import java.time.Clock
 import java.time.Instant
-import java.time.ZoneId
+import java.time.ZoneId
 import androidx.compose.ui.test.assertIsSelected
-import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsOff
 
@@ -120,26 +120,19 @@ class NavigationUiTest
 		val vPea = vApp.workspace.value.data.accounts.single { it.name == "PEA" }.id		// compte Bourse
 		fCompose.setContent { App(vApp) { null } }
 		fCompose.waitForIdle()
-		fCompose.onNodeWithContentDescription("Afficher en diagramme circulaire").performScrollTo()
-		val vBefore = fCompose.onNodeWithText("Comptes").fetchSemanticsNode().positionInRoot	// position sous les tuiles
-		fCompose.onNodeWithContentDescription("Afficher en diagramme circulaire").performScrollTo().performClick()	// tuile sous la partie visible de la fenêtre de test
-		fCompose.waitForIdle()
-		assertEquals(setOf("tableau-de-bord"), vApp.settings.value.pies)
-		assertEquals(vBefore, fCompose.onNodeWithText("Comptes").fetchSemanticsNode().positionInRoot)
-		fCompose.onNodeWithText("Immobilier").assertExists()									// légende unique (la forme cachée n'est pas lue)
-		capture(vApp, "23-tableau-de-bord-cercle")
+		fCompose.onNodeWithText("Répartition").assertExists()									// tableau de bord : répartition en jauge, sans choix de forme
 		vApp.openAccount(vPea)
 		fCompose.waitForIdle()
 		fCompose.onNodeWithContentDescription("Afficher en diagramme circulaire").assertExists()	// le PEA garde sa barre
 		fCompose.onNodeWithContentDescription("Afficher en diagramme circulaire").performScrollTo().performClick()
 		fCompose.waitForIdle()
-		assertEquals(setOf("tableau-de-bord", "titres:$vPea"), vApp.settings.value.pies)
+		assertEquals(setOf("titres:$vPea"), vApp.settings.value.pies)
 		capture(vApp, "23-pea-cercle")
 		vApp.back()
 		fCompose.waitForIdle()
-		fCompose.onNodeWithContentDescription("Afficher en barre").performScrollTo().performClick()	// le tableau de bord, retrouvé en cercle, repasse en barre
+		vApp.openAccount(vPea)
 		fCompose.waitForIdle()
-		assertEquals(setOf("titres:$vPea"), vApp.settings.value.pies)							// le PEA reste en cercle
+		fCompose.onNodeWithContentDescription("Afficher en barre").assertExists()				// le PEA, rouvert, est retrouvé en cercle
 		assertEquals(setOf("titres:$vPea"), DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")).load().pies)	// mémorisé pour la prochaine fois
 	}
 

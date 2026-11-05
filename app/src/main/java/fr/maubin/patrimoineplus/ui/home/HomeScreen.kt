@@ -49,10 +49,19 @@ import fr.maubin.patrimoineplus.ui.components.SeriesDot
 import fr.maubin.patrimoineplus.ui.shell.PrivacyAction
 import fr.maubin.patrimoineplus.ui.shell.ScreenScaffold
 import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
-import fr.maubin.patrimoineplus.ui.theme.PatrimoineTheme
-import fr.maubin.patrimoineplus.ui.components.ProportionChart
-import fr.maubin.patrimoineplus.ui.components.ProportionToggle
+import fr.maubin.patrimoineplus.ui.theme.PatrimoineTheme
+import fr.maubin.patrimoineplus.ui.components.ProportionChart
+import fr.maubin.patrimoineplus.ui.components.ProportionToggle
 import fr.maubin.patrimoineplus.ui.shell.LocalViewChip
+import fr.maubin.patrimoineplus.ui.components.Tile
+import fr.maubin.patrimoineplus.ui.components.MicroBars
+import fr.maubin.patrimoineplus.ui.components.DeltaPill
+import fr.maubin.patrimoineplus.ui.components.ArcGauge
+import fr.maubin.patrimoineplus.ui.components.StatusChip
+import fr.maubin.patrimoineplus.ui.components.Tone
+import fr.maubin.patrimoineplus.ui.theme.colorfulPalette
+import fr.maubin.patrimoineplus.domain.format.formatPermille
+import fr.maubin.patrimoineplus.ui.components.monthTitle
 
 private const val kClearedDisplay = "– – –,– – €"						// afficheur vide : aucun compte
 
@@ -100,7 +109,7 @@ fun HomeContent(
 			)
 		) {
 			item { TotalBlock(inState) }
-			item { Spacer(Modifier.height(36.dp)) }
+			item { Spacer(Modifier.height(32.dp)) }
 			if (inState.isEmpty)
 			{
 				item {
@@ -118,14 +127,104 @@ fun HomeContent(
 			{
 				if (inState.series.size > 1)
 				{
-					item { SectionHeader(inTitle = "Évolution") }
-					item { Spacer(Modifier.height(4.dp)) }
-					item { BalanceChart(inState.series, inState.series.last().month) }
-					item { Spacer(Modifier.height(32.dp)) }
+					item { EvolutionPanel(inState) }
+					item { Spacer(Modifier.height(14.dp)) }
 				}
-				item { SectionHeader(inTitle = "Répartition", inAction = { ProportionToggle("accueil") }) }
-				item { Spacer(Modifier.height(4.dp)) }
-				item { RepartitionBlock(inState, inOnManageAccounts) }
+				item { RepartitionPanel(inState, inOnManageAccounts) }
+			}
+		}
+	}
+}
+
+/*
+	Évolution du patrimoine : variation sur la période suivie (douze mois au
+	plus), en pastille, et la valeur en fin de chaque mois en mini-barres
+	(hauteurs relatives : la plus basse à 20 %), le mois en cours marqué.
+	inState : état de l'accueil
+*/
+@Composable
+private fun EvolutionPanel(inState: HomeUiState)
+{
+	val vSeries = inState.series																// fin de chaque mois
+	val vChange = vSeries.last().valueCents - vSeries.first().valueCents					// variation sur la période
+	val vStart  = vSeries.first().valueCents													// valeur au début
+	val vMain   = colorfulPalette().main														// teinte de la courbe
+	val vMuted  = MaterialTheme.colorScheme.onSurfaceVariant									// texte secondaire
+	Tile(inTitle = "Évolution", inTitleStyle = MaterialTheme.typography.bodyLarge.copy(color = vMuted)) {
+		Row(verticalAlignment = Alignment.CenterVertically) {
+			AmountText(inCents = vChange, inStyle = MaterialTheme.typography.headlineMedium, inShowPlusSign = true)
+			if (vStart > 0)
+			{
+				Spacer(Modifier.width(10.dp))
+				DeltaPill(formatPermille(vChange * 1000 / vStart), if (vChange == 0L) null else vChange > 0)
+			}
+		}
+		Text("Depuis ${monthTitle(vSeries.first().month).lowercase()}", style = MaterialTheme.typography.bodySmall, color = vMuted)
+		Spacer(Modifier.height(16.dp))
+		MicroBars(
+			inValues   = vSeries.map { it.valueCents },
+			inColorOf  = { inIndex -> if (inIndex == vSeries.lastIndex) vMain else vMain.copy(alpha = 0.45f) },
+			inModifier = Modifier.fillMaxWidth().height(56.dp).semantics { contentDescription = "Patrimoine en fin de mois, sur ${vSeries.size} mois" },
+			inBar      = 5.dp,
+			inRelative = true
+		)
+	}
+}
+
+/*
+	Répartition nette par type de compte : jauge en arc aux couleurs des
+	types (la plus grande part au centre), puis une ligne par type avec son
+	sous-total et sa part ; crédits à déduire à la fin. Toucher une ligne
+	ouvre l'onglet Comptes.
+	inState  : état de l'accueil
+	inOnOpen : ouvre l'onglet Comptes
+*/
+@Composable
+private fun RepartitionPanel(
+	inState  : HomeUiState,
+	inOnOpen : () -> Unit
+)
+{
+	val vHidden = LocalAmountsHidden.current													// mode discret actif
+	val vGroups = inState.assetGroups.sortedByDescending { it.subtotalCents }				// de la plus grande part à la plus petite
+	val vMuted  = MaterialTheme.colorScheme.onSurfaceVariant									// texte secondaire
+	Tile(inTitle = "Répartition") {
+		val vFirst = vGroups.firstOrNull()														// plus grande part
+		ArcGauge(
+			inParts    = vGroups.map { it.subtotalCents.coerceAtLeast(0L).toFloat() to typeColor(it.type) },
+			inModifier = Modifier.fillMaxWidth().height(124.dp).semantics { contentDescription = repartitionDescription(inState, vHidden) },
+			inStroke   = 15.dp
+		) {
+			if (vFirst != null)
+			{
+				Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(top = 24.dp)) {
+					Text(vFirst.type.label, style = MaterialTheme.typography.bodySmall, color = vMuted)
+					Text("${vFirst.percent}\u202F%", style = MaterialTheme.typography.headlineLarge)
+				}
+			}
+		}
+		Spacer(Modifier.height(8.dp))
+		vGroups.forEach { inGroup ->
+			Row(
+				modifier          = Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(onClickLabel = "Voir les comptes", onClick = inOnOpen),
+				verticalAlignment = Alignment.CenterVertically
+			) {
+				SeriesDot(typeColor(inGroup.type))
+				Spacer(Modifier.width(12.dp))
+				Text(inGroup.type.label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+				AmountText(inCents = inGroup.subtotalCents, inStyle = MaterialTheme.typography.bodyMedium, inColor = vMuted)
+				Spacer(Modifier.width(10.dp))
+				StatusChip("${inGroup.percent}\u202F%", Tone.NEUTRAL)
+			}
+		}
+		if (inState.unlinkedDebtCents != 0L)
+		{
+			Row(
+				modifier          = Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(onClickLabel = "Voir les comptes", onClick = inOnOpen),
+				verticalAlignment = Alignment.CenterVertically
+			) {
+				Text("Crédits à déduire", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+				AmountText(inCents = inState.unlinkedDebtCents, inStyle = MaterialTheme.typography.bodyLarge)
 			}
 		}
 	}
@@ -179,17 +278,23 @@ private fun TotalBlock(inState: HomeUiState)
 				AmountText(inCents = inState.debtCents, inStyle = MaterialTheme.typography.bodyMedium, inColor = vColors.onSurfaceVariant)
 			}
 		}
-		Spacer(Modifier.height(16.dp))
+		Spacer(Modifier.height(12.dp))
 		val vChange = inState.monthChange											// variation du mois ; null le premier mois
 		if (!inState.isEmpty && vChange != null)
 		{
 			Row(verticalAlignment = Alignment.CenterVertically) {
-				AmountText(inCents = vChange, inStyle = MaterialTheme.typography.titleMedium, inShowPlusSign = true, inTrend = true)
-				Text(" ce mois-ci", style = MaterialTheme.typography.titleMedium, color = vColors.onSurfaceVariant)
+				val vBefore = inState.totalCents - vChange									// patrimoine à la fin du mois dernier
+				if (vBefore > 0)
+				{
+					DeltaPill(formatPermille(vChange * 1000 / vBefore), if (vChange == 0L) null else vChange > 0)
+					Spacer(Modifier.width(8.dp))
+				}
+				AmountText(inCents = vChange, inStyle = MaterialTheme.typography.bodyLarge, inShowPlusSign = true, inTrend = true)
+				Text(" ce mois-ci", style = MaterialTheme.typography.bodyLarge, color = vColors.onSurfaceVariant)
 			}
-			Spacer(Modifier.height(16.dp))
+			Spacer(Modifier.height(10.dp))
 		}
-		InfoPill(if (inState.isEmpty) "Rien à calculer pour l’instant" else "Calculé au ${inState.asOf}")
+		Text(if (inState.isEmpty) "Rien à calculer pour l’instant" else "Calculé au ${inState.asOf}", style = MaterialTheme.typography.bodySmall, color = vColors.onSurfaceVariant)
 	}
 }
 
@@ -220,63 +325,6 @@ private fun fittingStyle(
 }
 
 /*
-	Répartition par type de compte : barre en niveaux de gris, puis une
-	légende par type avec sa part et son sous-total.
-	Toucher une ligne ouvre l'onglet Comptes.
-	inState  : état de l'accueil
-	inOnOpen : ouvre l'onglet Comptes
-*/
-@Composable
-private fun RepartitionBlock(
-	inState  : HomeUiState,
-	inOnOpen : () -> Unit
-)
-{
-	val vHidden = LocalAmountsHidden.current								// mode discret actif
-	Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-		ProportionChart(
-			inKey         = "accueil",
-			inSegments    = inState.assetGroups.map { BarSegment(it.subtotalCents, typeColor(it.type)) },
-			inDescription = repartitionDescription(inState, vHidden),
-			inStable      = false
-		)
-		Spacer(Modifier.height(12.dp))
-		inState.assetGroups.forEach { inGroup ->
-			val vPercent = inGroup.percent										// part entière
-			Row(
-				modifier          = Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(onClickLabel = "Voir les comptes", onClick = inOnOpen),
-				verticalAlignment = Alignment.CenterVertically
-			) {
-				SeriesDot(typeColor(inGroup.type))
-				Spacer(Modifier.width(12.dp))
-				Text(
-					text     = inGroup.type.label,
-					style    = MaterialTheme.typography.bodyLarge,
-					modifier = Modifier.weight(1f)
-				)
-				Text(
-					text  = "$vPercent\u202F%",
-					style = MaterialTheme.typography.bodyLarge,
-					color = MaterialTheme.colorScheme.onSurfaceVariant
-				)
-				Spacer(Modifier.width(16.dp))
-				AmountText(inCents = inGroup.subtotalCents, inStyle = MaterialTheme.typography.bodyLarge)
-			}
-		}
-		if (inState.unlinkedDebtCents != 0L)
-		{
-			Row(
-				modifier          = Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(onClickLabel = "Voir les comptes", onClick = inOnOpen),
-				verticalAlignment = Alignment.CenterVertically
-			) {
-				Text("Crédits à déduire", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-				AmountText(inCents = inState.unlinkedDebtCents, inStyle = MaterialTheme.typography.bodyLarge)
-			}
-		}
-	}
-}
-
-/*
 	Décrit la répartition pour TalkBack ; ne cite aucun montant en mode discret.
 	inState  : état de l'accueil
 	inHidden : vrai si le mode discret est actif
@@ -304,9 +352,9 @@ internal val kPreviewState = HomeUiState(
 		HomeGroup(AccountType.CHECKING, listOf(
 			HomeAccountLine("Compte principal", "Courant · Banque démo", 284_312),
 			HomeAccountLine("Compte joint", "Courant · Banque démo · 50 %", 160_000, 80_000)
-		)),
-		HomeGroup(AccountType.SAVINGS, listOf(HomeAccountLine("Livret A", "Épargne", 2_295_000), HomeAccountLine("LDDS", "Épargne", 1_204_118))),
-		HomeGroup(AccountType.BROKERAGE, listOf(HomeAccountLine("PEA", "Bourse · Courtier démo", 3_871_540)))
+		), 5),
+		HomeGroup(AccountType.SAVINGS, listOf(HomeAccountLine("Livret A", "Épargne", 2_295_000), HomeAccountLine("LDDS", "Épargne", 1_204_118)), 45),
+		HomeGroup(AccountType.BROKERAGE, listOf(HomeAccountLine("PEA", "Bourse · Courtier démo", 3_871_540)), 50)
 	)
 )
 

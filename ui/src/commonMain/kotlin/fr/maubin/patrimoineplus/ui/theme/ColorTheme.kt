@@ -47,10 +47,10 @@ data class Palette(
 )
 {
 	// Teintes des répartitions, dans l'ordre des rangs (la plus grosse part
-	// d'abord) : voisins bien séparés, daltonisme compris, pour la palette du
-	// thème Coloré.
+	// d'abord) : orange, bleu, vert, bleu ciel, rouge ; l'orange et le vert,
+	// proches pour un daltonien, ne sont jamais voisins.
 	val ranks: List<Color>
-		get() = listOf(main, rise, invest, fall, second)
+		get() = listOf(invest, main, rise, second, fall)
 
 	companion object
 	{
@@ -69,26 +69,26 @@ data class Palette(
 // Palette d'un thème personnalisé actif ; null : palette du thème Coloré.
 val LocalPalette = staticCompositionLocalOf<Palette?> { null }
 
-// Palette « Indigo » du thème Coloré, assortie au violet du logo et aux fonds
-// lavande et nuit indigo : indigo (principale), menthe (hausses), ambre
-// (placements), corail (baisses), pervenche (secondaire). Validée : toutes
-// ≥ 3:1 sur le blanc (clair) et sur les panneaux sombres ; voisins de
-// répartition séparés (ΔE OKLab ≥ 10 sous daltonisme, ≥ 18 sinon) ; menthe et
-// corail aussi séparés en deutéranopie (luminosités écartées). Chaque teinte
-// reste doublée d'un libellé ou d'un signe.
+// Palette de la brume lumineuse, tirée de la référence : bleu (principale,
+// immobilier, courbes), vert (hausses, comptes courants), orange (placements,
+// épargne), rouge (baisses), bleu ciel (secondaire, bourse). Calculée dans
+// l'ordre des répartitions (voir ranks) : voisins séparés d'un ΔE OKLab ≥ 20
+// en vision normale et ≥ 19 en deutéranopie et protanopie (seule paire faible :
+// bleu et vert en tritanopie, très rare) ; en sombre, tous ≥ 5:1 sur les
+// panneaux. Chaque teinte reste doublée d'un libellé ou d'un signe.
 val kColorfulLight = Palette(
-	main   = Color(0xFF4B3FCE),
-	rise   = Color(0xFF0F9A80),
-	invest = Color(0xFFB47D0A),
-	fall   = Color(0xFFB8294F),
-	second = Color(0xFF5B86E6)
+	main   = Color(0xFF2F7FD9),
+	rise   = Color(0xFF2A9149),
+	invest = Color(0xFFE46E12),
+	fall   = Color(0xFFD8433B),
+	second = Color(0xFF2FA3DB)
 )																				// fonds clairs
 val kColorfulDark  = Palette(
-	main   = Color(0xFFB0A6FF),
-	rise   = Color(0xFF4FDDB8),
-	invest = Color(0xFFF2BE5C),
-	fall   = Color(0xFFE0577E),
-	second = Color(0xFF86A9FF)
+	main   = Color(0xFF5EA2F0),
+	rise   = Color(0xFF4CC774),
+	invest = Color(0xFFF7984A),
+	fall   = Color(0xFFF06A60),
+	second = Color(0xFF7FCDF2)
 )																				// fonds sombres
 
 /*

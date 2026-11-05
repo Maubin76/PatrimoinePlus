@@ -146,22 +146,27 @@ import kotlinx.coroutines.delay
 import fr.maubin.patrimoineplus.desktop.ActiveTour
 import fr.maubin.patrimoineplus.ui.theme.Palette
 import fr.maubin.patrimoineplus.desktop.ui.panels.ThemePanel
-import fr.maubin.patrimoineplus.ui.components.UpdateDialog
+import fr.maubin.patrimoineplus.ui.components.UpdateDialog
 import androidx.compose.runtime.snapshotFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.first
 import fr.maubin.patrimoineplus.ui.components.LocalPointer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.PointerEventType
-import fr.maubin.patrimoineplus.ui.components.LocalProfiles
+import androidx.compose.ui.input.pointer.PointerEventType
+import fr.maubin.patrimoineplus.ui.components.LocalProfiles
 import fr.maubin.patrimoineplus.desktop.ui.panels.LocalPanelGuard
-import fr.maubin.patrimoineplus.desktop.ui.panels.PanelGuard
-import fr.maubin.patrimoineplus.data.backup.newerFormatText
-import fr.maubin.patrimoineplus.desktop.ui.screens.DevicesScreen
-import fr.maubin.patrimoineplus.ui.components.MergeConflictsDialog
-import fr.maubin.patrimoineplus.desktop.ui.screens.PhoneChoiceDialogs
+import fr.maubin.patrimoineplus.desktop.ui.panels.PanelGuard
+import fr.maubin.patrimoineplus.data.backup.newerFormatText
+import fr.maubin.patrimoineplus.desktop.ui.screens.DevicesScreen
+import fr.maubin.patrimoineplus.ui.components.MergeConflictsDialog
+import fr.maubin.patrimoineplus.desktop.ui.screens.PhoneChoiceDialogs
 import fr.maubin.patrimoineplus.desktop.ExitWait
 import fr.maubin.patrimoineplus.desktop.data.PeerState
+import fr.maubin.patrimoineplus.desktop.ui.components.ChromeButton
+import fr.maubin.patrimoineplus.desktop.ui.components.NavPills
+import fr.maubin.patrimoineplus.desktop.ui.components.NavEntry
+import fr.maubin.patrimoineplus.desktop.ui.components.LocalPageStatus
+import fr.maubin.patrimoineplus.ui.components.LemonButton
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -173,11 +178,7 @@ val LocalSavePicker = staticCompositionLocalOf<(String) -> Path?> { { null } }
 val kContentMaxWidth    = 1600.dp													// largeur maximale du contenu
 private const val kPageMillis  = 280													// transition entre écrans
 private const val kPanelMillis = 240													// arrivée du panneau de saisie
-private const val kRailMillis  = 260													// glissement du disque du rail
 private const val kTourDelay   = 450L													// attente avant la visite d'une page (transition, mise en place)
-private val kRailButton = 48.dp														// diamètre d'un bouton du rail
-private val kRailGap    = 6.dp														// écart entre deux boutons du rail
-private val kRailStep   = kRailButton + kRailGap										// pas du rail
 private val kEase       = CubicBezierEasing(0.2f, 0f, 0f, 1f)						// courbe « accentuée » de Material
 
 /*
@@ -300,15 +301,16 @@ private fun Shell(
 		delay(kTourDelay)																// page arrivée et éléments placés
 		inController.showTourIfNew(if (vNav.accountId != null) kTourAccount else vNav.screen.name)
 	}
-	val vFrame  = RoundedCornerShape(36.dp)										// forme du cadre
-	Row(
+	val vFrame  = RoundedCornerShape(28.dp)										// forme du cadre
+	val vStatus = pageStatus(inSpace, inController)								// ligne d'état sous le titre des pages
+	Column(
 		Modifier
 			.fillMaxSize()
 			.padding(14.dp)
 			.launchReveal(0f)																	// lancement : le cadre d'abord (fondu seul : un zoom redessinerait tout le cadre à chaque image)
 			.clip(vFrame)
-			.background(Color.White.copy(alpha = if (inDark) 0.025f else if (isGlass()) 0.18f else 0.38f))
-			.border(1.dp, Color.White.copy(alpha = if (inDark) 0.07f else 0.7f), vFrame)
+			.background(Color.White.copy(alpha = if (inDark) 0.02f else 0.14f))
+			.border(1.dp, Color.White.copy(alpha = if (inDark) 0.07f else 0.75f), vFrame)
 			.focusRequester(vFocus).focusable().onPreviewKeyEvent { inEvent ->
 			when
 			{
@@ -319,11 +321,12 @@ private fun Shell(
 			}
 		}
 	) {
-		Box(Modifier.launchReveal(0.15f, inDx = (-20).dp)) { Rail(vNav.screen, inController::show, inDark, inController::setAppearance) }	// puis le rail
-		Column(Modifier.weight(1f).fillMaxHeight()) {
-			Box(Modifier.launchReveal(0.25f, inDy = (-12).dp)) { StatusBar(inSpace, vNotice, inController, scopeOf(vSet.view, inSpace.data.profiles)) }	// puis la barre du haut
-			Box(Modifier.fillMaxSize().launchReveal(0.4f, inDy = 18.dp), contentAlignment = Alignment.TopCenter) {	// enfin l'écran
+		Box(Modifier.launchReveal(0.15f, inDy = (-12).dp)) { TopBar(inSpace, vNav.screen, inController, inDark, scopeOf(vSet.view, inSpace.data.profiles)) }	// puis la barre du haut
+		Box(Modifier.weight(1f).fillMaxWidth()) {
+		Row(Modifier.fillMaxSize()) {
+			Box(Modifier.weight(1f).fillMaxHeight().launchReveal(0.35f, inDy = 14.dp), contentAlignment = Alignment.TopCenter) {	// enfin l'écran
 				Box(Modifier.widthIn(max = kContentMaxWidth).fillMaxSize()) {
+				CompositionLocalProvider(LocalPageStatus provides vStatus) {
 					ScreenStack(
 						inKey    = vNav.screen to (vNav.accountId?.let { if (vBank?.accountId == it) "$it#relevé" else it }),
 						inKeep   = { it.second == null },												// écrans principaux gardés en vie ; comptes et relevés oubliés
@@ -347,8 +350,8 @@ private fun Shell(
 						}
 					}
 				}
+				}
 			}
-		}
 		AnimatedVisibility(
 			visible = vPanel != null,
 			enter   = slideInHorizontally(tween(kPanelMillis, easing = kEase)) { it / 3 } + fadeIn(tween(kPanelMillis)),
@@ -374,6 +377,9 @@ private fun Shell(
 					}
 				}
 			}
+		}
+		}
+		ShellToast(inSpace, vNotice, inController, Modifier.align(Alignment.TopCenter).padding(top = 6.dp))
 		}
 	}
 	(inSpace.status as? LoadStatus.Items)?.let { inItems ->
@@ -551,60 +557,55 @@ private fun UnsavedDialog(
 }
 
 /*
-	Colonne de gauche : logo, rail flottant d'une icône ronde par écran
-	principal (l'écran actif sur un disque plein, qui glisse d'une icône à
-	l'autre ; nom de l'écran en info-bulle et pour les lecteurs d'écran),
-	bascule clair / sombre en bas.
-	inScreen     : écran actif
-	inOnScreen   : change d'écran
+	Barre du haut de l'appli : logo et nom à gauche ; au centre, les pages en
+	pilules (la page active en blanc avec son nom) ; à droite, recherche,
+	bascule clair / sombre, mode discret et vue (profil ou famille).
+	inSpace      : données (profils)
+	inScreen     : page active
+	inController : contrôleur
 	inDark       : mode sombre effectif
-	inOnAppearance : choisit l'apparence claire ou sombre
+	inProfile    : profil affiché ; null pour la famille
 */
 @Composable
-private fun Rail(
-	inScreen       : Screen,
-	inOnScreen     : (Screen) -> Unit,
-	inDark         : Boolean,
-	inOnAppearance : (ThemeMode) -> Unit
+private fun TopBar(
+	inSpace      : WorkspaceState,
+	inScreen     : Screen,
+	inController : DesktopController,
+	inDark       : Boolean,
+	inProfile    : String?
 )
 {
-	val vIndex  = Screen.entries.indexOf(inScreen)								// rang de l'écran actif
-	val vOffset by animateDpAsState(kRailStep * vIndex, tween(kRailMillis, easing = kEase), label = "disque")	// position du disque
-	Column(
-		modifier            = Modifier.fillMaxHeight().width(92.dp).padding(vertical = 22.dp),
-		horizontalAlignment = Alignment.CenterHorizontally
+	val vHidden = LocalAmountsHidden.current									// mode discret actif
+	Row(
+		modifier          = Modifier.fillMaxWidth().height(76.dp).padding(horizontal = 24.dp),
+		verticalAlignment = Alignment.CenterVertically
 	) {
-		PatrimoineLogo(48.dp)
-		Spacer(Modifier.weight(1f))
-		FloatingSurface(RoundedCornerShape(50), Modifier.tourAnchor("shell.rail")) {
-			Box(Modifier.padding(6.dp)) {
-				Box(Modifier.offset(y = vOffset).size(kRailButton).clip(CircleShape).background(MaterialTheme.colorScheme.primary))	// disque de l'écran actif
-				Column(verticalArrangement = Arrangement.spacedBy(kRailGap)) {
-					Screen.entries.forEach { inEntry ->
-						RailButton(
-							inIcon   = screenIcon(inEntry),
-							inLabel  = inEntry.label,
-							inActive = inEntry == inScreen,
-							inRole   = Role.Tab,
-							inOnClick = { inOnScreen(inEntry) }
-						)
-					}
-				}
-			}
+		Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+			PatrimoineLogo(34.dp)
+			Spacer(Modifier.width(10.dp))
+			Text("PatrimoinePlus", style = MaterialTheme.typography.titleMedium)
 		}
-		Spacer(Modifier.weight(1f))
-		FloatingSurface(RoundedCornerShape(50)) {
-			Column(Modifier.padding(6.dp), verticalArrangement = Arrangement.spacedBy(kRailGap)) {
-				RailButton(LineIcons.Sun, "Apparence claire", !inDark, Role.RadioButton, inShowDisc = true) { inOnAppearance(ThemeMode.LIGHT) }
-				RailButton(LineIcons.Moon, "Apparence sombre", inDark, Role.RadioButton, inShowDisc = true) { inOnAppearance(ThemeMode.DARK) }
+		NavPills(
+			inEntries  = Screen.entries.map { NavEntry(it.label, screenIcon(it)) },
+			inActive   = Screen.entries.indexOf(inScreen),
+			inOnSelect = { inController.show(Screen.entries[it]) },
+			inModifier = Modifier.tourAnchor("shell.rail")
+		)
+		Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), verticalAlignment = Alignment.CenterVertically) {
+			Row(Modifier.tourAnchor("shell.privacy"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+				ChromeButton(LineIcons.Search, "Rechercher (Ctrl+F)", inController::focusSearch)
+				ChromeButton(if (vHidden) LineIcons.EyeOff else LineIcons.Eye, if (vHidden) "Afficher les montants" else "Masquer les montants", inController::toggleHidden)
 			}
+			ChromeButton(if (inDark) LineIcons.Sun else LineIcons.Moon, if (inDark) "Apparence claire" else "Apparence sombre", { inController.setAppearance(if (inDark) ThemeMode.LIGHT else ThemeMode.DARK) })
+			if (inSpace.data.profiles.size > 1) ViewSwitcher(inSpace.data.profiles, inProfile, inController::setView)
+			if (inScreen != Screen.DASHBOARD) LemonButton("Nouvelle opération", inController::newOperation, Modifier.tourAnchor("shell.newop"), LineIcons.Plus)	// pages sans ligne de titre : la saisie reste à portée
 		}
 	}
 }
 
 /*
-	Icône d'un écran principal.
-	inScreen : écran
+	Icône d'une page.
+	inScreen : page
 */
 private fun screenIcon(inScreen: Screen): ImageVector =
 	when (inScreen)
@@ -621,134 +622,67 @@ private fun screenIcon(inScreen: Screen): ImageVector =
 	}
 
 /*
-	Bouton rond du rail : icône seule, nom en info-bulle à droite et pour les
-	lecteurs d'écran ; teinte inversée quand il est actif (le disque est
-	dessiné par le rail, ou par le bouton avec inShowDisc).
-	inIcon     : icône
-	inLabel    : nom de l'action
-	inActive   : bouton actif
-	inRole     : rôle (onglet, choix)
-	inShowDisc : le bouton dessine lui-même son disque actif
-	inOnClick  : action
+	Ligne d'état sous le titre des pages : source des données et dernier
+	enregistrement, ou état de la synchronisation Wi-Fi.
+	inSpace      : données et état de la lecture
+	inController : contrôleur (synchronisation Wi-Fi)
 */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun RailButton(
-	inIcon     : ImageVector,
-	inLabel    : String,
-	inActive   : Boolean,
-	inRole     : Role,
-	inShowDisc : Boolean = false,
-	inOnClick  : () -> Unit
-)
+private fun pageStatus(
+	inSpace      : WorkspaceState,
+	inController : DesktopController
+): String
 {
-	val vColors  = MaterialTheme.colorScheme										// palette courante
-	val vSource  = remember { MutableInteractionSource() }						// survol
-	val vHovered by vSource.collectIsHoveredAsState()							// souris au-dessus
-	val vTint    by animateColorAsState(if (inActive) vColors.onPrimary else if (vHovered) vColors.onSurface else vColors.onSurfaceVariant, tween(kRailMillis), label = "teinte")	// teinte de l'icône
-	val vDisc    by animateColorAsState(
-		when
-		{
-			inActive && inShowDisc -> vColors.primary
-			!inActive && vHovered  -> vColors.surfaceContainer
-			else                   -> Color.Transparent
-		},
-		tween(kRailMillis / 2), label = "disque")										// fond du bouton
-	TooltipArea(
-		tooltip          = {
-			Surface(shape = RoundedCornerShape(50), color = vColors.inverseSurface, contentColor = vColors.inverseOnSurface, shadowElevation = 4.dp) {
-				Text(inLabel, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp))
-			}
-		},
-		delayMillis      = 350,
-		tooltipPlacement = TooltipPlacement.ComponentRect(anchor = Alignment.CenterEnd, alignment = Alignment.CenterEnd, offset = DpOffset(12.dp, 0.dp))
-	) {
-		Box(
-			modifier         = Modifier
-				.size(kRailButton)
-				.clip(CircleShape)
-				.background(vDisc)
-				.hoverable(vSource)
-				.clickable(interactionSource = vSource, indication = null, role = inRole, onClick = inOnClick)
-				.semantics { contentDescription = inLabel; selected = inActive },
-			contentAlignment = Alignment.Center
-		) {
-			Icon(inIcon, contentDescription = null, tint = vTint, modifier = Modifier.size(22.dp))
-		}
+	val vSet   by inController.settings.collectAsState()						// réglages (synchronisation Wi-Fi)
+	val vPeers by inController.peers.state.collectAsState()					// synchronisation Wi-Fi
+	val vWifi  = if (vSet.wifiSync && vPeers.phones.isNotEmpty() && inSpace.source is Source.Folder && inSpace.status is LoadStatus.Synced) wifiBanner(vPeers) else null	// état de la synchronisation Wi-Fi
+	return vWifi ?: when (val vStatus = inSpace.status)
+	{
+		LoadStatus.Demo      -> "Démonstration : données fictives, modifiables, jamais enregistrées."
+		LoadStatus.Waiting   -> "Dossier ${(inSpace.source as? Source.Folder)?.path} : fichier d’échange pas encore présent. Activez la synchronisation sur le téléphone, ou saisissez ici."
+		is LoadStatus.Synced -> "Enregistré dans ${(inSpace.source as? Source.Folder)?.path} à ${Instant.ofEpochMilli(vStatus.at).atZone(ZoneId.systemDefault()).format(kTimeFormat)}."
+		LoadStatus.Pending   -> "Modifications en cours d’enregistrement…"
+		else                 -> ""
 	}
 }
 
-
-
 /*
-	Bandeau d'état : source des données (démonstration, dossier et dernière
-	lecture, attente, fichier refusé), message ponctuel, puis, en pilules,
-	nouvelle opération, recherche (Ctrl+F) et mode discret.
+	Pastille flottante sous la barre du haut : message ponctuel (avec « OK »)
+	ou état anormal de la lecture (fichier refusé, enregistrement impossible,
+	conflit), en rouge ; rien sinon.
 	inSpace      : données et état de la lecture
-	inNotice     : message ponctuel ; null sans message
+	inNotice     : message ponctuel ; null sans
 	inController : contrôleur
-	inProfile    : profil affiché ; null pour la famille
+	inModifier   : place de la pastille
 */
 @Composable
-private fun StatusBar(
+private fun ShellToast(
 	inSpace      : WorkspaceState,
 	inNotice     : String?,
 	inController : DesktopController,
-	inProfile    : String?
+	inModifier   : Modifier
 )
 {
-	val vColors = MaterialTheme.colorScheme										// palette courante
-	val vSet    by inController.settings.collectAsState()						// réglages (synchronisation Wi-Fi)
-	val vPeers  by inController.peers.state.collectAsState()					// synchronisation Wi-Fi
-	val vWifi   = if (vSet.wifiSync && vPeers.phones.isNotEmpty() && inSpace.source is Source.Folder && inSpace.status is LoadStatus.Synced) wifiBanner(vPeers) else null	// bandeau de la synchronisation Wi-Fi
-	val vText   = inNotice ?: vWifi ?: when (val vStatus = inSpace.status)		// état, en clair
+	val vAlert = when (val vStatus = inSpace.status)
 	{
-		LoadStatus.Demo           -> "Démonstration : données fictives, modifiables, jamais enregistrées."
-		LoadStatus.Waiting        -> "Dossier ${(inSpace.source as? Source.Folder)?.path} : fichier d’échange pas encore présent. Activez la synchronisation sur le téléphone, ou saisissez ici."
-		is LoadStatus.Synced      -> "Enregistré dans ${(inSpace.source as? Source.Folder)?.path} à ${Instant.ofEpochMilli(vStatus.at).atZone(ZoneId.systemDefault()).format(kTimeFormat)}."
-		LoadStatus.Pending        -> "Modifications en cours d’enregistrement…"
 		is LoadStatus.Invalid     -> "Fichier d’échange refusé (${vStatus.message}) : rien n’est enregistré, dernières données valides affichées."
 		is LoadStatus.Conflict    -> "Conflit : choisissez la version à garder."
 		is LoadStatus.Items       -> "Fusion : choisissez la version à garder pour ${vStatus.conflicts.size} élément(s)."
 		is LoadStatus.WriteFailed -> "Enregistrement impossible : ${vStatus.message}. Nouvel essai automatique."
-		LoadStatus.Idle           -> ""
-	}
-	val vAlert  = inNotice == null && (inSpace.status is LoadStatus.Invalid || inSpace.status is LoadStatus.WriteFailed || inSpace.status is LoadStatus.Conflict || inSpace.status is LoadStatus.Items)	// état anormal
-	val vHidden = LocalAmountsHidden.current									// mode discret actif
-	Row(
-		modifier          = Modifier.fillMaxWidth().height(84.dp).padding(start = 32.dp, end = 22.dp),
-		verticalAlignment = Alignment.CenterVertically
-	) {
-		Text(
-			text     = vText,
-			style    = MaterialTheme.typography.bodyMedium,
-			color    = if (vAlert) vColors.error else vColors.onSurfaceVariant,
-			maxLines = 2,
-			overflow = TextOverflow.Ellipsis,
-			modifier = Modifier.weight(1f)
-		)
-		if (inNotice != null)
-		{
-			TextButton(onClick = inController::clearNotice) { Text("OK") }
-		}
-		Spacer(Modifier.width(16.dp))
-		if (inSpace.data.profiles.size > 1)
-		{
-			ViewSwitcher(inSpace.data.profiles, inProfile, inController::setView)
-			Spacer(Modifier.width(12.dp))
-		}
-		FloatingSurface(RoundedCornerShape(50)) {
-			Row(Modifier.padding(6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-				Button(onClick = inController::newOperation, contentPadding = PaddingValues(start = 18.dp, end = 22.dp), modifier = Modifier.height(44.dp).tourAnchor("shell.newop")) {
-					Icon(LineIcons.Plus, contentDescription = null, modifier = Modifier.size(18.dp))
-					Spacer(Modifier.width(8.dp))
-					Text("Nouvelle opération")
-				}
-				Row(Modifier.tourAnchor("shell.privacy"), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-					RailButton(LineIcons.Search, "Rechercher (Ctrl+F)", false, Role.Button) { inController.focusSearch() }
-					RailButton(if (vHidden) LineIcons.EyeOff else LineIcons.Eye, if (vHidden) "Afficher les montants" else "Masquer les montants", false, Role.Button) { inController.toggleHidden() }
-				}
-			}
+		else                      -> null
+	}																				// état anormal ; null sinon
+	val vText  = inNotice ?: vAlert ?: return										// texte affiché
+	FloatingSurface(RoundedCornerShape(50), inModifier.widthIn(max = 760.dp)) {
+		Row(Modifier.padding(start = 20.dp, end = 8.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+			Text(
+				text     = vText,
+				style    = MaterialTheme.typography.bodyMedium,
+				color    = if (inNotice == null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+				maxLines = 2,
+				overflow = TextOverflow.Ellipsis,
+				modifier = Modifier.weight(1f, fill = false)
+			)
+			if (inNotice != null) TextButton(onClick = inController::clearNotice) { Text("OK") } else Spacer(Modifier.width(12.dp))
 		}
 	}
 }

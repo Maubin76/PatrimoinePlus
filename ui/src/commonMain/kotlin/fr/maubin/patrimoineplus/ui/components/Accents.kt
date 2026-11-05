@@ -15,10 +15,12 @@ import fr.maubin.patrimoineplus.ui.theme.LocalPalette
 // Couleurs d'accent du thème Coloré, posées sur le contenu (tuiles, pastilles)
 // et pas sur les fonds, qui restent ceux des autres thèmes.
 
-private val kLoanLight      = Color(0xFF6B7F8A)									// crédit, ardoise (fond clair)
-private val kLoanDark       = Color(0xFF8FA3AE)									// crédit, ardoise (fond sombre)
-private val kRiseInk        = Color(0xFF0A6B59)									// icône d'une entrée sur pastille claire (menthe foncée)
-private val kFallInk        = Color(0xFF9A2042)									// icône d'une sortie sur pastille claire (corail foncé)
+private val kLoanLight      = Color(0xFF6B7A88)									// crédit, ardoise (fond clair)
+private val kLoanDark       = Color(0xFF93A2B0)									// crédit, ardoise (fond sombre)
+private val kCollectLight   = Color(0xFFC99A0C)									// collection, jaune d'or (fond clair)
+private val kCollectDark    = Color(0xFFEBC243)									// collection, jaune d'or (fond sombre)
+private val kRiseInk        = Color(0xFF1C6E37)									// icône d'une entrée sur pastille claire (vert foncé)
+private val kFallInk        = Color(0xFFA82C25)									// icône d'une sortie sur pastille claire (rouge foncé)
 
 /*
 	Vrai si le thème Coloré est actif.
@@ -27,10 +29,9 @@ private val kFallInk        = Color(0xFF9A2042)									// icône d'une sortie s
 fun isColorful(): Boolean = LocalColorTheme.current == ColorTheme.COLORFUL
 
 /*
-	Couleur d'un type de compte dans le thème Coloré (tuiles, pastilles,
-	répartition par type) : Courant menthe, Épargne ambre, Bourse corail,
-	Immobilier indigo, Collection pervenche, Crédit ardoise (ou les rôles du
-	thème personnalisé) ; non précisée dans les autres thèmes.
+	Couleur d'un type de compte (pastilles, répartition par type) : Courant
+	vert, Épargne orange, Bourse bleu ciel, Immobilier bleu, Collection jaune
+	d'or (rouge du thème personnalisé), Crédit ardoise.
 	inType : type de compte
 */
 @Composable
@@ -43,9 +44,9 @@ fun accountAccent(inType: AccountType): Color
 	{
 		AccountType.CHECKING    -> vPalette.rise
 		AccountType.SAVINGS     -> vPalette.invest
-		AccountType.BROKERAGE   -> vPalette.fall
+		AccountType.BROKERAGE   -> vPalette.second
 		AccountType.REAL_ESTATE -> vPalette.main
-		AccountType.COLLECTIBLE -> vPalette.second
+		AccountType.COLLECTIBLE -> if (LocalPalette.current != null) vPalette.fall else if (vDark) kCollectDark else kCollectLight
 		AccountType.LOAN        -> if (vDark) kLoanDark else kLoanLight
 	}
 }

@@ -1,8 +1,13 @@
 package fr.maubin.patrimoineplus.ui.theme
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
@@ -12,54 +17,72 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import fr.maubin.patrimoineplus.ui.components.LocalGlass
 import fr.maubin.patrimoineplus.ui.resources.Res
 import fr.maubin.patrimoineplus.ui.resources.outfit
+import fr.maubin.patrimoineplus.ui.resources.urbanist
 import org.jetbrains.compose.resources.Font
-import androidx.compose.material3.Shapes
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.unit.dp
-import fr.maubin.patrimoineplus.ui.components.LocalGlass
-import androidx.compose.material3.LocalContentColor
 
-// Neutres de l'appli PC, légèrement teintés de lavande (fond pastel).
-private val kDeskInk          = Color(0xFF16151F)								// encre
-private val kDeskInkMuted     = Color(0xFF686479)								// texte secondaire
-private val kDeskOutline      = Color(0xFFA39FB5)								// contour marqué
-private val kDeskRule         = Color(0xFFECE9F4)								// filet
-private val kDeskLow          = Color(0xFFF6F4FC)								// survol, champ
-private val kDeskMid          = Color(0xFFEFECF8)								// conteneur
-private val kDeskHigh         = Color(0xFFE7E3F4)								// conteneur marqué
-private val kDeskHighest      = Color(0xFFDFDAF0)								// conteneur le plus marqué
-private val kDeskBack         = Color(0xFFEEEAF9)								// fond derrière les panneaux
-private val kDeskNight        = Color(0xFF222439)								// panneau, sombre
-private val kDeskNightBack    = Color(0xFF12131F)								// fond, sombre
-private val kDeskMoon         = Color(0xFFF1EFF8)								// encre, sombre
-private val kDeskMoonMuted    = Color(0xFFA9A5BF)								// texte secondaire, sombre
-private val kDeskNightOutline = Color(0xFF6F6B86)								// contour marqué, sombre
-private val kDeskNightRule    = Color(0xFF33354D)								// filet, sombre
-private val kDeskNightLow     = Color(0xFF292B42)								// survol, sombre
-private val kDeskNightMid     = Color(0xFF2F3149)								// conteneur, sombre
-private val kDeskNightHigh    = Color(0xFF373952)								// conteneur marqué, sombre
-private val kDeskNightHighest = Color(0xFF41435E)								// conteneur le plus marqué, sombre
+// Brume lumineuse, clair : neutres gris-bleu, encre presque noire.
+private val kInk          = Color(0xFF14171C)									// encre
+private val kInkMuted     = Color(0xFF636B77)									// texte secondaire (5,1:1 sur le verre blanc)
+private val kOutline      = Color(0xFFA2ABB6)									// contour marqué
+private val kRule         = Color(0xFFE1E6EC)									// filet
+private val kLow          = Color(0xFFF4F7FA)									// survol, champ
+private val kMid          = Color(0xFFECF0F4)									// conteneur
+private val kHigh         = Color(0xFFE3E9EF)									// conteneur marqué
+private val kHighest      = Color(0xFFD9E0E7)									// conteneur le plus marqué
+private val kBack         = Color(0xFFDCE3EA)									// fond derrière les panneaux
 
-// Verre sombre : noir profond, verre fumé, accent violet.
-private val kGlassInk       = Color(0xFFF3F3F7)								// encre
-private val kGlassInkMuted  = Color(0xFFA2A2B4)								// texte secondaire
-private val kGlassBack      = Color(0xFF07070B)								// fond
-private val kGlassPanel     = Color(0xFF15151C)								// menus, fenêtres (opaques)
-private val kGlassOutline   = Color(0xFF5E5E70)								// contour marqué
-private val kGlassRule      = Color(0xFF2A2A33)								// filet
-private val kGlassLow       = Color(0xFF1B1B23)								// survol
-private val kGlassMid       = Color(0xFF202029)								// conteneur
-private val kGlassHigh      = Color(0xFF272731)								// conteneur marqué
-private val kGlassHighest   = Color(0xFF30303B)								// conteneur le plus marqué
-private val kGlassViolet    = Color(0xFF6A5CF5)								// accent violet (pilules, disque du rail)
+// Brume lumineuse, sombre : ardoise profonde, encre claire.
+private val kNightInk     = Color(0xFFEDF0F4)									// encre
+private val kNightMuted   = Color(0xFF9AA3AF)									// texte secondaire
+private val kNightOutline = Color(0xFF5C6572)									// contour marqué
+private val kNightRule    = Color(0xFF29303A)									// filet
+private val kNightPanel   = Color(0xFF181D24)									// menus, fenêtres (opaques)
+private val kNightLow     = Color(0xFF1E242C)									// survol
+private val kNightMid     = Color(0xFF232A33)									// conteneur
+private val kNightHigh    = Color(0xFF2A323C)									// conteneur marqué
+private val kNightHighest = Color(0xFF333C47)									// conteneur le plus marqué
+private val kNightBack    = Color(0xFF0E1217)									// fond
+
+// Jaune citron du seul bouton plein de l'appli (« Nouvelle opération », saisie).
+val kLemon      = Color(0xFFF8E24B)												// clair
+val kLemonNight = Color(0xFFF2D838)												// sombre
+val kOnLemon    = Color(0xFF1A1A10)												// texte sur le jaune (14:1)
 
 /*
-	Construit une graisse de la police variable Outfit (géométrique ronde de
-	l'appli PC).
+	Construit une graisse de la police variable Urbanist (géométrique fine
+	des deux applis).
+	inWeight : graisse voulue
+*/
+@Composable
+private fun urbanistWeight(inWeight: FontWeight): Font =
+	Font(
+		resource          = Res.font.urbanist,
+		weight            = inWeight,
+		style             = FontStyle.Normal,
+		variationSettings = FontVariation.Settings(FontVariation.weight(inWeight.weight))
+	)
+
+/*
+	Famille Urbanist : légère, courante, moyenne, demi-grasse.
+*/
+@Composable
+fun urbanist(): FontFamily =
+	FontFamily(
+		urbanistWeight(FontWeight.Light),
+		urbanistWeight(FontWeight.Normal),
+		urbanistWeight(FontWeight.Medium),
+		urbanistWeight(FontWeight.SemiBold)
+	)
+
+/*
+	Construit une graisse de la police variable Outfit (gardée pour le logo
+	et les écrans qui la demandent encore).
 	inWeight : graisse voulue
 */
 @Composable
@@ -85,174 +108,175 @@ fun outfit(): FontFamily =
 private val kDeskBase = Typography()										// échelle Material 3 de référence
 
 /*
-	Applique Outfit, une graisse, un interlettrage et des chiffres
-	tabulaires (montants alignés) à un style de l'échelle Material.
-	inFamily   : Outfit
+	Applique Urbanist, une graisse, un interlettrage, une taille et des
+	chiffres tabulaires (montants alignés) à un style de l'échelle Material.
+	inFamily   : Urbanist
 	inStyle    : style de référence
 	inWeight   : graisse
 	inTracking : interlettrage, en em
-	inSize     : taille, en sp ; null conserve celle du style
-	inLine     : interligne, en sp ; null conserve celui du style
+	inSize     : taille, en sp
+	inLine     : interligne, en sp
 */
 private fun geometric(
 	inFamily   : FontFamily,
 	inStyle    : TextStyle,
 	inWeight   : FontWeight,
 	inTracking : Float,
-	inSize     : Float? = null,
-	inLine     : Float? = null
+	inSize     : Float,
+	inLine     : Float
 ): TextStyle =
 	inStyle.copy(
 		fontFamily          = inFamily,
 		fontWeight          = inWeight,
 		letterSpacing       = inTracking.em,
-		fontSize            = inSize?.sp ?: inStyle.fontSize,
-		lineHeight          = inLine?.sp ?: inStyle.lineHeight,
+		fontSize            = inSize.sp,
+		lineHeight          = inLine.sp,
 		fontFeatureSettings = "tnum"
 	)
 
 /*
-	Échelle typographique de l'appli PC : titres de page en grand et en
-	graisse moyenne, serrés ; texte courant légèrement ouvert.
+	Échelle typographique des deux applis : chiffres et titres de page grands
+	et légers, titres de panneau en graisse moyenne, texte courant net.
 */
 @Composable
 fun deskTypography(): Typography
 {
-	val vFamily = outfit()														// Outfit chargée
+	val vFamily = urbanist()														// Urbanist chargée
 	return Typography(
-		displayLarge   = geometric(vFamily, kDeskBase.displayLarge, FontWeight.Medium, -0.035f),
-		displayMedium  = geometric(vFamily, kDeskBase.displayMedium, FontWeight.Medium, -0.03f),
-		displaySmall   = geometric(vFamily, kDeskBase.displaySmall, FontWeight.Medium, -0.03f, 42f, 50f),
-		headlineLarge  = geometric(vFamily, kDeskBase.headlineLarge, FontWeight.Medium, -0.02f),
-		headlineMedium = geometric(vFamily, kDeskBase.headlineMedium, FontWeight.Medium, -0.02f),
-		headlineSmall  = geometric(vFamily, kDeskBase.headlineSmall, FontWeight.Medium, -0.015f),
-		titleLarge     = geometric(vFamily, kDeskBase.titleLarge, FontWeight.Medium, -0.01f),
-		titleMedium    = geometric(vFamily, kDeskBase.titleMedium, FontWeight.Medium, -0.005f, 17f, 24f),
-		titleSmall     = geometric(vFamily, kDeskBase.titleSmall, FontWeight.Medium, 0f),
-		bodyLarge      = geometric(vFamily, kDeskBase.bodyLarge, FontWeight.Normal, 0.005f),
-		bodyMedium     = geometric(vFamily, kDeskBase.bodyMedium, FontWeight.Normal, 0.01f),
-		bodySmall      = geometric(vFamily, kDeskBase.bodySmall, FontWeight.Normal, 0.015f),
-		labelLarge     = geometric(vFamily, kDeskBase.labelLarge, FontWeight.Medium, 0.01f),
-		labelMedium    = geometric(vFamily, kDeskBase.labelMedium, FontWeight.Medium, 0.015f),
-		labelSmall     = geometric(vFamily, kDeskBase.labelSmall, FontWeight.Medium, 0.02f)
+		displayLarge   = geometric(vFamily, kDeskBase.displayLarge, FontWeight.Light, -0.025f, 58f, 64f),
+		displayMedium  = geometric(vFamily, kDeskBase.displayMedium, FontWeight.Light, -0.02f, 46f, 52f),
+		displaySmall   = geometric(vFamily, kDeskBase.displaySmall, FontWeight.Normal, -0.02f, 38f, 46f),
+		headlineLarge  = geometric(vFamily, kDeskBase.headlineLarge, FontWeight.Normal, -0.015f, 32f, 40f),
+		headlineMedium = geometric(vFamily, kDeskBase.headlineMedium, FontWeight.Normal, -0.01f, 28f, 34f),
+		headlineSmall  = geometric(vFamily, kDeskBase.headlineSmall, FontWeight.Normal, -0.01f, 24f, 30f),
+		titleLarge     = geometric(vFamily, kDeskBase.titleLarge, FontWeight.Medium, -0.005f, 20f, 26f),
+		titleMedium    = geometric(vFamily, kDeskBase.titleMedium, FontWeight.Medium, 0f, 16f, 22f),
+		titleSmall     = geometric(vFamily, kDeskBase.titleSmall, FontWeight.Medium, 0f, 14f, 20f),
+		bodyLarge      = geometric(vFamily, kDeskBase.bodyLarge, FontWeight.Normal, 0.005f, 15f, 22f),
+		bodyMedium     = geometric(vFamily, kDeskBase.bodyMedium, FontWeight.Normal, 0.008f, 13.5f, 19f),
+		bodySmall      = geometric(vFamily, kDeskBase.bodySmall, FontWeight.Normal, 0.01f, 12f, 16f),
+		labelLarge     = geometric(vFamily, kDeskBase.labelLarge, FontWeight.Medium, 0.005f, 14f, 20f),
+		labelMedium    = geometric(vFamily, kDeskBase.labelMedium, FontWeight.Medium, 0.01f, 12f, 16f),
+		labelSmall     = geometric(vFamily, kDeskBase.labelSmall, FontWeight.Medium, 0.015f, 11f, 14f)
 	)
 }
 
 /*
-	Palette de l'appli PC : celle du thème de couleurs pour les données
-	(hausses et baisses, accents), avec des neutres teintés de lavande ;
-	encre de la coque (pilules, disque du rail, boutons) presque noire, ou
-	lune en sombre, quel que soit le thème ; panneaux blancs (nuit indigo en
-	sombre) posés sur le fond pastel.
-	Verre sombre : noir profond, encre claire et accent violet pour la coque.
+	Palette des deux applis (brume lumineuse) : neutres gris-bleu, encre
+	presque noire (lune en sombre) pour les boutons ordinaires, surfaces
+	opaques pour les menus et les fenêtres ; les panneaux de verre et le
+	jaune citron sont posés par leurs composants. Les couleurs des données
+	viennent de la palette (voir colorfulPalette). Le thème de couleurs et
+	l'effet verre d'avant n'ont plus d'effet : un seul style.
 	inDark       : mode sombre
-	inColorTheme : thème de couleurs
-	inGlass      : effet verre
+	inColorTheme : sans effet (gardé pour les appels existants)
+	inGlass      : sans effet (gardé pour les appels existants)
 */
 fun deskColors(
 	inDark       : Boolean,
-	inColorTheme : ColorTheme,
-	inGlass      : Boolean = false
-): ColorScheme
-{
-	val vColorful = inColorTheme == ColorTheme.COLORFUL								// thème Coloré
-	return if (inDark && inGlass)
+	inColorTheme : ColorTheme = ColorTheme.COLORFUL,
+	inGlass      : Boolean    = true
+): ColorScheme =
+	if (inDark)
 	{
-		val vBase = if (vColorful) ColorfulDarkColors else MonoDarkColors			// palette du thème
-		vBase.copy(
-			primary                 = kGlassViolet,
-			onPrimary               = Color.White,
-			inverseSurface          = kGlassInk,
-			inverseOnSurface        = kGlassBack,
-			background              = kGlassBack,
-			surface                 = kGlassPanel,
-			onSurface               = kGlassInk,
-			onBackground            = kGlassInk,
-			onSurfaceVariant        = kGlassInkMuted,
-			outline                 = kGlassOutline,
-			outlineVariant          = kGlassRule,
-			surfaceContainerLowest  = kGlassBack,
-			surfaceContainerLow     = kGlassLow,
-			surfaceContainer        = kGlassMid,
-			surfaceContainerHigh    = kGlassHigh,
-			surfaceContainerHighest = kGlassHighest
-		)
-	}
-	else if (inDark)
-	{
-		val vBase = if (vColorful) ColorfulDarkColors else MonoDarkColors			// palette du thème
-		vBase.copy(
-			primary                 = kDeskMoon,
-			onPrimary               = kDeskInk,
-			inverseSurface          = kDeskMoon,
-			inverseOnSurface        = kDeskInk,
-			background              = kDeskNightBack,
-			surface                 = kDeskNight,
-			onSurface               = kDeskMoon,
-			onBackground            = kDeskMoon,
-			onSurfaceVariant        = kDeskMoonMuted,
-			outline                 = kDeskNightOutline,
-			outlineVariant          = kDeskNightRule,
-			surfaceContainerLowest  = kDeskNight,
-			surfaceContainerLow     = kDeskNightLow,
-			surfaceContainer        = kDeskNightMid,
-			surfaceContainerHigh    = kDeskNightHigh,
-			surfaceContainerHighest = kDeskNightHighest
+		darkColorScheme(
+			primary                 = kNightInk,
+			onPrimary               = kNightBack,
+			primaryContainer        = kNightHigh,
+			onPrimaryContainer      = kNightInk,
+			secondary               = kNightMuted,
+			onSecondary             = kNightBack,
+			secondaryContainer      = kNightHigh,
+			onSecondaryContainer    = kNightInk,
+			tertiary                = kLemonNight,
+			onTertiary              = kOnLemon,
+			background              = kNightBack,
+			onBackground            = kNightInk,
+			surface                 = kNightPanel,
+			onSurface               = kNightInk,
+			surfaceVariant          = kNightMid,
+			onSurfaceVariant        = kNightMuted,
+			surfaceTint             = Color.Transparent,
+			inverseSurface          = kNightInk,
+			inverseOnSurface        = kNightBack,
+			error                   = Color(0xFFFF8478),
+			onError                 = kNightBack,
+			outline                 = kNightOutline,
+			outlineVariant          = kNightRule,
+			surfaceBright           = kNightHigh,
+			surfaceDim              = kNightBack,
+			surfaceContainerLowest  = kNightPanel,
+			surfaceContainerLow     = kNightLow,
+			surfaceContainer        = kNightMid,
+			surfaceContainerHigh    = kNightHigh,
+			surfaceContainerHighest = kNightHighest
 		)
 	}
 	else
 	{
-		val vBase = if (vColorful) ColorfulLightColors else MonoLightColors		// palette du thème
-		vBase.copy(
-			primary                 = kDeskInk,
+		lightColorScheme(
+			primary                 = kInk,
 			onPrimary               = Color.White,
-			inverseSurface          = kDeskInk,
-			inverseOnSurface        = Color.White,
-			background              = kDeskBack,
+			primaryContainer        = kHigh,
+			onPrimaryContainer      = kInk,
+			secondary               = kInkMuted,
+			onSecondary             = Color.White,
+			secondaryContainer      = kHigh,
+			onSecondaryContainer    = kInk,
+			tertiary                = kLemon,
+			onTertiary              = kOnLemon,
+			background              = kBack,
+			onBackground            = kInk,
 			surface                 = Color.White,
-			onSurface               = kDeskInk,
-			onBackground            = kDeskInk,
-			onSurfaceVariant        = kDeskInkMuted,
-			outline                 = kDeskOutline,
-			outlineVariant          = kDeskRule,
+			onSurface               = kInk,
+			surfaceVariant          = kMid,
+			onSurfaceVariant        = kInkMuted,
+			surfaceTint             = Color.Transparent,
+			inverseSurface          = kInk,
+			inverseOnSurface        = Color.White,
+			error                   = Color(0xFFC2352D),
+			onError                 = Color.White,
+			outline                 = kOutline,
+			outlineVariant          = kRule,
+			surfaceBright           = Color.White,
+			surfaceDim              = kBack,
 			surfaceContainerLowest  = Color.White,
-			surfaceContainerLow     = kDeskLow,
-			surfaceContainer        = kDeskMid,
-			surfaceContainerHigh    = kDeskHigh,
-			surfaceContainerHighest = kDeskHighest
+			surfaceContainerLow     = kLow,
+			surfaceContainer        = kMid,
+			surfaceContainerHigh    = kHigh,
+			surfaceContainerHighest = kHighest
 		)
 	}
-}
 
-// Formes de l'appli PC : champs et menus arrondis, à l'échelle des panneaux de 28 dp.
+// Formes : champs et menus arrondis, à l'échelle des panneaux de 18 dp.
 private val kDeskShapes = Shapes(
-	extraSmall = RoundedCornerShape(14.dp),
-	small      = RoundedCornerShape(16.dp),
-	medium     = RoundedCornerShape(20.dp),
-	large      = RoundedCornerShape(28.dp),
-	extraLarge = RoundedCornerShape(32.dp)
+	extraSmall = RoundedCornerShape(8.dp),
+	small      = RoundedCornerShape(12.dp),
+	medium     = RoundedCornerShape(16.dp),
+	large      = RoundedCornerShape(18.dp),
+	extraLarge = RoundedCornerShape(24.dp)
 )
 
 /*
-	Thème de l'appli PC : palette à neutres lavande et Outfit, même thème de
-	couleurs que l'appli Android pour les données.
+	Thème des deux applis : brume lumineuse (palette gris-bleu, Urbanist,
+	panneaux de verre), en clair ou en sombre ; données aux couleurs de la
+	palette, ou à celles d'un thème personnalisé.
 	inDarkTheme  : mode sombre
-	inColorTheme : thème de couleurs
-	inGlass      : effet verre (panneaux translucides ; en sombre, noir profond et violet)
-	inPalette    : palette d'un thème personnalisé (traité comme le thème Coloré) ; null sans
+	inColorTheme : sans effet (un seul style ; gardé pour les appels existants)
+	inGlass      : sans effet (panneaux de verre toujours)
+	inPalette    : couleurs des données d'un thème personnalisé ; null : palette de la brume
 	inContent    : contenu
 */
 @Composable
 fun DeskTheme(
 	inDarkTheme  : Boolean,
-	inColorTheme : ColorTheme,
-	inGlass      : Boolean = false,
-	inPalette    : Palette? = null,
+	inColorTheme : ColorTheme = ColorTheme.COLORFUL,
+	inGlass      : Boolean    = true,
+	inPalette    : Palette?   = null,
 	inContent    : @Composable () -> Unit
 )
 {
-	val vTheme = if (inPalette != null) ColorTheme.COLORFUL else inColorTheme			// thème personnalisé : comme Coloré
-	MaterialTheme(colorScheme = deskColors(inDarkTheme, vTheme, inGlass), typography = deskTypography(), shapes = kDeskShapes) {
-		CompositionLocalProvider(LocalColorTheme provides vTheme, LocalPalette provides inPalette, LocalGlass provides inGlass, LocalContentColor provides MaterialTheme.colorScheme.onSurface, content = inContent)	// encre par défaut : écrans transparents sur le fond
+	MaterialTheme(colorScheme = deskColors(inDarkTheme), typography = deskTypography(), shapes = kDeskShapes) {
+		CompositionLocalProvider(LocalColorTheme provides ColorTheme.COLORFUL, LocalPalette provides inPalette, LocalGlass provides true, LocalContentColor provides MaterialTheme.colorScheme.onSurface, content = inContent)	// encre par défaut : écrans transparents sur le fond
 	}
 }

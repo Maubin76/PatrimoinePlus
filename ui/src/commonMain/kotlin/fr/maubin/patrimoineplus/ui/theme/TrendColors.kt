@@ -9,10 +9,10 @@ private val kGainLight = Color(0xFF1B7A3A)										// hausse sur fond clair (co
 private val kLossLight = Color(0xFFC0262D)										// baisse sur fond clair
 private val kGainDark  = Color(0xFF6FD39A)										// hausse sur fond sombre
 private val kLossDark  = Color(0xFFFF8A84)										// baisse sur fond sombre
-private val kRiseLight = Color(0xFF0A6B59)										// thème Coloré : hausse, menthe foncée (6,4:1 sur blanc)
-private val kFallLight = Color(0xFF9A2042)										// thème Coloré : baisse, corail foncé (7,9:1 sur blanc)
-private val kRiseDark  = Color(0xFF4FDDB8)										// thème Coloré sombre : hausse, menthe (9:1)
-private val kFallDark  = Color(0xFFFF8FA8)										// thème Coloré sombre : baisse, corail clair (7:1)
+private val kRiseLight = Color(0xFF1C7A3C)										// hausse, vert foncé (5,2:1 sur le verre blanc)
+private val kFallLight = Color(0xFFB8322A)										// baisse, rouge foncé (5,6:1 sur le verre blanc)
+private val kRiseDark  = Color(0xFF5FD08A)										// sombre : hausse, vert clair
+private val kFallDark  = Color(0xFFFF8478)										// sombre : baisse, rouge clair
 
 /*
 	Couleur d'une variation selon le thème : Minimal, vert pour une hausse et

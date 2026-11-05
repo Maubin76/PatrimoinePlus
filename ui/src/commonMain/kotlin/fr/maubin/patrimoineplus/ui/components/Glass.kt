@@ -19,7 +19,7 @@ import androidx.compose.ui.draw.shadow
 // Effet verre de l'appli PC (réglage), fourni par l'appli ; faux par défaut (téléphone).
 val LocalGlass = staticCompositionLocalOf { false }
 
-private val kSmoke       = Color(0xFF111118).copy(alpha = 0.62f)						// voile fumé sous le verre sombre (lisibilité)
+private val kSmoke       = Color(0xFF0E1217).copy(alpha = 0.58f)						// voile d'ardoise sous le verre sombre (lisibilité)
 private val kVioletLight = Color(0xFF7B6CF6)										// violet du verre sombre, reflet
 private val kVioletDeep  = Color(0xFF3B31B0)										// violet du verre sombre, profondeur
 
@@ -30,10 +30,10 @@ private val kVioletDeep  = Color(0xFF3B31B0)										// violet du verre sombre,
 fun isGlass(): Boolean = LocalGlass.current
 
 /*
-	Panneau de verre : aplat translucide plus clair en haut à gauche (la
-	lumière), liseré lumineux qui s'éteint vers le bas à droite ; sans ombre
-	portée, qui se verrait à travers. En clair, verre dépoli blanc ; en
-	sombre, verre fumé.
+	Panneau de verre de la brume : blanc translucide, à peine plus dense en
+	haut à gauche (la lumière), liseré blanc net qui s'adoucit vers le bas à
+	droite ; sans ombre portée, qui se verrait à travers. En sombre, verre
+	d'ardoise, liseré clair très léger.
 	inShape : forme du panneau
 	inDark  : fond sombre
 	inTint  : teinte du verre (thème Coloré : type du compte) ; non précisée : verre neutre
@@ -49,19 +49,19 @@ fun Modifier.glassPanel(
 	val vTinted = inTint != Color.Unspecified											// verre teinté
 	val vTop    = when
 	{
-		inDark && vTinted -> inTint.copy(alpha = 0.20f + 0.06f * inLift)
-		inDark            -> Color.White.copy(alpha = 0.09f + 0.03f * inLift)
-		vTinted           -> lerp(Color.White, inTint, 0.22f).copy(alpha = 0.86f + 0.06f * inLift)
-		else              -> Color.White.copy(alpha = 0.84f + 0.06f * inLift)
+		inDark && vTinted -> inTint.copy(alpha = 0.16f + 0.05f * inLift)
+		inDark            -> Color.White.copy(alpha = 0.075f + 0.03f * inLift)
+		vTinted           -> lerp(Color.White, inTint, 0.14f).copy(alpha = 0.72f + 0.08f * inLift)
+		else              -> Color.White.copy(alpha = 0.66f + 0.1f * inLift)
 	}																				// verre, côté lumière
 	val vLow    = when
 	{
-		inDark && vTinted -> inTint.copy(alpha = 0.06f)
-		inDark            -> Color.White.copy(alpha = 0.03f)
-		vTinted           -> lerp(Color.White, inTint, 0.32f).copy(alpha = 0.68f)
-		else              -> Color.White.copy(alpha = 0.66f)
+		inDark && vTinted -> inTint.copy(alpha = 0.05f)
+		inDark            -> Color.White.copy(alpha = 0.04f)
+		vTinted           -> lerp(Color.White, inTint, 0.2f).copy(alpha = 0.58f)
+		else              -> Color.White.copy(alpha = 0.54f)
 	}																				// verre, côté ombre
-	val vEdge   = if (inDark) listOf(Color.White.copy(alpha = 0.24f), Color.White.copy(alpha = 0.03f)) else listOf(Color.White.copy(alpha = 0.95f), Color.White.copy(alpha = 0.30f))	// liseré
+	val vEdge   = if (inDark) listOf(Color.White.copy(alpha = 0.16f), Color.White.copy(alpha = 0.05f)) else listOf(Color.White.copy(alpha = 0.95f), Color.White.copy(alpha = 0.55f))	// liseré
 	return this																		// pas d'ombre : elle se verrait à travers le verre
 		.then(if (inDark) Modifier.background(kSmoke, inShape) else Modifier)			// sombre : verre fumé, qui atténue le fond
 		.background(Brush.linearGradient(listOf(vTop, vLow), start = Offset.Zero, end = Offset.Infinite), inShape)
@@ -69,12 +69,11 @@ fun Modifier.glassPanel(
 }
 
 /*
-	Tuile du chiffre mis en avant pleine : thème Coloré, ou verre sombre
-	(violet).
+	Tuile du chiffre mis en avant pleine : plus jamais (brume lumineuse : le
+	chiffre se pose sur le verre ou à même le fond).
 */
 @Composable
-fun heroFilled(): Boolean =
-	isColorful() || (isGlass() && MaterialTheme.colorScheme.surface.luminance() < 0.5f)
+fun heroFilled(): Boolean = false
 
 /*
 	Verre plein du chiffre mis en avant, en sombre : dégradé violet, liseré

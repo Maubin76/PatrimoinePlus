@@ -25,18 +25,19 @@ import androidx.compose.ui.unit.IntSize
 import kotlin.math.roundToInt
 
 /*
-	Fond de l'application (téléphone et PC), sous tout le contenu : dégradé
-	pastel (nuit indigo en sombre), ou formes floues avec l'effet verre.
+	Fond de l'application (téléphone et PC), sous tout le contenu : brume
+	gris-bleu traversée d'un halo jaune (ardoise et lueurs en sombre), que les
+	panneaux de verre laissent deviner.
 	inDark  : mode sombre
-	inGlass : effet verre
+	inGlass : sans effet (un seul style ; gardé pour les appels existants)
 */
 @Composable
 fun AppGround(
 	inDark  : Boolean,
-	inGlass : Boolean
+	inGlass : Boolean = true
 )
 {
-	if (inGlass) GlassBackdrop(inDark) else Box(Modifier.fillMaxSize().deskGround(inDark))
+	GlassBackdrop(inDark)
 }
 
 /*
@@ -55,9 +56,9 @@ fun GlassBackdrop(inDark: Boolean)
 	Box(
 		Modifier
 			.fillMaxSize()
-			.background(if (inDark) Color(0xFF07070B) else Color(0xFFE9E4FA))
+			.background(if (inDark) Color(0xFF0E1217) else Color(0xFFDCE3EA))
 			.drawWithCache {
-				val vImage = softImage(this, (if (inDark) 40.dp else 90.dp).toPx()) { glassShapes(inDark) }	// formes floues, calculées une fois
+				val vImage = softImage(this, (if (inDark) 70.dp else 80.dp).toPx()) { glassShapes(inDark) }	// formes floues, calculées une fois
 				onDrawBehind { drawImage(vImage) }
 			}
 	)
@@ -102,7 +103,10 @@ private fun softImage(
 }
 
 /*
-	Formes du fond de verre, avant flou.
+	Formes du fond de brume, avant flou. Clair : gris-bleu, grand halo jaune
+	citron un peu à droite du centre, prolongé vers le bas, cœur plus chaud,
+	bleu ciel à gauche et en bas à droite, voile blanc en haut à gauche.
+	Sombre : ardoise profonde, lueur ambre et lueur bleu nuit.
 	inDark : mode sombre
 */
 private fun DrawScope.glassShapes(inDark: Boolean)
@@ -110,31 +114,27 @@ private fun DrawScope.glassShapes(inDark: Boolean)
 	val vW = size.width															// largeur
 	val vH = size.height															// hauteur
 	val vM = maxOf(vW, vH)															// plus grande dimension
+	val vBlob = { inColor: Color, inX: Float, inY: Float, inR: Float -> drawCircle(inColor, radius = inR * vM, center = Offset(inX * vW, inY * vH)) }	// tache, en fractions de l'écran
 	if (inDark)
 	{
-		val vFacet = { inColor: Color, inPoints: List<Pair<Float, Float>> ->
-			drawPath(Path().apply {
-				moveTo(inPoints[0].first * vW, inPoints[0].second * vH)
-				inPoints.drop(1).forEach { (inX, inY) -> lineTo(inX * vW, inY * vH) }
-				close()
-			}, inColor)
-		}																		// facette, en fractions de l'écran
-		vFacet(Color(0xFF101017), listOf(0f to 0f, 0.42f to 0f, 0.18f to 0.55f, 0f to 0.4f))
-		vFacet(Color(0xFF15151D), listOf(0.42f to 0f, 0.78f to 0f, 0.5f to 0.38f, 0.18f to 0.55f))
-		vFacet(Color(0xFF0D0D13), listOf(0.78f to 0f, 1f to 0f, 1f to 0.48f, 0.5f to 0.38f))
-		vFacet(Color(0xFF13131A), listOf(0f to 0.4f, 0.18f to 0.55f, 0.36f to 1f, 0f to 1f))
-		vFacet(Color(0xFF0B0B10), listOf(0.18f to 0.55f, 0.5f to 0.38f, 0.7f to 1f, 0.36f to 1f))
-		vFacet(Color(0xFF17171F), listOf(0.5f to 0.38f, 1f to 0.48f, 1f to 1f, 0.7f to 1f))
-		drawCircle(Brush.radialGradient(listOf(Color(0xFF5B4BE0).copy(alpha = 0.30f), Color.Transparent), center = Offset(0.82f * vW, 0.12f * vH), radius = 0.45f * vM), radius = 0.45f * vM, center = Offset(0.82f * vW, 0.12f * vH))
-		drawCircle(Brush.radialGradient(listOf(Color(0xFF2A3A8C).copy(alpha = 0.20f), Color.Transparent), center = Offset(0.12f * vW, 0.92f * vH), radius = 0.4f * vM), radius = 0.4f * vM, center = Offset(0.12f * vW, 0.92f * vH))
+		drawRect(Brush.linearGradient(listOf(Color(0xFF111620), Color(0xFF0D1117), Color(0xFF10151C)), start = Offset.Zero, end = Offset(vW, vH)))
+		vBlob(Color(0xFF1B2C40).copy(alpha = 0.85f), 0.12f, 0.2f, 0.26f)
+		vBlob(Color(0xFF5A3E12).copy(alpha = 0.70f), 0.56f, 0.36f, 0.22f)
+		vBlob(Color(0xFF8A5C16).copy(alpha = 0.45f), 0.6f, 0.3f, 0.11f)
+		vBlob(Color(0xFF3E2C12).copy(alpha = 0.55f), 0.46f, 0.92f, 0.2f)
+		vBlob(Color(0xFF16283A).copy(alpha = 0.75f), 0.92f, 0.8f, 0.24f)
 	}
 	else
 	{
-		drawRect(Brush.linearGradient(listOf(Color(0xFFE6E0FA), Color(0xFFDDE6F8), Color(0xFFE5E0F7)), start = Offset.Zero, end = Offset(vW, vH)))
-		drawCircle(Color(0xFFC3B2FF).copy(alpha = 0.50f), radius = 0.26f * vM, center = Offset(0.2f * vW, 0.18f * vH))
-		drawCircle(Color(0xFFFFBFD8).copy(alpha = 0.45f), radius = 0.28f * vM, center = Offset(0.06f * vW, 0.86f * vH))
-		drawCircle(Color(0xFF9FCBFF).copy(alpha = 0.42f), radius = 0.27f * vM, center = Offset(0.86f * vW, 0.34f * vH))
-		drawCircle(Color(0xFFFFD9B8).copy(alpha = 0.32f), radius = 0.2f * vM, center = Offset(0.6f * vW, 0.98f * vH))
+		drawRect(Brush.linearGradient(listOf(Color(0xFFD5DEE7), Color(0xFFE2E7EC), Color(0xFFD8E1EA)), start = Offset.Zero, end = Offset(vW, vH)))
+		vBlob(Color(0xFFC3D6E8), 0.1f, 0.62f, 0.28f)
+		vBlob(Color.White.copy(alpha = 0.75f), 0.3f, 0.12f, 0.2f)
+		vBlob(Color(0xFFF6E27A), 0.57f, 0.38f, 0.24f)
+		vBlob(Color(0xFFF7D63E), 0.6f, 0.33f, 0.14f)
+		vBlob(Color(0xFFF3C95A).copy(alpha = 0.6f), 0.66f, 0.3f, 0.07f)
+		vBlob(Color(0xFFF4E89A).copy(alpha = 0.85f), 0.44f, 0.95f, 0.2f)
+		vBlob(Color(0xFFC9DCEC).copy(alpha = 0.9f), 0.94f, 0.82f, 0.22f)
+		vBlob(Color.White.copy(alpha = 0.5f), 0.86f, 0.16f, 0.14f)
 	}
 }
 
@@ -182,11 +182,5 @@ fun titleBarColors(
 	inDark  : Boolean,
 	inGlass : Boolean
 ): Pair<Color, Color> =
-	when
-	{
-		inDark && inGlass -> Color(0xFF07070B) to Color(0xFFF3F3F7)
-		inDark            -> Color(0xFF16162B) to Color(0xFFF1EFF8)
-		inGlass           -> Color(0xFFE9E4FA) to Color(0xFF16151F)
-		else              -> Color(0xFFE6E0FA) to Color(0xFF16151F)
-	}
+	if (inDark) Color(0xFF111620) to Color(0xFFEDF0F4) else Color(0xFFD7DFE8) to Color(0xFF14171C)
 

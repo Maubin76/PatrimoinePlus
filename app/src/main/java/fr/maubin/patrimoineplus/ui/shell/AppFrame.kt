@@ -55,6 +55,11 @@ import fr.maubin.patrimoineplus.ui.navigation.TopLevelDestination
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import fr.maubin.patrimoineplus.ui.components.FloatingSurface
+import fr.maubin.patrimoineplus.ui.components.isNight
+import fr.maubin.patrimoineplus.ui.theme.kLemon
+import fr.maubin.patrimoineplus.ui.theme.kLemonNight
+import fr.maubin.patrimoineplus.ui.theme.kOnLemon
+import androidx.compose.ui.graphics.Color
 
 private val kPillClearance  = 96.dp										// pilule (64) + marges (12 + 20)
 private val kEntryClearance = 72.dp										// bouton de saisie (56) + écart (16)
@@ -117,8 +122,8 @@ fun AppFrame(
 
 /*
 	Pilule de navigation flottante : surface flottante (verre avec l'effet
-	verre), icônes au trait fin. Un indicateur unique, capsule pleine à
-	l'encre de la coque (violet en verre sombre), glisse sous les onglets en épousant la
+	verre), icônes au trait fin. Un indicateur unique, capsule de verre blanc
+	(voile clair en sombre), glisse sous les onglets en épousant la
 	largeur de l'onglet actif, qui s'élargit pour afficher son nom. Tout
 	découle de la position du pager, lue aux phases de mise en page et de
 	dessin : la capsule suit le doigt, sans recomposition par image. Chaque
@@ -135,7 +140,7 @@ fun FloatingNavBar(
 )
 {
 	val vColors    = MaterialTheme.colorScheme							// palette courante
-	val vIndicator = vColors.primary										// couleur de l'indicateur : encre de la coque
+	val vIndicator = if (isNight()) Color.White.copy(alpha = 0.16f) else Color.White	// couleur de l'indicateur : verre blanc de la brume
 	val vLeft      = remember { mutableFloatStateOf(0f) }					// bord gauche de l'indicateur
 	val vRight     = remember { mutableFloatStateOf(0f) }					// bord droit de l'indicateur
 	val vCoverage  = remember { List(TopLevelDestination.entries.size) { mutableFloatStateOf(0f) } }	// part de chaque icône sous l'indicateur
@@ -228,7 +233,7 @@ private fun NavTab(
 		Text(
 			text     = inDestination.label,
 			style    = MaterialTheme.typography.labelLarge,
-			color    = MaterialTheme.colorScheme.onPrimary,
+			color    = MaterialTheme.colorScheme.onSurface,
 			maxLines = 1,
 			softWrap = false,
 			modifier = Modifier
@@ -262,7 +267,7 @@ private fun TabIcon(
 		Icon(
 			imageVector        = inDestination.icon,
 			contentDescription = null,
-			tint               = MaterialTheme.colorScheme.onPrimary,
+			tint               = MaterialTheme.colorScheme.onSurface,
 			modifier           = Modifier.graphicsLayer { alpha = inCoverage() }
 		)
 	}
@@ -288,8 +293,8 @@ private fun Modifier.tabWidth(inProgress: () -> Float): Modifier =
 	}
 
 /*
-	Bouton de saisie : rond à l'encre de la coque (blanc en sombre, violet en
-	verre sombre), sans ombre.
+	Bouton de saisie : rond jaune citron, le seul bouton plein de l'appli,
+	sans ombre.
 	inOnClick : action du bouton
 */
 @Composable
@@ -298,8 +303,8 @@ fun EntryFab(inOnClick: () -> Unit)
 	FloatingActionButton(
 		onClick        = inOnClick,
 		shape          = CircleShape,
-		containerColor = MaterialTheme.colorScheme.primary,
-		contentColor   = MaterialTheme.colorScheme.onPrimary,
+		containerColor = if (isNight()) kLemonNight else kLemon,
+		contentColor   = kOnLemon,
 		elevation      = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp)
 	) {
 		Icon(Icons.Rounded.Add, contentDescription = "Nouvelle opération")
