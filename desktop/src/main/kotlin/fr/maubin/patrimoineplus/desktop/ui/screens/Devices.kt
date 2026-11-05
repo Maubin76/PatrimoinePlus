@@ -36,6 +36,12 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import androidx.compose.foundation.layout.width
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.desktop.ui.components.PageHeader
+import fr.maubin.patrimoineplus.ui.components.LemonButton
+import fr.maubin.patrimoineplus.ui.components.GhostPill
+import fr.maubin.patrimoineplus.ui.icons.LineIcons
+import fr.maubin.patrimoineplus.ui.components.GhostButton
 
 private val kHistoryTime = DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH:mm")		// heure d'une modification
 
@@ -56,11 +62,9 @@ fun DevicesScreen(inController: DesktopController)
 	val vColors   = MaterialTheme.colorScheme											// palette courante
 	var vName     by remember { mutableStateOf(vSettings.deviceName) }				// nom saisi
 	LaunchedEffect(Unit) { inController.diagnostic.refresh(); inController.refreshPeers() }
-	Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(40.dp).padding(bottom = LocalAssistantRoom.current).widthIn(max = 720.dp)) {
-		Text("Appareils", style = MaterialTheme.typography.displaySmall)
-		Spacer(Modifier.height(8.dp))
-		Text("Synchronisation directe avec le téléphone, sur le Wi-Fi de la maison.", style = MaterialTheme.typography.bodyLarge, color = vColors.onSurfaceVariant)
-		Spacer(Modifier.height(32.dp))
+	Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp).padding(top = 6.dp, bottom = 28.dp).padding(bottom = LocalAssistantRoom.current)) {
+		PageHeader(inTitle = "Appareils", inSubtitle = "Synchronisation directe avec le téléphone, sur le Wi-Fi de la maison.", inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) })
+		Spacer(Modifier.height(28.dp))
 		SectionHeader(inTitle = "Ce PC", inModifier = Modifier.tourAnchor("devices.this"))
 		Spacer(Modifier.height(12.dp))
 		FloatingCard {
@@ -74,7 +78,7 @@ fun DevicesScreen(inController: DesktopController)
 						singleLine    = true,
 						modifier      = Modifier.weight(1f)
 					)
-					OutlinedButton(onClick = { inController.setDeviceName(vName) }, enabled = vName.trim() != vSettings.deviceName) { Text("Renommer") }
+					GhostButton(onClick = { inController.setDeviceName(vName) }, enabled = vName.trim() != vSettings.deviceName) { Text("Renommer") }
 				}
 				Text(
 					text  = if (vState.networks.isEmpty()) "Réseau : non reconnu (ni Wi-Fi ni box lisibles)." else "Réseau : " + vState.networks.joinToString(" et ") { it.label } + ".",
@@ -129,8 +133,8 @@ fun DevicesScreen(inController: DesktopController)
 					color = vColors.onSurfaceVariant
 				)
 				Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-					if (vState.running) OutlinedButton(onClick = inController.diagnostic::stop) { Text("Arrêter") }
-					else Button(onClick = inController.diagnostic::start) { Text("Lancer le diagnostic") }
+					if (vState.running) GhostButton(onClick = inController.diagnostic::stop) { Text("Arrêter") }
+					else GhostButton(onClick = inController.diagnostic::start) { Text("Lancer le diagnostic") }
 				}
 				vState.error?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = vColors.error) }
 				if (vState.running)

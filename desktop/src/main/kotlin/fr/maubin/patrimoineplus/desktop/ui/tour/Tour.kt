@@ -90,6 +90,7 @@ import fr.maubin.patrimoineplus.ui.components.LocalPointer
 import fr.maubin.patrimoineplus.ui.components.AssistantAvatar
 import fr.maubin.patrimoineplus.ui.components.AvatarReaction
 import fr.maubin.patrimoineplus.ui.assistant.Mood
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 /*
 	Étape d'une visite guidée : élément présenté et texte de la bulle.
@@ -274,7 +275,7 @@ fun TourOverlay(
 						Spacer(Modifier.weight(1f))
 						TextButton(onClick = inOnFinish) { Text("Passer") }
 						if (inStep > 0) TextButton(onClick = { inOnStep(inStep - 1) }) { Text("Précédent") }
-						Button(onClick = { if (vLast) inOnFinish() else inOnStep(inStep + 1) }) { Text(if (vLast) "Terminer" else "Suivant") }
+						LemonPillButton(onClick = { if (vLast) inOnFinish() else inOnStep(inStep + 1) }) { Text(if (vLast) "Terminer" else "Suivant") }
 					}
 					TextButton(onClick = inOnStopAll, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
 						Text("Ne plus afficher les tutoriels", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

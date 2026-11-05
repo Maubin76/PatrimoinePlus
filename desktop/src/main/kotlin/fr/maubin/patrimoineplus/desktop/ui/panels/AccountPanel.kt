@@ -30,6 +30,8 @@ import fr.maubin.patrimoineplus.domain.calc.propertyItems
 import fr.maubin.patrimoineplus.ui.accounts.parseOwners
 import fr.maubin.patrimoineplus.domain.calc.kDefaultProfileId
 import fr.maubin.patrimoineplus.ui.components.accountLabel
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 /*
 	Création ou modification d'un compte dans le panneau latéral : nom, type
@@ -132,13 +134,13 @@ fun AccountPanel(
 		inActions = {
 			if (vAccount != null)
 			{
-				OutlinedButton(onClick = {
+				GhostButton(onClick = {
 					inController.edit { inController.editor.setArchived(it, vAccount.id, !vAccount.archived) }
 					inController.closePanel()
 				}) { Text(if (vAccount.archived) "Désarchiver" else "Archiver") }
-				OutlinedButton(onClick = { vDelete = true }) { Text("Supprimer") }
+				GhostButton(onClick = { vDelete = true }) { Text("Supprimer") }
 			}
-			Button(onClick = ::save) { Text("Enregistrer") }
+			LemonPillButton(onClick = ::save) { Text("Enregistrer") }
 		}
 	) {
 		FormError(vError)

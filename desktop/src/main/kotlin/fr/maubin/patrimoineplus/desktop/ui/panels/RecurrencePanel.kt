@@ -20,6 +20,8 @@ import fr.maubin.patrimoineplus.ui.planning.RecurrenceForm
 import fr.maubin.patrimoineplus.ui.planning.buildRecurrence
 import fr.maubin.patrimoineplus.ui.planning.checkRecurrence
 import fr.maubin.patrimoineplus.ui.components.accountLabel
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 /*
 	Nature d'une récurrence dans le panneau.
@@ -79,8 +81,8 @@ fun RecurrencePanel(
 		inDirty   = vForm != inStart,
 		inOnEnter = ::save,
 		inActions = {
-			vForm.id?.let { inId -> OutlinedButton(onClick = { finish(inController, inController.edit { inController.editor.deleteRecurrence(it, inId) }) { vGeneral = it } }) { Text("Supprimer") } }
-			Button(onClick = ::save) { Text("Enregistrer") }
+			vForm.id?.let { inId -> GhostButton(onClick = { finish(inController, inController.edit { inController.editor.deleteRecurrence(it, inId) }) { vGeneral = it } }) { Text("Supprimer") } }
+			LemonPillButton(onClick = ::save) { Text("Enregistrer") }
 		}
 	) {
 		FormError(vGeneral)

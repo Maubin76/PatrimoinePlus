@@ -53,6 +53,7 @@ import fr.maubin.patrimoineplus.ui.theme.LocalColorTheme
 import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.layout.width
 
 private val kTileShape = RoundedCornerShape(18.dp)								// forme d'une tuile : panneau de verre de la brume
 private val kShadowTint = Color(0xFF5B4E9E)										// ombre teintée de lavande (clair)
@@ -125,7 +126,7 @@ fun Tile(
 				when
 				{
 					vGlassy && inFilled -> Modifier.glassHero(kTileShape, vLift)
-					vGlassy             -> Modifier.glassPanel(kTileShape, vDark, inAccent, vLift)
+					vGlassy             -> Modifier.glassPanel(kTileShape, vDark, Color.Unspecified, vLift)	// verre neutre : la couleur du type devient un point devant le titre
 					else                -> Modifier.shadow((10f + 10f * vLift).dp, kTileShape, ambientColor = vShade.copy(alpha = if (vDark) 0.5f else 0.10f), spotColor = vShade.copy(alpha = if (vDark) 0.6f else 0.16f))
 				}
 			)
@@ -142,6 +143,11 @@ fun Tile(
 						if (inTitle != null || inAction != null)
 						{
 							Row(Modifier.fillMaxWidth().heightIn(min = 28.dp), verticalAlignment = Alignment.CenterVertically) {
+								if (vTint && inTitle != null)
+								{
+									SeriesDot(inAccent)
+									androidx.compose.foundation.layout.Spacer(Modifier.width(10.dp))
+								}
 								Text(
 									text     = inTitle.orEmpty(),
 									style    = inTitleStyle ?: MaterialTheme.typography.titleMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Normal),

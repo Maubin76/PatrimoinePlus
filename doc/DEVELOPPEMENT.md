@@ -132,7 +132,7 @@ langue du système (vérifié en UTC et en anglais, comme sur la machine de CI).
 | Élément          | Choix                                                                    |
 |------------------|--------------------------------------------------------------------------|
 | Langage          | Kotlin (intégré à AGP 9), JVM 17                                         |
-| Interface        | Jetpack Compose + Material 3, monochrome noir sur blanc, police Hanken Grotesk |
+| Interface        | Jetpack Compose + Material 3, style « brume lumineuse », police Urbanist |
 | Navigation       | `navigation-compose`, routes typées (`kotlinx.serialization`)             |
 | Injection        | Hilt (KSP)                                                               |
 | Asynchronisme    | Coroutines et Flow                                                       |
@@ -167,9 +167,9 @@ frontières :
 :ui     interface commune, Compose Multiplatform compilé pour Android et pour la
         JVM du PC (dépend de :core)
         theme/         couleurs, typographie, PatrimoineTheme, ThemeMode, couleurs
-                       des hausses et baisses ; police Hanken Grotesk en ressource
+                       des hausses et baisses ; police Urbanist en ressource
         components/    montants, courbes, barres, marques, sélecteur de mois, logo,
-                       tuiles et courbes miniatures
+                       tuiles, fond de brume, composants de la brume (Mist.kt)
         icons/         icônes au trait et icônes de catégories
 :app    appli Android (dépend de :core et :ui)
         data/          base Room (db), dépôts (repo), réglages DataStore (settings),
@@ -198,18 +198,43 @@ Règles :
 
 ## Interface
 
-Direction visuelle monochrome, noir sur blanc (blanc sur noir en mode sombre),
-inspirée de deux maquettes de référence fournies le 2026-10-07.
+Direction visuelle « brume lumineuse », commune au téléphone et au PC, d'après
+une maquette de référence fournie le 2026-11-05 (tableau de bord clair, halo
+jaune, panneaux de verre). Un seul style, en clair ou en sombre.
 
-- Palette fixe (`:ui`, `theme/Color.kt`) : blanc, encre presque noire, gris
-  secondaire, filets gris très clair ; aucun accent par défaut. Rouge discret
-  réservé aux montants négatifs. Option « Hausses en vert, baisses en rouge »
-  (Réglages › Apparence, téléphone et PC) : variations et plus-values
-  colorées, signe toujours écrit. Les couleurs dynamiques Material You sont écartées.
-- Apparence commune au PC (`:ui`, `theme/DeskTheme.kt`) : fond pastel (ou
-  effet verre, Réglages › Apparence), cartes flottantes, titre à gauche tout
-  en haut, sur la ligne des actions, choix en pilules, police Outfit (OFL, licence
-  dans `doc/licenses/`) à chiffres tabulaires.
+- Thème (`:ui`, `theme/DeskTheme.kt`) : neutres gris-bleu (fond #DCE3EA,
+  encre #14171C, texte secondaire #636B77 ; en sombre ardoise #0E1217 et
+  encre #EDF0F4), surfaces opaques pour les menus et les fenêtres. Police
+  **Urbanist** (OFL, ressource Compose du module `:ui`, licence dans
+  `doc/licenses/`), chiffres tabulaires : titres de page et grands chiffres
+  légers, titres de panneau en graisse moyenne. Les couleurs dynamiques
+  Material You sont écartées.
+- Fond (`ui/components/Ground.kt`) : brume gris-bleu traversée d'un grand
+  halo jaune citron, bleu ciel à gauche, voile blanc en haut (en sombre :
+  lueurs ambre et bleu nuit), floutée une fois pour toutes (petite image
+  agrandie par étapes).
+- Panneaux (`Tile`, `FloatingSurface`, `BorderedCard`) : verre blanc
+  translucide, liseré blanc de 1 dp, coins de 18 dp, sans ombre ; cadres
+  intérieurs plus denses pour les listes et les tableaux.
+- Composants de la brume (`ui/components/Mist.kt`) : pilule translucide
+  (`GhostPill`, `GhostButton` à la place des boutons à contour), un seul
+  bouton plein jaune citron par contexte (`LemonButton` « Nouvelle
+  opération », `LemonPillButton` pour l'action principale d'un panneau ou
+  d'une feuille, `LemonDisc` pour la saisie du téléphone), pastille de
+  variation verte ou rouge avec flèche (`DeltaPill`), étiquettes teintées
+  (`StatusChip`), mini-barres (`MicroBars`, barre repérée étiquetée de sa
+  variation), jauge en arc (`ArcGauge` : bouts arrondis comptés dans chaque
+  part, écart de 4°, petites parts gardées à la taille d'un point), barre de
+  progression épaisse (`ProgressTrack`), menu « … » des panneaux
+  (`MoreMenu`).
+- Couleurs des données (`theme/ColorTheme.kt`) : bleu (principale,
+  immobilier), vert (hausses, comptes courants), orange (épargne), rouge
+  (baisses), bleu ciel (bourse), jaune d'or (collection), ardoise (crédits).
+  Ordre des répartitions : orange, bleu, vert, bleu ciel, rouge — voisins
+  séparés d'un ΔE OKLab ≥ 20 en vision normale et ≥ 19 en deutéranopie et
+  protanopie (seule paire faible : bleu et vert en tritanopie, très rare) ;
+  chaque teinte reste doublée d'un libellé ou d'un signe. Un thème
+  personnalisé remplace ces couleurs.
 - Accueil : total centré en très grand, variation du mois, pastille « Calculé
   au … », courbe d'évolution du patrimoine (12 mois au plus), répartition par
   type en niveaux de gris dont chaque ligne ouvre l'onglet Comptes (la liste des
@@ -438,26 +463,24 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   (icône, suppression avec réaffectation), relevés, cours saisis à la main,
   positions initiales, fiche d'un actif. Mêmes contrôles et mêmes règles que
   le téléphone (`:core` : `DataEditor`, logique de saisie partagée).
-- **Apparence du PC** (`:ui`, `theme/DeskTheme.kt`) : fond en dégradé
-  pastel (lavande, bleu brume, rose poudré ; en sombre, nuit indigo et
-  prune), appli portée par un grand cadre arrondi, tuiles et panneau de
-  saisie en panneaux blancs flottants (ombre douce, sans bord), titre de
-  page en grand ; police géométrique **Outfit** (OFL, ressource Compose du
-  module `:ui`, licence dans `doc/licenses/`), chiffres tabulaires. Le
-  téléphone a la même apparence (fond, cartes flottantes, Outfit, pilules). **Effet verre** (Réglages ›
-  Apparence, mémorisé) : panneaux translucides à liseré lumineux sur un fond
-  de formes floues (halos pastel en clair ; en sombre, noir profond, facettes
-  fumées, lueur violette, coque et chiffre mis en avant en violet).
-- **Thèmes personnalisés** (Réglages › Apparence › Thème, PC et téléphone) :
-  « Créer un thème », un nom et cinq couleurs en hexadécimal (#RRGGBB, ou
-  #RGB), une par rôle comme le thème Coloré : principale (chiffre mis en
+- **Coque du PC** : grand cadre arrondi posé sur la brume ; barre du haut
+  avec le logo, les pages en pilules au centre (page active en pilule
+  blanche avec son nom, autres en ronds de verre, nom en info-bulle), puis
+  recherche (Ctrl+F), mode discret, bascule clair / sombre et vue (profil ou
+  famille). Chaque page commence par une ligne de titre (`PageHeader`) :
+  grand titre léger, ligne d'état (source, dernier enregistrement,
+  synchronisation), actions en pilules, bouton jaune « Nouvelle opération »
+  (Ctrl+N). Messages et alertes en pastille flottante sous la barre.
+- **Thèmes personnalisés** (Réglages › Apparence › Couleurs des données, PC et
+  téléphone) : « Créer un thème », un nom et cinq couleurs en hexadécimal
+  (#RRGGBB, ou #RGB), qui remplacent celles de la brume, une par rôle : principale (chiffre mis en
   avant, immobilier), hausses et entrées (courant), investissements
   (épargne), baisses et sorties (bourse), secondaire (collection) ; pastille
   et alerte si une couleur est peu lisible sur le fond clair ou sombre
   (contraste < 3:1), aperçu en direct. Les thèmes voyagent dans le fichier
   d'échange (format 7, onglet Thèmes ; base du téléphone v7) ; le thème
-  choisi reste propre à chaque appareil. Supprimer le thème choisi ramène
-  au thème Coloré.
+  choisi reste propre à chaque appareil. Supprimer le thème choisi, ou
+  « Revenir aux couleurs de la brume », ramène à la palette d'origine.
 - **Assistant** (PC, flottant en bas à droite ; Réglages › Assistant) :
   petit être blanc et mat aux angles très doux (168 dp), légère lueur
   blanche, grands yeux d'encre brillants qui suivent le pointeur, joues
@@ -489,7 +512,7 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   sans résultat) avec l'action utile. Mode calme : les yeux seulement. Nom
   provisoire : « Assistant ».
 - **Lancement du PC** : fond seul pendant 0,15 s, puis les éléments
-  arrivent l'un après l'autre en fondu et glissement (cadre, rail, barre du
+  arrivent l'un après l'autre en fondu et glissement (cadre, barre du
   haut, écran ; sur l'écran d'accueil : logo, titre, texte, boutons), 0,9 s
   en tout (`ui/Launch.kt`) ; la visite guidée attend la fin.
 - **Premier plan au lancement** (PC) : la fenêtre s'ouvre agrandie (toute
@@ -498,7 +521,7 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   jour (Windows refuse d'ordinaire le premier plan à un programme qui ne l'a
   pas : `WindowFront.kt` se rattache un instant à la fenêtre active).
 - **Tutoriels du PC** (visites guidées) : au premier lancement, celle du
-  tableau de bord (avec la coque : saisie, recherche, mode discret, rail) ;
+  tableau de bord (avec la coque : saisie, recherche, mode discret, pilules des pages) ;
   à la première venue sur chaque autre page (et sur la vue d'un compte), la
   sienne. La page s'assombrit sauf l'élément présenté (découpe animée qui
   glisse d'un élément à l'autre, halo), une bulle l'explique en le suivant
@@ -507,36 +530,25 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   tutoriels » les coupe tous. Réglages › Tutoriels : « Revoir » la visite
   d'une page, ou « Réactiver tous les tutoriels ». Pages vues mémorisées
   sur le PC.
-- **Rail d'icônes du PC**, dans cet ordre : Tableau de bord, Objectifs,
+- **Pages du PC**, dans l'ordre des pilules : Tableau de bord, Objectifs,
   Recherche, Opérations (saisie rapide puis récurrences et mensualités),
   Budget, Projection, Bilan (onglets « Mois par mois » et « Bilan annuel »),
-  Réglages (avec la section Catégories) ; nom de la page en info-bulle (et
-  pour les lecteurs d'écran), page active sur un disque plein qui glisse
-  d'une icône à l'autre ; bascule clair / sombre en bas du rail ; en haut,
-  « Nouvelle opération », recherche (Ctrl+F) et mode discret (œil).
-- **Thèmes de couleurs** (Réglages › Apparence › Thème, PC et téléphone,
-  chacun en clair et en sombre) : **Monochrome** (tout en noir et blanc),
-  **Minimal** (noir et blanc, hausses en vert et baisses en rouge),
-  **Coloré** (palette « Indigo », assortie au logo : fonds identiques aux
-  autres thèmes, encre indigo profond et boutons indigo — lavande en
-  sombre, chaque teinte ayant sa version claire et sombre —, une couleur
-  par type de compte (Courant menthe, Épargne ambre, Bourse corail,
-  Immobilier indigo, Collection pervenche, Crédit ardoise)
-  portée par les tuiles du tableau de bord (aplat pastel, courbe),
-  la répartition et les comptes du téléphone ; patrimoine net en tuile
-  pleine ; pastilles des opérations en menthe (entrées) ou corail
-  (sorties) ; graphiques et cashflow aux couleurs de la palette ; hausses en
-  menthe et baisses en corail). Sur les autres pages, mêmes repères : vue
-  d'un compte à la couleur de son type (marque, tuile principale, courbe) ;
-  entrées et revenus en menthe, sorties et dépenses en corail, épargne et
-  placements en ambre (bilan, budget, projection, objectifs) ; chiffre
-  principal en tuile pleine (variation du bilan, reste du budget, scénario
-  central de la projection) ; pastilles d'opérations colorées dans la
-  recherche et les récurrences. Les teintes des
-  graphiques sont validées (voisins distincts, daltonisme compris) et les
-  textes gardent un contraste d'au moins 4,5:1. Remplace l'ancien réglage
-  « Hausses en vert, baisses en rouge » (activé : thème Minimal).
-- **Répartitions en barre ou en cercle** (PC et téléphone) : une icône sur
+  Appareils, Réglages (avec la section Catégories).
+- **Tableau de bord du PC** : panneaux de tailles différentes selon leur
+  rôle. Rangée 1 : objectifs (ceux du mois s'ils sont fixés, sinon les
+  objectifs globaux, en liste cochée avec la part réussie), patrimoine net
+  posé à même le halo (variation du mois, brut et crédits), répartition en
+  jauge d'arc (part du premier type au centre, légende aux étiquettes
+  teintées). Rangée 2 : quatre indicateurs à mini-barres — patrimoine et
+  taux d'épargne mois par mois, revenus et dépenses du mois jour par jour
+  (`buildMonthDays`, même source que le tableau d'analyse ; jours à venir en
+  gris), la barre en cours étiquetée de sa variation. Puis les dépenses par
+  catégorie (barre segmentée à repères, liste des principales catégories,
+  ligne d'alerte de la catégorie la plus en hausse), les dernières
+  opérations et les comptes en tableaux légers (évolution, variation du
+  mois, part, valeur ; « Réorganiser »). Chaque panneau a son menu « … ».
+- **Répartitions en barre ou en cercle** (PC et téléphone ; le tableau de bord
+  et l'accueil montrent une jauge, sans ce choix) : une icône sur
   chaque diagramme de répartition, sur la ligne du titre de sa tuile, bascule
   entre la barre et l'anneau, mêmes
   parts dans le même ordre et les mêmes teintes que la légende ; chaque
@@ -554,12 +566,12 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   corriger puis créer en une fois ; opérations de l'appli absentes du relevé.
   Rien n'est mémorisé (pas de pointage) ; le format exact de chaque banque reste
   à vérifier sur un vrai export.
-- **Bilan › Mois par mois** (rail) : dépenses et revenus des douze derniers mois,
+- **Bilan › Mois par mois** (pilule) : dépenses et revenus des douze derniers mois,
   tous comptes : moyennes (dépenses, revenus, taux d'épargne), plus fortes
   hausses du dernier mois, barres mois par mois, tableau catégories × mois
   (moyenne des mois complets, écart du dernier mois). Un clic sur une case
   ouvre ses opérations.
-- **Recherche** (rail, Ctrl+F) : recherche dans toutes les
+- **Recherche** (pilule, Ctrl+F) : recherche dans toutes les
   opérations (mots sans accents ni majuscules dans le libellé, les notes, la
   catégorie, les comptes ; montant exact ; filtres de compte, de catégorie, de
   période et de montant), total des résultats ; les 20 plus récentes
@@ -568,11 +580,11 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   Ctrl+clic, Maj+clic, tout sélectionner) pour **changer la catégorie** de
   plusieurs dépenses ou revenus d'un coup, ou les **supprimer** (confirmé ;
   refusé si une vente devenait impossible).
-- **Opérations › Saisie rapide** (rail ; la page continue avec les récurrences et les mensualités) : dépenses et revenus en série dans une
+- **Opérations › Saisie rapide** (pilule ; la page continue avec les récurrences et les mensualités) : dépenses et revenus en série dans une
   grille au clavier (Tab, Entrée pour une nouvelle ligne, Ctrl+Entrée pour tout
   enregistrer) ; catégorie proposée d'après le libellé ; montant sans signe =
   dépense, « + » = entrée ; tout est contrôlé puis enregistré en une fois.
-- **Bilan › Bilan annuel** (rail) : patrimoine au début et à la fin de
+- **Bilan › Bilan annuel** (pilule) : patrimoine au début et à la fin de
   l'année (avoirs et crédits restant dus), comptes, revenus et dépenses par
   catégorie, taux d'épargne, intérêts, dividendes, plus-values réalisées par
   titre ; **biens** achetés, ajoutés (déjà possédés) et vendus (plus-values) ;
@@ -580,7 +592,7 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   d'après le tableau d'amortissement) ; **export PDF** A4
   prêt à imprimer (générateur PDF minimal écrit pour l'appli, polices
   standard, sans bibliothèque).
-- **Projection** (rail) : patrimoine estimé à 5, 10, 20 ou 30 ans ;
+- **Projection** (pilule) : patrimoine estimé à 5, 10, 20 ou 30 ans ;
   épargne mensuelle (par défaut la moyenne des douze derniers mois),
   rendements de l'épargne et de la bourse, part versée en bourse ; trois
   scénarios et courbe année par année. Comptes courants et biens (au prix
@@ -588,7 +600,7 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   le capital de chaque mensualité étant pris sur l'épargne mensuelle (crédits
   restant dus à l'horizon affichés). Une estimation, sans impôts ni
   inflation.
-- **Budget** (rail) : page de **planification** d'un mois type
+- **Budget** (pilule) : page de **planification** d'un mois type
   (le suivi se fait dans Objectifs), en lignes libres d'entrées, de
   dépenses et d'investissements (nom et montant) ; une dépense porte l'un
   des six **thèmes** Vie quotidienne, Plaisirs, Abonnements, Transports,
@@ -610,16 +622,15 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   Membre du classeur) et le cashflow fait un thème par membre
   (« Investissements · Alex ») ; « Exporter » (tuile Cashflow) ouvre une
   **prévisualisation** : l'image exacte, et le choix de son apparence (clair
-  ou sombre, Minimal ou Coloré — Monochrome, au schéma identique, n'est pas
-  proposé —, effet verre, palette par défaut
-  ou thème enregistré, proposés d'après les réglages) ; « Exporter… »
+  ou sombre, palette de la brume ou thème enregistré, proposés d'après les
+  réglages) ; « Exporter… »
   l'enregistre en PNG (tuile du schéma sur le fond de l'appli, 1 200 dp en
   double résolution, mode discret respecté ; `ui/components/SankeyExport.kt`
   et `SankeyExportDialog.kt`, rendu hors écran). Le schéma prend aussi les
   couleurs d'un thème enregistré (adoucies), dans l'appli comme à l'export ;
   le téléphone le garde sans l'afficher (base v8, table `plan`, texte
   `PlansDto`) et le rend tel quel au fichier.
-- **Objectifs** (rail, PC), en deux sections. **Objectifs
+- **Objectifs** (pilule, PC), en deux sections. **Objectifs
   globaux** : cibles suivies sur les données (patrimoine, compte, type de
   placement, épargne mensuelle, taux d'épargne), mises à jour à la main ou à
   cocher, avec rythme, date estimée et effort mensuel ; idées toutes prêtes

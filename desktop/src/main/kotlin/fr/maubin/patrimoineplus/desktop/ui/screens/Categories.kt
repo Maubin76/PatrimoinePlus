@@ -34,6 +34,7 @@ import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
 import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import fr.maubin.patrimoineplus.domain.model.CategoryKind
 import fr.maubin.patrimoineplus.desktop.ui.components.FloatingCard
+import fr.maubin.patrimoineplus.ui.components.GhostButton
 
 /*
 	Catégories de dépense et de revenu, côte à côte : ajout, modification
@@ -72,7 +73,7 @@ private fun KindColumn(
 	Spacer(Modifier.height(12.dp))
 	CategoryList(inSpace, inController, inKind)
 	Spacer(Modifier.height(12.dp))
-	OutlinedButton(onClick = { inController.openPanel(Panel.CategorySheet(null, inKind)) }) {
+	GhostButton(onClick = { inController.openPanel(Panel.CategorySheet(null, inKind)) }) {
 		Text(if (inKind == CategoryKind.EXPENSE) "Ajouter une catégorie de dépense" else "Ajouter une catégorie de revenu")
 	}
 }

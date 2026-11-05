@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.unit.Density
 import fr.maubin.patrimoineplus.desktop.DesktopController
+import fr.maubin.patrimoineplus.desktop.Screen
 import fr.maubin.patrimoineplus.desktop.data.DesktopConfig
 import fr.maubin.patrimoineplus.desktop.data.Workspace
 import fr.maubin.patrimoineplus.ui.theme.ThemeMode
@@ -59,5 +60,23 @@ class MistCapturesTest
 		capture("tableau-de-bord-clair-complet", 1700) { App(vApp) { null } }
 		vApp.setAppearance(ThemeMode.DARK)
 		capture("tableau-de-bord-sombre", 900) { App(vApp) { null } }
+	}
+
+	/*
+		Chaque page principale et quatre vues de compte, en clair, au format
+		d'une fenêtre.
+	*/
+	@Test
+	fun pages()
+	{
+		val vApp = DesktopController(DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")), Workspace(kClock), null).apply { openDemo(); setAppearance(ThemeMode.LIGHT) }	// démonstration
+		Screen.entries.forEach { inScreen ->
+			vApp.show(inScreen)
+			capture("page-${inScreen.name.lowercase()}", 900) { App(vApp) { null } }
+		}
+		listOf("Compte courant", "PEA", "Livret A", "Prêt immobilier").forEach { inName ->
+			vApp.openAccount(vApp.workspace.value.data.accounts.first { it.name == inName }.id)
+			capture("compte-${inName.lowercase().replace(' ', '-')}", 900) { App(vApp) { null } }
+		}
 	}
 }

@@ -32,7 +32,8 @@ import fr.maubin.patrimoineplus.ui.planning.LoanErrors
 import fr.maubin.patrimoineplus.ui.planning.LoanFields
 import fr.maubin.patrimoineplus.ui.planning.checkLoan
 import fr.maubin.patrimoineplus.domain.calc.PropertyItem
-import fr.maubin.patrimoineplus.domain.model.Profile
+import fr.maubin.patrimoineplus.domain.model.Profile
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 /*
 	Feuille de création ou de modification d'un compte : nom, type,
@@ -145,7 +146,7 @@ fun AccountSheet(
 			DateInput(vForm.openingDate, { vForm = vForm.copy(openingDate = it) }, "Date du solde initial")
 		}
 		vErrors.general?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
-		Button(
+		LemonPillButton(
 			onClick        = {
 				if (vNewLoan)
 				{

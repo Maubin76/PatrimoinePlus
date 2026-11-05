@@ -26,6 +26,8 @@ import fr.maubin.patrimoineplus.domain.calc.parseHexColor
 import fr.maubin.patrimoineplus.ui.components.ThemePreview
 import fr.maubin.patrimoineplus.ui.components.ThemeSwatches
 import fr.maubin.patrimoineplus.ui.theme.Palette
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 // Couleurs de départ d'un nouveau thème : celles du thème Coloré, dans l'ordre des rôles.
 val kStarterColors = listOf("#4B3FCE", "#0F9A80", "#B47D0A", "#B8294F", "#5B86E6")
@@ -72,9 +74,9 @@ fun ThemePanel(
 		inActions = {
 			if (vTheme != null)
 			{
-				OutlinedButton(onClick = { inController.deleteTheme(vTheme.id); inController.closePanel() }) { Text("Supprimer") }
+				GhostButton(onClick = { inController.deleteTheme(vTheme.id); inController.closePanel() }) { Text("Supprimer") }
 			}
-			Button(onClick = ::save) { Text("Enregistrer") }
+			LemonPillButton(onClick = ::save) { Text("Enregistrer") }
 		}
 	) {
 		FormError(vError)

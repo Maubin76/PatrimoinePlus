@@ -48,6 +48,7 @@ import com.google.zxing.NotFoundException
 import com.google.zxing.PlanarYUVLuminanceSource
 import com.google.zxing.common.HybridBinarizer
 import java.util.concurrent.Executors
+import fr.maubin.patrimoineplus.ui.components.GhostButton
 
 /*
 	Lecture d'un QR code dans une image de l'appareil photo (plan de
@@ -94,7 +95,7 @@ fun QrScannerDialog(
 				verticalArrangement = Arrangement.spacedBy(16.dp)
 			) {
 				Text(if (vAllowed) inHint else "PatrimoinePlus a besoin de l’appareil photo pour lire le QR code affiché par le PC.", color = Color.White, style = MaterialTheme.typography.bodyLarge)
-				Button(onClick = inOnClose) { Text("Fermer") }
+				GhostButton(onClick = inOnClose) { Text("Fermer") }
 			}
 			Text("Scanner le QR code du PC", color = Color.White, style = MaterialTheme.typography.titleLarge, modifier = Modifier.statusBarsPadding().padding(24.dp))
 		}

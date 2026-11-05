@@ -6,7 +6,7 @@ const val kTourAccount = "ACCOUNT"														// visite de la vue d'un compte
 
 /*
 	Visites guidées de l'appli PC, page par page : au lancement, le tableau
-	de bord (avec la coque : rail, saisie, mode discret) ; à la première
+	de bord (avec la coque : pilules des pages, saisie, mode discret) ; à la première
 	visite de chaque autre page, la sienne.
 */
 object Tours
@@ -18,7 +18,7 @@ object Tours
 	fun label(inKey: String): String =
 		Screen.entries.firstOrNull { it.name == inKey }?.label ?: "Vue d'un compte"
 
-	// Visites proposées dans les réglages, dans l'ordre du rail puis la vue d'un compte.
+	// Visites proposées dans les réglages, dans l'ordre des pilules puis la vue d'un compte.
 	val keys: List<String> = Screen.entries.map { it.name } + kTourAccount
 
 	/*
@@ -35,12 +35,12 @@ object Tours
 				TourStep("devices.diagnostic", "Diagnostic réseau", "Avant la synchronisation, vérifiez que le téléphone trouve ce PC : lancez le diagnostic ici, puis celui du téléphone dans ses Réglages.")
 			)
 			Screen.DASHBOARD.name  -> listOf(
-				TourStep("dashboard.hero", "Votre patrimoine net", "Tous vos comptes et biens, crédits déduits, calculés à partir de vos opérations. La variation du mois est juste dessous."),
-				TourStep("dashboard.charts", "Évolution et répartition", "La courbe suit votre patrimoine mois après mois ; la répartition montre son poids par type de compte. L'icône en haut à droite bascule entre barre et cercle."),
-				TourStep("dashboard.accounts", "Vos comptes", "Une tuile par compte, avec sa valeur, sa courbe et son aperçu. Un clic ouvre le compte ; « Réorganiser » change leur ordre."),
-				TourStep("shell.newop", "Saisir une opération", "Dépense, revenu, virement, ordre de bourse ou mensualité : le panneau de saisie s'ouvre à droite. Raccourci : Ctrl+N."),
+				TourStep("dashboard.hero", "Votre patrimoine net", "Au centre, tous vos comptes et biens, crédits déduits, calculés à partir de vos opérations, avec la variation du mois. À gauche vos objectifs, à droite la répartition par type de compte."),
+				TourStep("dashboard.charts", "Quatre indicateurs", "Patrimoine et taux d'épargne mois par mois, revenus et dépenses jour par jour : la barre marquée est la période en cours, avec sa variation. Le bouton « … » ouvre le bilan."),
+				TourStep("dashboard.accounts", "Vos comptes", "Une ligne par compte : son évolution, la variation du mois, sa part et sa valeur. Un clic ouvre le compte ; « Réorganiser » change leur ordre."),
+				TourStep("shell.newop", "Saisir une opération", "Le bouton jaune, sur chaque page : dépense, revenu, virement, ordre de bourse ou mensualité, dans le panneau de saisie à droite. Raccourci : Ctrl+N."),
 				TourStep("shell.privacy", "Recherche et mode discret", "La loupe cherche dans toutes vos opérations (Ctrl+F) ; l'œil masque les montants quand quelqu'un regarde votre écran."),
-				TourStep("shell.rail", "Les autres pages", "Objectifs, recherche, opérations, budget, projection, bilan et réglages. Chacune a sa visite guidée à votre première venue.")
+				TourStep("shell.rail", "Les autres pages", "Les pilules du haut : objectifs, recherche, opérations, budget, projection, bilan, appareils et réglages. Chacune a sa visite guidée à votre première venue.")
 			)
 			Screen.GOALS.name      -> listOf(
 				TourStep("goals.global", "Objectifs globaux", "Des cibles à moyen terme suivies sur vos comptes : matelas de sécurité, livret plein, apport pour un achat… avec le rythme pour les atteindre."),
@@ -71,7 +71,7 @@ object Tours
 			)
 			Screen.SETTINGS.name   -> listOf(
 				TourStep("settings.data", "Vos données", "Le dossier où ce PC range vos données, ou la démonstration ; rien ne sort de la maison, le téléphone se synchronise par le Wi-Fi familial."),
-				TourStep("settings.appearance", "Apparence", "Clair ou sombre, thème de couleurs, effet verre."),
+				TourStep("settings.appearance", "Apparence", "Clair, sombre ou comme le système ; un thème personnalisé remplace les couleurs des données."),
 				TourStep("settings.profiles", "Profils", "Chaque membre de la famille suit ses comptes ; la vue Famille les rassemble tous."),
 				TourStep("settings.tours", "Tutoriels", "Revoyez la visite d'une page, ou réactivez-les toutes.")
 			)

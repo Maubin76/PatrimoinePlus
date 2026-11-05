@@ -65,6 +65,7 @@ import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import fr.maubin.patrimoineplus.ui.shell.LocalViewChip
+import fr.maubin.patrimoineplus.ui.components.GhostButton
 
 /*
 	Onglet des comptes : liste réordonnable avec la valeur de chaque compte,
@@ -301,12 +302,6 @@ private fun AccountRow(
 			SeriesDot(allocationColor(inWeight.rank))
 			Spacer(Modifier.width(12.dp))
 		}
-		val vAccent = accountAccent(inItem.account.type)								// couleur du type (thème Coloré)
-		if (vAccent != Color.Unspecified)
-		{
-			Box(Modifier.width(4.dp).height(40.dp).clip(RoundedCornerShape(2.dp)).background(vAccent))	// marque du type
-			Spacer(Modifier.width(12.dp))
-		}
 		Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
 			Text(inItem.account.name, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
 			Text(accountDetail(inItem.account), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -340,7 +335,7 @@ fun AddButton(
 	inOnClick : () -> Unit
 )
 {
-	OutlinedButton(
+	GhostButton(
 		onClick        = inOnClick,
 		contentPadding = PaddingValues(vertical = 14.dp),
 		modifier       = Modifier.fillMaxWidth()

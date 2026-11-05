@@ -28,6 +28,8 @@ import fr.maubin.patrimoineplus.ui.property.checkSale
 import fr.maubin.patrimoineplus.ui.property.propertyNoun
 import fr.maubin.patrimoineplus.ui.property.saleGain
 import fr.maubin.patrimoineplus.ui.components.accountLabel
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 private const val kOwned = "__deja_possede__"										// choix « Déjà possédé » / « Aucun versement »
 
@@ -72,8 +74,8 @@ fun PurchasePanel(
 		inDirty   = vForm != inStart,
 		inOnEnter = ::save,
 		inActions = {
-			if (vForm.id != null) OutlinedButton(onClick = { vDelete = true }) { Text("Supprimer") }
-			Button(onClick = ::save) { Text("Enregistrer") }
+			if (vForm.id != null) GhostButton(onClick = { vDelete = true }) { Text("Supprimer") }
+			LemonPillButton(onClick = ::save) { Text("Enregistrer") }
 		}
 	) {
 		FormError(vGeneral)
@@ -161,8 +163,8 @@ fun SalePanel(
 		inDirty   = vForm != inStart,
 		inOnEnter = ::save,
 		inActions = {
-			if (vForm.id != null) OutlinedButton(onClick = ::cancelSale) { Text("Annuler la vente") }
-			Button(onClick = ::save) { Text("Enregistrer") }
+			if (vForm.id != null) GhostButton(onClick = ::cancelSale) { Text("Annuler la vente") }
+			LemonPillButton(onClick = ::save) { Text("Enregistrer") }
 		}
 	) {
 		FormError(vGeneral)

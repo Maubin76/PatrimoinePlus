@@ -78,6 +78,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import fr.maubin.patrimoineplus.desktop.ui.AssistantHint
 import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
 import fr.maubin.patrimoineplus.ui.components.accountLabel
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.desktop.ui.components.PageHeader
+import fr.maubin.patrimoineplus.ui.components.LemonButton
+import fr.maubin.patrimoineplus.ui.components.GhostPill
 
 private val kRowDate   = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)	// date d'une ligne
 private const val kPage = 20														// opérations affichées d'abord, puis à chaque « Afficher 20 de plus »
@@ -108,12 +112,10 @@ fun SearchScreen(
 	if (!vVisible.containsAll(vSelected)) vSelected = vSelected intersect vVisible
 	LaunchedEffect(vFocusAsk) { if (vFocusAsk > 0) { withFrameNanos {}; runCatching { vFocus.requestFocus() } } }
 	Column(
-		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp).padding(bottom = LocalAssistantRoom.current),
+		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp).padding(top = 6.dp, bottom = 28.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
-		Column {
-			Text("Recherche", style = MaterialTheme.typography.displaySmall)
-		}
+		PageHeader(inTitle = "Recherche", inSubtitle = "Dans toutes les opérations : libellé, notes, catégorie, compte ou montant exact.", inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) })
 		Box(Modifier.tourAnchor("search.filters")) { Filters(inSpace, vQuery, vFocus, inController::setQuery) }
 		Tile(
 			inModifier = Modifier.tourAnchor("search.results"),
@@ -165,7 +167,7 @@ fun SearchScreen(
 			if (vResult.hits.size > vShown)
 			{
 				Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-					OutlinedButton(onClick = { vShown += kPage }) { Text("Afficher ${minOf(kPage, vResult.hits.size - vShown)} de plus") }
+					GhostButton(onClick = { vShown += kPage }) { Text("Afficher ${minOf(kPage, vResult.hits.size - vShown)} de plus") }
 					Spacer(Modifier.width(16.dp))
 					Text("${vShown} sur ${vResult.hits.size}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 				}
@@ -350,7 +352,7 @@ private fun SelectionBar(
 	) {
 		Text("${inChosen.size} sélectionnée(s)", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
 		Box {
-			OutlinedButton(onClick = { vMenu = true }, enabled = vKind != null) { Text("Changer la catégorie…") }
+			GhostButton(onClick = { vMenu = true }, enabled = vKind != null) { Text("Changer la catégorie…") }
 			DropdownMenu(expanded = vMenu, onDismissRequest = { vMenu = false }) {
 				inSpace.data.categories.filter { it.kind == vKind && !it.archived }.sortedBy { it.sortOrder }.forEach { inCategory ->
 					DropdownMenuItem(text = { Text(inCategory.name) }, onClick = {
@@ -360,7 +362,7 @@ private fun SelectionBar(
 				}
 			}
 		}
-		OutlinedButton(onClick = { vConfirm = true }) { Text("Supprimer") }
+		GhostButton(onClick = { vConfirm = true }) { Text("Supprimer") }
 		TextButton(onClick = inOnClear) { Text("Désélectionner") }
 	}
 	if (vKind == null) Hint("Pour changer la catégorie, choisissez seulement des dépenses, ou seulement des revenus.")

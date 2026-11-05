@@ -55,6 +55,10 @@ import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
+import fr.maubin.patrimoineplus.desktop.ui.components.PageHeader
+import fr.maubin.patrimoineplus.ui.components.LemonButton
+import fr.maubin.patrimoineplus.ui.components.GhostPill
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 private val kDay  = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)			// date d'une ligne
 private val kLong = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)		// bornes de la période
@@ -93,21 +97,17 @@ fun ReconcileScreen(
 	val vChoices = remember(inSession) { mutableStateMapOf<BankLine, Choice>() }	// saisies retenues
 	var vError   by remember(inSession) { mutableStateOf<String?>(null) }			// refus de la création
 	Column(
-		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp).padding(bottom = LocalAssistantRoom.current),
+		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp).padding(top = 6.dp, bottom = 28.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
 		Row(verticalAlignment = Alignment.CenterVertically) {
 			IconButton(onClick = inController::closeBankStatement) { Icon(LineIcons.Back, contentDescription = "Retour au compte") }
 			Spacer(Modifier.width(8.dp))
-			Column(Modifier.weight(1f)) {
-				Text("Rapprochement · ${vAccount.name}", style = MaterialTheme.typography.displaySmall)
-				Text(
-					"${inSession.fileName} : du ${vResult.from.format(kLong)} au ${vResult.to.format(kLong)}" +
-						if (inSession.skipped > 0) " (${inSession.skipped} ligne(s) illisible(s) ignorée(s))" else "",
-					style = MaterialTheme.typography.bodyMedium,
-					color = MaterialTheme.colorScheme.onSurfaceVariant
-				)
-			}
+			PageHeader(
+				inTitle    = "Rapprochement · ${vAccount.name}",
+				inSubtitle = "${inSession.fileName} : du ${vResult.from.format(kLong)} au ${vResult.to.format(kLong)}" + if (inSession.skipped > 0) " (${inSession.skipped} ligne(s) illisible(s) ignorée(s))" else "",
+				inModifier = Modifier.weight(1f)
+			)
 		}
 		Figures(inSession, vResult)
 		MissingTile(vResult, vChoices, inSpace.data.categories, vError) {
@@ -221,7 +221,7 @@ private fun MissingTile(
 	val vChecked = inResult.missing.count { inChoices[it.line]?.checked ?: true }	// lignes cochées (cochées par défaut)
 	Tile(
 		inTitle  = "Chez la banque, pas dans l’appli (${inResult.missing.size})",
-		inAction = { Button(onClick = inOnCreate, enabled = vChecked > 0) { Text("Créer les $vChecked opération(s) cochée(s)") } }
+		inAction = { LemonPillButton(onClick = inOnCreate, enabled = vChecked > 0) { Text("Créer les $vChecked opération(s) cochée(s)") } }
 	) {
 		if (inResult.missing.isEmpty())
 		{

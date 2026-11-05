@@ -52,15 +52,14 @@ import fr.maubin.patrimoineplus.ui.theme.Palette
 import fr.maubin.patrimoineplus.ui.theme.kColorfulLight
 import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.layout.widthIn
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
-private val kExportThemes = listOf(ColorTheme.MINIMAL, ColorTheme.COLORFUL)		// thèmes proposés (Monochrome : même schéma que Minimal)
 
 /*
 	Prévisualisation avant l'export du cashflow en image : l'image telle
-	qu'elle sera enregistrée, et le choix de son apparence (clair ou sombre,
-	thème Minimal ou Coloré, Monochrome donnant le même schéma que Minimal ; effet verre, palette par défaut ou thème enregistré), proposée
-	d'après les réglages de l'appli. Choisir un thème enregistré passe au thème
-	Coloré, dont il prend les rôles. L'image est recalculée à chaque choix.
+	qu'elle sera enregistrée, et le choix de son apparence (clair ou sombre ;
+	couleurs de la brume ou d'un thème enregistré), proposée d'après les
+	réglages de l'appli. L'image est recalculée à chaque choix.
 	inDiagram     : diagramme
 	inCenterTitle : nom du nœud du budget
 	inHeading     : titre de l'image
@@ -104,16 +103,8 @@ fun SankeyExportDialog(
 						Text("Apparence", style = MaterialTheme.typography.titleMedium)
 						PillChoice(listOf(false, true), vStyle.dark, { if (it) "Sombre" else "Clair" }, { vStyle = vStyle.copy(dark = it) })
 						Spacer(Modifier.height(6.dp))
-						Text("Thème", style = MaterialTheme.typography.titleMedium)
-						PillChoice(kExportThemes, if (vStyle.palette != null) ColorTheme.COLORFUL else vStyle.theme, { it.label }, { vStyle = vStyle.copy(theme = it, palette = if (it == ColorTheme.COLORFUL) vStyle.palette else null) })
-						Spacer(Modifier.height(6.dp))
-						Row(verticalAlignment = Alignment.CenterVertically) {
-							Text("Effet verre", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-							Switch(checked = vStyle.glass, onCheckedChange = { vStyle = vStyle.copy(glass = it) }, modifier = Modifier.semantics { contentDescription = "Effet verre de l’image" })
-						}
-						Spacer(Modifier.height(6.dp))
-						Text("Palette", style = MaterialTheme.typography.titleMedium)
-						PaletteChoice(null, "Par défaut", vStyle.palette == null) { vStyle = vStyle.copy(palette = null) }
+						Text("Couleurs", style = MaterialTheme.typography.titleMedium)
+						PaletteChoice(null, "Brume lumineuse", vStyle.palette == null) { vStyle = vStyle.copy(palette = null) }
 						inThemes.forEach { inTheme ->
 							PaletteChoice(inTheme, inTheme.name, vStyle.palette?.id == inTheme.id) { vStyle = vStyle.copy(theme = ColorTheme.COLORFUL, palette = inTheme) }
 						}
@@ -122,7 +113,7 @@ fun SankeyExportDialog(
 				}
 				Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)) {
 					TextButton(onClick = inOnDismiss) { Text("Annuler") }
-					Button(onClick = { inOnExport(vStyle) }) { Text("Exporter…") }
+					LemonPillButton(onClick = { inOnExport(vStyle) }) { Text("Exporter…") }
 				}
 			}
 		}

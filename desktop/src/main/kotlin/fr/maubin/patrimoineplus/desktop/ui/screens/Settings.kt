@@ -65,7 +65,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.size
 import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
 import fr.maubin.patrimoineplus.desktop.ui.screens.WifiSyncSwitch
-import fr.maubin.patrimoineplus.desktop.ui.screens.BackgroundOptions
+import fr.maubin.patrimoineplus.desktop.ui.screens.BackgroundOptions
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.desktop.ui.components.PageHeader
+import fr.maubin.patrimoineplus.ui.components.LemonButton
+import fr.maubin.patrimoineplus.ui.components.GhostPill
+import fr.maubin.patrimoineplus.ui.components.GhostButton
 
 /*
 	Réglages de l'appli PC : source des données (dossier des données,
@@ -83,9 +88,9 @@ fun SettingsScreen(
 {
 	val vSettings by inController.settings.collectAsState()				// réglages
 	val vColors   = MaterialTheme.colorScheme									// palette courante
-	Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(40.dp).padding(bottom = LocalAssistantRoom.current).widthIn(max = 720.dp)) {
-		Text("Réglages", style = MaterialTheme.typography.displaySmall)
-		Spacer(Modifier.height(32.dp))
+	Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp).padding(top = 6.dp, bottom = 28.dp).padding(bottom = LocalAssistantRoom.current)) {
+		PageHeader(inTitle = "Réglages", inSubtitle = "Données, apparence, mises à jour et aide.", inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) })
+		Spacer(Modifier.height(28.dp))
 		SectionHeader(inTitle = "Données", inModifier = Modifier.tourAnchor("settings.data"))
 		Spacer(Modifier.height(12.dp))
 		FloatingCard {
@@ -104,13 +109,13 @@ fun SettingsScreen(
 					Text(inInfo, style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
 				}
 				Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-					if (vBackup != null) OutlinedButton(onClick = { inController.backupIfDue(inForce = true) }) { Text("Sauvegarder maintenant") }
-					OutlinedButton(onClick = { inOnPickFolder()?.let(inController::openFolder) }) { Text("Choisir un dossier…") }
+					if (vBackup != null) GhostButton(onClick = { inController.backupIfDue(inForce = true) }) { Text("Sauvegarder maintenant") }
+					GhostButton(onClick = { inOnPickFolder()?.let(inController::openFolder) }) { Text("Choisir un dossier…") }
 					if (vSettings.source != Source.Demo)
 					{
-						OutlinedButton(onClick = inController::openDemo) { Text("Passer en démonstration") }
+						GhostButton(onClick = inController::openDemo) { Text("Passer en démonstration") }
 					}
-					OutlinedButton(onClick = inController::closeSource) { Text("Fermer") }
+					GhostButton(onClick = inController::closeSource) { Text("Fermer") }
 				}
 			}
 		}
@@ -119,24 +124,22 @@ fun SettingsScreen(
 		Spacer(Modifier.height(12.dp))
 		Choice(ThemeMode.entries.map { it to it.label }, vSettings.appearance, inController::setAppearance)
 		Spacer(Modifier.height(16.dp))
-		Text("Thème", style = MaterialTheme.typography.titleMedium)
+		Text("Couleurs des données", style = MaterialTheme.typography.titleMedium)
 		Spacer(Modifier.height(8.dp))
 		val vCustom = inSpace.data.themes.firstOrNull { it.id == vSettings.palette }	// thème personnalisé choisi ; null sans
-		Choice(ColorTheme.entries.map { it as ColorTheme? to it.label }, if (vCustom != null) null else vSettings.colors, { it?.let(inController::setColorTheme) })
-		Spacer(Modifier.height(8.dp))
-		Text(vCustom?.let { "Thème personnalisé « ${it.name} » : ses cinq couleurs prennent les rôles du thème Coloré." } ?: vSettings.colors.detail, style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+		Text(
+			vCustom?.let { "Thème personnalisé « ${it.name} » : ses cinq couleurs remplacent celles de la brume (hausses, baisses, épargne, immobilier, secondaire)." }
+				?: "Brume lumineuse : orange, bleu, vert, bleu ciel et rouge pour les données ; un thème personnalisé peut les remplacer.",
+			style = MaterialTheme.typography.bodyMedium,
+			color = vColors.onSurfaceVariant
+		)
+		if (vCustom != null)
+		{
+			Spacer(Modifier.height(10.dp))
+			GhostPill("Revenir aux couleurs de la brume", { inController.setColorTheme(ColorTheme.COLORFUL) })
+		}
 		Spacer(Modifier.height(12.dp))
 		CustomThemes(inSpace.data.themes, vCustom?.id, inController)
-		Spacer(Modifier.height(16.dp))
-		FloatingCard {
-			Row(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-				Column(Modifier.weight(1f)) {
-					Text("Effet verre", style = MaterialTheme.typography.titleMedium)
-					Text("Panneaux translucides sur un fond de formes floues ; en sombre, noir profond et accent violet.", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
-				}
-				Switch(checked = vSettings.glass, onCheckedChange = inController::setGlass, modifier = Modifier.semantics { contentDescription = "Effet verre" })
-			}
-		}
 		Spacer(Modifier.height(32.dp))
 		SectionHeader(inTitle = "Synchronisation avec le téléphone")
 		Spacer(Modifier.height(12.dp))
@@ -247,7 +250,7 @@ private fun ProfilesSection(
 					modifier      = Modifier.weight(1f).semantics { contentDescription = "Nom du nouveau profil" }
 				)
 				Spacer(Modifier.width(8.dp))
-				Button(onClick = {
+				GhostButton(onClick = {
 					val vResult = inController.addProfile(vNew)						// ajout
 					vShow(vResult)
 					if (vResult is EditResult.Done) vNew = ""
@@ -291,7 +294,7 @@ private fun UpdatesSection(
 			Spacer(Modifier.height(12.dp))
 			Row(verticalAlignment = Alignment.CenterVertically) {
 				Text("Version installée : ${inController.appVersion ?: "inconnue"}", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-				OutlinedButton(onClick = inController::checkUpdatesNow, enabled = inController.appVersion != null) { Text("Vérifier maintenant") }
+				GhostButton(onClick = inController::checkUpdatesNow, enabled = inController.appVersion != null) { Text("Vérifier maintenant") }
 			}
 		}
 	}
@@ -324,7 +327,7 @@ private fun ToursSection(
 				}
 			}
 			Spacer(Modifier.height(8.dp))
-			OutlinedButton(onClick = inController::resetTours, enabled = inOff || inSeen.isNotEmpty()) { Text("Réactiver tous les tutoriels") }
+			GhostButton(onClick = inController::resetTours, enabled = inOff || inSeen.isNotEmpty()) { Text("Réactiver tous les tutoriels") }
 		}
 	}
 }
@@ -367,7 +370,7 @@ private fun CustomThemes(
 					}
 				}
 			}
-			OutlinedButton(onClick = { inController.openPanel(Panel.ThemeSheet(null)) }, modifier = Modifier.padding(top = if (inThemes.isEmpty()) 0.dp else 8.dp)) { Text("Créer un thème") }
+			GhostButton(onClick = { inController.openPanel(Panel.ThemeSheet(null)) }, modifier = Modifier.padding(top = if (inThemes.isEmpty()) 0.dp else 8.dp)) { Text("Créer un thème") }
 		}
 	}
 }

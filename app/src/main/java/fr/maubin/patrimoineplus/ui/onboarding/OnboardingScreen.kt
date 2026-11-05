@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.ui.components.BorderedCard
 import fr.maubin.patrimoineplus.ui.components.SectionHeader
 import fr.maubin.patrimoineplus.ui.shell.kScreenMargin
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 /*
 	Assistant du premier lancement : propose les comptes de départ (avec le
@@ -152,7 +153,7 @@ fun OnboardingScreen(
 			}
 		}
 		Spacer(Modifier.height(32.dp))
-		Button(
+		LemonPillButton(
 			onClick        = { inOnFinish(vAccounts, vCategories) { vErrors = it } },
 			contentPadding = PaddingValues(vertical = 14.dp),
 			modifier       = Modifier.fillMaxWidth()

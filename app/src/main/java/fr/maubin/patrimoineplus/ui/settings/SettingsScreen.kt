@@ -56,7 +56,9 @@ import fr.maubin.patrimoineplus.ui.components.ThemeSwatches
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.background
+import androidx.compose.foundation.background
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 /*
 	Verrou et sauvegarde, vus par l'écran des réglages.
@@ -121,29 +123,23 @@ fun SettingsScreen(
 			Spacer(Modifier.height(8.dp))
 			ThemeModeSelector(inThemeMode, inOnThemeMode)
 			Spacer(Modifier.height(16.dp))
-			Text("Thème", style = MaterialTheme.typography.titleMedium)
+			Text("Couleurs des données", style = MaterialTheme.typography.titleMedium)
 			Spacer(Modifier.height(8.dp))
 			val vCustom = inThemes?.let { inActions -> inActions.themes.firstOrNull { it.id == inActions.selected } }	// thème personnalisé choisi ; null sans
-			SegmentedChoice(
-				inOptions  = ColorTheme.entries.map<ColorTheme, ColorTheme?> { it },
-				inSelected = if (vCustom != null) null else inColorTheme,
-				inLabel    = { it?.label.orEmpty() },
-				inOnSelect = { it?.let(inOnColorTheme) }
+			Text(
+				vCustom?.let { "Thème personnalisé « ${it.name} » : ses cinq couleurs remplacent celles de la brume (hausses, baisses, épargne, immobilier, secondaire)." }
+					?: "Brume lumineuse : orange, bleu, vert, bleu ciel et rouge pour les données ; un thème personnalisé peut les remplacer.",
+				style = MaterialTheme.typography.bodyMedium,
+				color = MaterialTheme.colorScheme.onSurfaceVariant
 			)
-			Spacer(Modifier.height(8.dp))
-			Text(vCustom?.let { "Thème personnalisé « ${it.name} » : ses cinq couleurs prennent les rôles du thème Coloré." } ?: inColorTheme.detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+			if (vCustom != null)
+			{
+				Spacer(Modifier.height(10.dp))
+				GhostButton(onClick = { inOnColorTheme(ColorTheme.COLORFUL) }) { Text("Revenir aux couleurs de la brume") }
+			}
 			inThemes?.let { inActions ->
 				Spacer(Modifier.height(12.dp))
 				CustomThemes(inActions)
-			}
-			Spacer(Modifier.height(16.dp))
-			BorderedCard {
-				SwitchRow(
-					inTitle    = "Effet verre",
-					inDetail   = "Panneaux translucides sur un fond de formes floues ; en sombre, noir profond et accent violet.",
-					inChecked  = inGlass,
-					inOnChange = inOnGlass
-				)
 			}
 			Spacer(Modifier.height(32.dp))
 			SectionHeader(inTitle = "Confidentialité")
@@ -359,8 +355,8 @@ private fun DemoSection(inDemo: DemoActions)
 			)
 			Spacer(Modifier.height(16.dp))
 			Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-				OutlinedButton(onClick = { vAsk = "load" }) { Text("Charger la démo") }
-				OutlinedButton(onClick = { vAsk = "clear" }) { Text("Tout effacer") }
+				GhostButton(onClick = { vAsk = "load" }) { Text("Charger la démo") }
+				GhostButton(onClick = { vAsk = "clear" }) { Text("Tout effacer") }
 			}
 		}
 	}
@@ -430,7 +426,7 @@ private fun ProfilesSection(inActions: ProfilesActions)
 			Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
 				OutlinedTextField(vNew, { vNew = it }, singleLine = true, placeholder = { Text("Nouveau profil (prénom)") }, modifier = Modifier.weight(1f).semantics { contentDescription = "Nom du nouveau profil" })
 				Spacer(Modifier.width(8.dp))
-				Button(onClick = { inActions.onAdd(vNew) { vNew = "" } }) { Text("Ajouter") }
+				LemonPillButton(onClick = { inActions.onAdd(vNew) { vNew = "" } }) { Text("Ajouter") }
 			}
 			inActions.error?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 8.dp)) }
 		}
@@ -484,7 +480,7 @@ private fun CustomThemes(inActions: ThemesActions)
 					IconButton(onClick = { vEditing = inTheme }) { Icon(LineIcons.Edit, contentDescription = "Modifier le thème ${inTheme.name}") }
 				}
 			}
-			OutlinedButton(onClick = { vCreating = true }) { Text("Créer un thème") }
+			GhostButton(onClick = { vCreating = true }) { Text("Créer un thème") }
 		}
 	}
 	if (vCreating || vEditing != null)

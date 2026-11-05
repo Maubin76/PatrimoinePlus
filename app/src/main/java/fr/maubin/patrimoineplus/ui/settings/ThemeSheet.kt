@@ -28,6 +28,8 @@ import fr.maubin.patrimoineplus.ui.components.TextInput
 import fr.maubin.patrimoineplus.ui.components.ThemePreview
 import fr.maubin.patrimoineplus.ui.components.ThemeSwatches
 import fr.maubin.patrimoineplus.ui.theme.Palette
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 // Couleurs de départ d'un nouveau thème : celles du thème Coloré, dans l'ordre des rôles.
 private val kStarterColors = listOf("#4B3FCE", "#0F9A80", "#B47D0A", "#B8294F", "#5B86E6")
@@ -78,8 +80,8 @@ fun ThemeSheet(
 		if (vPalette != null) ThemePreview(vPalette)
 		else Text("Corrigez les codes illisibles pour voir l’aperçu.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)) {
-			if (inTheme != null) OutlinedButton(onClick = inOnDelete) { Text("Supprimer") }
-			Button(onClick = { inOnSave(vName, vColors) { vError = it } }) { Text("Enregistrer") }
+			if (inTheme != null) GhostButton(onClick = inOnDelete) { Text("Supprimer") }
+			LemonPillButton(onClick = { inOnSave(vName, vColors) { vError = it } }) { Text("Enregistrer") }
 		}
 	}
 }

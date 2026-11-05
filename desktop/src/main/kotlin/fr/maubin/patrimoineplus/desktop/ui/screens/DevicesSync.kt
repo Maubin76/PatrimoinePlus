@@ -36,6 +36,8 @@ import java.time.format.DateTimeFormatter
 import androidx.compose.material3.Switch
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.ui.components.GhostButton
 
 private val kSyncTime = DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH:mm")		// heure d'une synchronisation
 
@@ -62,7 +64,7 @@ fun PhoneSyncCard(inController: DesktopController)
 			HorizontalDivider(color = vColors.outlineVariant)
 			Text(statusText(vState, vFolder), style = MaterialTheme.typography.bodyLarge)
 			vState.error?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = vColors.error) }
-			if (vFolder) Button(onClick = inController.peers::startPairing) { Text(if (vState.phones.isEmpty()) "Appairer le téléphone" else "Appairer un autre téléphone") }
+			if (vFolder) GhostButton(onClick = inController.peers::startPairing) { Text(if (vState.phones.isEmpty()) "Appairer le téléphone" else "Appairer un autre téléphone") }
 			if (vState.phones.isNotEmpty())
 			{
 				HorizontalDivider(color = vColors.outlineVariant)
@@ -94,7 +96,7 @@ fun PhoneSyncCard(inController: DesktopController)
 					}
 				}
 				vState.networks.filter { it !in vState.home }.forEach { inNetwork ->
-					OutlinedButton(onClick = { inController.peers.setHome(inNetwork, true) }) { Text("Ajouter « ${inNetwork.label} »") }
+					GhostButton(onClick = { inController.peers.setHome(inNetwork, true) }) { Text("Ajouter « ${inNetwork.label} »") }
 				}
 			}
 		}

@@ -51,7 +51,9 @@ import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
 import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
-import fr.maubin.patrimoineplus.ui.components.accountLabel
+import fr.maubin.patrimoineplus.ui.components.accountLabel
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 /*
 	Saisie ou modification d'une opération dans le panneau latéral : dépense
@@ -124,9 +126,9 @@ fun OperationPanel(
 		inActions = {
 			if (vForm.id != null)
 			{
-				OutlinedButton(onClick = { vDelete = true }) { Text("Supprimer") }
+				GhostButton(onClick = { vDelete = true }) { Text("Supprimer") }
 			}
-			Button(onClick = ::save) { Text("Enregistrer") }
+			LemonPillButton(onClick = ::save) { Text("Enregistrer") }
 		}
 	) {
 		FormError(vErrors.general)

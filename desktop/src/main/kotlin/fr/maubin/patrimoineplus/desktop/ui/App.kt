@@ -598,7 +598,6 @@ private fun TopBar(
 			}
 			ChromeButton(if (inDark) LineIcons.Sun else LineIcons.Moon, if (inDark) "Apparence claire" else "Apparence sombre", { inController.setAppearance(if (inDark) ThemeMode.LIGHT else ThemeMode.DARK) })
 			if (inSpace.data.profiles.size > 1) ViewSwitcher(inSpace.data.profiles, inProfile, inController::setView)
-			if (inScreen != Screen.DASHBOARD) LemonButton("Nouvelle opération", inController::newOperation, Modifier.tourAnchor("shell.newop"), LineIcons.Plus)	// pages sans ligne de titre : la saisie reste à portée
 		}
 	}
 }

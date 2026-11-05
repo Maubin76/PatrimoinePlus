@@ -57,7 +57,12 @@ import fr.maubin.patrimoineplus.ui.components.heroFilled
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.foundation.shape.RoundedCornerShape
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
-import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
+import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
+import fr.maubin.patrimoineplus.desktop.ui.components.PageHeader
+import fr.maubin.patrimoineplus.ui.components.LemonButton
+import fr.maubin.patrimoineplus.ui.components.GhostPill
+import fr.maubin.patrimoineplus.ui.icons.LineIcons
+import fr.maubin.patrimoineplus.ui.components.GhostButton
 
 private val kLongDay = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)	// date en toutes lettres
 
@@ -77,16 +82,14 @@ fun ReportScreen(
 {
 	val vTab by inController.reportTab.collectAsState()								// onglet affiché
 	Column(
-		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp).padding(bottom = LocalAssistantRoom.current),
+		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp).padding(top = 6.dp, bottom = 28.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
-		Row(verticalAlignment = Alignment.CenterVertically) {
-			Column(Modifier.weight(1f)) {
-				Text("Bilan", style = MaterialTheme.typography.displaySmall)
-			}
-			Spacer(Modifier.width(24.dp))
-			Box(Modifier.width(360.dp).tourAnchor("report.tabs")) { Choice(ReportTab.entries.map { it to it.label }, vTab, inController::showReportTab) }
-		}
+		PageHeader(
+			inTitle   = "Bilan",
+			inActions = { Box(Modifier.width(360.dp).tourAnchor("report.tabs")) { Choice(ReportTab.entries.map { it to it.label }, vTab, inController::showReportTab) } },
+			inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) }
+		)
 		Box(Modifier.tourAnchor("report.content")) {
 			when (vTab)
 			{
@@ -131,7 +134,7 @@ private fun AnnualReportSection(
 				)																	// année choisie en pilule pleine, comme les choix voisins
 			}
 			Spacer(Modifier.width(8.dp))
-			Button(onClick = { vPick("bilan-patrimoineplus-$vYear.pdf")?.let { vError = inController.exportReport(vYear, it) } }) { Text("Exporter en PDF…") }
+			GhostButton(onClick = { vPick("bilan-patrimoineplus-$vYear.pdf")?.let { vError = inController.exportReport(vYear, it) } }) { Text("Exporter en PDF…") }
 		}
 		vError?.let { Text("Export impossible : $it", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
 		TileRow(

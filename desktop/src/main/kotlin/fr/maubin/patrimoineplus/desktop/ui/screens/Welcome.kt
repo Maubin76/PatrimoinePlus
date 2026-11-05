@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.data.sync.kSyncFileName
 import fr.maubin.patrimoineplus.ui.components.PatrimoineLogo
 import fr.maubin.patrimoineplus.desktop.ui.launchReveal
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 /*
 	Écran d'accueil (aucune source choisie) : ouvrir le dossier des données
@@ -51,10 +53,10 @@ fun WelcomeScreen(
 			)
 			Spacer(Modifier.height(36.dp))
 			Column(Modifier.launchReveal(0.42f, inDy = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-				Button(onClick = inOnFolder, contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp)) {
+				LemonPillButton(onClick = inOnFolder, contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp)) {
 					Text("Choisir le dossier des données…")
 				}
-				OutlinedButton(onClick = inOnDemo, contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp)) {
+				GhostButton(onClick = inOnDemo, contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp)) {
 					Text("Essayer avec la démonstration")
 				}
 			}

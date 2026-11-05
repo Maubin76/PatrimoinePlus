@@ -46,6 +46,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
+import fr.maubin.patrimoineplus.ui.components.GhostButton
 
 private val kDay = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRANCE)			// date d'une échéance
 
@@ -77,7 +78,7 @@ fun RecurringSection(
 				Text("Récurrences", style = MaterialTheme.typography.headlineSmall)
 			}
 			Spacer(Modifier.width(24.dp))
-			Button(onClick = { inController.openPanel(Panel.Recurring(RecurrenceForm(start = vToday.plusDays(1), accountId = vData.accounts.firstOrNull { !it.archived && !it.type.isProperty }?.id))) }) { Text("Nouvelle récurrence") }
+			GhostButton(onClick = { inController.openPanel(Panel.Recurring(RecurrenceForm(start = vToday.plusDays(1), accountId = vData.accounts.firstOrNull { !it.archived && !it.type.isProperty }?.id))) }) { Text("Nouvelle récurrence") }
 		}
 		Tile(inTitle = "Opérations récurrentes") {
 			if (vRecs.isEmpty()) Hint("Aucune récurrence. Créez-en une ici, ou choisissez « Répéter » en saisissant une opération.")

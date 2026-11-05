@@ -68,7 +68,8 @@ import fr.maubin.patrimoineplus.ui.components.Picker
 import fr.maubin.patrimoineplus.domain.model.Frequency
 import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
 import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
-import fr.maubin.patrimoineplus.ui.components.accountLabel
+import fr.maubin.patrimoineplus.ui.components.accountLabel
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 /*
 	Feuille de saisie d'une opération : dépense, revenu, virement entre deux
@@ -126,7 +127,7 @@ fun TransactionSheet(
 			}
 		}
 		vErrors.general?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
-		Button(
+		LemonPillButton(
 			onClick        = { inOnSave(vForm) { vErrors = it } },
 			contentPadding = PaddingValues(vertical = 14.dp),
 			modifier       = Modifier.fillMaxWidth()

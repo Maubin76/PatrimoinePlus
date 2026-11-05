@@ -562,9 +562,9 @@ class ScreenshotTest
 	}
 
 	/*
-		Capture de la vitrine (README) : accueil de démonstration en thème
-		Coloré, effet verre, mode sombre, palette par défaut, répartition en
-		cercle. Copiée dans `doc/images/vitrine-telephone-accueil.png` à la main.
+		Capture de la vitrine (README) : accueil de démonstration, brume
+		lumineuse en clair. Copiée dans `doc/images/vitrine-telephone-accueil.png`
+		à la main.
 	*/
 	@Test
 	@Config(qualifiers = "w360dp-h780dp-xxhdpi")
@@ -573,7 +573,7 @@ class ScreenshotTest
 		val vToday = LocalDate.parse("2026-10-07")								// date de calcul
 		val vDemo  = buildDemoData(vToday)										// démonstration
 		val vState = buildHomeState(vDemo.accounts, vDemo.transactions, vDemo.prices, vToday, vDemo.loans)	// état calculé, en net
-		captureRoboImage("$kOutDir/vitrine-telephone-accueil.png", content = shell(true, false, TopLevelDestination.Home, inColors = ColorTheme.COLORFUL, inGlass = true) {
+		captureRoboImage("$kOutDir/vitrine-telephone-accueil.png", content = shell(false, false, TopLevelDestination.Home) {
 			CompositionLocalProvider(LocalProportionStyle provides ProportionStyle(setOf("accueil"))) { HomeContent(vState, {}, {}) }
 		})
 	}

@@ -99,7 +99,8 @@ import fr.maubin.patrimoineplus.ui.components.MoreMenu
 import fr.maubin.patrimoineplus.ui.components.ProgressTrack
 import fr.maubin.patrimoineplus.ui.analysis.MonthDays
 import fr.maubin.patrimoineplus.ui.analysis.buildMonthDays
-import fr.maubin.patrimoineplus.ui.theme.kLemon
+import fr.maubin.patrimoineplus.ui.theme.kLemon
+import fr.maubin.patrimoineplus.ui.components.GhostButton
 
 private val kShortDay  = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date courte
 private val kRowGap    = 18.dp															// écart entre les panneaux
@@ -978,7 +979,7 @@ private fun EmptyDashboard(inController: DesktopController)
 	Tile(inTitle = "Aucun compte") {
 		AssistantHint("Le patrimoine se calcule à partir de vos comptes et de leurs opérations. Créez un premier compte, ou attendez le fichier du téléphone.")
 		Spacer(Modifier.height(12.dp))
-		OutlinedButton(onClick = { inController.openPanel(Panel.AccountSheet(null)) }) { Text("Ajouter un compte") }
+		GhostButton(onClick = { inController.openPanel(Panel.AccountSheet(null)) }) { Text("Ajouter un compte") }
 	}
 }
 

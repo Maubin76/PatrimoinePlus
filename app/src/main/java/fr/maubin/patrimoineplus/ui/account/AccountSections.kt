@@ -68,7 +68,9 @@ import kotlin.math.abs
 import fr.maubin.patrimoineplus.domain.calc.PropertyItem
 import fr.maubin.patrimoineplus.domain.calc.PropertyNet
 import fr.maubin.patrimoineplus.ui.components.ProportionChart
-import fr.maubin.patrimoineplus.ui.components.ProportionToggle
+import fr.maubin.patrimoineplus.ui.components.ProportionToggle
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 private val kShortDate = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)	// date courte
 
@@ -353,7 +355,7 @@ fun StatementSheet(
 	FormSheet(inTitle = "Nouveau relevé", inOnDismiss = inOnDismiss, inDirty = vAmount.isNotBlank()) {
 		AmountInput(vAmount, { vAmount = it }, "Solde indiqué par la banque", vError)
 		DateInput(vDate, { vDate = it }, "Date du relevé")
-		Button(
+		LemonPillButton(
 			onClick        = {
 				val vCents = parseEuros(vAmount)									// montant lu
 				if (vCents == null) vError = "Montant illisible (ex. 12 038,20)." else inOnSave(vDate, vCents)
@@ -401,7 +403,7 @@ fun PricesSheet(
 			)
 		}
 		vError?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
-		Button(
+		LemonPillButton(
 			onClick        = {
 				val vChanged = vValues.filter { (inId, inText) -> inText.isNotBlank() && (inText != vStart[inId] || vDate != inToday) }	// cours à enregistrer
 				val vParsed  = vChanged.mapValues { parseScaled(it.value) }		// cours lus
@@ -474,7 +476,7 @@ fun OpeningPositionSheet(
 			modifier        = Modifier.fillMaxWidth()
 		)
 		vError?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
-		OutlinedButton(
+		GhostButton(
 			onClick        = {
 				val vQty = parseScaled(vQuantity)									// quantité lue
 				val vPru = parseScaled(vPrice)										// PRU lu
@@ -529,7 +531,7 @@ fun AssetSheet(
 	FormSheet(inTitle = "Actif", inOnDismiss = inOnDismiss, inDirty = vName != inAsset.name || vIsin != inAsset.isin.orEmpty() || vTicker != inAsset.ticker.orEmpty()) {
 		TextInput(vName, { vName = it }, "Nom", if (vName.isBlank()) "Le nom est obligatoire." else null)
 		TextInput(vIsin, { vIsin = it; vFound = null; vInfo = null }, "ISIN", if (vIsin.isNotBlank() && !vIsinOk) "12 caractères, ex. LU1681043599." else null, "Sur vos relevés ; sert à trouver le cours.")
-		OutlinedButton(
+		GhostButton(
 			onClick  = {
 				vBusy = true
 				vInfo = null
@@ -557,7 +559,7 @@ fun AssetSheet(
 		}
 		vInfo?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
 		TextInput(vTicker, { vTicker = it }, "Symbole de cotation", null, "Cotation en euros, ex. CW8.PA. Vide : cours saisis à la main.")
-		Button(
+		LemonPillButton(
 			onClick        = { inOnSave(vName, vIsin, vTicker) },
 			enabled        = vName.isNotBlank() && (vIsin.isBlank() || vIsinOk),
 			contentPadding = PaddingValues(vertical = 14.dp),
@@ -671,7 +673,7 @@ fun PropertySection(
 						}
 					}
 				}
-				OutlinedButton(onClick = { inOnSell(inItem) }) { Text(if (inItem.disposal != null) "Vente prévue" else "Vendre") }
+				GhostButton(onClick = { inOnSell(inItem) }) { Text(if (inItem.disposal != null) "Vente prévue" else "Vendre") }
 			}
 		}
 	}

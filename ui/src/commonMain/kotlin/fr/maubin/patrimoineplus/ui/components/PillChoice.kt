@@ -22,14 +22,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.border
 
 private const val kPillMillis = 180												// fondu du choix actif
 
 /*
-	Choix segmenté en pilules (téléphone et PC) : piste arrondie (voile
-	translucide avec l'effet verre), choix actif sur une pilule pleine à
-	l'encre de la coque ; plus de quatre choix : texte plus petit, sur une
-	ligne.
+	Choix segmenté en pilules (téléphone et PC) : piste de verre translucide
+	à liseré blanc, choix actif sur une pilule blanche (voile clair en
+	sombre), texte à l'encre ; plus de quatre choix : texte plus petit, sur
+	une ligne.
 	inOptions  : choix proposés
 	inSelected : choix actif
 	inLabel    : libellé d'un choix
@@ -47,12 +48,12 @@ fun <T> PillChoice(
 {
 	val vColors = MaterialTheme.colorScheme										// palette courante
 	Row(
-		modifier              = Modifier.fillMaxWidth().clip(RoundedCornerShape(50)).background(glassWell(vColors.surfaceContainer)).padding(4.dp).selectableGroup(),
+		modifier              = Modifier.fillMaxWidth().clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = if (isNight()) 0.05f else 0.4f)).border(1.dp, Color.White.copy(alpha = if (isNight()) 0.08f else 0.85f), RoundedCornerShape(50)).padding(4.dp).selectableGroup(),
 		horizontalArrangement = Arrangement.spacedBy(4.dp)
 	) {
 		inOptions.forEach { inOption ->
 			val vActive = inOption == inSelected										// choix actif
-			val vFill   by animateColorAsState(if (vActive) vColors.primary else Color.Transparent, tween(kPillMillis), label = "choix")	// fond de la pilule
+			val vFill   by animateColorAsState(if (vActive) (if (isNight()) Color.White.copy(alpha = 0.16f) else Color.White) else Color.Transparent, tween(kPillMillis), label = "choix")	// fond de la pilule
 			Box(
 				modifier         = Modifier
 					.weight(1f)
@@ -65,7 +66,7 @@ fun <T> PillChoice(
 				Text(
 					text     = inLabel(inOption),
 					style    = if (inOptions.size > 4) MaterialTheme.typography.labelMedium else MaterialTheme.typography.labelLarge,
-					color    = when { vActive -> vColors.onPrimary; inEnabled -> vColors.onSurface; else -> vColors.onSurface.copy(alpha = 0.38f) },
+					color    = if (inEnabled) vColors.onSurface else vColors.onSurface.copy(alpha = 0.38f),
 					maxLines = 1,
 					softWrap = false
 				)

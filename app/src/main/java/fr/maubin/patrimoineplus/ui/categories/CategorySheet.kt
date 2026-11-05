@@ -36,6 +36,7 @@ import fr.maubin.patrimoineplus.ui.components.FormSheet
 import fr.maubin.patrimoineplus.ui.components.SegmentedChoice
 import fr.maubin.patrimoineplus.ui.components.TextInput
 import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 /*
 	Libellé d'une nature de catégorie.
@@ -76,7 +77,7 @@ fun CategorySheet(
 		)
 		Text("Icône", style = MaterialTheme.typography.titleSmall)
 		IconGrid(vForm.icon) { vForm = vForm.copy(icon = it) }
-		Button(
+		LemonPillButton(
 			onClick        = { inOnSave(vForm) { vError = it } },
 			contentPadding = PaddingValues(vertical = 14.dp),
 			modifier       = Modifier.fillMaxWidth()

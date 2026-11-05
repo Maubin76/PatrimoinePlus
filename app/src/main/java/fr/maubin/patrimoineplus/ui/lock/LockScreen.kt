@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 private const val kIntroMillis   = 1_900											// durée de l'animation du lancement
 private const val kSplashLogoDp  = 156f												// côté du logo sur l'écran de démarrage système (tuile inscrite dans son cercle de 192 dp)
@@ -171,7 +172,7 @@ fun LockContent(
 					Text(inMessage, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
 				}
 				Spacer(Modifier.height(36.dp))
-				Button(
+				LemonPillButton(
 					onClick        = inOnUnlock,
 					enabled        = inProgress >= 1f,
 					contentPadding = PaddingValues(horizontal = 40.dp, vertical = 14.dp)

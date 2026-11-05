@@ -22,8 +22,8 @@ import java.time.Instant
 import java.time.ZoneId
 
 /*
-	Captures de la vitrine (README) : démonstration en thème Coloré, effet
-	verre, mode sombre, palette par défaut ; tableau de bord (avec
+	Captures de la vitrine (README) : démonstration en brume lumineuse, en
+	clair ; tableau de bord (avec
 	l'assistant) et budget (schéma de cashflow). Copiées dans `doc/images/` à la main
 	quand l'interface change : `vitrine-pc-*.png`.
 */
@@ -56,7 +56,7 @@ class ShowcaseCapturesTest
 	fun showcase()
 	{
 		val vApp  = DesktopController(DesktopConfig(fTemp.root.toPath().resolve("desktop.properties")), Workspace(kClock), null, kClock).apply {
-			openDemo(); setAppearance(ThemeMode.DARK); setGlass(true); setColorTheme(ColorTheme.COLORFUL); setAssistant(true); stopAllTours()
+			openDemo(); setAppearance(ThemeMode.LIGHT); setAssistant(true); stopAllTours()
 		}																				// démonstration, apparence de la vitrine
 		capture(vApp, "vitrine-pc-tableau-de-bord")
 		val vData = vApp.workspace.value.data											// données

@@ -43,6 +43,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
 import javax.inject.Inject
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.ui.components.GhostButton
 
 /*
 	Résultat de l'essai d'un PC.
@@ -201,11 +203,11 @@ internal fun NetworkDiagnosticSheet(
 		if (vNet != null && vNet.onWifi && !vNet.permission)
 		{
 			Text("Android exige l’autorisation de localisation pour lire le nom du Wi-Fi. PatrimoinePlus ne lit que ce nom, jamais votre position : il servira à ne synchroniser que sur le Wi-Fi de la maison.", style = MaterialTheme.typography.bodyMedium, color = vMuted)
-			OutlinedButton(onClick = { vAsk.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)) }) { Text("Autoriser") }
+			GhostButton(onClick = { vAsk.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)) }) { Text("Autoriser") }
 		}
 		Text("Lancez d’abord le diagnostic sur le PC (page Appareils), puis cherchez-le ici.", style = MaterialTheme.typography.bodyMedium, color = vMuted)
 		Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-			Button(onClick = inViewModel::search, enabled = !vState.searching) { Text("Chercher les PC") }
+			GhostButton(onClick = inViewModel::search, enabled = !vState.searching) { Text("Chercher les PC") }
 			if (vState.searching) CircularProgressIndicator()
 		}
 		if (vState.searched && vState.probes.isEmpty() && !vState.searching)
@@ -219,6 +221,6 @@ internal fun NetworkDiagnosticSheet(
 			}
 		}
 		TextInput(vAddress, { vAddress = it }, "Adresse du PC (ex. 192.168.1.20)")
-		OutlinedButton(onClick = { inViewModel.tryAddress(vAddress) }, enabled = vAddress.isNotBlank() && !vState.searching) { Text("Essayer cette adresse") }
+		GhostButton(onClick = { inViewModel.tryAddress(vAddress) }, enabled = vAddress.isNotBlank() && !vState.searching) { Text("Essayer cette adresse") }
 	}
 }

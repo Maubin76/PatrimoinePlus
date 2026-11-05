@@ -68,21 +68,26 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import fr.maubin.patrimoineplus.domain.format.kCurrencySeparator
-import fr.maubin.patrimoineplus.ui.components.heroFilled
-import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
+import fr.maubin.patrimoineplus.ui.components.heroFilled
+import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import fr.maubin.patrimoineplus.desktop.ui.AssistantHint
-import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
-import fr.maubin.patrimoineplus.data.DataSet
+import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
+import fr.maubin.patrimoineplus.data.DataSet
 import fr.maubin.patrimoineplus.ui.budget.investmentMember
 import fr.maubin.patrimoineplus.ui.budget.investmentMembers
 import fr.maubin.patrimoineplus.domain.model.Profile
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenuItem
 import fr.maubin.patrimoineplus.desktop.ui.LocalSavePicker
-import fr.maubin.patrimoineplus.desktop.ui.components.exportSankeyPng
+import fr.maubin.patrimoineplus.desktop.ui.components.exportSankeyPng
 import fr.maubin.patrimoineplus.desktop.ui.components.SankeyExportDialog
 import fr.maubin.patrimoineplus.desktop.ui.components.SankeyStyle
 import fr.maubin.patrimoineplus.ui.theme.isDark
+import fr.maubin.patrimoineplus.desktop.ui.components.PageHeader
+import fr.maubin.patrimoineplus.ui.components.LemonButton
+import fr.maubin.patrimoineplus.ui.components.GhostPill
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
+import fr.maubin.patrimoineplus.ui.components.GhostButton
 
 private const val kNameWeight   = 2.4f											// largeur relative de la colonne du nom
 private const val kExportHeading = "Budget prévisionnel : cashflow mensuel"		// titre de l'image exportée
@@ -117,13 +122,14 @@ fun BudgetScreen(
 	val vDark    = vSet.appearance.isDark()													// mode sombre effectif
 	var vExport  by remember { mutableStateOf(false) }										// prévisualisation de l'export ouverte
 	Column(
-		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp).padding(bottom = LocalAssistantRoom.current),
+		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp).padding(top = 6.dp, bottom = 28.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
-		Column {
-			Text("Budget prévisionnel", style = MaterialTheme.typography.displaySmall)
-			if (inFamily.profiles.size > 1) Text("Commun à toute la famille", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-		}
+		PageHeader(
+			inTitle    = "Budget prévisionnel",
+			inSubtitle = if (inFamily.profiles.size > 1) "Commun à toute la famille" else null,
+			inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) }
+		)
 		Box(Modifier.tourAnchor("budget.figures")) { Figures(vBudget) }
 		Box(Modifier.tourAnchor("budget.goals")) { MonthGoalsBar(vMonth, { vMonth = it }, inSpace, inController, vBudget) }
 		Tile(
@@ -416,7 +422,7 @@ private fun MonthGoalsBar(
 			Box(Modifier.width(260.dp)) { MonthSwitcher(inMonth, YearMonth.from(inSpace.today), YearMonth.from(inSpace.today).plusMonths(1), inOnMonth) }
 			Spacer(Modifier.width(8.dp))
 			if (vPlan != null) TextButton(onClick = { inController.show(Screen.GOALS) }) { Text("Voir les objectifs") }
-			if (!vPast) Button(onClick = { inController.confirmMonthGoals(inMonth) }, enabled = !vEmpty) { Text(if (vPlan == null) "Fixer les objectifs du mois" else "Mettre à jour") }
+			if (!vPast) GhostButton(onClick = { inController.confirmMonthGoals(inMonth) }, enabled = !vEmpty) { Text(if (vPlan == null) "Fixer les objectifs du mois" else "Mettre à jour") }
 		}
 	}
 }

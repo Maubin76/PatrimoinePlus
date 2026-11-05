@@ -41,7 +41,7 @@ import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 import fr.maubin.patrimoineplus.ui.theme.LocalPalette
 import fr.maubin.patrimoineplus.ui.theme.colorfulPalette
 
-private val kCardShape = RoundedCornerShape(24.dp)							// coins des cartes : panneau flottant
+private val kCardShape = RoundedCornerShape(18.dp)							// coins des cartes : panneau flottant
 
 /*
 	Point identifiant une série (un type de compte), en niveau de gris.

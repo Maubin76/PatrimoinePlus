@@ -57,6 +57,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.heightIn
 
 private const val kHoverMillis = 140											// fondu du survol
 private val kPill              = RoundedCornerShape(50)							// pilule
@@ -156,6 +157,49 @@ fun GhostPill(
 }
 
 /*
+	Bouton secondaire de la brume, à la place du bouton à contour Material
+	(mêmes paramètres que OutlinedButton, pour le remplacer tel quel) :
+	pilule de verre blanc, liseré blanc, plus dense au survol ; atténué
+	quand il est inactif.
+	onClick        : action
+	modifier       : modificateur appliqué
+	enabled        : bouton actif
+	contentPadding : marges intérieures
+	content        : contenu (texte, icône)
+*/
+@Composable
+fun GhostButton(
+	onClick        : () -> Unit,
+	modifier       : Modifier      = Modifier,
+	enabled        : Boolean       = true,
+	contentPadding : PaddingValues = PaddingValues(horizontal = 18.dp),
+	content        : @Composable androidx.compose.foundation.layout.RowScope.() -> Unit
+)
+{
+	val vNight   = isNight()															// fond sombre
+	val vSource  = remember { MutableInteractionSource() }							// survol
+	val vHovered by vSource.collectIsHoveredAsState()								// souris au-dessus
+	val vFill    by animateColorAsState(Color.White.copy(alpha = if (vNight) (if (vHovered && enabled) 0.11f else 0.06f) else (if (vHovered && enabled) 0.85f else 0.55f)), tween(kHoverMillis), label = "pilule")	// fond
+	val vInk     = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else 0.38f)	// encre
+	Row(
+		modifier              = modifier
+			.heightIn(min = 40.dp)
+			.background(vFill, kPill)
+			.border(1.dp, Color.White.copy(alpha = if (vNight) 0.1f else 0.9f), kPill)
+			.hoverable(vSource, enabled)
+			.clickable(interactionSource = vSource, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
+			.padding(contentPadding),
+		horizontalArrangement = Arrangement.Center,
+		verticalAlignment     = Alignment.CenterVertically
+	) {
+		androidx.compose.runtime.CompositionLocalProvider(
+			androidx.compose.material3.LocalContentColor provides vInk,
+			androidx.compose.material3.LocalTextStyle provides MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Normal)
+		) { content() }
+	}
+}
+
+/*
 	Bouton jaune citron, le seul bouton plein de l'appli (saisie d'une
 	opération) : icône et libellé à l'encre, plus soutenu au survol.
 	inLabel    : libellé
@@ -189,6 +233,53 @@ fun LemonButton(
 			Spacer(Modifier.width(8.dp))
 		}
 		Text(inLabel, style = MaterialTheme.typography.labelLarge, color = kOnLemon, maxLines = 1)
+	}
+}
+
+/*
+	Bouton principal d'un panneau, d'une fenêtre ou d'une feuille de saisie
+	(« Enregistrer »), à la place du bouton plein Material (mêmes paramètres
+	que Button, pour le remplacer tel quel) : pilule jaune citron, texte à
+	l'encre ; atténué quand il est inactif.
+	onClick        : action
+	modifier       : modificateur appliqué
+	enabled        : bouton actif
+	contentPadding : marges intérieures
+	content        : contenu (texte, icône)
+*/
+@Composable
+fun LemonPillButton(
+	onClick        : () -> Unit,
+	modifier       : Modifier      = Modifier,
+	enabled        : Boolean       = true,
+	contentPadding : PaddingValues = PaddingValues(horizontal = 22.dp),
+	content        : @Composable androidx.compose.foundation.layout.RowScope.() -> Unit
+)
+{
+	val vBase    = if (isNight()) kLemonNight else kLemon							// jaune
+	val vSource  = remember { MutableInteractionSource() }							// survol
+	val vHovered by vSource.collectIsHoveredAsState()								// souris au-dessus
+	val vFill    by animateColorAsState(
+		when
+		{
+			!enabled -> vBase.copy(alpha = 0.35f)
+			vHovered -> lerp(vBase, Color(0xFFE0B400), 0.35f)
+			else     -> vBase
+		}, tween(kHoverMillis), label = "citron")										// fond
+	Row(
+		modifier              = modifier
+			.heightIn(min = 42.dp)
+			.background(vFill, kPill)
+			.hoverable(vSource, enabled)
+			.clickable(interactionSource = vSource, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
+			.padding(contentPadding),
+		horizontalArrangement = Arrangement.Center,
+		verticalAlignment     = Alignment.CenterVertically
+	) {
+		androidx.compose.runtime.CompositionLocalProvider(
+			androidx.compose.material3.LocalContentColor provides kOnLemon.copy(alpha = if (enabled) 1f else 0.5f),
+			androidx.compose.material3.LocalTextStyle provides MaterialTheme.typography.labelLarge
+		) { content() }
 	}
 }
 

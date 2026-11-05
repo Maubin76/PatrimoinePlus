@@ -104,6 +104,12 @@ import fr.maubin.patrimoineplus.desktop.ui.AssistantHint
 import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
 import fr.maubin.patrimoineplus.ui.components.accountLabel
 import androidx.compose.runtime.LaunchedEffect
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.desktop.ui.components.PageHeader
+import fr.maubin.patrimoineplus.ui.components.LemonButton
+import fr.maubin.patrimoineplus.ui.components.GhostPill
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 private const val kBarMillis = 420														// remplissage de la barre d'avancement
 
@@ -159,16 +165,14 @@ fun GoalsScreen(
 	val vUpdate = { inGoal: Goal -> inController.setGoals(vGoals.copy(goals = vGoals.goals.map { if (it.id == inGoal.id) inGoal else it })) }	// modifie un objectif
 	Row(Modifier.fillMaxSize()) {
 		Column(
-			modifier            = Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp).padding(bottom = LocalAssistantRoom.current),
+			modifier            = Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp).padding(top = 6.dp, bottom = 28.dp).padding(bottom = LocalAssistantRoom.current),
 			verticalArrangement = Arrangement.spacedBy(20.dp)
 		) {
-			Row(verticalAlignment = Alignment.CenterVertically) {
-				Column(Modifier.weight(1f)) {
-					Text("Objectifs", style = MaterialTheme.typography.displaySmall)
-				}
-				Spacer(Modifier.width(24.dp))
-				Button(onClick = { vOpen(Draft(null, GoalKind.WEALTH)) }, modifier = Modifier.tourAnchor("goals.new")) { Text("Nouvel objectif") }
-			}
+			PageHeader(
+				inTitle   = "Objectifs",
+				inActions = { GhostPill("Nouvel objectif", { vOpen(Draft(null, GoalKind.WEALTH)) }, Modifier.tourAnchor("goals.new"), LineIcons.Target) },
+				inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) }
+			)
 			SectionHeader(inTitle = "Objectifs globaux", inModifier = Modifier.tourAnchor("goals.global"))
 			if (vViews.isEmpty())
 			{
@@ -257,7 +261,7 @@ private fun Suggestions(
 		AssistantHint("Choisissez une idée pour commencer, ou créez votre propre objectif. Tout reste modifiable.")
 		Spacer(Modifier.height(12.dp))
 		FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-			vIdeas.forEach { inIdea -> OutlinedButton(onClick = { inOpen(inIdea) }) { Text(inIdea.title, maxLines = 1) } }
+			vIdeas.forEach { inIdea -> GhostButton(onClick = { inOpen(inIdea) }) { Text(inIdea.title, maxLines = 1) } }
 		}
 	}
 }
@@ -501,7 +505,7 @@ private fun Editor(
 		inOnEnter = { vSubmit() },
 		inActions = {
 			Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-				Button(onClick = { vSubmit() }) { Text("Enregistrer") }
+				LemonPillButton(onClick = { vSubmit() }) { Text("Enregistrer") }
 				TextButton(onClick = inClose) { Text("Annuler") }
 				Spacer(Modifier.weight(1f))
 				inDraft.id?.let { inId -> TextButton(onClick = { inDelete(inId) }) { Text("Supprimer", color = MaterialTheme.colorScheme.error) } }
@@ -665,7 +669,7 @@ private fun MonthSection(
 			if (!vMonth.isBefore(vToday))
 			{
 				Spacer(Modifier.height(8.dp))
-				Button(onClick = { inController.show(Screen.BUDGET) }) { Text("Aller au budget") }
+				GhostButton(onClick = { inController.show(Screen.BUDGET) }) { Text("Aller au budget") }
 			}
 		}
 	}

@@ -32,7 +32,9 @@ import fr.maubin.patrimoineplus.data.edit.EditResult
 import fr.maubin.patrimoineplus.desktop.DesktopController
 import fr.maubin.patrimoineplus.ui.icons.CategoryIcons
 import fr.maubin.patrimoineplus.domain.model.CategoryKind
-import fr.maubin.patrimoineplus.ui.components.glassWell
+import fr.maubin.patrimoineplus.ui.components.glassWell
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 /*
 	Création ou modification d'une catégorie : nom, nature (à la création),
@@ -83,8 +85,8 @@ fun CategoryPanel(
 		inDirty   = vName != vCategory?.name.orEmpty() || vKind != (vCategory?.kind ?: inKind) || vIcon != (vCategory?.icon ?: "dots"),
 		inOnEnter = ::save,
 		inActions = {
-			if (vCategory != null) OutlinedButton(onClick = { vDelete = true }) { Text("Supprimer") }
-			Button(onClick = ::save) { Text("Enregistrer") }
+			if (vCategory != null) GhostButton(onClick = { vDelete = true }) { Text("Supprimer") }
+			LemonPillButton(onClick = ::save) { Text("Enregistrer") }
 		}
 	) {
 		FormError(vError)

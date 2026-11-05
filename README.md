@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <img src="doc/images/vitrine-pc-tableau-de-bord.png" alt="Tableau de bord de l'application PC, thème Coloré sombre avec effet verre" width="100%">
+  <img src="doc/images/vitrine-pc-tableau-de-bord.png" alt="Tableau de bord de l'application PC, style brume lumineuse" width="100%">
 </p>
 
 <table>
@@ -79,8 +79,8 @@ biens immobiliers, objets de collection et crédits, et calcule votre
 | **Import d'une sauvegarde** | Restauration d'un classeur, entièrement vérifiée avant de remplacer les données | ✅ | — |
 | **Mode discret** | Masque tous les montants d'un geste | ✅ | ✅ |
 | **Verrou** | Empreinte ou code du téléphone à l'ouverture | ✅ | — |
-| **Thèmes** | Monochrome, Minimal ou Coloré, clair ou sombre, effet verre | ✅ | ✅ |
-| **Thèmes personnalisés** | Cinq couleurs au choix, partagées entre le téléphone et le PC | ✅ | ✅ |
+| **Apparence** | Style « brume lumineuse » (verre blanc sur halo jaune), en clair ou en sombre | ✅ | ✅ |
+| **Thèmes personnalisés** | Cinq couleurs des données au choix, partagées entre le téléphone et le PC | ✅ | ✅ |
 | **Assistant** | Petit compagnon animé qui résume le mois (budget, objectifs, patrimoine) et réagit aux événements | — | ✅ |
 | **Visites guidées** | Présentation de chaque page à la première visite, à revoir depuis les réglages | — | ✅ |
 | **Premier lancement** | Assistant de départ qui propose les comptes et les catégories | ✅ | — |

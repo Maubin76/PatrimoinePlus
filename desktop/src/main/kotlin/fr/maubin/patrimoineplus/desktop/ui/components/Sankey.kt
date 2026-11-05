@@ -35,7 +35,8 @@ import fr.maubin.patrimoineplus.ui.theme.LocalColorTheme
 import fr.maubin.patrimoineplus.ui.theme.ColorTheme
 import fr.maubin.patrimoineplus.ui.theme.LocalPalette
 import fr.maubin.patrimoineplus.ui.theme.Palette
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.remember
+import fr.maubin.patrimoineplus.ui.theme.kColorfulLight
 
 private val kNodeWidth = 8.dp															// largeur d'un nœud (bouts arrondis)
 private val kGap       = 8.dp															// espace entre deux nœuds d'un thème
@@ -71,14 +72,7 @@ private val kPastels  = FlowPalette(
 	themes  = listOf(Color(0xFFD6B6E6), Color(0xFFC4B6F5), Color(0xFFA7DCD5), Color(0xFFF5B6A6), Color(0xFFF2D8A2), Color(0xFFB7E0C2), Color(0xFFAECCEA), Color(0xFFE6C4AF))
 )																							// thèmes Monochrome et Minimal
 
-private val kSummer   = FlowPalette(
-	source  = Color(0xFFB7AEFB),																// indigo adouci
-	budget  = Color(0xFFF3D08A),																// ambre adouci
-	invest  = Color(0xFF8EDFC8),																// menthe adoucie
-	rest    = Color(0xFFDCD8F3),																// lavande très pâle
-	deficit = Color(0xFFEFA0B5),																// corail adouci
-	themes  = listOf(Color(0xFFB7AEFB), Color(0xFFF3D08A), Color(0xFF8EDFC8), Color(0xFFEFA0B5), Color(0xFFB9CBFA), Color(0xFFE9BE6A), Color(0xFFA8E8D6), Color(0xFFF4C1CE))
-)																							// thème Coloré : palette Indigo de l'appli, adoucie
+private val kSummer   = flowPaletteOf(kColorfulLight)										// brume lumineuse : couleurs des données, adoucies
 
 /*
 	Teintes du diagramme tirées d'un thème personnalisé : ses cinq couleurs

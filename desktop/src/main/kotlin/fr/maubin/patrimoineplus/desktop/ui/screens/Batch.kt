@@ -56,6 +56,8 @@ import fr.maubin.patrimoineplus.ui.entry.BatchRow
 import fr.maubin.patrimoineplus.ui.entry.proposeCategory
 import fr.maubin.patrimoineplus.ui.icons.LineIcons
 import fr.maubin.patrimoineplus.ui.components.accountLabel
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 /*
 	Saisie rapide : dépenses et revenus en série, dans une grille au clavier.
@@ -122,7 +124,7 @@ fun BatchSection(
 				Text("Entrées ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 				AmountText(inCents = vAmounts.filter { it > 0 }.sum(), inStyle = MaterialTheme.typography.titleMedium)
 				Spacer(Modifier.width(16.dp))
-				Button(onClick = ::save, enabled = vFilled.isNotEmpty()) { Text("Enregistrer") }
+				LemonPillButton(onClick = ::save, enabled = vFilled.isNotEmpty()) { Text("Enregistrer") }
 			}
 		) {
 			vErrors[-1L]?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
@@ -148,7 +150,7 @@ fun BatchSection(
 			}
 			Spacer(Modifier.padding(top = 8.dp))
 			Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-				OutlinedButton(onClick = { addRow(vRows.last()) }) { Text("Ajouter une ligne") }
+				GhostButton(onClick = { addRow(vRows.last()) }) { Text("Ajouter une ligne") }
 				TextButton(onClick = { vErrors.clear(); inController.setBatch(listOf(inController.newBatchRow(null))) }) { Text("Tout effacer") }
 			}
 			Hint("Les virements et ordres de bourse se saisissent avec « Nouvelle opération ».")

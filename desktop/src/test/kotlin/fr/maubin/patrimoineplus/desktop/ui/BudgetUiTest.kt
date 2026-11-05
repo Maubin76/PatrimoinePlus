@@ -198,9 +198,8 @@ class BudgetUiTest
 		fCompose.onNodeWithText("Exporter").performScrollTo().performClick()
 		fCompose.waitForIdle()
 		fCompose.onNodeWithText("Exporter le cashflow").assertExists()
-		fCompose.onNodeWithText("Monochrome").assertDoesNotExist()						// même schéma que Minimal : pas proposé
+		fCompose.onNodeWithText("Monochrome").assertDoesNotExist()						// un seul style : pas de thème à choisir
 		fCompose.onNodeWithText("Sombre").performClick()
-		fCompose.onNodeWithContentDescription("Effet verre de l’image").performClick()
 		fCompose.onNodeWithText("Océan").performClick()
 		fCompose.waitUntil(10_000) { Thread.sleep(200); true }
 		fCompose.waitForIdle()

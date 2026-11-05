@@ -51,7 +51,8 @@ import fr.maubin.patrimoineplus.domain.format.kMaskedAmount
 import fr.maubin.patrimoineplus.ui.components.LocalAmountsHidden
 import fr.maubin.patrimoineplus.domain.calc.PropertyItem
 import fr.maubin.patrimoineplus.ui.account.AccountExtras
-import fr.maubin.patrimoineplus.ui.components.accountLabel
+import fr.maubin.patrimoineplus.ui.components.accountLabel
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 private val kDay = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.FRANCE)			// date d'une échéance
 
@@ -159,7 +160,7 @@ fun RecurrenceSheet(
 		TextInput(vForm.notes, { vForm = vForm.copy(notes = it) }, "Notes (facultatif)")
 		Text("Chaque échéance crée l’opération à sa date ; une échéance déjà passée est créée dès l’enregistrement.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 		vGeneral?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
-		Button(
+		LemonPillButton(
 			onClick        = { if (vEndError == null) inOnSave(vForm.copy(end = vEnd)) { inErrors, inRefusal -> vErrors = inErrors; vGeneral = inRefusal } },
 			contentPadding = PaddingValues(vertical = 14.dp),
 			modifier       = Modifier.fillMaxWidth()

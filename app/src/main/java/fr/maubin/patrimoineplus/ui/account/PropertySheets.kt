@@ -34,6 +34,7 @@ import fr.maubin.patrimoineplus.ui.property.checkSale
 import fr.maubin.patrimoineplus.ui.property.propertyNoun
 import fr.maubin.patrimoineplus.ui.property.saleGain
 import fr.maubin.patrimoineplus.ui.components.accountLabel
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
 
 /*
 	Feuille d'achat d'un bien (compte Immobilier ou Collection) : nom, prix,
@@ -73,7 +74,7 @@ fun PurchaseSheet(
 		DateInput(vForm.date, { vForm = vForm.copy(date = it) }, "Date d’achat")
 		TextInput(vForm.notes, { vForm = vForm.copy(notes = it) }, "Notes (facultatif)")
 		vGeneral?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
-		Button(
+		LemonPillButton(
 			onClick        = {
 				vErrors = checkPurchase(vForm, inAccounts)
 				if (vErrors.isEmpty) inOnSave(vForm) { vGeneral = it }
@@ -160,7 +161,7 @@ fun SaleSheet(
 		vErrors.date?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
 		TextInput(vForm.notes, { vForm = vForm.copy(notes = it) }, "Notes (facultatif)")
 		vGeneral?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
-		Button(
+		LemonPillButton(
 			onClick        = {
 				vErrors = checkSale(vForm, inItem, inAccounts)
 				if (vErrors.isEmpty) inOnSave(vForm) { vGeneral = it }

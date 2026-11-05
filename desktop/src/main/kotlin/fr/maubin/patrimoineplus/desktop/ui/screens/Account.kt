@@ -97,7 +97,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.collectAsState
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.desktop.ui.components.PageHeader
+import fr.maubin.patrimoineplus.ui.components.LemonButton
+import fr.maubin.patrimoineplus.ui.components.GhostPill
+import fr.maubin.patrimoineplus.ui.components.GhostButton
 
 private val kDayTitle = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRANCE)	// en-tête d'un jour
 private val kShortDay = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date d'une opération
@@ -139,22 +144,19 @@ fun AccountScreen(
 	val vAccent = accountAccent(vAccount.type)										// couleur du type (thème Coloré)
 	CompositionLocalProvider(LocalAccent provides vAccent) {
 	Column(
-		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp).padding(bottom = LocalAssistantRoom.current),
+		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp).padding(top = 6.dp, bottom = 28.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
 		Row(verticalAlignment = Alignment.CenterVertically) {
 			IconButton(onClick = inController::back) { Icon(LineIcons.Back, contentDescription = "Retour au tableau de bord") }
 			Spacer(Modifier.width(8.dp))
-			if (vAccent != Color.Unspecified)
-			{
-				Box(Modifier.width(6.dp).height(44.dp).clip(RoundedCornerShape(3.dp)).background(vAccent))	// marque du type
-				Spacer(Modifier.width(14.dp))
-			}
-			Column(Modifier.weight(1f).tourAnchor("account.header")) {
-				Text(vAccount.name, style = MaterialTheme.typography.displaySmall)
-				Text(accountDetail(vAccount), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-			}
-			OutlinedButton(onClick = { inController.openPanel(Panel.AccountSheet(vAccount.id)) }) { Text("Modifier le compte") }
+			PageHeader(
+				inTitle    = vAccount.name,
+				inSubtitle = accountDetail(vAccount),
+				inActions  = { GhostPill("Modifier le compte", { inController.openPanel(Panel.AccountSheet(vAccount.id)) }, inIcon = LineIcons.Edit) },
+				inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) },
+				inModifier = Modifier.weight(1f).tourAnchor("account.header")
+			)
 		}
 		when (vAccount.type)
 		{
@@ -322,7 +324,7 @@ private fun PropertyView(
 	ChartTile("Évolution de la valeur", inState.series, inState.series.lastOrNull()?.month, Modifier.fillMaxWidth())
 	Tile(
 		inTitle  = if (vNoun == "bien") "Biens détenus" else "Objets détenus",
-		inAction = { Button(onClick = { inController.openPanel(Panel.Purchase(newPurchaseForm(inAccount.id, vToday))) }) { Text("Ajouter un $vNoun") } }
+		inAction = { GhostButton(onClick = { inController.openPanel(Panel.Purchase(newPurchaseForm(inAccount.id, vToday))) }) { Text("Ajouter un $vNoun") } }
 	) {
 		if (vHeld.isEmpty()) Hint("Aucun $vNoun : ajoutez-en un avec son prix d’achat. Payé depuis un compte, il en débite le prix ; déjà possédé, il n’en débite aucun.")
 		vHeld.forEach { inItem ->
@@ -348,7 +350,7 @@ private fun PropertyView(
 				}
 				AmountText(inCents = inItem.cost, inStyle = MaterialTheme.typography.bodyLarge)
 				Spacer(Modifier.width(16.dp))
-				OutlinedButton(onClick = { inController.openPanel(Panel.Sale(inItem.disposal?.let { editSaleForm(inItem) } ?: newSaleForm(inItem, vToday))) }) { Text(if (inItem.disposal != null) "Vente prévue" else "Vendre") }
+				GhostButton(onClick = { inController.openPanel(Panel.Sale(inItem.disposal?.let { editSaleForm(inItem) } ?: newSaleForm(inItem, vToday))) }) { Text(if (inItem.disposal != null) "Vente prévue" else "Vendre") }
 			}
 		}
 	}

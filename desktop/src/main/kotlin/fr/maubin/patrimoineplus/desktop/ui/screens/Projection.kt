@@ -61,7 +61,11 @@ import fr.maubin.patrimoineplus.ui.components.isColorful
 import fr.maubin.patrimoineplus.ui.components.heroFilled
 import fr.maubin.patrimoineplus.desktop.ui.tour.tourAnchor
 import androidx.compose.foundation.layout.Box
-import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
+import fr.maubin.patrimoineplus.desktop.ui.LocalAssistantRoom
+import fr.maubin.patrimoineplus.desktop.ui.components.PageHeader
+import fr.maubin.patrimoineplus.ui.components.LemonButton
+import fr.maubin.patrimoineplus.ui.components.GhostPill
+import fr.maubin.patrimoineplus.ui.icons.LineIcons
 
 private val kHorizons = listOf(5, 10, 20, 30)											// horizons proposés, en années
 
@@ -84,12 +88,10 @@ fun ProjectionScreen(
 	val vInput   = vStored ?: vDefault													// hypothèses retenues
 	val vResult  = remember(inSpace.data, inSpace.today, vInput) { projectWealth(inSpace.data, inSpace.today, vInput) }	// projection
 	Column(
-		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp).padding(bottom = LocalAssistantRoom.current),
+		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp).padding(top = 6.dp, bottom = 28.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
-		Column {
-			Text("Projection", style = MaterialTheme.typography.displaySmall)
-		}
+		PageHeader(inTitle = "Projection", inSubtitle = "Patrimoine estimé selon trois scénarios, à partir de vos hypothèses.", inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) })
 		Box(Modifier.tourAnchor("projection.inputs")) { Inputs(vInput, vDefault) { inController.setProjection(it) } }
 		Box(Modifier.tourAnchor("projection.result")) {
 			TileRow(
