@@ -449,7 +449,7 @@ private fun DrawScope.bars(
 /*
 	Jauge en arc (répartition, couverture) : arc ouvert vers le bas sur 220°,
 	segments épais aux bouts arrondis comptés dans leur part (aucun
-	chevauchement), séparés d'un écart franc ; une petite part garde au moins
+	chevauchement), séparés d'un petit écart ; une petite part garde au moins
 	la taille d'un point ; léger reflet sur le bord extérieur de chaque
 	segment, sans piste dessous. Contenu (libellé et chiffre) centré dans le
 	creux de l'arc.
@@ -477,7 +477,7 @@ fun ArcGauge(
 			val vCap    = Math.toDegrees((vStroke / 2f / vR).toDouble()).toFloat()					// angle d'un bout arrondi
 			val vShown  = inParts.filter { it.first > 0f }												// segments visibles
 			if (vShown.isEmpty()) return@Canvas
-			val vGap    = 10f																			// écart visible entre deux segments
+			val vGap    = 4f																			// écart visible entre deux segments
 			val vFree   = 220f - vGap * (vShown.size - 1)												// angle à partager (bouts arrondis compris dans chaque part)
 			val vMin    = 2f * vCap + 1.5f																// plus petite part dessinable
 			val vAngles = shares(vShown.map { it.first }, vFree, vMin)								// angle de chaque segment
