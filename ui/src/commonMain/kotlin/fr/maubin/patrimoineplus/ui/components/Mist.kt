@@ -47,6 +47,16 @@ import androidx.compose.ui.unit.dp
 import fr.maubin.patrimoineplus.ui.theme.kLemon
 import fr.maubin.patrimoineplus.ui.theme.kLemonNight
 import fr.maubin.patrimoineplus.ui.theme.kOnLemon
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 private const val kHoverMillis = 140											// fondu du survol
 private val kPill              = RoundedCornerShape(50)							// pilule
@@ -255,27 +265,95 @@ fun DeltaPill(
 }
 
 /*
-	Étiquette d'état (« À venir », « Rapproché », « Brouillon ») : petit
-	rectangle arrondi teinté, texte du ton ; liseré pour un état mauvais.
-	inText : texte
-	inTone : ton
+	Étiquette d'état (« À venir », « 54 % ») : petit rectangle arrondi
+	teinté, texte du ton (ou d'une couleur donnée, assombrie en clair pour
+	rester lisible), liseré léger de la même teinte.
+	inText  : texte
+	inTone  : ton
+	inColor : couleur de l'étiquette (couleur d'une série) ; non précisée : celle du ton
 */
 @Composable
 fun StatusChip(
-	inText : String,
-	inTone : Tone
+	inText  : String,
+	inTone  : Tone,
+	inColor : Color = Color.Unspecified
 )
 {
-	val (vFill, vText) = toneColors(inTone)										// couleurs
+	val vNight         = isNight()														// fond sombre
+	val (vFill, vText) = if (inColor == Color.Unspecified) toneColors(inTone)
+		else (if (vNight) inColor.copy(alpha = 0.18f) else inColor.copy(alpha = 0.13f)) to (if (vNight) inColor else lerp(inColor, Color.Black, 0.38f))	// couleurs
 	Box(
 		modifier         = Modifier
 			.height(22.dp)
 			.background(vFill, kChip)
-			.then(if (inTone == Tone.BAD) Modifier.border(1.dp, vText.copy(alpha = 0.45f), kChip) else Modifier)
+			.border(1.dp, vText.copy(alpha = if (inTone == Tone.BAD) 0.45f else 0.16f), kChip)
 			.padding(horizontal = 8.dp),
 		contentAlignment = Alignment.Center
 	) {
 		Text(inText, style = MaterialTheme.typography.labelSmall, color = vText, maxLines = 1)
+	}
+}
+
+/*
+	Barre de progression épaisse : piste de verre pâle, part remplie arrondie.
+	inPercent  : avancement, de 0 à 100
+	inColor    : couleur de la part remplie
+	inModifier : modificateur appliqué (largeur comprise)
+*/
+@Composable
+fun ProgressTrack(
+	inPercent  : Int,
+	inColor    : Color,
+	inModifier : Modifier = Modifier
+)
+{
+	val vTrack = if (isNight()) Color.White.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.7f)	// piste
+	Canvas(inModifier.height(8.dp)) {
+		val vR = CornerRadius(size.height / 2f, size.height / 2f)							// bouts arrondis
+		drawRoundRect(vTrack, cornerRadius = vR)
+		val vW = size.width * inPercent.coerceIn(0, 100) / 100f							// part remplie
+		if (vW > 0f) drawRoundRect(inColor, size = Size(maxOf(vW, size.height), size.height), cornerRadius = vR)
+	}
+}
+
+/*
+	Bouton « … » d'un panneau : rond de verre, trois points ; ouvre un menu
+	des actions du panneau.
+	inItems : actions (libellé et action)
+	inLabel : nom du menu (lecteurs d'écran)
+*/
+@Composable
+fun MoreMenu(
+	inItems : List<Pair<String, () -> Unit>>,
+	inLabel : String = "Plus d’actions"
+)
+{
+	var vOpen    by remember { mutableStateOf(false) }							// menu ouvert
+	val vNight   = isNight()															// fond sombre
+	val vSource  = remember { MutableInteractionSource() }							// survol
+	val vHovered by vSource.collectIsHoveredAsState()								// souris au-dessus
+	val vInk     = MaterialTheme.colorScheme.onSurface								// encre des points
+	Box {
+		Box(
+			modifier         = Modifier
+				.size(32.dp)
+				.background(Color.White.copy(alpha = if (vNight) (if (vHovered) 0.12f else 0.05f) else (if (vHovered) 0.9f else 0.5f)), kPill)
+				.border(1.dp, Color.White.copy(alpha = if (vNight) 0.1f else 0.9f), kPill)
+				.hoverable(vSource)
+				.clickable(interactionSource = vSource, indication = null, role = Role.Button) { vOpen = true }
+				.semantics { contentDescription = inLabel },
+			contentAlignment = Alignment.Center
+		) {
+			Canvas(Modifier.size(width = 14.dp, height = 4.dp)) {
+				val vDot = 1.6.dp.toPx()																// rayon d'un point
+				listOf(vDot, size.width / 2f, size.width - vDot).forEach { inX -> drawCircle(vInk, vDot, Offset(inX, size.height / 2f)) }
+			}
+		}
+		DropdownMenu(expanded = vOpen, onDismissRequest = { vOpen = false }) {
+			inItems.forEach { (inText, inAction) ->
+				DropdownMenuItem(text = { Text(inText) }, onClick = { vOpen = false; inAction() })
+			}
+		}
 	}
 }
 
@@ -290,6 +368,8 @@ fun StatusChip(
 	inModifier : modificateur appliqué (hauteur comprise)
 	inBar      : épaisseur d'une barre
 	inRelative : hauteurs relatives (de 20 % pour la plus basse à 100 % pour la plus haute)
+	inMark     : rang de la barre repérée (aujourd'hui, mois en cours) ; null sans
+	inLabel    : texte écrit au-dessus de la barre repérée (variation) ; null sans
 */
 @Composable
 fun MicroBars(
@@ -297,29 +377,64 @@ fun MicroBars(
 	inColorOf  : (Int) -> Color,
 	inModifier : Modifier = Modifier,
 	inBar      : Dp       = 3.dp,
-	inRelative : Boolean  = false
+	inRelative : Boolean  = false,
+	inMark     : Int?     = null,
+	inLabel    : String?  = null
 )
 {
+	val vMeasurer = rememberTextMeasurer()												// mesure de l'étiquette
+	val vStyle    = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)	// style de l'étiquette
 	Canvas(inModifier) {
 		if (inValues.isEmpty()) return@Canvas
+		val vText  = inLabel?.let { vMeasurer.measure(it, vStyle) }						// étiquette mesurée
+		val vRoom  = (vText?.size?.height ?: 0) + if (vText != null) 4.dp.toPx() else 0f	// place de l'étiquette en haut
+		val vPlot  = Size(size.width, size.height - vRoom)									// zone des barres
+		val vPitch = if (inValues.size > 1) (size.width - inBar.toPx()) / (inValues.size - 1) else 0f	// pas
+		if (vText != null && inMark != null)
+		{
+			val vCenter = inMark * vPitch + inBar.toPx() / 2f										// milieu de la barre repérée
+			drawText(vText, topLeft = Offset((vCenter - vText.size.width / 2f).coerceIn(0f, size.width - vText.size.width), 0f))
+		}
+		translate(top = vRoom) { bars(inValues, inColorOf, inBar.toPx(), inRelative, vPlot) }
+	}
+}
+
+/*
+	Dessine les barres des mini-graphes dans une zone.
+	inValues   : valeurs
+	inColorOf  : couleur de la barre d'un rang
+	inBar      : épaisseur d'une barre, en pixels
+	inRelative : hauteurs relatives
+	inArea     : zone des barres
+*/
+private fun DrawScope.bars(
+	inValues   : List<Long>,
+	inColorOf  : (Int) -> Color,
+	inBar      : Float,
+	inRelative : Boolean,
+	inArea     : Size
+)
+{
+	val size = inArea																	// zone (masque la taille du dessin)
+	run {
 		if (inRelative)
 		{
 			val vLow   = inValues.min().toFloat()												// plus basse valeur
 			val vRange = (inValues.max() - inValues.min()).toFloat()							// étendue
-			val vWidth = inBar.toPx()															// épaisseur
+			val vWidth = inBar																	// épaisseur
 			val vPitch = if (inValues.size > 1) (size.width - vWidth) / (inValues.size - 1) else 0f	// pas
 			inValues.forEachIndexed { inIndex, inValue ->
 				val vShare = if (vRange > 0f) 0.2f + 0.8f * (inValue - vLow) / vRange else 0.6f	// hauteur relative
 				val vTall  = size.height * vShare												// hauteur
 				drawRoundRect(inColorOf(inIndex), topLeft = Offset(inIndex * vPitch, size.height - vTall), size = Size(vWidth, vTall), cornerRadius = CornerRadius(vWidth / 2f, vWidth / 2f))
 			}
-			return@Canvas
+			return
 		}
 		val vMax    = inValues.maxOf { maxOf(it, 0L) }.toFloat()						// plus haute valeur positive
 		val vMin    = inValues.minOf { minOf(it, 0L) }.toFloat()						// plus basse valeur négative
 		val vSpan   = (vMax - vMin).takeIf { it > 0f } ?: 1f							// étendue
 		val vZero   = size.height * vMax / vSpan										// ordonnée de zéro
-		val vBar    = inBar.toPx()														// épaisseur
+		val vBar    = inBar																// épaisseur
 		val vStep   = if (inValues.size > 1) (size.width - vBar) / (inValues.size - 1) else 0f	// pas entre deux barres
 		val vRadius = CornerRadius(vBar / 2f, vBar / 2f)								// bouts arrondis
 		inValues.forEachIndexed { inIndex, inValue ->
@@ -332,9 +447,12 @@ fun MicroBars(
 }
 
 /*
-	Jauge en arc (répartition, couverture) : arc ouvert vers le bas, segments
-	épais séparés par un petit écart, bouts arrondis ; contenu centré dans
-	l'arc (chiffre et libellé).
+	Jauge en arc (répartition, couverture) : arc ouvert vers le bas sur 220°,
+	segments épais aux bouts arrondis comptés dans leur part (aucun
+	chevauchement), séparés d'un écart franc ; une petite part garde au moins
+	la taille d'un point ; léger reflet sur le bord extérieur de chaque
+	segment, sans piste dessous. Contenu (libellé et chiffre) centré dans le
+	creux de l'arc.
 	inParts    : part de chaque segment (somme quelconque) et sa couleur
 	inModifier : modificateur appliqué (taille comprise)
 	inStroke   : épaisseur de l'arc
@@ -344,31 +462,60 @@ fun MicroBars(
 fun ArcGauge(
 	inParts    : List<Pair<Float, Color>>,
 	inModifier : Modifier = Modifier,
-	inStroke   : Dp       = 18.dp,
+	inStroke   : Dp       = 20.dp,
 	inContent  : @Composable BoxScope.() -> Unit = {}
 )
 {
-	Box(inModifier, contentAlignment = Alignment.Center) {
+	BoxWithConstraints(inModifier) {
+		val vStrokeDp = inStroke																	// épaisseur
+		val vRadiusDp = minOf((maxWidth - vStrokeDp) / 2, (maxHeight - vStrokeDp) / 1.342f)		// rayon qui tient (arc de 220° : hauteur 1,342 r)
 		Canvas(Modifier.matchParentSize()) {
-			val vStroke = inStroke.toPx()														// épaisseur
-			val vSide   = minOf(size.width, size.height * 1.25f) - vStroke						// diamètre utile
-			val vTop    = Offset((size.width - vSide) / 2f, vStroke / 2f + 2f)					// coin du cercle
-			val vSweep  = 220f																	// ouverture de l'arc
-			val vStart  = 160f																	// départ, en bas à gauche
-			val vGap    = 7f																	// écart entre segments, en degrés (bouts arrondis compris)
-			val vTotal  = inParts.sumOf { it.first.toDouble() }.toFloat().takeIf { it > 0f } ?: return@Canvas	// total
-			val vShown  = inParts.filter { it.first > 0f }										// segments visibles
-			val vFree   = vSweep - vGap * (vShown.size - 1)									// angle à partager
-			var vAt     = vStart																// angle courant
-			drawArc(Color.Black.copy(alpha = 0.05f), vStart, vSweep, false, vTop, Size(vSide, vSide), style = Stroke(vStroke, cap = StrokeCap.Round))
-			vShown.forEach { (inPart, inColor) ->
-				val vAngle = maxOf(0.5f, vFree * inPart / vTotal)									// angle du segment
-				drawArc(inColor, vAt, vAngle, false, vTop, Size(vSide, vSide), style = Stroke(vStroke, cap = StrokeCap.Round))
-				vAt += vAngle + vGap
+			val vStroke = vStrokeDp.toPx()																// épaisseur
+			val vR      = vRadiusDp.toPx()																// rayon
+			val vCenter = Offset(size.width / 2f, vStroke / 2f + vR)									// centre du cercle
+			val vBox    = Rect(vCenter.x - vR, vCenter.y - vR, vCenter.x + vR, vCenter.y + vR)		// cadre du cercle
+			val vCap    = Math.toDegrees((vStroke / 2f / vR).toDouble()).toFloat()					// angle d'un bout arrondi
+			val vShown  = inParts.filter { it.first > 0f }												// segments visibles
+			if (vShown.isEmpty()) return@Canvas
+			val vGap    = 10f																			// écart visible entre deux segments
+			val vFree   = 220f - vGap * (vShown.size - 1)												// angle à partager (bouts arrondis compris dans chaque part)
+			val vMin    = 2f * vCap + 1.5f																// plus petite part dessinable
+			val vAngles = shares(vShown.map { it.first }, vFree, vMin)								// angle de chaque segment
+			var vAt     = 160f																			// départ, en bas à gauche
+			vShown.forEachIndexed { inIndex, (_, inColor) ->
+				val vSweep = maxOf(0.1f, vAngles[inIndex] - 2f * vCap)										// arc entre les deux bouts arrondis
+				drawArc(inColor, vAt + vCap, vSweep, false, vBox.topLeft, vBox.size, style = Stroke(vStroke, cap = StrokeCap.Round))
+				val vShine = vR + vStroke * 0.2f															// rayon du reflet
+				drawArc(
+					Color.White.copy(alpha = 0.2f), vAt + vCap, vSweep, false,
+					Offset(vCenter.x - vShine, vCenter.y - vShine), Size(2f * vShine, 2f * vShine),
+					style = Stroke(vStroke * 0.24f, cap = StrokeCap.Round)
+				)
+				vAt += vAngles[inIndex] + vGap
 			}
 		}
-		inContent()
+		Box(Modifier.align(Alignment.TopCenter).padding(top = vStrokeDp + vRadiusDp * 0.42f), content = inContent)
 	}
+}
+
+/*
+	Partage un angle entre des parts, chacune au moins à un minimum (les plus
+	grosses cèdent ce que les petites reçoivent).
+	inParts : parts
+	inTotal : angle à partager
+	inMin   : angle minimal d'une part
+*/
+private fun shares(
+	inParts : List<Float>,
+	inTotal : Float,
+	inMin   : Float
+): List<Float>
+{
+	val vSum    = inParts.sum()																	// somme des parts
+	val vSmall  = inParts.map { inTotal * it / vSum < inMin }										// parts trop petites
+	val vFixed  = vSmall.count { it } * inMin														// angle des petites
+	val vRest   = inParts.filterIndexed { inIndex, _ -> !vSmall[inIndex] }.sum()					// parts restantes
+	return inParts.mapIndexed { inIndex, inPart -> if (vSmall[inIndex]) inMin else (inTotal - vFixed) * inPart / vRest }
 }
 
 /*

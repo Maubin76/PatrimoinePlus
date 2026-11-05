@@ -134,3 +134,44 @@ private fun row(
 	inValues : valeurs
 */
 private fun averageOf(inValues: List<Long>): Long = if (inValues.isEmpty()) 0L else Math.round(inValues.sum().toDouble() / inValues.size)
+
+/*
+	Revenus et dépenses du mois en cours, jour par jour (mêmes opérations que
+	le tableau d'analyse : ordinaires, catégorisées, jusqu'à aujourd'hui).
+	days       : jours du mois, du 1er au dernier
+	income     : revenus de chaque jour (0 après aujourd'hui)
+	expense    : dépenses nettes de chaque jour (positif = dépensé ; 0 après aujourd'hui)
+	todayIndex : rang d'aujourd'hui
+*/
+data class MonthDays(
+	val days       : List<LocalDate>,
+	val income     : List<Long>,
+	val expense    : List<Long>,
+	val todayIndex : Int
+)
+
+/*
+	Calcule les revenus et les dépenses de chaque jour du mois en cours.
+	Fonction pure ; leur somme est celle du mois en cours du tableau d'analyse.
+	inData  : données
+	inToday : date du jour
+*/
+fun buildMonthDays(
+	inData  : DataSet,
+	inToday : LocalDate
+): MonthDays
+{
+	val vMonth   = YearMonth.from(inToday)													// mois en cours
+	val vDays    = (1..vMonth.lengthOfMonth()).map { vMonth.atDay(it) }					// jours du mois
+	val vIncome  = LongArray(vDays.size)														// revenus par jour
+	val vExpense = LongArray(vDays.size)														// dépenses par jour
+	val vByCat   = inData.categories.associateBy { it.id }									// catégories par identifiant
+	inData.transactions
+		.filter { it.hasCategory && !it.date.isAfter(inToday) && YearMonth.from(it.date) == vMonth && it.categoryId in vByCat }
+		.forEach { inTx ->
+			val vDay = inTx.date.dayOfMonth - 1														// rang du jour
+			if (vByCat.getValue(inTx.categoryId!!).kind == CategoryKind.EXPENSE) vExpense[vDay] -= inTx.categoryAmount()
+			else vIncome[vDay] += inTx.categoryAmount()
+		}
+	return MonthDays(vDays, vIncome.toList(), vExpense.toList(), inToday.dayOfMonth - 1)
+}

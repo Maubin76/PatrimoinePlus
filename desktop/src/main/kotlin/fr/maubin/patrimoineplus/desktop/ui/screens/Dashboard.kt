@@ -92,9 +92,14 @@ import fr.maubin.patrimoineplus.ui.theme.colorfulPalette
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
-import java.util.Locale
+import java.util.Locale
 import fr.maubin.patrimoineplus.ui.goals.GoalStatus
 import fr.maubin.patrimoineplus.ui.goals.evaluateGoals
+import fr.maubin.patrimoineplus.ui.components.MoreMenu
+import fr.maubin.patrimoineplus.ui.components.ProgressTrack
+import fr.maubin.patrimoineplus.ui.analysis.MonthDays
+import fr.maubin.patrimoineplus.ui.analysis.buildMonthDays
+import fr.maubin.patrimoineplus.ui.theme.kLemon
 
 private val kShortDay  = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date courte
 private val kRowGap    = 18.dp															// écart entre les panneaux
@@ -118,6 +123,7 @@ fun DashboardScreen(
 {
 	val vState    = remember(inSpace.data, inSpace.today) { buildDashboard(inSpace.data, inSpace.today) }	// tableau de bord
 	val vAnalysis = remember(inSpace.data, inSpace.today) { buildExpenseAnalysis(inSpace.data, inSpace.today) }	// douze mois de revenus et de dépenses
+	val vDays     = remember(inSpace.data, inSpace.today) { buildMonthDays(inSpace.data, inSpace.today) }		// mois en cours, jour par jour
 	Column(
 		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp).padding(top = 6.dp, bottom = 28.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(kRowGap)
@@ -140,13 +146,13 @@ fun DashboardScreen(
 		Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).tourAnchor("dashboard.hero"), horizontalArrangement = Arrangement.spacedBy(kRowGap)) {
 			MonthGoalsPanel(inSpace, inController, Modifier.weight(0.95f).fillMaxHeight())
 			NetWorth(vState, Modifier.weight(1.1f).fillMaxHeight())
-			RepartitionPanel(vState, Modifier.weight(0.95f).fillMaxHeight())
+			RepartitionPanel(vState, inController, Modifier.weight(0.95f).fillMaxHeight())
 		}
 		Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).tourAnchor("dashboard.charts"), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-			Indicators(vState, vAnalysis)
+			Indicators(vState, vAnalysis, vDays, inController)
 		}
 		Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(kRowGap)) {
-			ExpensesPanel(vState.categories, vAnalysis, Modifier.weight(1f).fillMaxHeight())
+			ExpensesPanel(vState.categories, vAnalysis, inController, Modifier.weight(1f).fillMaxHeight())
 			RecentPanel(vState, inSpace.today, inController, Modifier.weight(1.15f).fillMaxHeight())
 		}
 		AccountsPanel(vState, inSpace, inController, Modifier.tourAnchor("dashboard.accounts"))
@@ -267,7 +273,11 @@ private fun MonthGoalsPanel(
 	}																					// lignes affichées
 	val vMuted  = MaterialTheme.colorScheme.onSurfaceVariant							// texte secondaire
 	val vGreen  = colorfulPalette().rise												// réussite
-	Tile(inModifier = inModifier, inTitle = if (vPlan != null) "Objectifs du mois" else "Objectifs", inOnClick = { inController.show(Screen.GOALS) }, inClickLabel = "Ouvrir les objectifs") {
+	Tile(
+		inModifier = inModifier,
+		inTitle    = if (vPlan != null) "Objectifs du mois" else "Objectifs",
+		inAction   = { MoreMenu(listOf("Ouvrir les objectifs" to { inController.show(Screen.GOALS) }, "Aller au budget" to { inController.show(Screen.BUDGET) }), "Actions des objectifs") }
+	) {
 		if (vLines.isEmpty())
 		{
 			Text("Pas encore d’objectifs : fixez ceux du mois depuis votre budget, ou un objectif de patrimoine ; ils se suivent ici tout seuls.", style = MaterialTheme.typography.bodyMedium, color = vMuted)
@@ -280,13 +290,9 @@ private fun MonthGoalsPanel(
 		Text("$vDone objectif(s) réussi(s) sur ${vLines.size}" + if (vPlan != null) " pour l’instant." else ".", style = MaterialTheme.typography.bodySmall, color = vMuted)
 		Spacer(Modifier.height(12.dp))
 		Row(verticalAlignment = Alignment.CenterVertically) {
-			ProportionBar(
-				inSegments    = listOf(BarSegment(vPercent.toLong().coerceAtLeast(1L), vGreen), BarSegment((100 - vPercent).toLong(), glassWell(MaterialTheme.colorScheme.surfaceContainerHigh))),
-				inDescription = "$vPercent % des objectifs réussis",
-				inModifier    = Modifier.weight(1f)
-			)
-			Spacer(Modifier.width(10.dp))
-			Text("$vPercent %", style = MaterialTheme.typography.labelMedium, color = vGreen)
+			ProgressTrack(vPercent, vGreen, Modifier.weight(1f).semantics { contentDescription = "$vPercent % des objectifs réussis" })
+			Spacer(Modifier.width(12.dp))
+			Text("$vPercent %", style = MaterialTheme.typography.labelLarge, color = vGreen)
 		}
 		Spacer(Modifier.height(14.dp))
 		Well {
@@ -330,8 +336,11 @@ private fun GoalMark(
 		inFailed  -> MaterialTheme.colorScheme.error
 		else      -> MaterialTheme.colorScheme.outline
 	}																					// couleur du rond
-	Box(Modifier.size(18.dp).border(1.4.dp, vRing, CircleShape), contentAlignment = Alignment.Center) {
-		if (inSuccess) Icon(LineIcons.Check, contentDescription = null, tint = vGreen, modifier = Modifier.size(11.dp))
+	Box(
+		modifier         = Modifier.size(20.dp).then(if (inSuccess) Modifier.background(vGreen.copy(alpha = 0.14f), CircleShape) else Modifier).border(1.4.dp, vRing, CircleShape),
+		contentAlignment = Alignment.Center
+	) {
+		if (inSuccess) Icon(LineIcons.Check, contentDescription = null, tint = vGreen, modifier = Modifier.size(12.dp))
 	}
 }
 
@@ -344,28 +353,35 @@ private fun GoalMark(
 */
 @Composable
 private fun RepartitionPanel(
-	inState    : DashboardState,
-	inModifier : Modifier
+	inState      : DashboardState,
+	inController : DesktopController,
+	inModifier   : Modifier
 )
 {
 	val vGroups = inState.home.assetGroups.sortedByDescending { it.subtotalCents }		// de la plus grande part à la plus petite
 	val vMuted  = MaterialTheme.colorScheme.onSurfaceVariant								// texte secondaire
-	Tile(inModifier = inModifier, inTitle = "Répartition") {
+	Tile(
+		inModifier = inModifier,
+		inTitle    = "Répartition",
+		inAction   = { MoreMenu(listOf("Ajouter un compte" to { inController.openPanel(Panel.AccountSheet(null)) }, "Voir la projection" to { inController.show(Screen.PROJECTION) }), "Actions de la répartition") }
+	) {
 		val vFirst = vGroups.firstOrNull()												// plus grande part
-		ArcGauge(
-			inParts    = vGroups.map { it.subtotalCents.coerceAtLeast(0L).toFloat() to typeColor(it.type) },
-			inModifier = Modifier.fillMaxWidth().height(132.dp).semantics { contentDescription = "Répartition par type de compte, nette des crédits : " + vGroups.joinToString { "${it.type.label} ${it.percent} %" } },
-			inStroke   = 16.dp
-		) {
-			if (vFirst != null)
-			{
-				Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(top = 26.dp)) {
-					Text(vFirst.type.label, style = MaterialTheme.typography.bodySmall, color = vMuted)
-					Text("${vFirst.percent} %", style = MaterialTheme.typography.headlineLarge)
+		Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+			ArcGauge(
+				inParts    = vGroups.map { it.subtotalCents.coerceAtLeast(0L).toFloat() to typeColor(it.type) },
+				inModifier = Modifier.fillMaxWidth(0.82f).height(178.dp).semantics { contentDescription = "Répartition par type de compte, nette des crédits : " + vGroups.joinToString { "${it.type.label} ${it.percent} %" } },
+				inStroke   = 18.dp
+			) {
+				if (vFirst != null)
+				{
+					Column(horizontalAlignment = Alignment.CenterHorizontally) {
+						Text(vFirst.type.label, style = MaterialTheme.typography.bodyMedium, color = vMuted)
+						Text("${vFirst.percent} %", style = MaterialTheme.typography.displaySmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Light))
+					}
 				}
 			}
 		}
-		Spacer(Modifier.height(10.dp))
+		Spacer(Modifier.height(8.dp))
 		Well {
 			vGroups.forEach { inGroup ->
 				Row(Modifier.fillMaxWidth().heightIn(min = 30.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -374,7 +390,7 @@ private fun RepartitionPanel(
 					Text(inGroup.type.label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f), maxLines = 1)
 					AmountText(inCents = inGroup.subtotalCents, inStyle = MaterialTheme.typography.bodySmall, inColor = vMuted)
 					Spacer(Modifier.width(10.dp))
-					StatusChip("${inGroup.percent} %", Tone.NEUTRAL)
+					StatusChip("${inGroup.percent} %", Tone.NEUTRAL, typeColor(inGroup.type))
 				}
 			}
 		}
@@ -390,10 +406,15 @@ private fun RepartitionPanel(
 */
 @Composable
 private fun RowScope.Indicators(
-	inState    : DashboardState,
-	inAnalysis : ExpenseAnalysis
+	inState      : DashboardState,
+	inAnalysis   : ExpenseAnalysis,
+	inDays       : MonthDays,
+	inController : DesktopController
 )
 {
+	val vReport  = listOf("Ouvrir le bilan" to { inController.show(Screen.REPORT) })		// action des indicateurs
+	val vToday   = inDays.todayIndex														// aujourd'hui
+	val vDayFade = { inColor: Color, inIndex: Int -> when { inIndex > vToday -> Color.Unspecified; inIndex == vToday -> inColor; else -> inColor.copy(alpha = 0.6f) } }	// jours passés plus discrets, à venir en gris
 	val vPalette = colorfulPalette()														// couleurs des données
 	val vGrey    = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.32f)			// barre neutre
 	val vNow     = inAnalysis.currentIndex												// mois en cours
@@ -409,7 +430,10 @@ private fun RowScope.Indicators(
 		inDelta   = if (vYear != null && vStart > 0) formatPermille(vYear * 1000 / vStart) to (vYear > 0) else null,
 		inCaption = if (inState.yearChange != null) "Variation sur douze mois" else if (vSeries.size > 1) "Variation depuis le début du suivi" else "Il faut un mois d’historique",
 		inBars    = vSteps,
-		inColorOf = { inIndex -> val vValue = vSteps[inIndex]; vFade(if (vValue >= 0) vPalette.rise else vPalette.fall, if (inIndex == vSteps.lastIndex) vNow else -1) }
+		inColorOf = { inIndex -> val vValue = vSteps[inIndex]; vFade(if (vValue >= 0) vPalette.rise else vPalette.fall, if (inIndex == vSteps.lastIndex) vNow else -1) },
+		inMark    = vSteps.lastIndex.takeIf { it >= 0 },
+		inBar     = 6.dp,
+		inMenu    = vReport
 	)
 	val vIncome  = inAnalysis.totalIncome[vNow]												// revenus du mois
 	val vIncPrev = inAnalysis.totalIncome.getOrNull(vNow - 1) ?: 0L						// revenus du mois dernier
@@ -417,9 +441,11 @@ private fun RowScope.Indicators(
 		inTitle   = "Revenus du mois",
 		inValue   = { AmountText(inCents = vIncome, inStyle = MaterialTheme.typography.headlineMedium, inShowPlusSign = vIncome > 0) },
 		inDelta   = change(vIncome, vIncPrev)?.let { it to (vIncome >= vIncPrev) },
-		inCaption = "Comparés au mois dernier",
-		inBars    = inAnalysis.totalIncome,
-		inColorOf = { inIndex -> if (inIndex < vFirst) vGrey else vFade(vPalette.rise, inIndex) }
+		inCaption = "Comparés au mois dernier ; jour par jour",
+		inBars    = inDays.income,
+		inColorOf = { inIndex -> vDayFade(vPalette.rise, inIndex).takeIf { it != Color.Unspecified } ?: vGrey },
+		inMark    = vToday,
+		inMenu    = vReport
 	)
 	val vSpent   = inAnalysis.totalExpense[vNow]												// dépenses du mois
 	val vSpPrev  = inAnalysis.totalExpense.getOrNull(vNow - 1) ?: 0L						// dépenses du mois dernier
@@ -429,9 +455,11 @@ private fun RowScope.Indicators(
 		inValue   = { AmountText(inCents = vSpent, inStyle = MaterialTheme.typography.headlineMedium) },
 		inDelta   = change(vSpent, vSpPrev)?.let { it to (vSpent >= vSpPrev) },
 		inGood    = vSpent <= vSpPrev,
-		inCaption = "Comparées au mois dernier",
-		inBars    = inAnalysis.totalExpense,
-		inColorOf = { inIndex -> if (inIndex < vFirst) vGrey else vFade(if (vAverage > 0 && inAnalysis.totalExpense[inIndex] > vAverage) vPalette.fall else vGrey.copy(alpha = 0.7f), inIndex) }
+		inCaption = "Comparées au mois dernier ; jour par jour",
+		inBars    = inDays.expense,
+		inColorOf = { inIndex -> vDayFade(vPalette.invest, inIndex).takeIf { it != Color.Unspecified } ?: vGrey },
+		inMark    = vToday,
+		inMenu    = vReport
 	)
 	val vRate    = inAnalysis.savingsRate[vNow]												// taux d'épargne du mois, en pour mille
 	val vAvgRate = inAnalysis.averageRate													// taux moyen
@@ -442,7 +470,10 @@ private fun RowScope.Indicators(
 		inCaption = "Écart à la moyenne ; mis de côté ce mois-ci : ",
 		inAmount  = inState.saved,
 		inBars    = inAnalysis.savingsRate.map { it ?: 0L },
-		inColorOf = { inIndex -> if (inIndex < vFirst) vGrey else vFade(if ((inAnalysis.savingsRate[inIndex] ?: 0L) >= 0) vPalette.rise else vPalette.fall, inIndex) }
+		inColorOf = { inIndex -> if (inIndex < vFirst) vGrey else vFade(if ((inAnalysis.savingsRate[inIndex] ?: 0L) >= 0) vPalette.rise else vPalette.fall, inIndex) },
+		inMark    = vNow,
+		inBar     = 6.dp,
+		inMenu    = vReport
 	)
 }
 
@@ -468,6 +499,9 @@ private fun change(
 	inAmount  : montant ajouté à la fin de l'explication ; null sans
 	inBars    : valeurs des barres, du plus ancien au plus récent
 	inColorOf : couleur de la barre d'un rang
+	inMark    : rang de la barre repérée (aujourd'hui, mois en cours), qui porte la variation ; null sans
+	inBar     : épaisseur d'une barre
+	inMenu    : actions du bouton « … »
 */
 @Composable
 private fun RowScope.Indicator(
@@ -477,12 +511,20 @@ private fun RowScope.Indicator(
 	inCaption : String,
 	inBars    : List<Long>,
 	inColorOf : (Int) -> Color,
-	inGood    : Boolean? = null,
-	inAmount  : Long?    = null
+	inGood    : Boolean?                       = null,
+	inAmount  : Long?                          = null,
+	inMark    : Int?                           = null,
+	inBar     : androidx.compose.ui.unit.Dp    = 3.dp,
+	inMenu    : List<Pair<String, () -> Unit>> = emptyList()
 )
 {
 	val vMuted = MaterialTheme.colorScheme.onSurfaceVariant								// texte secondaire
-	Tile(inModifier = Modifier.weight(1f).fillMaxHeight(), inTitle = inTitle, inTitleStyle = MaterialTheme.typography.bodyLarge.copy(color = vMuted)) {
+	Tile(
+		inModifier   = Modifier.weight(1f).fillMaxHeight(),
+		inTitle      = inTitle,
+		inTitleStyle = MaterialTheme.typography.bodyLarge.copy(color = vMuted),
+		inAction     = if (inMenu.isEmpty()) null else { { MoreMenu(inMenu, "Actions : $inTitle") } }
+	) {
 		Row(verticalAlignment = Alignment.CenterVertically) {
 			inValue()
 			inDelta?.let { (inText, inRise) ->
@@ -497,7 +539,7 @@ private fun RowScope.Indicator(
 		}
 		Spacer(Modifier.weight(1f))
 		Spacer(Modifier.height(16.dp))
-		MicroBars(inBars, inColorOf, Modifier.fillMaxWidth().height(44.dp).semantics { contentDescription = "$inTitle, mois par mois" })
+		MicroBars(inBars, inColorOf, Modifier.fillMaxWidth().height(58.dp).semantics { contentDescription = "$inTitle, barre par barre" }, inBar, inMark = inMark, inLabel = inDelta?.first?.removePrefix("+"))
 	}
 }
 
@@ -512,9 +554,10 @@ private fun RowScope.Indicator(
 */
 @Composable
 private fun ExpensesPanel(
-	inLines    : List<CategoryLine>,
-	inAnalysis : ExpenseAnalysis,
-	inModifier : Modifier
+	inLines      : List<CategoryLine>,
+	inAnalysis   : ExpenseAnalysis,
+	inController : DesktopController,
+	inModifier   : Modifier
 )
 {
 	val vMuted   = MaterialTheme.colorScheme.onSurfaceVariant								// texte secondaire
@@ -524,7 +567,11 @@ private fun ExpensesPanel(
 	val vTop     = vShown.take(3)															// trois plus grosses
 	val vRest    = vTotal - vTop.sumOf { it.netCents }										// autres catégories
 	val vColors  = listOf(vPalette.main, vPalette.invest, vPalette.rise, MaterialTheme.colorScheme.outline)	// teinte de chaque segment
-	Tile(inModifier = inModifier, inTitle = "Dépenses par catégorie") {
+	Tile(
+		inModifier = inModifier,
+		inTitle    = "Dépenses par catégorie",
+		inAction   = { MoreMenu(listOf("Ouvrir le bilan" to { inController.show(Screen.REPORT) }, "Rechercher une opération" to inController::focusSearch, "Voir le budget" to { inController.show(Screen.BUDGET) }), "Actions des dépenses") }
+	) {
 		if (vShown.isEmpty())
 		{
 			Hint("Aucune dépense ce mois-ci sur les comptes courants.")
@@ -543,12 +590,16 @@ private fun ExpensesPanel(
 		}
 		Spacer(Modifier.height(18.dp))
 		val vParts = vTop.map { it.netCents } + listOfNotNull(vRest.takeIf { it > 0 })			// segments
-		Row(Modifier.fillMaxWidth()) {
+		Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
 			vParts.forEachIndexed { inIndex, inPart ->
-				Text("${inPart * 100 / vTotal} %", style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(inPart.toFloat().coerceAtLeast(1f)))
+				Column(Modifier.weight(inPart.toFloat().coerceAtLeast(1f))) {
+					Text("${inPart * 100 / vTotal} %", style = MaterialTheme.typography.labelLarge, maxLines = 1)
+					Spacer(Modifier.height(4.dp))
+					Box(Modifier.width(1.5.dp).height(9.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)))
+				}
 			}
 		}
-		Spacer(Modifier.height(4.dp))
+		Spacer(Modifier.height(2.dp))
 		SegmentedBar(vParts, vColors, Modifier.fillMaxWidth().height(24.dp).semantics { contentDescription = "Dépenses du mois : " + vTop.joinToString { "${it.category.name} ${it.netCents * 100 / vTotal} %" } })
 		Spacer(Modifier.height(14.dp))
 		Row(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -585,16 +636,35 @@ private fun ExpensesPanel(
 		inAnalysis.rises.firstOrNull()?.let { inRise ->
 			Spacer(Modifier.weight(1f))
 			Spacer(Modifier.height(12.dp))
-			Well {
-				Row(Modifier.fillMaxWidth().heightIn(min = 36.dp), verticalAlignment = Alignment.CenterVertically) {
-					Icon(CategoryIcons.of(inRise.category.icon), contentDescription = null, tint = vPalette.invest, modifier = Modifier.size(16.dp))
-					Spacer(Modifier.width(10.dp))
-					Text("Le mois dernier, ${inRise.category.name} a dépassé sa moyenne de ", style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-					AmountText(inCents = inRise.lastGap ?: 0L, inStyle = MaterialTheme.typography.labelLarge)
-				}
+			AlertRow {
+				Icon(CategoryIcons.of(inRise.category.icon), contentDescription = null, tint = vPalette.invest, modifier = Modifier.size(16.dp))
+				Spacer(Modifier.width(12.dp))
+				Text("Le mois dernier, ${inRise.category.name} a dépassé sa moyenne", style = MaterialTheme.typography.bodyMedium, color = vMuted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+				AmountText(inCents = inRise.lastGap ?: 0L, inStyle = MaterialTheme.typography.titleSmall, inShowPlusSign = true)
 			}
 		}
 	}
+}
+
+/*
+	Ligne d'alerte d'un panneau : cadre teinté de jaune citron, liseré du même
+	ton ; contenu en rangée (icône, texte, valeur).
+	inContent : contenu
+*/
+@Composable
+private fun AlertRow(inContent: @Composable RowScope.() -> Unit)
+{
+	val vNight = isNight()																// fond sombre
+	Row(
+		modifier          = Modifier
+			.fillMaxWidth()
+			.heightIn(min = 46.dp)
+			.background(kLemon.copy(alpha = if (vNight) 0.08f else 0.22f), kWellShape)
+			.border(1.dp, kLemon.copy(alpha = if (vNight) 0.25f else 0.6f), kWellShape)
+			.padding(horizontal = 14.dp),
+		verticalAlignment = Alignment.CenterVertically,
+		content           = inContent
+	)
 }
 
 /*
@@ -665,7 +735,12 @@ private fun RecentPanel(
 	Tile(
 		inModifier = inModifier,
 		inTitle    = "Dernières opérations",
-		inAction   = if (inState.upcoming > 0) { { StatusChip("${inState.upcoming} à venir", Tone.NEUTRAL) } } else null
+		inAction   = {
+			Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+				if (inState.upcoming > 0) StatusChip("${inState.upcoming} à venir", Tone.WARN)
+				MoreMenu(listOf("Nouvelle opération" to inController::newOperation, "Rechercher une opération" to inController::focusSearch, "Saisie rapide" to { inController.show(Screen.OPERATIONS) }), "Actions des opérations")
+			}
+		}
 	) {
 		if (inState.recent.isEmpty())
 		{

@@ -15,6 +15,7 @@ import fr.maubin.patrimoineplus.domain.kSalary
 import fr.maubin.patrimoineplus.domain.standard
 import fr.maubin.patrimoineplus.domain.transfer
 import fr.maubin.patrimoineplus.ui.analysis.buildExpenseAnalysis
+import fr.maubin.patrimoineplus.ui.analysis.buildMonthDays
 import fr.maubin.patrimoineplus.ui.search.SearchQuery
 import fr.maubin.patrimoineplus.ui.search.searchTransactions
 import org.junit.Assert.assertEquals
@@ -120,5 +121,23 @@ class AnalysisAndSearchTest
 		assertTrue(vEditor.recategorize(vFile, vMixed, kLeisure.id) is EditResult.Refused)
 		val vTransfer = kData.transactions.first { it.categoryId == null }.id			// virement
 		assertTrue(vEditor.recategorize(vFile, listOf(vTransfer), kLeisure.id) is EditResult.Refused)
+	}
+
+	/*
+		Mois en cours jour par jour : un jour par jour du mois, la dépense du 5
+		à sa place, l'opération à venir du 20 exclue ; sommes égales au mois en
+		cours du tableau d'analyse.
+	*/
+	@Test
+	fun monthDays()
+	{
+		val vDays  = buildMonthDays(kData, kToday)											// jours du mois
+		val vTable = buildExpenseAnalysis(kData, kToday)										// tableau
+		assertEquals(31, vDays.days.size)
+		assertEquals(11, vDays.todayIndex)
+		assertEquals(eur(54.90), vDays.expense[4])
+		assertEquals(0L, vDays.expense[19])
+		assertEquals(vTable.totalExpense.last(), vDays.expense.sum())
+		assertEquals(vTable.totalIncome.last(), vDays.income.sum())
 	}
 }
