@@ -301,7 +301,7 @@ private fun GoalTile(
 		}
 	) {
 		Text(subtitle(vGoal, inSpace), style = MaterialTheme.typography.bodyMedium, color = vSoft, maxLines = 1, overflow = TextOverflow.Ellipsis)
-		Spacer(Modifier.height(14.dp))
+		Spacer(Modifier.height(16.dp))
 		if (vGoal.kind == GoalKind.TASK)
 		{
 			Row(
@@ -324,12 +324,12 @@ private fun GoalTile(
 					text     = when (vGoal.kind) { GoalKind.MONTHLY -> " par mois en moyenne, sur ${vMoney(vGoal.target, false)}"; GoalKind.RATE -> " en moyenne, sur ${rateText(vGoal.target)}"; else -> " sur ${vMoney(vGoal.target, false)}" },
 					style    = MaterialTheme.typography.bodyLarge,
 					color    = vSoft,
-					modifier = Modifier.padding(start = 2.dp, bottom = 3.dp)
+					modifier = Modifier.padding(start = 2.dp, bottom = 4.dp)
 				)
 			}
-			Spacer(Modifier.height(10.dp))
+			Spacer(Modifier.height(12.dp))
 			ProgressBar(inView.progress, vAccent)
-			Spacer(Modifier.height(10.dp))
+			Spacer(Modifier.height(12.dp))
 			details(inView, vMoney).forEach { Text(it, style = MaterialTheme.typography.bodyMedium, color = vSoft) }
 			if (vGoal.kind == GoalKind.MANUAL)
 			{
@@ -350,7 +350,7 @@ private fun GoalTile(
 		}
 		if (vGoal.note.isNotBlank())
 		{
-			Spacer(Modifier.height(10.dp))
+			Spacer(Modifier.height(12.dp))
 			Text(vGoal.note, style = MaterialTheme.typography.bodyMedium)
 		}
 	}
@@ -468,7 +468,7 @@ private fun StatusPill(inStatus: GoalStatus)
 			.clip(RoundedCornerShape(50))
 			.background(if (vFull) vColors.primary else glassRaised(vColors.surface))
 			.border(1.dp, if (vFull) vColors.primary else if (inStatus == GoalStatus.BEHIND || inStatus == GoalStatus.OVERDUE) vColors.onSurface else vColors.outlineVariant, RoundedCornerShape(50))
-			.padding(horizontal = 10.dp, vertical = 3.dp)
+			.padding(horizontal = 10.dp, vertical = 4.dp)
 	)
 }
 
@@ -734,13 +734,13 @@ private fun MonthGoalTile(
 				color = MaterialTheme.colorScheme.onSurfaceVariant
 			)
 		}
-		Spacer(Modifier.height(10.dp))
+		Spacer(Modifier.height(12.dp))
 		ProgressBar(
 			inView.percent.coerceAtMost(100),
 			if (inView.status == MonthGoalStatus.EXCEEDED || inView.status == MonthGoalStatus.MISSED) MaterialTheme.colorScheme.error else vAccent,
 			inLabel = if (vSpend) "${(100 - inView.percent).coerceAtLeast(0)} % restant" else null
 		)																					// dépenses : barre d'utilisation, part restante écrite ; épargne : part atteinte
-		Spacer(Modifier.height(6.dp))
+		Spacer(Modifier.height(8.dp))
 		Hint(
 			when
 			{
@@ -771,6 +771,6 @@ private fun MonthPill(inStatus: MonthGoalStatus)
 			.clip(RoundedCornerShape(50))
 			.background(if (vGood) vColors.primary else glassRaised(vColors.surface))
 			.border(1.dp, if (vGood) vColors.primary else if (vBad) vColors.error else vColors.outlineVariant, RoundedCornerShape(50))
-			.padding(horizontal = 10.dp, vertical = 3.dp)
+			.padding(horizontal = 10.dp, vertical = 4.dp)
 	)
 }

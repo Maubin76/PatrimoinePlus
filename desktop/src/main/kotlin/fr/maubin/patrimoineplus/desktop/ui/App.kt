@@ -379,7 +379,7 @@ private fun Shell(
 			}
 		}
 		}
-		ShellToast(inSpace, vNotice, inController, Modifier.align(Alignment.TopCenter).padding(top = 6.dp))
+		ShellToast(inSpace, vNotice, inController, Modifier.align(Alignment.TopCenter).padding(top = 8.dp))
 		}
 	}
 	(inSpace.status as? LoadStatus.Items)?.let { inItems ->
@@ -468,7 +468,12 @@ private fun ExitWaitDialog(
 	}
 	AlertDialog(
 		onDismissRequest = inController::cancelExit,
-		title            = { Text(if (inWait.done) "Transmis ✓" else "Modifications pas encore transmises") },
+		title            = {
+			Row(verticalAlignment = Alignment.CenterVertically) {
+				Text(if (inWait.done) "Transmis" else "Modifications pas encore transmises")
+				if (inWait.done) { Spacer(Modifier.width(8.dp)); Icon(LineIcons.Check, contentDescription = null, modifier = Modifier.size(20.dp)) }
+			}
+		},
 		text             = {
 			Text(
 				if (inWait.done) "Le téléphone a reçu les dernières modifications : PatrimoinePlus se ferme."
@@ -582,7 +587,7 @@ private fun TopBar(
 	) {
 		Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
 			PatrimoineLogo(34.dp)
-			Spacer(Modifier.width(10.dp))
+			Spacer(Modifier.width(8.dp))
 			Text("PatrimoinePlus", style = MaterialTheme.typography.titleMedium)
 		}
 		NavPills(
@@ -637,9 +642,9 @@ private fun pageStatus(
 	val vWifi  = if (vSet.wifiSync && vPeers.phones.isNotEmpty() && inSpace.source is Source.Folder && inSpace.status is LoadStatus.Synced) wifiBanner(vPeers) else null	// état de la synchronisation Wi-Fi
 	return vWifi ?: when (val vStatus = inSpace.status)
 	{
-		LoadStatus.Demo      -> "Démonstration : données fictives, modifiables, jamais enregistrées."
-		LoadStatus.Waiting   -> "Dossier ${(inSpace.source as? Source.Folder)?.path} : fichier d’échange pas encore présent. Activez la synchronisation sur le téléphone, ou saisissez ici."
-		is LoadStatus.Synced -> "Enregistré dans ${(inSpace.source as? Source.Folder)?.path} à ${Instant.ofEpochMilli(vStatus.at).atZone(ZoneId.systemDefault()).format(kTimeFormat)}."
+		LoadStatus.Demo      -> "Démonstration : données fictives, modifiables, jamais enregistrées"
+		LoadStatus.Waiting   -> "Dossier ${(inSpace.source as? Source.Folder)?.path} : fichier d’échange pas encore présent ; activez la synchronisation sur le téléphone, ou saisissez ici"
+		is LoadStatus.Synced -> "Enregistré dans ${(inSpace.source as? Source.Folder)?.path} à ${Instant.ofEpochMilli(vStatus.at).atZone(ZoneId.systemDefault()).format(kTimeFormat)}"
 		LoadStatus.Pending   -> "Modifications en cours d’enregistrement…"
 		else                 -> ""
 	}
@@ -672,7 +677,7 @@ private fun ShellToast(
 	}																				// état anormal ; null sinon
 	val vText  = inNotice ?: vAlert ?: return										// texte affiché
 	FloatingSurface(RoundedCornerShape(50), inModifier.widthIn(max = 760.dp)) {
-		Row(Modifier.padding(start = 20.dp, end = 8.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+		Row(Modifier.padding(start = 20.dp, end = 8.dp, top = 6.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
 			Text(
 				text     = vText,
 				style    = MaterialTheme.typography.bodyMedium,
@@ -710,13 +715,13 @@ private fun ViewSwitcher(
 					.clip(RoundedCornerShape(50))
 					.clickable(onClickLabel = "Changer de vue") { vOpen = true }
 					.semantics { contentDescription = "Vue : $vName" }
-					.padding(start = 6.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
+					.padding(start = 6.dp, end = 14.dp, top = 6.dp, bottom = 8.dp),
 				verticalAlignment = Alignment.CenterVertically
 			) {
 				Initial(vName, inProfile == null)
-				Spacer(Modifier.width(10.dp))
+				Spacer(Modifier.width(8.dp))
 				Text(vName, style = MaterialTheme.typography.labelLarge)
-				Spacer(Modifier.width(6.dp))
+				Spacer(Modifier.width(8.dp))
 				Icon(LineIcons.ChevronDown, contentDescription = null, modifier = Modifier.size(16.dp))
 			}
 		}

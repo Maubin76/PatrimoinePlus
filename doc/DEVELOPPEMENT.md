@@ -199,34 +199,44 @@ Règles :
 ## Interface
 
 Direction visuelle « brume lumineuse », commune au téléphone et au PC, d'après
-une maquette de référence fournie le 2026-11-05 (tableau de bord clair, halo
-jaune, panneaux de verre). Un seul style, en clair ou en sombre.
+une maquette de référence fournie le 2026-11-05, puis épurée le 2026-11-06
+(passe « unslop » : neutres calmes, un seul accent, aucune décoration). Un seul
+style, en clair ou en sombre.
 
-- Thème (`:ui`, `theme/DeskTheme.kt`) : neutres gris-bleu (fond #DCE3EA,
-  encre #14171C, texte secondaire #636B77 ; en sombre ardoise #0E1217 et
-  encre #EDF0F4), surfaces opaques pour les menus et les fenêtres. Police
-  **Urbanist** (OFL, ressource Compose du module `:ui`, licence dans
-  `doc/licenses/`), chiffres tabulaires : titres de page et grands chiffres
-  légers, titres de panneau en graisse moyenne. Les couleurs dynamiques
+- Thème (`:ui`, `theme/DeskTheme.kt`) : neutres gris-bleu (fond #E0E6EB,
+  encre #14171C, texte secondaire #636B77 ; en sombre ardoise #0F1318 et
+  encre #EDF0F4). Police **Urbanist** (OFL, ressource Compose du module
+  `:ui`, licence dans `doc/licenses/`), chiffres tabulaires, graisses de 400
+  à 600 : hiérarchie par la taille et la couleur. Les couleurs dynamiques
   Material You sont écartées.
-- Fond (`ui/components/Ground.kt`) : brume gris-bleu traversée d'un grand
-  halo jaune citron, bleu ciel à gauche, voile blanc en haut (en sombre :
-  lueurs ambre et bleu nuit), floutée une fois pour toutes (petite image
-  agrandie par étapes).
-- Panneaux (`Tile`, `FloatingSurface`, `BorderedCard`) : verre blanc
-  translucide, liseré blanc de 1 dp, coins de 18 dp, sans ombre ; cadres
-  intérieurs plus denses pour les listes et les tableaux.
-- Composants de la brume (`ui/components/Mist.kt`) : pilule translucide
-  (`GhostPill`, `GhostButton` à la place des boutons à contour), un seul
-  bouton plein jaune citron par contexte (`LemonButton` « Nouvelle
-  opération », `LemonPillButton` pour l'action principale d'un panneau ou
-  d'une feuille, `LemonDisc` pour la saisie du téléphone), pastille de
-  variation verte ou rouge avec flèche (`DeltaPill`), étiquettes teintées
-  (`StatusChip`), mini-barres (`MicroBars`, barre repérée étiquetée de sa
-  variation), jauge en arc (`ArcGauge` : bouts arrondis comptés dans chaque
-  part, écart de 4°, petites parts gardées à la taille d'un point), barre de
-  progression épaisse (`ProgressTrack`), menu « … » des panneaux
-  (`MoreMenu`).
+- Fond (`ui/components/Ground.kt`) : un neutre, à peine plus clair en haut à
+  gauche (simple variation de ton), sans tache de couleur.
+- Panneaux (`Tile`, `FloatingSurface`, `BorderedCard`) : surface unie
+  (blanche en clair, un cran au-dessus du fond en sombre), filet à l'encre
+  à 7 %, ombre neutre courte en clair, coins de 16 dp ; cadres intérieurs
+  de 8 dp pour les listes et les tableaux. Espacements sur une grille de
+  4 dp (panneaux : 24 dp de marge, 20 dp entre eux).
+- Un seul accent dans la coque : le jaune citron, pour « Nouvelle opération »
+  (`LemonButton`) et l'action principale d'un panneau ou d'une feuille
+  (`LemonPillButton`, `LemonDisc` sur le téléphone). Pilules et boutons
+  secondaires unis à filet (`GhostPill`, `GhostButton`) ; pages en pilules,
+  page active en pilule blanche à filet.
+- Données : un graphique principal par écran d'accueil (évolution du
+  patrimoine, en courbe à la couleur principale) ; indicateurs en chiffres
+  (libellé, valeur, variation et sa base de comparaison) ; répartition en
+  jauge d'arc (`ArcGauge`, plusieurs teintes : une par type) ; dépenses en
+  barre empilée (la plus grosse part à l'accent, les autres en tons
+  neutres) ; parts, comptes et compteurs en texte discret ; variations en
+  pastille verte ou rouge (`DeltaPill`) ; états en étiquette (`StatusChip`) ;
+  menu « … » des panneaux (`MoreMenu`).
+- Logo à plat (`ui/components/Logo.kt`, icône Android, `icone.png` et
+  `icons/patrimoineplus.ico` du PC) : tuile à l'encre, carte de derrière
+  jaune citron, carte de devant blanc cassé avec puce et courbe à l'encre,
+  « + » jaune ; sans dégradé ni reflet.
+- Mouvement : survol par changement de surface, léger enfoncement au clic,
+  nombres qui roulent ; plus de halo qui respire autour des visites
+  guidées. Restent, à la demande de l'utilisateur, le flottement du schéma
+  de l'écosystème et l'animation de l'assistant.
 - Couleurs des données (`theme/ColorTheme.kt`) : bleu (principale,
   immobilier), vert (hausses, comptes courants), orange (épargne), rouge
   (baisses), bleu ciel (bourse), jaune d'or (collection), ardoise (crédits).

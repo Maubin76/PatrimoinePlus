@@ -136,16 +136,16 @@ private fun geometric(
 
 /*
 	Échelle typographique des deux applis : chiffres et titres de page grands
-	et légers, titres de panneau en graisse moyenne, texte courant net.
+	en graisse courante, titres de panneau en graisse moyenne, texte courant net.
 */
 @Composable
 fun deskTypography(): Typography
 {
 	val vFamily = urbanist()														// Urbanist chargée
 	return Typography(
-		displayLarge   = geometric(vFamily, kDeskBase.displayLarge, FontWeight.Light, -0.025f, 58f, 64f),
-		displayMedium  = geometric(vFamily, kDeskBase.displayMedium, FontWeight.Light, -0.02f, 46f, 52f),
-		displaySmall   = geometric(vFamily, kDeskBase.displaySmall, FontWeight.Normal, -0.02f, 38f, 46f),
+		displayLarge   = geometric(vFamily, kDeskBase.displayLarge, FontWeight.Normal, -0.025f, 56f, 64f),
+		displayMedium  = geometric(vFamily, kDeskBase.displayMedium, FontWeight.Normal, -0.02f, 44f, 52f),
+		displaySmall   = geometric(vFamily, kDeskBase.displaySmall, FontWeight.Normal, -0.02f, 36f, 44f),
 		headlineLarge  = geometric(vFamily, kDeskBase.headlineLarge, FontWeight.Normal, -0.015f, 32f, 40f),
 		headlineMedium = geometric(vFamily, kDeskBase.headlineMedium, FontWeight.Normal, -0.01f, 28f, 34f),
 		headlineSmall  = geometric(vFamily, kDeskBase.headlineSmall, FontWeight.Normal, -0.01f, 24f, 30f),
@@ -153,7 +153,7 @@ fun deskTypography(): Typography
 		titleMedium    = geometric(vFamily, kDeskBase.titleMedium, FontWeight.Medium, 0f, 16f, 22f),
 		titleSmall     = geometric(vFamily, kDeskBase.titleSmall, FontWeight.Medium, 0f, 14f, 20f),
 		bodyLarge      = geometric(vFamily, kDeskBase.bodyLarge, FontWeight.Normal, 0.005f, 15f, 22f),
-		bodyMedium     = geometric(vFamily, kDeskBase.bodyMedium, FontWeight.Normal, 0.008f, 13.5f, 19f),
+		bodyMedium     = geometric(vFamily, kDeskBase.bodyMedium, FontWeight.Normal, 0.008f, 14f, 20f),
 		bodySmall      = geometric(vFamily, kDeskBase.bodySmall, FontWeight.Normal, 0.01f, 12f, 16f),
 		labelLarge     = geometric(vFamily, kDeskBase.labelLarge, FontWeight.Medium, 0.005f, 14f, 20f),
 		labelMedium    = geometric(vFamily, kDeskBase.labelMedium, FontWeight.Medium, 0.01f, 12f, 16f),

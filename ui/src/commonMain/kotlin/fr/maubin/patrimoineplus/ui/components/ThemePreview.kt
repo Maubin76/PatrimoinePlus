@@ -83,7 +83,7 @@ fun ThemePreview(inPalette: Palette)
 				inDescription = "Répartition d'exemple",
 				inModifier    = Modifier.fillMaxWidth().height(12.dp)
 			)
-			Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+			Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
 				listOf("Immobilier" to AccountType.REAL_ESTATE, "Épargne" to AccountType.SAVINGS, "Courant" to AccountType.CHECKING, "Bourse" to AccountType.BROKERAGE, "Collection" to AccountType.COLLECTIBLE).forEach { (inLabel, inType) ->
 					Row(verticalAlignment = Alignment.CenterVertically) {
 						Box(Modifier.size(8.dp).clip(CircleShape).background(accountAccent(inType)))

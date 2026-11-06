@@ -79,7 +79,7 @@ biens immobiliers, objets de collection et crédits, et calcule votre
 | **Import d'une sauvegarde** | Restauration d'un classeur, entièrement vérifiée avant de remplacer les données | ✅ | — |
 | **Mode discret** | Masque tous les montants d'un geste | ✅ | ✅ |
 | **Verrou** | Empreinte ou code du téléphone à l'ouverture | ✅ | — |
-| **Apparence** | Style « brume lumineuse » (verre blanc sur halo jaune), en clair ou en sombre | ✅ | ✅ |
+| **Apparence** | Style « brume lumineuse » sobre (neutres gris-bleu, un seul accent jaune), en clair ou en sombre | ✅ | ✅ |
 | **Thèmes personnalisés** | Cinq couleurs des données au choix, partagées entre le téléphone et le PC | ✅ | ✅ |
 | **Assistant** | Petit compagnon animé qui résume le mois (budget, objectifs, patrimoine) et réagit aux événements | — | ✅ |
 | **Visites guidées** | Présentation de chaque page à la première visite, à revoir depuis les réglages | — | ✅ |

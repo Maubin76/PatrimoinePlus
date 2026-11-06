@@ -144,9 +144,9 @@ private fun Figures(inTable: ExpenseAnalysis)
 			Tile(inModifier = inMod, inTitle = "Plus fortes hausses") {
 				if (inTable.rises.isEmpty()) Hint("Aucune catégorie au-dessus de sa moyenne le mois dernier.")
 				inTable.rises.forEach { inRow ->
-					Row(Modifier.fillMaxWidth().heightIn(min = 30.dp), verticalAlignment = Alignment.CenterVertically) {
+					Row(Modifier.fillMaxWidth().heightIn(min = 32.dp), verticalAlignment = Alignment.CenterVertically) {
 						Icon(CategoryIcons.of(inRow.category.icon), contentDescription = null, modifier = Modifier.size(16.dp))
-						Spacer(Modifier.width(10.dp))
+						Spacer(Modifier.width(8.dp))
 						Text(inRow.category.name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
 						AmountText(inCents = inRow.lastGap ?: 0L, inStyle = MaterialTheme.typography.bodyMedium, inShowPlusSign = true)
 						Text(" vs moyenne", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -189,7 +189,7 @@ private fun MonthBars(inTable: ExpenseAnalysis)
 			}
 		}
 	}
-	Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+	Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
 		inTable.months.forEachIndexed { inIndex, inMonth ->
 			Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
 				Text(monthLabel(inMonth, inIndex == inTable.currentIndex), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -258,7 +258,7 @@ private fun CategoryRow(
 	Row(Modifier.heightIn(min = 36.dp), verticalAlignment = Alignment.CenterVertically) {
 		Row(Modifier.width(LocalColumns.current.name).padding(end = 12.dp), verticalAlignment = Alignment.CenterVertically) {
 			Icon(CategoryIcons.of(inRow.category.icon), contentDescription = null, modifier = Modifier.size(16.dp))
-			Spacer(Modifier.width(10.dp))
+			Spacer(Modifier.width(8.dp))
 			Text(inRow.category.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
 		}
 		inRow.values.forEachIndexed { inIndex, inValue ->

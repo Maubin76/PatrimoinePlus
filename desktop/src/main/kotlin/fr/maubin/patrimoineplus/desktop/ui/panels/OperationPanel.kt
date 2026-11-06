@@ -142,7 +142,7 @@ fun OperationPanel(
 				{
 					Row(Modifier.fillMaxWidth().toggleable(value = vForm.refund, role = Role.Checkbox) { vForm = vForm.copy(refund = it) }, verticalAlignment = Alignment.CenterVertically) {
 						Checkbox(checked = vForm.refund, onCheckedChange = null)
-						Spacer(Modifier.width(10.dp))
+						Spacer(Modifier.width(8.dp))
 						Text("Remboursement (montant reçu, déduit des dépenses de la catégorie)", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
 					}
 				}

@@ -796,12 +796,12 @@ private fun ExpensesCard(inLines: List<CategoryLine>)
 		Column(Modifier.padding(vertical = 8.dp)) {
 			inLines.forEach { inLine ->
 				Row(
-					modifier          = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 20.dp, vertical = 6.dp),
+					modifier          = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 20.dp, vertical = 8.dp),
 					verticalAlignment = Alignment.CenterVertically
 				) {
 					Icon(CategoryIcons.of(inLine.category.icon), contentDescription = null, modifier = Modifier.size(22.dp))
-					Spacer(Modifier.width(14.dp))
-					Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+					Spacer(Modifier.width(16.dp))
+					Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
 						Text(inLine.category.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
 						Box(Modifier.fillMaxWidth().height(4.dp).clip(CircleShape).background(vColors.surfaceContainerHigh)) {
 							Box(
@@ -915,7 +915,7 @@ private fun OperationRow(
 				modifier           = Modifier.size(20.dp)
 			)
 		}
-		Spacer(Modifier.width(14.dp))
+		Spacer(Modifier.width(16.dp))
 		Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
 			Text(inItem.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
 			Text(

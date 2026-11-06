@@ -192,9 +192,9 @@ private fun Figures(inBudget: Budget)
 				}
 			}
 		}.toTypedArray(),
-		Cell(1f) { inMod ->
+		Cell(1.6f) { inMod ->
 			Tile(inModifier = inMod, inFilled = heroFilled()) {
-				TileFigure("Reste") { AmountText(inCents = inBudget.remaining, inStyle = MaterialTheme.typography.headlineSmall, inShowPlusSign = true, inTrend = true) }
+				TileFigure("Reste") { AmountText(inCents = inBudget.remaining, inStyle = MaterialTheme.typography.headlineLarge, inShowPlusSign = true, inTrend = true) }
 			}
 		},
 		inMinWidth = 1000.dp

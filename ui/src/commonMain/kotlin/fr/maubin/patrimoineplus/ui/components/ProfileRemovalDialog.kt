@@ -38,7 +38,7 @@ fun ProfileRemovalDialog(
 		onDismissRequest = inOnDismiss,
 		title            = { Text("Supprimer le profil « $inName » ?") },
 		text             = {
-			Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+			Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
 				if (inPlan.removed.isNotEmpty())
 				{
 					Text("Supprimés définitivement, avec leurs opérations ($inName en est seul propriétaire) :", style = MaterialTheme.typography.titleSmall)

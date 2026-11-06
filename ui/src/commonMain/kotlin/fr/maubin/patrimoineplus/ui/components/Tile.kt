@@ -55,7 +55,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.width
 
-private val kTileShape = RoundedCornerShape(18.dp)								// forme d'une tuile : panneau de verre de la brume
+private val kTileShape = RoundedCornerShape(16.dp)								// forme d'une tuile : panneau uni
 private val kShadowTint = Color(0xFF5B4E9E)										// ombre teintée de lavande (clair)
 private const val kHoverMillis = 160												// fondu du survol
 private const val kPressMillis = 90												// enfoncement au clic
@@ -121,7 +121,7 @@ fun Tile(
 	val vShade    = if (vDark) Color.Black else kShadowTint							// teinte de l'ombre
 	Surface(
 		modifier = inModifier
-			.graphicsLayer { scaleX = vScale; scaleY = vScale; translationY = -2.dp.toPx() * vLift }
+			.graphicsLayer { scaleX = vScale; scaleY = vScale }												// pas d'élévation au survol : seule la surface change
 			.then(
 				when
 				{
@@ -139,14 +139,14 @@ fun Tile(
 		MaterialTheme(colorScheme = vColors) {
 			CompositionLocalProvider(LocalColorTheme provides if (inFilled) ColorTheme.MONOCHROME else LocalColorTheme.current) {	// tuile pleine : variations à l'encre de la tuile (lisibles sur l'aplat), signe écrit
 				Column {
-					Column(if (inFooter != null) Modifier.fillMaxHeight().padding(22.dp) else Modifier.padding(22.dp)) {
+					Column(if (inFooter != null) Modifier.fillMaxHeight().padding(24.dp) else Modifier.padding(24.dp)) {
 						if (inTitle != null || inAction != null)
 						{
 							Row(Modifier.fillMaxWidth().heightIn(min = 28.dp), verticalAlignment = Alignment.CenterVertically) {
 								if (vTint && inTitle != null)
 								{
 									SeriesDot(inAccent)
-									androidx.compose.foundation.layout.Spacer(Modifier.width(10.dp))
+									androidx.compose.foundation.layout.Spacer(Modifier.width(8.dp))
 								}
 								Text(
 									text     = inTitle.orEmpty(),
@@ -157,12 +157,12 @@ fun Tile(
 								)
 								inAction?.invoke(this)
 							}
-							androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
+							androidx.compose.foundation.layout.Spacer(Modifier.height(16.dp))
 						}
 						inContent()
 					inFooter?.let { inText ->
 						androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
-						androidx.compose.foundation.layout.Spacer(Modifier.height(14.dp))
+						androidx.compose.foundation.layout.Spacer(Modifier.height(16.dp))
 						Text(inText, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
 					}
 					}

@@ -280,7 +280,7 @@ private fun DeviceNode(
 			.border(1.5.dp, if (inNode.phone) vColors.primary else vColors.outlineVariant, vShape)
 			.padding(horizontal = 12.dp),
 		verticalAlignment     = Alignment.CenterVertically,
-		horizontalArrangement = Arrangement.spacedBy(10.dp)
+		horizontalArrangement = Arrangement.spacedBy(12.dp)
 	) {
 		Icon(LineIcons.Devices, contentDescription = null, tint = if (inNode.self) vColors.onPrimary else vColors.onSurface, modifier = Modifier.size(22.dp))
 		Column {

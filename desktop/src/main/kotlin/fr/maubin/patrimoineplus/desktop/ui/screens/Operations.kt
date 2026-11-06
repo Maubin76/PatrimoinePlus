@@ -115,7 +115,7 @@ fun SearchScreen(
 		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp).padding(top = 6.dp, bottom = 28.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
-		PageHeader(inTitle = "Recherche", inSubtitle = "Dans toutes les opérations : libellé, notes, catégorie, compte ou montant exact.", inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) })
+		PageHeader(inTitle = "Recherche", inSubtitle = "Dans toutes les opérations : libellé, notes, catégorie, compte ou montant exact", inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) })
 		Box(Modifier.tourAnchor("search.filters")) { Filters(inSpace, vQuery, vFocus, inController::setQuery) }
 		Tile(
 			inModifier = Modifier.tourAnchor("search.results"),
@@ -310,7 +310,7 @@ private fun HitRow(
 		Box(Modifier.size(32.dp).clip(CircleShape).background(vBadge?.first ?: glassWell(vColors.surfaceContainer)), contentAlignment = Alignment.Center) {
 			Icon(CategoryIcons.of(inHit.icon), contentDescription = null, tint = vBadge?.second ?: LocalContentColor.current, modifier = Modifier.size(18.dp))
 		}
-		Spacer(Modifier.width(14.dp))
+		Spacer(Modifier.width(16.dp))
 		Column(Modifier.weight(1f)) {
 			Text(inHit.transaction.label, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
 			Text(inHit.detail + (inHit.transaction.notes?.let { " · $it" } ?: ""), style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)

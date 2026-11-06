@@ -111,7 +111,7 @@ fun AppFrame(
 				exit     = fadeOut(tween(100)) + scaleOut(tween(100), targetScale = 0.8f),
 				modifier = Modifier.fillMaxWidth()
 			) {
-				Box(Modifier.fillMaxWidth().padding(end = kScreenMargin, bottom = 16.dp), contentAlignment = Alignment.CenterEnd) {
+				Box(Modifier.fillMaxWidth().padding(end = kScreenMargin, bottom = 18.dp), contentAlignment = Alignment.CenterEnd) {
 					EntryFab(inOnEntry)
 				}
 			}
@@ -147,7 +147,7 @@ fun FloatingNavBar(
 	FloatingSurface(CircleShape, inSolid = true) {
 		Layout(
 			modifier = Modifier
-				.padding(6.dp)
+				.padding(8.dp)
 				.selectableGroup()
 				.drawBehind {
 					drawRoundRect(

@@ -150,7 +150,7 @@ fun WifiSyncSection(inViewModel: WifiSyncViewModel = hiltViewModel())
 	val vContext = androidx.compose.ui.platform.LocalContext.current						// contexte
 	val vAsk     = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { vScan = true }	// autorisation de localisation, puis lecteur
 	val vMuted   = MaterialTheme.colorScheme.onSurfaceVariant								// texte secondaire
-	Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+	Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
 		Row(verticalAlignment = Alignment.CenterVertically) {
 			Text("Synchronisation Wi-Fi", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
 			Switch(checked = vPeers.enabled, onCheckedChange = inViewModel::setEnabled, modifier = Modifier.semantics { contentDescription = "Synchronisation Wi-Fi" })

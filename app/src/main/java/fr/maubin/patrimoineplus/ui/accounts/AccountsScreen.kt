@@ -216,7 +216,7 @@ fun AccountsContent(
 			Modifier
 				.padding(top = inPadding.calculateTopPadding())
 				.verticalScroll(rememberScrollState())
-				.padding(start = kScreenMargin, end = kScreenMargin, top = 16.dp, bottom = inPadding.calculateBottomPadding() + 16.dp)
+				.padding(start = kScreenMargin, end = kScreenMargin, top = 18.dp, bottom = inPadding.calculateBottomPadding() + 16.dp)
 		) {
 			if (inState.loaded && inState.active.isEmpty() && inState.archived.isEmpty())
 			{
@@ -320,8 +320,7 @@ private fun AccountRow(
 				inColor = if (inItem.valueCents < 0) MaterialTheme.colorScheme.error else Color.Unspecified
 			)
 			inItem.weight?.let { inWeight ->
-				Spacer(Modifier.height(4.dp))
-				StatusChip("${inWeight.percent}\u202F%", Tone.NEUTRAL, allocationColor(inWeight.rank))
+				Text("${inWeight.percent}\u202F%", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 			}
 		}
 	}
@@ -340,7 +339,7 @@ fun AddButton(
 {
 	GhostButton(
 		onClick        = inOnClick,
-		contentPadding = PaddingValues(vertical = 14.dp),
+		contentPadding = PaddingValues(vertical = 16.dp),
 		modifier       = Modifier.fillMaxWidth()
 	) {
 		Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))

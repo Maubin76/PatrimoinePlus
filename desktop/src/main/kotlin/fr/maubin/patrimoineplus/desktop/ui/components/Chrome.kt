@@ -69,7 +69,7 @@ fun ChromeTooltip(
 	TooltipArea(
 		tooltip          = {
 			Surface(shape = kPill, color = vColors.inverseSurface, contentColor = vColors.inverseOnSurface, shadowElevation = 4.dp) {
-				Text(inLabel, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp))
+				Text(inLabel, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
 			}
 		},
 		delayMillis      = 350,
@@ -97,13 +97,13 @@ fun ChromeButton(
 	val vNight   = isNight()															// fond sombre
 	val vSource  = remember { MutableInteractionSource() }							// survol
 	val vHovered by vSource.collectIsHoveredAsState()								// souris au-dessus
-	val vFill    by animateColorAsState(Color.White.copy(alpha = if (vNight) (if (vHovered) 0.12f else 0.06f) else (if (vHovered) 0.88f else 0.55f)), tween(kHoverMillis), label = "rond")	// fond
+	val vFill    by animateColorAsState((if (vNight) Color.White.copy(alpha = if (vHovered) 0.12f else 0.06f) else (if (vHovered) Color(0xFFF4F6F8) else Color.White)), tween(kHoverMillis), label = "rond")	// fond
 	ChromeTooltip(inLabel) {
 		Box(
 			modifier         = inModifier
 				.size(kChromeButton)
 				.background(vFill, CircleShape)
-				.border(1.dp, Color.White.copy(alpha = if (vNight) 0.1f else 0.9f), CircleShape)
+				.border(1.dp, fr.maubin.patrimoineplus.ui.components.chromeLine(vNight), CircleShape)
 				.hoverable(vSource)
 				.clickable(interactionSource = vSource, indication = null, role = Role.Button, onClick = inOnClick)
 				.semantics { contentDescription = inLabel },
@@ -142,7 +142,7 @@ fun NavPills(
 )
 {
 	val vNight = isNight()															// fond sombre
-	Row(inModifier.animateContentSize(tween(220)), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+	Row(inModifier.animateContentSize(tween(220)), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
 		inEntries.forEachIndexed { inIndex, inEntry ->
 			val vActive  = inIndex == inActive													// page active
 			val vSource  = remember { MutableInteractionSource() }								// survol
@@ -150,17 +150,17 @@ fun NavPills(
 			val vFill    by animateColorAsState(
 				when
 				{
-					vActive && vNight -> Color.White.copy(alpha = 0.16f)
+					vActive && vNight -> Color.White.copy(alpha = 0.12f)
 					vActive           -> Color.White
-					vNight            -> Color.White.copy(alpha = if (vHovered) 0.12f else 0.06f)
-					else              -> Color.White.copy(alpha = if (vHovered) 0.88f else 0.5f)
+					vNight            -> Color.White.copy(alpha = if (vHovered) 0.08f else 0f)
+					else              -> if (vHovered) Color.White.copy(alpha = 0.7f) else Color.Transparent
 				}, tween(kHoverMillis), label = "onglet")												// fond
 			val vPill = @Composable {
 				Row(
 					modifier          = Modifier
 						.height(kChromeButton)
 						.background(vFill, kPill)
-						.border(1.dp, Color.White.copy(alpha = if (vNight) 0.1f else 0.9f), kPill)
+						.border(1.dp, if (vActive) fr.maubin.patrimoineplus.ui.components.chromeLine(vNight) else Color.Transparent, kPill)
 						.hoverable(vSource)
 						.clickable(interactionSource = vSource, indication = null, role = Role.Tab) { inOnSelect(inIndex) }
 						.semantics { contentDescription = inEntry.label; selected = vActive }

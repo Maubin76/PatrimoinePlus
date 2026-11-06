@@ -155,7 +155,7 @@ private fun AnnualReportSection(
 					}
 				}
 			},
-			Cell(1f) { inMod -> Tile(inModifier = inMod, inFilled = heroFilled()) { TileFigure("Variation") { AmountText(inCents = vReport.wealthChange, inStyle = MaterialTheme.typography.headlineSmall, inShowPlusSign = true, inTrend = true) } } },
+			Cell(1.6f) { inMod -> Tile(inModifier = inMod, inFilled = heroFilled()) { TileFigure("Variation") { AmountText(inCents = vReport.wealthChange, inStyle = MaterialTheme.typography.headlineSmall, inShowPlusSign = true, inTrend = true) } } },
 			Cell(1f) { inMod ->
 				Tile(inModifier = inMod) {
 					TileFigure("Taux d’épargne") { Text(vReport.savingsRate?.takeIf { !LocalAmountsHidden.current }?.let { formatPermille(it).removePrefix("+") } ?: "—", style = MaterialTheme.typography.headlineSmall) }
@@ -248,7 +248,7 @@ private fun Line(
 	inMuted  : Boolean = false
 )
 {
-	Row(Modifier.fillMaxWidth().heightIn(min = 34.dp), verticalAlignment = Alignment.CenterVertically) {
+	Row(Modifier.fillMaxWidth().heightIn(min = 32.dp), verticalAlignment = Alignment.CenterVertically) {
 		Text(inLabel, style = MaterialTheme.typography.bodyLarge, color = if (inMuted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
 		AmountText(inCents = inCents, inStyle = MaterialTheme.typography.bodyLarge, inShowPlusSign = inSigned)
 	}
@@ -276,7 +276,7 @@ private fun CategoriesTile(
 		inLines.forEach { inLine ->
 			Row(Modifier.fillMaxWidth().heightIn(min = 32.dp), verticalAlignment = Alignment.CenterVertically) {
 				Text(inLine.category.name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-				if (inTotal > 0) Text("${Math.round(inLine.cents * 100.0 / inTotal)} %", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 16.dp))
+				if (inTotal > 0) Text("${Math.round(inLine.cents * 100.0 / inTotal)} %", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 18.dp))
 				AmountText(inCents = inLine.cents, inStyle = MaterialTheme.typography.bodyMedium)
 			}
 		}

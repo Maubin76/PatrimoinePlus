@@ -25,9 +25,8 @@ import androidx.compose.ui.unit.IntSize
 import kotlin.math.roundToInt
 
 /*
-	Fond de l'application (téléphone et PC), sous tout le contenu : brume
-	gris-bleu traversée d'un halo jaune (ardoise et lueurs en sombre), que les
-	panneaux de verre laissent deviner.
+	Fond de l'application (téléphone et PC), sous tout le contenu : un neutre
+	gris-bleu, à peine plus clair en haut (ardoise en sombre).
 	inDark  : mode sombre
 	inGlass : sans effet (un seul style ; gardé pour les appels existants)
 */
@@ -56,7 +55,7 @@ fun GlassBackdrop(inDark: Boolean)
 	Box(
 		Modifier
 			.fillMaxSize()
-			.background(if (inDark) Color(0xFF0E1217) else Color(0xFFDCE3EA))
+			.background(if (inDark) Color(0xFF0F1318) else Color(0xFFE0E6EB))
 			.drawWithCache {
 				val vImage = softImage(this, (if (inDark) 70.dp else 80.dp).toPx()) { glassShapes(inDark) }	// formes floues, calculées une fois
 				onDrawBehind { drawImage(vImage) }
@@ -103,39 +102,15 @@ private fun softImage(
 }
 
 /*
-	Formes du fond de brume, avant flou. Clair : gris-bleu, grand halo jaune
-	citron un peu à droite du centre, prolongé vers le bas, cœur plus chaud,
-	bleu ciel à gauche et en bas à droite, voile blanc en haut à gauche.
-	Sombre : ardoise profonde, lueur ambre et lueur bleu nuit.
+	Fond de l'appli, avant adoucissement : un neutre gris-bleu, à peine plus
+	clair en haut à gauche (simple variation de ton, aucune tache de couleur) ;
+	en sombre, ardoise à peine plus claire en haut.
 	inDark : mode sombre
 */
 private fun DrawScope.glassShapes(inDark: Boolean)
 {
-	val vW = size.width															// largeur
-	val vH = size.height															// hauteur
-	val vM = maxOf(vW, vH)															// plus grande dimension
-	val vBlob = { inColor: Color, inX: Float, inY: Float, inR: Float -> drawCircle(inColor, radius = inR * vM, center = Offset(inX * vW, inY * vH)) }	// tache, en fractions de l'écran
-	if (inDark)
-	{
-		drawRect(Brush.linearGradient(listOf(Color(0xFF111620), Color(0xFF0D1117), Color(0xFF10151C)), start = Offset.Zero, end = Offset(vW, vH)))
-		vBlob(Color(0xFF1B2C40).copy(alpha = 0.85f), 0.12f, 0.2f, 0.26f)
-		vBlob(Color(0xFF5A3E12).copy(alpha = 0.70f), 0.56f, 0.36f, 0.22f)
-		vBlob(Color(0xFF8A5C16).copy(alpha = 0.45f), 0.6f, 0.3f, 0.11f)
-		vBlob(Color(0xFF3E2C12).copy(alpha = 0.55f), 0.46f, 0.92f, 0.2f)
-		vBlob(Color(0xFF16283A).copy(alpha = 0.75f), 0.92f, 0.8f, 0.24f)
-	}
-	else
-	{
-		drawRect(Brush.linearGradient(listOf(Color(0xFFD5DEE7), Color(0xFFE2E7EC), Color(0xFFD8E1EA)), start = Offset.Zero, end = Offset(vW, vH)))
-		vBlob(Color(0xFFC3D6E8), 0.1f, 0.62f, 0.28f)
-		vBlob(Color.White.copy(alpha = 0.75f), 0.3f, 0.12f, 0.2f)
-		vBlob(Color(0xFFF6E27A), 0.57f, 0.38f, 0.24f)
-		vBlob(Color(0xFFF7D63E), 0.6f, 0.33f, 0.14f)
-		vBlob(Color(0xFFF3C95A).copy(alpha = 0.6f), 0.66f, 0.3f, 0.07f)
-		vBlob(Color(0xFFF4E89A).copy(alpha = 0.85f), 0.44f, 0.95f, 0.2f)
-		vBlob(Color(0xFFC9DCEC).copy(alpha = 0.9f), 0.94f, 0.82f, 0.22f)
-		vBlob(Color.White.copy(alpha = 0.5f), 0.86f, 0.16f, 0.14f)
-	}
+	val vTones = if (inDark) listOf(Color(0xFF12161C), Color(0xFF0D1015)) else listOf(Color(0xFFE6EBF0), Color(0xFFDCE2E8))	// deux tons du même neutre
+	drawRect(Brush.linearGradient(vTones, start = Offset.Zero, end = Offset(size.width, size.height)))
 }
 
 /*
@@ -182,5 +157,5 @@ fun titleBarColors(
 	inDark  : Boolean,
 	inGlass : Boolean
 ): Pair<Color, Color> =
-	if (inDark) Color(0xFF111620) to Color(0xFFEDF0F4) else Color(0xFFD7DFE8) to Color(0xFF14171C)
+	if (inDark) Color(0xFF12161C) to Color(0xFFEDF0F4) else Color(0xFFE6EBF0) to Color(0xFF14171C)
 

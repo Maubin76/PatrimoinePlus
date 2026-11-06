@@ -32,7 +32,7 @@ fun EmptyState(
 {
 	Column(
 		modifier            = inModifier.padding(20.dp),
-		verticalArrangement = Arrangement.spacedBy(6.dp)
+		verticalArrangement = Arrangement.spacedBy(8.dp)
 	) {
 		Text(inTitle, style = MaterialTheme.typography.titleMedium)
 		Text(

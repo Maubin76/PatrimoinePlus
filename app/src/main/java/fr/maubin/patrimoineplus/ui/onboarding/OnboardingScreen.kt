@@ -155,7 +155,7 @@ fun OnboardingScreen(
 		Spacer(Modifier.height(32.dp))
 		LemonPillButton(
 			onClick        = { inOnFinish(vAccounts, vCategories) { vErrors = it } },
-			contentPadding = PaddingValues(vertical = 14.dp),
+			contentPadding = PaddingValues(vertical = 16.dp),
 			modifier       = Modifier.fillMaxWidth()
 		) {
 			Text("Commencer")

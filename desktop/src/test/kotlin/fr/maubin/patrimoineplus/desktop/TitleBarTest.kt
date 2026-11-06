@@ -20,8 +20,8 @@ class TitleBarTest
 	{
 		assertEquals(0x00F46A79, TitleBar.colorRef(Color(0xFF796AF4)))
 		assertEquals(0x001C1616, TitleBar.colorRef(Color(0xFF16161C)))
-		assertEquals(Color(0xFFD7DFE8), titleBarColors(inDark = false, inGlass = false).first)
-		assertEquals(Color(0xFF111620), titleBarColors(inDark = true, inGlass = true).first)
+		assertEquals(Color(0xFFE6EBF0), titleBarColors(inDark = false, inGlass = false).first)
+		assertEquals(Color(0xFF12161C), titleBarColors(inDark = true, inGlass = true).first)
 		assertEquals(Color(0xFFEDF0F4), titleBarColors(inDark = true, inGlass = true).second)
 	}
 }

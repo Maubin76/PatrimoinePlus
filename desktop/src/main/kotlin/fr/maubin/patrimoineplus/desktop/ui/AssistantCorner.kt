@@ -151,8 +151,8 @@ internal fun assistantEvent(
 		inAfter.status is LoadStatus.Invalid && inBefore.status !is LoadStatus.Invalid         -> AssistantEvent(AvatarReaction.STARTLE, "Je n’arrive pas à lire le fichier partagé avec le téléphone. Il est peut-être encore en train d’arriver ; je réessaie tout seul.", true)
 		inAfter.status is LoadStatus.WriteFailed && inBefore.status !is LoadStatus.WriteFailed -> AssistantEvent(AvatarReaction.STARTLE, "Je n’arrive pas à enregistrer dans le dossier partagé. Il est peut-être protégé, ou le disque est plein.", true)
 		inAfter.pending && !inBefore.pending                                                    -> AssistantEvent(AvatarReaction.STARTLE, "Attendez ! Certaines modifications ne sont pas encore enregistrées.", look = LookTarget.CENTER)
-		inAfter.update && !inBefore.update                                                      -> AssistantEvent(AvatarReaction.LOOK_UP, "Psst… une nouvelle version de PatrimoinePlus est arrivée !", look = LookTarget.CENTER)
-		vNewGoal != null                                                                        -> AssistantEvent(AvatarReaction.JOY, "Youpi, l’objectif « $vNewGoal » est atteint !")
+		inAfter.update && !inBefore.update                                                      -> AssistantEvent(AvatarReaction.LOOK_UP, "Une nouvelle version de PatrimoinePlus est disponible", look = LookTarget.CENTER)
+		vNewGoal != null                                                                        -> AssistantEvent(AvatarReaction.JOY, "Objectif « $vNewGoal » atteint")
 		inAfter.mood == Mood.HAPPY && inBefore.mood == Mood.WORRIED                             -> AssistantEvent(AvatarReaction.JOY)
 		inAfter.status is LoadStatus.Synced && inBefore.status == LoadStatus.Pending            -> AssistantEvent(AvatarReaction.NOD)
 		else                                                                                    -> null
@@ -378,14 +378,14 @@ internal fun AssistantBubble(
 			.background(Color.White, vShape)
 			.border(with(vDensity) { vStroke.toDp() }, kBubbleInk, vShape)
 			.semantics { contentDescription = "$kAssistantName dit : ${listOfNotNull(inNotice, inMood.speech).joinToString(" ")}" }
-			.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 16.dp + kBubbleTail)
+			.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 18.dp + kBubbleTail)
 	) {
-		Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+		Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
 			inNotice?.let { Text(it, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold), color = kBubbleInk) }
 			Text(inMood.speech, style = MaterialTheme.typography.bodyLarge, color = kBubbleInk)
 			if (vLinks.isNotEmpty())
 			{
-				FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+				FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
 					vLinks.forEach { inTarget ->
 						Text(
 							text     = when (inTarget) { AssistantTarget.DASHBOARD -> "Voir le tableau de bord"; AssistantTarget.BUDGET -> "Voir le budget"; AssistantTarget.GOALS -> "Voir les objectifs" },

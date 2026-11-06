@@ -63,7 +63,7 @@ fun UpdateDialog(
 		onDismissRequest = { if (!vLoading) inOnLater() },
 		title            = { Text("PatrimoinePlus ${vOffer.version} est disponible") },
 		text             = {
-			Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+			Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
 				Text("Vous avez la version ${vOffer.current}. Téléchargement : ${sizeLabel(vOffer.asset.size)}.", style = MaterialTheme.typography.bodyMedium)
 				if (vOffer.formatChanged)
 				{

@@ -91,22 +91,22 @@ fun ProjectionScreen(
 		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp).padding(top = 6.dp, bottom = 28.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(20.dp)
 	) {
-		PageHeader(inTitle = "Projection", inSubtitle = "Patrimoine estimé selon trois scénarios, à partir de vos hypothèses.", inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) })
+		PageHeader(inTitle = "Projection", inSubtitle = "Patrimoine estimé selon trois scénarios, à partir de vos hypothèses", inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) })
 		Box(Modifier.tourAnchor("projection.inputs")) { Inputs(vInput, vDefault) { inController.setProjection(it) } }
 		Box(Modifier.tourAnchor("projection.result")) {
 			TileRow(
 				Cell(1f) { inMod -> Tile(inModifier = inMod) { TileFigure("Aujourd’hui") { AmountText(inCents = vResult.start, inStyle = MaterialTheme.typography.headlineSmall) } } },
 				Cell(1f) { inMod -> Tile(inModifier = inMod, inAccent = flowAccent(FlowAccent.INFLOW)) { TileFigure("Dans ${vInput.years} ans, prudent") { AmountText(inCents = vResult.last.prudent, inStyle = MaterialTheme.typography.headlineSmall) } } },
-				Cell(1.2f) { inMod -> Tile(inModifier = inMod, inFilled = heroFilled()) { TileFigure("Dans ${vInput.years} ans, central") { AmountText(inCents = vResult.last.central, inStyle = MaterialTheme.typography.headlineMedium) } } },
+				Cell(1.6f) { inMod -> Tile(inModifier = inMod, inFilled = heroFilled()) { TileFigure("Dans ${vInput.years} ans, central") { AmountText(inCents = vResult.last.central, inStyle = MaterialTheme.typography.headlineMedium) } } },
 				Cell(1f) { inMod -> Tile(inModifier = inMod, inAccent = flowAccent(FlowAccent.INFLOW)) { TileFigure("Dans ${vInput.years} ans, favorable") { AmountText(inCents = vResult.last.optimistic, inStyle = MaterialTheme.typography.headlineSmall) } } },
 				Cell(1f) { inMod ->
 					Tile(inModifier = inMod) {
 						TileFigure("Dont versements") { AmountText(inCents = vResult.last.contributed - vResult.start, inStyle = MaterialTheme.typography.headlineSmall) }
-						Spacer(Modifier.height(10.dp))
+						Spacer(Modifier.height(12.dp))
 						TileFigure("Gain des rendements") { AmountText(inCents = vResult.last.central - vResult.last.contributed, inStyle = MaterialTheme.typography.titleMedium, inShowPlusSign = true) }
 						if (vResult.points.first().debt > 0)
 						{
-							Spacer(Modifier.height(10.dp))
+							Spacer(Modifier.height(12.dp))
 							TileFigure("Crédits restant dus") { AmountText(inCents = vResult.last.debt, inStyle = MaterialTheme.typography.titleMedium) }
 							Hint("${if (LocalAmountsHidden.current) kMaskedAmount else formatEuros(vResult.points.first().debt)} aujourd’hui")
 						}
@@ -206,7 +206,7 @@ private fun Chart(inResult: Projection)
 	val vMax = inResult.points.maxOf { it.optimistic }.coerceAtLeast(1L)				// plus grande valeur
 	val vMin = inResult.points.minOf { minOf(it.prudent, it.contributed) }.coerceAtMost(0L)	// plus petite valeur
 	Row {
-		Column(Modifier.height(260.dp).width(110.dp), verticalArrangement = Arrangement.SpaceBetween) {
+		Column(Modifier.height(260.dp).width(112.dp), verticalArrangement = Arrangement.SpaceBetween) {
 			AmountText(inCents = vMax, inStyle = MaterialTheme.typography.labelMedium, inColor = vSoft)
 			AmountText(inCents = vMin, inStyle = MaterialTheme.typography.labelMedium, inColor = vSoft)
 		}
@@ -233,7 +233,7 @@ private fun Chart(inResult: Projection)
 			series({ inResult.points[it].central }, vInk, 2.5.dp.toPx(), false)
 		}
 	}
-	Row(Modifier.fillMaxWidth().padding(start = 110.dp, top = 6.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+	Row(Modifier.fillMaxWidth().padding(start = 110.dp, top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
 		val vStep = (inResult.input.years / 5).coerceAtLeast(1)							// pas des étiquettes
 		inResult.points.filter { it.year % vStep == 0 }.forEach { Text(if (it.year == 0) "Aujourd’hui" else "+${it.year} ans", style = MaterialTheme.typography.labelMedium, color = vSoft) }
 	}

@@ -48,7 +48,7 @@ fun QrCode(
 )
 {
 	val vModules = remember(inText) { qrModules(inText) }								// modules
-	Box(Modifier.clip(RoundedCornerShape(16.dp)).background(Color.White).padding(16.dp).semantics { contentDescription = inDescription }) {
+	Box(Modifier.clip(RoundedCornerShape(16.dp)).background(Color.White).padding(18.dp).semantics { contentDescription = inDescription }) {
 		Canvas(Modifier.size(inSize)) {
 			val vCell = size.width / vModules.size											// côté d'un module
 			vModules.forEachIndexed { inY, inRow ->

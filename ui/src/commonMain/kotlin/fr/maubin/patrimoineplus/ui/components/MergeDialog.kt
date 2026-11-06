@@ -61,7 +61,7 @@ fun MergeConflictsDialog(
 					TextButton(onClick = { inConflicts.forEach { vChoices[it.key] = MergeSide.THEIRS } }) { Text("Tout garder : $inTheirsLabel") }
 				}
 				inConflicts.forEach { inConflict ->
-					Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+					Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
 						Text("${inConflict.kind} « ${inConflict.title} »", style = MaterialTheme.typography.titleSmall)
 						Version(inMineLabel, inConflict.mine, vChoices[inConflict.key] == MergeSide.MINE) { vChoices[inConflict.key] = MergeSide.MINE }
 						Version(inTheirsLabel, inConflict.theirs, vChoices[inConflict.key] == MergeSide.THEIRS) { vChoices[inConflict.key] = MergeSide.THEIRS }
@@ -97,11 +97,11 @@ private fun Version(
 			.clip(vShape)
 			.border(1.dp, if (inSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, vShape)
 			.selectable(selected = inSelected, onClick = inOnClick, role = Role.RadioButton)
-			.padding(horizontal = 8.dp, vertical = 6.dp),
+			.padding(horizontal = 8.dp, vertical = 8.dp),
 		verticalAlignment = Alignment.CenterVertically
 	) {
 		RadioButton(selected = inSelected, onClick = null)
-		Column(Modifier.padding(start = 6.dp)) {
+		Column(Modifier.padding(start = 8.dp)) {
 			Text(inSide, style = MaterialTheme.typography.labelLarge)
 			Text(inText ?: "Supprimé", style = MaterialTheme.typography.bodyMedium, color = if (inText == null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
 		}

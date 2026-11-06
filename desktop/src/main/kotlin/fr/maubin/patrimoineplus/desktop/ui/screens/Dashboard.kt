@@ -100,11 +100,13 @@ import fr.maubin.patrimoineplus.ui.components.ProgressTrack
 import fr.maubin.patrimoineplus.ui.analysis.MonthDays
 import fr.maubin.patrimoineplus.ui.analysis.buildMonthDays
 import fr.maubin.patrimoineplus.ui.theme.kLemon
-import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.ui.components.BalanceChart
+import fr.maubin.patrimoineplus.ui.components.monthTitle
 
 private val kShortDay  = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)		// date courte
-private val kRowGap    = 18.dp															// écart entre les panneaux
-private val kWellShape = RoundedCornerShape(12.dp)										// cadre intérieur d'un panneau (liste, tableau)
+private val kRowGap    = 20.dp															// écart entre les panneaux
+private val kWellShape = RoundedCornerShape(8.dp)										// cadre intérieur d'un panneau (liste, tableau)
 
 /*
 	Tableau de bord : tout le patrimoine sur un écran, en panneaux de tailles
@@ -137,7 +139,7 @@ fun DashboardScreen(
 				GhostPill("Bilan", { inController.show(Screen.REPORT) }, inIcon = LineIcons.Document)
 			},
 			inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, Modifier.tourAnchor("shell.newop"), LineIcons.Plus) },
-			inModifier = Modifier.padding(bottom = 6.dp)
+			inModifier = Modifier.padding(bottom = 8.dp)
 		)
 		if (vState.home.isEmpty)
 		{
@@ -149,14 +151,15 @@ fun DashboardScreen(
 			NetWorth(vState, Modifier.weight(1.1f).fillMaxHeight())
 			RepartitionPanel(vState, inController, Modifier.weight(0.95f).fillMaxHeight())
 		}
-		Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).tourAnchor("dashboard.charts"), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+		Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).tourAnchor("dashboard.charts"), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
 			Indicators(vState, vAnalysis, vDays, inController)
 		}
 		Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(kRowGap)) {
+			EvolutionPanel(vState, Modifier.weight(1.6f).fillMaxHeight())
 			ExpensesPanel(vState.categories, vAnalysis, inController, Modifier.weight(1f).fillMaxHeight())
-			RecentPanel(vState, inSpace.today, inController, Modifier.weight(1.15f).fillMaxHeight())
 		}
 		AccountsPanel(vState, inSpace, inController, Modifier.tourAnchor("dashboard.accounts"))
+		RecentPanel(vState, inSpace.today, inController, Modifier.fillMaxWidth())
 		if (vState.archived.isNotEmpty())
 		{
 			ArchivedAccounts(vState, inController)
@@ -180,9 +183,9 @@ private fun Well(
 	Column(
 		modifier = inModifier
 			.fillMaxWidth()
-			.background(Color.White.copy(alpha = if (vNight) 0.04f else 0.6f), kWellShape)
-			.border(1.dp, Color.White.copy(alpha = if (vNight) 0.06f else 0.95f), kWellShape)
-			.padding(horizontal = 14.dp, vertical = 6.dp),
+			.background(if (vNight) Color.White.copy(alpha = 0.03f) else Color(0xFF14171C).copy(alpha = 0.025f), kWellShape)
+			.border(1.dp, if (vNight) Color.White.copy(alpha = 0.05f) else Color(0xFF14171C).copy(alpha = 0.05f), kWellShape)
+			.padding(horizontal = 16.dp, vertical = 4.dp),
 		content  = inContent
 	)
 }
@@ -207,7 +210,7 @@ private fun NetWorth(
 		Spacer(Modifier.height(2.dp))
 		AmountText(inCents = vHome.totalCents, inStyle = MaterialTheme.typography.displayLarge, inRolling = true)
 		vHome.monthChange?.let { inChange ->
-			Spacer(Modifier.height(10.dp))
+			Spacer(Modifier.height(12.dp))
 			Row(verticalAlignment = Alignment.CenterVertically) {
 				val vBefore = vHome.totalCents - inChange											// patrimoine à la fin du mois dernier
 				if (vBefore > 0) DeltaPill(formatPermille(inChange * 1000 / vBefore), if (inChange == 0L) null else inChange > 0)
@@ -218,7 +221,7 @@ private fun NetWorth(
 		}
 		if (vHome.debtCents != 0L)
 		{
-			Spacer(Modifier.height(10.dp))
+			Spacer(Modifier.height(12.dp))
 			Row(verticalAlignment = Alignment.CenterVertically) {
 				Text("Brut ", style = MaterialTheme.typography.bodyMedium, color = vMuted)
 				AmountText(inCents = vHome.grossCents, inStyle = MaterialTheme.typography.bodyMedium)
@@ -226,7 +229,7 @@ private fun NetWorth(
 				AmountText(inCents = vHome.debtCents, inStyle = MaterialTheme.typography.bodyMedium)
 			}
 		}
-		Spacer(Modifier.height(6.dp))
+		Spacer(Modifier.height(8.dp))
 		Text("Calculé au ${vHome.asOf}", style = MaterialTheme.typography.bodySmall, color = vMuted)
 	}
 }
@@ -282,7 +285,7 @@ private fun MonthGoalsPanel(
 		if (vLines.isEmpty())
 		{
 			Text("Pas encore d’objectifs : fixez ceux du mois depuis votre budget, ou un objectif de patrimoine ; ils se suivent ici tout seuls.", style = MaterialTheme.typography.bodyMedium, color = vMuted)
-			Spacer(Modifier.height(14.dp))
+			Spacer(Modifier.height(16.dp))
 			GhostPill("Aller au budget", { inController.show(Screen.BUDGET) }, inIcon = LineIcons.Wallet)
 			return@Tile
 		}
@@ -295,7 +298,7 @@ private fun MonthGoalsPanel(
 			Spacer(Modifier.width(12.dp))
 			Text("$vPercent %", style = MaterialTheme.typography.labelLarge, color = vGreen)
 		}
-		Spacer(Modifier.height(14.dp))
+		Spacer(Modifier.height(16.dp))
 		Well {
 			vLines.take(6).forEach { inLine ->
 				Row(Modifier.fillMaxWidth().heightIn(min = 36.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -313,7 +316,7 @@ private fun MonthGoalsPanel(
 					inLine.percent?.let { Text("$it %", style = MaterialTheme.typography.labelSmall, color = if (inLine.failed) MaterialTheme.colorScheme.error else vMuted) }
 				}
 			}
-			if (vLines.size > 6) Text("Et ${vLines.size - 6} autre(s)…", style = MaterialTheme.typography.bodySmall, color = vMuted, modifier = Modifier.padding(vertical = 6.dp))
+			if (vLines.size > 6) Text("Et ${vLines.size - 6} autre(s)…", style = MaterialTheme.typography.bodySmall, color = vMuted, modifier = Modifier.padding(vertical = 8.dp))
 		}
 	}
 }
@@ -377,7 +380,7 @@ private fun RepartitionPanel(
 				{
 					Column(horizontalAlignment = Alignment.CenterHorizontally) {
 						Text(vFirst.type.label, style = MaterialTheme.typography.bodyMedium, color = vMuted)
-						Text("${vFirst.percent} %", style = MaterialTheme.typography.displaySmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Light))
+						Text("${vFirst.percent} %", style = MaterialTheme.typography.displaySmall)
 					}
 				}
 			}
@@ -385,13 +388,13 @@ private fun RepartitionPanel(
 		Spacer(Modifier.height(8.dp))
 		Well {
 			vGroups.forEach { inGroup ->
-				Row(Modifier.fillMaxWidth().heightIn(min = 30.dp), verticalAlignment = Alignment.CenterVertically) {
+				Row(Modifier.fillMaxWidth().heightIn(min = 32.dp), verticalAlignment = Alignment.CenterVertically) {
 					SeriesDot(typeColor(inGroup.type))
-					Spacer(Modifier.width(10.dp))
+					Spacer(Modifier.width(8.dp))
 					Text(inGroup.type.label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f), maxLines = 1)
-					AmountText(inCents = inGroup.subtotalCents, inStyle = MaterialTheme.typography.bodySmall, inColor = vMuted)
-					Spacer(Modifier.width(10.dp))
-					StatusChip("${inGroup.percent} %", Tone.NEUTRAL, typeColor(inGroup.type))
+					AmountText(inCents = inGroup.subtotalCents, inStyle = MaterialTheme.typography.bodyMedium)
+					Spacer(Modifier.width(12.dp))
+					Text("${inGroup.percent} %", style = MaterialTheme.typography.bodySmall, color = vMuted, textAlign = androidx.compose.ui.text.style.TextAlign.End, modifier = Modifier.width(40.dp))
 				}
 			}
 		}
@@ -442,7 +445,7 @@ private fun RowScope.Indicators(
 		inTitle   = "Revenus du mois",
 		inValue   = { AmountText(inCents = vIncome, inStyle = MaterialTheme.typography.headlineMedium, inShowPlusSign = vIncome > 0) },
 		inDelta   = change(vIncome, vIncPrev)?.let { it to (vIncome >= vIncPrev) },
-		inCaption = "Comparés au mois dernier ; jour par jour",
+		inCaption = "Par rapport au mois dernier",
 		inBars    = inDays.income,
 		inColorOf = { inIndex -> vDayFade(vPalette.rise, inIndex).takeIf { it != Color.Unspecified } ?: vGrey },
 		inMark    = vToday,
@@ -456,7 +459,7 @@ private fun RowScope.Indicators(
 		inValue   = { AmountText(inCents = vSpent, inStyle = MaterialTheme.typography.headlineMedium) },
 		inDelta   = change(vSpent, vSpPrev)?.let { it to (vSpent >= vSpPrev) },
 		inGood    = vSpent <= vSpPrev,
-		inCaption = "Comparées au mois dernier ; jour par jour",
+		inCaption = "Par rapport au mois dernier",
 		inBars    = inDays.expense,
 		inColorOf = { inIndex -> vDayFade(vPalette.invest, inIndex).takeIf { it != Color.Unspecified } ?: vGrey },
 		inMark    = vToday,
@@ -468,7 +471,7 @@ private fun RowScope.Indicators(
 		inTitle   = "Taux d’épargne",
 		inValue   = { Text(vRate?.let { "${it / 10},${kotlin.math.abs(it % 10)} %" } ?: "–", style = MaterialTheme.typography.headlineMedium) },
 		inDelta   = if (vRate != null && vAvgRate != null) "${formatPermille(vRate - vAvgRate).removeSuffix(" %")} pt" to (vRate >= vAvgRate) else null,
-		inCaption = "Écart à la moyenne ; mis de côté ce mois-ci : ",
+		inCaption = "Par rapport à la moyenne · mis de côté : ",
 		inAmount  = inState.saved,
 		inBars    = inAnalysis.savingsRate.map { it ?: 0L },
 		inColorOf = { inIndex -> if (inIndex < vFirst) vGrey else vFade(if ((inAnalysis.savingsRate[inIndex] ?: 0L) >= 0) vPalette.rise else vPalette.fall, inIndex) },
@@ -529,7 +532,7 @@ private fun RowScope.Indicator(
 		Row(verticalAlignment = Alignment.CenterVertically) {
 			inValue()
 			inDelta?.let { (inText, inRise) ->
-				Spacer(Modifier.width(10.dp))
+				Spacer(Modifier.width(8.dp))
 				DeltaPill(inText, inRise, inGood)
 			}
 		}
@@ -538,17 +541,52 @@ private fun RowScope.Indicator(
 			Text(inCaption, style = MaterialTheme.typography.bodySmall, color = vMuted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
 			if (inAmount != null) AmountText(inCents = inAmount, inStyle = MaterialTheme.typography.bodySmall, inShowPlusSign = true, inColor = vMuted)
 		}
-		Spacer(Modifier.weight(1f))
+	}
+}
+
+/*
+	Graphique principal du tableau de bord : le patrimoine en fin de chaque
+	mois, sur douze mois au plus, en courbe à la couleur principale (valeur
+	du mois pointé au-dessus) ; variation sur la période en tête.
+	inState    : tableau de bord
+	inModifier : place du panneau
+*/
+@Composable
+private fun EvolutionPanel(
+	inState    : DashboardState,
+	inModifier : Modifier
+)
+{
+	val vSeries = inState.home.series																// fin de chaque mois
+	val vMuted  = MaterialTheme.colorScheme.onSurfaceVariant										// texte secondaire
+	Tile(inModifier = inModifier, inTitle = "Évolution du patrimoine") {
+		if (vSeries.size < 2)
+		{
+			Hint("La courbe apparaîtra après un premier mois d’historique.")
+			return@Tile
+		}
+		val vChange = vSeries.last().valueCents - vSeries.first().valueCents						// variation sur la période
+		Row(verticalAlignment = Alignment.CenterVertically) {
+			if (vSeries.first().valueCents > 0)
+			{
+				DeltaPill(formatPermille(vChange * 1000 / vSeries.first().valueCents), if (vChange == 0L) null else vChange > 0)
+				Spacer(Modifier.width(8.dp))
+			}
+			AmountText(inCents = vChange, inStyle = MaterialTheme.typography.bodyMedium, inShowPlusSign = true, inTrend = true)
+			Text(" depuis ${monthTitle(vSeries.first().month).lowercase()}", style = MaterialTheme.typography.bodyMedium, color = vMuted)
+		}
 		Spacer(Modifier.height(16.dp))
-		MicroBars(inBars, inColorOf, Modifier.fillMaxWidth().height(58.dp).semantics { contentDescription = "$inTitle, barre par barre" }, inBar, inMark = inMark, inLabel = inDelta?.first?.removePrefix("+"))
+		androidx.compose.runtime.CompositionLocalProvider(fr.maubin.patrimoineplus.ui.components.LocalAccent provides colorfulPalette().main) {
+			BalanceChart(vSeries, vSeries.last().month, inHeight = 220.dp)
+		}
 	}
 }
 
 /*
 	Dépenses du mois par catégorie : total et écart à la moyenne, barre
-	segmentée des trois plus grosses catégories (chacune dans sa matière :
-	fines barres, aplat, pavés) et des autres, légende, puis la catégorie la
-	plus en hausse le mois dernier.
+	empilée des trois plus grosses catégories et des autres (la plus grosse à
+	l'accent), légende, liste des catégories, puis la catégorie la plus en
+	hausse le mois dernier.
 	inLines    : dépenses nettes du mois par catégorie
 	inAnalysis : douze mois de dépenses
 	inModifier : place du panneau
@@ -567,7 +605,8 @@ private fun ExpensesPanel(
 	val vTotal   = vShown.sumOf { it.netCents }												// dépenses du mois
 	val vTop     = vShown.take(3)															// trois plus grosses
 	val vRest    = vTotal - vTop.sumOf { it.netCents }										// autres catégories
-	val vColors  = listOf(vPalette.main, vPalette.invest, vPalette.rise, MaterialTheme.colorScheme.outline)	// teinte de chaque segment
+	val vInk     = MaterialTheme.colorScheme.onSurface										// encre (parts secondaires en tons neutres)
+	val vColors  = listOf(vPalette.main, vInk.copy(alpha = 0.42f), vInk.copy(alpha = 0.26f), vInk.copy(alpha = 0.14f))	// teinte de chaque segment : la plus grosse part à l'accent
 	Tile(
 		inModifier = inModifier,
 		inTitle    = "Dépenses par catégorie",
@@ -583,27 +622,27 @@ private fun ExpensesPanel(
 			val vAverage = inAnalysis.averageExpense												// dépenses moyennes
 			if (vAverage > 0)
 			{
-				Spacer(Modifier.width(10.dp))
+				Spacer(Modifier.width(8.dp))
 				DeltaPill(formatPermille((vTotal - vAverage) * 1000 / vAverage), vTotal > vAverage, vTotal <= vAverage)
 				Spacer(Modifier.width(8.dp))
 				Text("par rapport à la moyenne", style = MaterialTheme.typography.bodySmall, color = vMuted)
 			}
 		}
-		Spacer(Modifier.height(18.dp))
+		Spacer(Modifier.height(20.dp))
 		val vParts = vTop.map { it.netCents } + listOfNotNull(vRest.takeIf { it > 0 })			// segments
-		Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+		Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
 			vParts.forEachIndexed { inIndex, inPart ->
 				Column(Modifier.weight(inPart.toFloat().coerceAtLeast(1f))) {
 					Text("${inPart * 100 / vTotal} %", style = MaterialTheme.typography.labelLarge, maxLines = 1)
 					Spacer(Modifier.height(4.dp))
-					Box(Modifier.width(1.5.dp).height(9.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)))
+					Box(Modifier.width(1.5.dp).height(8.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)))
 				}
 			}
 		}
 		Spacer(Modifier.height(2.dp))
 		SegmentedBar(vParts, vColors, Modifier.fillMaxWidth().height(24.dp).semantics { contentDescription = "Dépenses du mois : " + vTop.joinToString { "${it.category.name} ${it.netCents * 100 / vTotal} %" } })
-		Spacer(Modifier.height(14.dp))
-		Row(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically) {
+		Spacer(Modifier.height(16.dp))
+		Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
 			vTop.forEachIndexed { inIndex, inLine ->
 				Row(verticalAlignment = Alignment.CenterVertically) {
 					SeriesDot(vColors[inIndex])
@@ -624,13 +663,13 @@ private fun ExpensesPanel(
 		Well {
 			vShown.take(5).forEachIndexed { inIndex, inLine ->
 				if (inIndex > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
-				Row(Modifier.fillMaxWidth().heightIn(min = 38.dp), verticalAlignment = Alignment.CenterVertically) {
+				Row(Modifier.fillMaxWidth().heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
 					Icon(CategoryIcons.of(inLine.category.icon), contentDescription = null, tint = vMuted, modifier = Modifier.size(16.dp))
 					Spacer(Modifier.width(12.dp))
 					Text(inLine.category.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
 					Text("${inLine.netCents * 100 / vTotal} %", style = MaterialTheme.typography.labelSmall, color = vMuted)
 					Spacer(Modifier.width(16.dp))
-					Box(Modifier.width(110.dp), contentAlignment = Alignment.CenterEnd) { AmountText(inCents = inLine.netCents, inStyle = MaterialTheme.typography.labelLarge) }
+					Box(Modifier.width(112.dp), contentAlignment = Alignment.CenterEnd) { AmountText(inCents = inLine.netCents, inStyle = MaterialTheme.typography.labelLarge) }
 				}
 			}
 		}
@@ -659,7 +698,7 @@ private fun AlertRow(inContent: @Composable RowScope.() -> Unit)
 	Row(
 		modifier          = Modifier
 			.fillMaxWidth()
-			.heightIn(min = 46.dp)
+			.heightIn(min = 48.dp)
 			.background(kLemon.copy(alpha = if (vNight) 0.08f else 0.22f), kWellShape)
 			.border(1.dp, kLemon.copy(alpha = if (vNight) 0.25f else 0.6f), kWellShape)
 			.padding(horizontal = 14.dp),
@@ -669,9 +708,8 @@ private fun AlertRow(inContent: @Composable RowScope.() -> Unit)
 }
 
 /*
-	Barre segmentée des dépenses : un segment par part, séparés d'un petit
-	écart, chacun dans sa matière (fines barres, aplat arrondi, pavés, fines
-	barres à nouveau).
+	Barre empilée des dépenses : un segment uni par part, séparés d'un petit
+	écart ; la plus grosse part à l'accent, les autres en tons neutres.
 	inParts    : montant de chaque segment
 	inColors   : teinte de chaque segment
 	inModifier : modificateur appliqué (taille comprise)
@@ -692,24 +730,7 @@ private fun SegmentedBar(
 		inParts.forEachIndexed { inIndex, inPart ->
 			val vW     = vFree * inPart / vTotal												// largeur du segment
 			val vColor = inColors[inIndex.coerceAtMost(inColors.lastIndex)]					// teinte
-			when (inIndex % 3)
-			{
-				0 ->
-				{
-					val vBar  = 3.dp.toPx()															// fine barre
-					val vStep = 6.dp.toPx()															// pas
-					var vAt   = vX																	// position
-					while (vAt + vBar <= vX + vW) { drawRoundRect(vColor, Offset(vAt, 0f), Size(vBar, size.height), CornerRadius(vBar / 2, vBar / 2)); vAt += vStep }
-				}
-				1 -> drawRoundRect(vColor, Offset(vX, 0f), Size(vW, size.height), vR)
-				else ->
-				{
-					val vBlock = size.height * 0.85f												// pavé
-					val vCount = maxOf(1, ((vW + 4.dp.toPx()) / (vBlock + 4.dp.toPx())).toInt())	// pavés
-					val vEach  = (vW - 4.dp.toPx() * (vCount - 1)) / vCount						// largeur d'un pavé
-					repeat(vCount) { inBlock -> drawRoundRect(vColor, Offset(vX + inBlock * (vEach + 4.dp.toPx()), (size.height - vBlock) / 2), Size(vEach, vBlock), vR) }
-				}
-			}
+			drawRoundRect(vColor, Offset(vX, 0f), Size(vW, size.height), vR)
 			vX += vW + vGap
 		}
 	}
@@ -737,8 +758,8 @@ private fun RecentPanel(
 		inModifier = inModifier,
 		inTitle    = "Dernières opérations",
 		inAction   = {
-			Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-				if (inState.upcoming > 0) StatusChip("${inState.upcoming} à venir", Tone.WARN)
+			Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+				if (inState.upcoming > 0) Text("${inState.upcoming} à venir", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 				MoreMenu(listOf("Nouvelle opération" to inController::newOperation, "Rechercher une opération" to inController::focusSearch, "Saisie rapide" to { inController.show(Screen.OPERATIONS) }), "Actions des opérations")
 			}
 		}
@@ -749,11 +770,11 @@ private fun RecentPanel(
 			return@Tile
 		}
 		Well {
-			Row(Modifier.fillMaxWidth().height(34.dp), verticalAlignment = Alignment.CenterVertically) {
+			Row(Modifier.fillMaxWidth().height(32.dp), verticalAlignment = Alignment.CenterVertically) {
 				Text("Libellé", style = MaterialTheme.typography.labelMedium, color = vMuted, modifier = Modifier.weight(1.3f))
-				Text("Date", style = MaterialTheme.typography.labelMedium, color = vMuted, modifier = Modifier.width(70.dp))
+				Text("Date", style = MaterialTheme.typography.labelMedium, color = vMuted, modifier = Modifier.width(72.dp))
 				Text("Compte et catégorie", style = MaterialTheme.typography.labelMedium, color = vMuted, modifier = Modifier.weight(1.4f))
-				Text("Montant", style = MaterialTheme.typography.labelMedium, color = vMuted, modifier = Modifier.width(110.dp), textAlign = androidx.compose.ui.text.style.TextAlign.End)
+				Text("Montant", style = MaterialTheme.typography.labelMedium, color = vMuted, modifier = Modifier.width(112.dp), textAlign = androidx.compose.ui.text.style.TextAlign.End)
 			}
 			inState.recent.forEach { inOp ->
 				HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f))
@@ -769,9 +790,9 @@ private fun RecentPanel(
 							StatusChip("À venir", Tone.WARN)
 						}
 					}
-					Text(inOp.transaction.date.format(kShortDay), style = MaterialTheme.typography.bodySmall, color = vMuted, modifier = Modifier.width(70.dp))
+					Text(inOp.transaction.date.format(kShortDay), style = MaterialTheme.typography.bodySmall, color = vMuted, modifier = Modifier.width(72.dp))
 					Text(inOp.detail, style = MaterialTheme.typography.bodySmall, color = vMuted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1.4f))
-					Box(Modifier.width(110.dp), contentAlignment = Alignment.CenterEnd) {
+					Box(Modifier.width(112.dp), contentAlignment = Alignment.CenterEnd) {
 						AmountText(inCents = inOp.amount, inStyle = MaterialTheme.typography.labelLarge, inShowPlusSign = inOp.amount > 0, inTrend = inOp.amount > 0)
 					}
 				}
@@ -813,11 +834,11 @@ private fun AccountsPanel(
 		}
 	) {
 		Well {
-			Row(Modifier.fillMaxWidth().height(34.dp), verticalAlignment = Alignment.CenterVertically) {
+			Row(Modifier.fillMaxWidth().height(32.dp), verticalAlignment = Alignment.CenterVertically) {
 				Text("Compte", style = MaterialTheme.typography.labelMedium, color = vMuted, modifier = Modifier.weight(1.6f))
-				Text("Douze mois", style = MaterialTheme.typography.labelMedium, color = vMuted, modifier = Modifier.weight(1f))
+				Text("Sur la période", style = MaterialTheme.typography.labelMedium, color = vMuted, modifier = Modifier.weight(1f))
 				Text("Ce mois-ci", style = MaterialTheme.typography.labelMedium, color = vMuted, modifier = Modifier.width(140.dp))
-				Text("Part", style = MaterialTheme.typography.labelMedium, color = vMuted, modifier = Modifier.width(70.dp))
+				Text("Part", style = MaterialTheme.typography.labelMedium, color = vMuted, modifier = Modifier.width(72.dp))
 				Text("Valeur", style = MaterialTheme.typography.labelMedium, color = vMuted, modifier = Modifier.width(140.dp), textAlign = androidx.compose.ui.text.style.TextAlign.End)
 				if (vReorder) Spacer(Modifier.width(88.dp))
 			}
@@ -859,7 +880,7 @@ private fun AccountRow(
 	val vAccent = typeColor(inTile.account.type)												// couleur du type
 	val vSteps  = inTile.series.map { it.valueCents }											// valeur en fin de mois
 	Row(
-		modifier          = Modifier.fillMaxWidth().heightIn(min = 54.dp).clip(RoundedCornerShape(6.dp)).then(if (inOnOpen != null) Modifier.clickable(onClickLabel = "Ouvrir ${inTile.account.name}", onClick = inOnOpen) else Modifier),
+		modifier          = Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(6.dp)).then(if (inOnOpen != null) Modifier.clickable(onClickLabel = "Ouvrir ${inTile.account.name}", onClick = inOnOpen) else Modifier),
 		verticalAlignment = Alignment.CenterVertically
 	) {
 		Row(Modifier.weight(1.6f), verticalAlignment = Alignment.CenterVertically) {
@@ -871,14 +892,23 @@ private fun AccountRow(
 				inHolder?.let { Text("Titulaire : $it", style = MaterialTheme.typography.bodySmall, color = vMuted, maxLines = 1) }
 			}
 		}
-		Box(Modifier.weight(1f).padding(end = 24.dp)) {
-			if (vSteps.size > 1) MicroBars(vSteps, { inIndex -> if (inIndex == vSteps.lastIndex) vAccent else vAccent.copy(alpha = 0.45f) }, Modifier.fillMaxWidth().height(26.dp), 3.dp, inRelative = true, inSpread = 0.25f)
+		Row(Modifier.weight(1f).padding(end = 24.dp), verticalAlignment = Alignment.CenterVertically) {
+			if (vSteps.size > 1)
+			{
+				val vChange = vSteps.last() - vSteps.first()												// variation sur la période suivie
+				AmountText(inCents = vChange, inStyle = MaterialTheme.typography.bodyMedium, inShowPlusSign = true, inTrend = true)
+				if (vSteps.first() > 0)
+				{
+					Spacer(Modifier.width(8.dp))
+					Text(formatPermille(vChange * 1000 / vSteps.first()), style = MaterialTheme.typography.bodySmall, color = vMuted)
+				}
+			}
 		}
 		Box(Modifier.width(140.dp)) {
 			inTile.monthChange?.let { inChange -> AmountText(inCents = inChange, inStyle = MaterialTheme.typography.bodyMedium, inShowPlusSign = true, inTrend = true) }
 		}
-		Box(Modifier.width(70.dp)) {
-			inTile.weight?.let { inWeight -> StatusChip("${inWeight.percent} %", Tone.NEUTRAL) }
+		Box(Modifier.width(72.dp)) {
+			inTile.weight?.let { inWeight -> Text("${inWeight.percent} %", style = MaterialTheme.typography.bodyMedium, color = vMuted) }
 		}
 		Box(Modifier.width(140.dp), contentAlignment = Alignment.CenterEnd) {
 			AmountText(inCents = inTile.valueCents, inStyle = MaterialTheme.typography.titleMedium)

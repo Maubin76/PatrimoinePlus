@@ -129,7 +129,7 @@ fun TransactionSheet(
 		vErrors.general?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
 		LemonPillButton(
 			onClick        = { inOnSave(vForm) { vErrors = it } },
-			contentPadding = PaddingValues(vertical = 14.dp),
+			contentPadding = PaddingValues(vertical = 16.dp),
 			modifier       = Modifier.fillMaxWidth()
 		) {
 			Text("Enregistrer")

@@ -205,8 +205,7 @@ fun TourOverlay(
 			else vHoleA.animateTo(vGoal, tween(kMoveMillis, easing = kTourEase))			// ensuite : glisse d'un élément à l'autre
 		}
 		val vHole    = vHoleA.value															// découpe affichée
-		val vPulse   = rememberInfiniteTransition(label = "halo")						// respiration du halo
-		val vGlow    by vPulse.animateFloat(0.25f, 0.65f, infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "halo")
+		val vGlow    = 0.6f																	// anneau fixe autour de l'élément (rien ne clignote)
 		val vRing    = with(vDensity) { 2.dp.toPx() }									// épaisseur du halo
 		Canvas(Modifier.fillMaxSize()) {
 			val vRadius = CornerRadius(minOf(vPad * 2.4f, vHole.minDimension / 2f))		// arrondi de la découpe
@@ -246,8 +245,8 @@ fun TourOverlay(
 				.semantics { contentDescription = "Tutoriel : ${vStep.title}" }
 		) {
 			FloatingSurface(RoundedCornerShape(24.dp)) {
-				Column(Modifier.padding(22.dp).animateContentSize(tween(kMoveMillis, easing = kTourEase)), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-					Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+				Column(Modifier.padding(22.dp).animateContentSize(tween(kMoveMillis, easing = kTourEase)), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+					Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
 						if (inGuide != null)
 						{
 							CompositionLocalProvider(LocalPointer provides { vTarget?.center }) {			// l'assistant regarde l'élément présenté
@@ -264,7 +263,7 @@ fun TourOverlay(
 							label          = "étape"
 						) { inShown ->
 							val vText = inSteps[inShown]												// étape montrée
-							Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+							Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
 								Text(vText.title, style = MaterialTheme.typography.titleLarge)
 								Text(vText.text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 							}
@@ -300,12 +299,12 @@ private fun StepDots(
 )
 {
 	val vColors = MaterialTheme.colorScheme												// palette courante
-	Row(Modifier.semantics { contentDescription = "Étape ${inStep + 1} sur $inCount" }, horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+	Row(Modifier.semantics { contentDescription = "Étape ${inStep + 1} sur $inCount" }, horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
 		repeat(inCount) { inIndex ->
 			val vActive = inIndex == inStep												// étape en cours
 			val vWide   by animateDpAsState(if (vActive) 18.dp else 6.dp, tween(kMoveMillis, easing = kTourEase), label = "point")	// largeur du point
 			val vTint   by animateColorAsState(if (vActive) vColors.primary else vColors.outline.copy(alpha = 0.5f), tween(kMoveMillis), label = "teinte")
-			Box(Modifier.width(vWide).height(6.dp).clip(RoundedCornerShape(3.dp)).background(vTint))
+			Box(Modifier.width(vWide).height(8.dp).clip(RoundedCornerShape(3.dp)).background(vTint))
 		}
 	}
 }

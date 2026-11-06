@@ -99,10 +99,10 @@ fun SankeyExportDialog(
 						vPreview?.let { Image(it, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize()) }
 						if (vBusy && vPreview == null) CircularProgressIndicator()
 					}
-					Column(Modifier.width(320.dp).height(460.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+					Column(Modifier.width(320.dp).height(460.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
 						Text("Apparence", style = MaterialTheme.typography.titleMedium)
 						PillChoice(listOf(false, true), vStyle.dark, { if (it) "Sombre" else "Clair" }, { vStyle = vStyle.copy(dark = it) })
-						Spacer(Modifier.height(6.dp))
+						Spacer(Modifier.height(8.dp))
 						Text("Couleurs", style = MaterialTheme.typography.titleMedium)
 						PaletteChoice(null, "Brume lumineuse", vStyle.palette == null) { vStyle = vStyle.copy(palette = null) }
 						inThemes.forEach { inTheme ->
@@ -137,14 +137,14 @@ private fun PaletteChoice(
 )
 {
 	Row(
-		modifier          = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).selectable(selected = inSelected, onClick = inOnClick, role = Role.RadioButton).padding(horizontal = 8.dp, vertical = 6.dp),
+		modifier          = Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).selectable(selected = inSelected, onClick = inOnClick, role = Role.RadioButton).padding(horizontal = 8.dp, vertical = 8.dp),
 		verticalAlignment = Alignment.CenterVertically
 	) {
 		RadioButton(selected = inSelected, onClick = null)
 		Spacer(Modifier.width(8.dp))
 		Text(inLabel, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
 		paletteSwatches(inTheme).forEach { inColor ->
-			Box(Modifier.padding(start = 4.dp).width(14.dp).height(14.dp).clip(RoundedCornerShape(50)).background(inColor))
+			Box(Modifier.padding(start = 4.dp).width(16.dp).height(16.dp).clip(RoundedCornerShape(50)).background(inColor))
 		}
 	}
 }

@@ -89,7 +89,7 @@ fun SettingsScreen(
 	val vSettings by inController.settings.collectAsState()				// réglages
 	val vColors   = MaterialTheme.colorScheme									// palette courante
 	Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp).padding(top = 6.dp, bottom = 28.dp).padding(bottom = LocalAssistantRoom.current)) {
-		PageHeader(inTitle = "Réglages", inSubtitle = "Données, apparence, mises à jour et aide.", inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) })
+		PageHeader(inTitle = "Réglages", inSubtitle = "Données, apparence, mises à jour et aide", inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) })
 		Spacer(Modifier.height(28.dp))
 		SectionHeader(inTitle = "Données", inModifier = Modifier.tourAnchor("settings.data"))
 		Spacer(Modifier.height(12.dp))
@@ -135,7 +135,7 @@ fun SettingsScreen(
 		)
 		if (vCustom != null)
 		{
-			Spacer(Modifier.height(10.dp))
+			Spacer(Modifier.height(12.dp))
 			GhostPill("Revenir aux couleurs de la brume", { inController.setColorTheme(ColorTheme.COLORFUL) })
 		}
 		Spacer(Modifier.height(12.dp))
@@ -144,7 +144,7 @@ fun SettingsScreen(
 		SectionHeader(inTitle = "Synchronisation avec le téléphone")
 		Spacer(Modifier.height(12.dp))
 		FloatingCard {
-			Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+			Column(Modifier.padding(horizontal = 24.dp, vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
 				WifiSyncSwitch(vSettings.wifiSync, inController::setWifiSync)
 				BackgroundOptions(inController)
 				TextButton(onClick = { inController.show(fr.maubin.patrimoineplus.desktop.Screen.DEVICES) }) { Text("Appairage et appareils : page Appareils") }
@@ -154,7 +154,7 @@ fun SettingsScreen(
 		SectionHeader(inTitle = "Confidentialité")
 		Spacer(Modifier.height(12.dp))
 		FloatingCard {
-			Row(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+			Row(Modifier.padding(horizontal = 24.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
 				Column(Modifier.weight(1f)) {
 					Text("Mode discret", style = MaterialTheme.typography.titleMedium)
 					Text("Masque les montants sur tous les écrans.", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
@@ -174,7 +174,7 @@ fun SettingsScreen(
 		SectionHeader(inTitle = "Assistant")
 		Spacer(Modifier.height(12.dp))
 		FloatingCard {
-			Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
+			Column(Modifier.padding(horizontal = 24.dp, vertical = 18.dp)) {
 				Row(verticalAlignment = Alignment.CenterVertically) {
 					Column(Modifier.weight(1f)) {
 						Text("Afficher l’assistant", style = MaterialTheme.typography.titleMedium)
@@ -283,7 +283,7 @@ private fun UpdatesSection(
 )
 {
 	FloatingCard {
-		Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
+		Column(Modifier.padding(horizontal = 24.dp, vertical = 18.dp)) {
 			Row(verticalAlignment = Alignment.CenterVertically) {
 				Column(Modifier.weight(1f)) {
 					Text("Vérifier les mises à jour au démarrage", style = MaterialTheme.typography.titleMedium)
@@ -358,11 +358,11 @@ private fun CustomThemes(
 						.clip(RoundedCornerShape(16.dp))
 						.background(if (vOn) vColors.surfaceContainerHigh else androidx.compose.ui.graphics.Color.Transparent)
 						.selectable(selected = vOn, role = Role.RadioButton) { inController.setCustomTheme(inTheme.id) }
-						.padding(horizontal = 10.dp, vertical = 6.dp),
+						.padding(horizontal = 10.dp, vertical = 8.dp),
 					verticalAlignment = Alignment.CenterVertically
 				) {
 					ThemeSwatches(inTheme.colors, 18.dp)
-					Spacer(Modifier.width(14.dp))
+					Spacer(Modifier.width(16.dp))
 					Text(inTheme.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
 					if (vOn) Text("Choisi", style = MaterialTheme.typography.labelLarge, color = vColors.onSurfaceVariant)
 					IconButton(onClick = { inController.openPanel(Panel.ThemeSheet(inTheme.id)) }) {

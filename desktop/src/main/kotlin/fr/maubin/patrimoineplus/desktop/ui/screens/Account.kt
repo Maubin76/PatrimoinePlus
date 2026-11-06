@@ -329,11 +329,11 @@ private fun PropertyView(
 		if (vHeld.isEmpty()) Hint("Aucun $vNoun : ajoutez-en un avec son prix d’achat. Payé depuis un compte, il en débite le prix ; déjà possédé, il n’en débite aucun.")
 		vHeld.forEach { inItem ->
 			Row(
-				modifier          = Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(onClickLabel = "Modifier") { inController.openPanel(Panel.Purchase(editPurchaseForm(inItem))) }.padding(horizontal = 8.dp, vertical = 6.dp),
+				modifier          = Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(onClickLabel = "Modifier") { inController.openPanel(Panel.Purchase(editPurchaseForm(inItem))) }.padding(horizontal = 8.dp, vertical = 8.dp),
 				verticalAlignment = Alignment.CenterVertically
 			) {
 				Icon(CategoryIcons.of(if (inAccount.type == AccountType.REAL_ESTATE) "home" else "gem"), contentDescription = null, modifier = Modifier.size(20.dp))
-				Spacer(Modifier.width(14.dp))
+				Spacer(Modifier.width(16.dp))
 				val vNet = vNets[inItem.acquisition.id]												// crédit du bien
 				Column(Modifier.weight(1f)) {
 					Text(inItem.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -365,7 +365,7 @@ private fun PropertyView(
 			HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 			vSold.forEach { inItem ->
 				Row(
-					modifier          = Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(onClickLabel = "Modifier la vente") { inController.openPanel(Panel.Sale(editSaleForm(inItem))) }.padding(horizontal = 8.dp, vertical = 6.dp),
+					modifier          = Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(onClickLabel = "Modifier la vente") { inController.openPanel(Panel.Sale(editSaleForm(inItem))) }.padding(horizontal = 8.dp, vertical = 8.dp),
 					verticalAlignment = Alignment.CenterVertically
 				) {
 					Column(Modifier.weight(2.4f)) {
@@ -686,7 +686,7 @@ private fun PositionsTile(
 		}
 		else
 		{
-			Row(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+			Row(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
 				listOf("Titre" to 2.2f, "Quantité" to 1f, "PRU" to 1f, "Cours" to 1f, "Valeur" to 1.2f, "Plus-value" to 1.2f).forEach { (inHead, inWeight) ->
 					Text(inHead, style = MaterialTheme.typography.labelLarge, color = vMuted, modifier = Modifier.weight(inWeight))
 				}

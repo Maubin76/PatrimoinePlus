@@ -117,7 +117,7 @@ fun SettingsScreen(
 			Modifier
 				.padding(top = inPadding.calculateTopPadding())
 				.verticalScroll(rememberScrollState())
-				.padding(start = kScreenMargin, end = kScreenMargin, top = 16.dp, bottom = inPadding.calculateBottomPadding() + 16.dp)
+				.padding(start = kScreenMargin, end = kScreenMargin, top = 18.dp, bottom = inPadding.calculateBottomPadding() + 16.dp)
 		) {
 			SectionHeader(inTitle = "Apparence")
 			Spacer(Modifier.height(8.dp))
@@ -134,7 +134,7 @@ fun SettingsScreen(
 			)
 			if (vCustom != null)
 			{
-				Spacer(Modifier.height(10.dp))
+				Spacer(Modifier.height(12.dp))
 				GhostButton(onClick = { inOnColorTheme(ColorTheme.COLORFUL) }) { Text("Revenir aux couleurs de la brume") }
 			}
 			inThemes?.let { inActions ->
@@ -267,7 +267,7 @@ private fun SwitchRow(
 		modifier          = Modifier
 			.fillMaxWidth()
 			.toggleable(value = inChecked, role = Role.Switch, onValueChange = inOnChange)
-			.padding(horizontal = 20.dp, vertical = 16.dp),
+			.padding(horizontal = 20.dp, vertical = 18.dp),
 		verticalAlignment = Alignment.CenterVertically
 	) {
 		SettingText(
@@ -307,7 +307,7 @@ internal fun ActionRow(
 			.fillMaxWidth()
 			.heightIn(min = 64.dp)
 			.clickable(role = Role.Button, onClick = inOnClick)
-			.padding(horizontal = 20.dp, vertical = 16.dp)
+			.padding(horizontal = 20.dp, vertical = 18.dp)
 	)
 }
 

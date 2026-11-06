@@ -128,7 +128,7 @@ fun BatchSection(
 			}
 		) {
 			vErrors[-1L]?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
-			Row(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+			Row(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
 				listOf("Date" to 1f, "Compte" to 1.4f, "Libellé" to 2.6f, "Catégorie" to 1.6f, "Montant" to 1f).forEach { (inHead, inWeight) ->
 					Text(inHead, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(inWeight).padding(end = 12.dp))
 				}

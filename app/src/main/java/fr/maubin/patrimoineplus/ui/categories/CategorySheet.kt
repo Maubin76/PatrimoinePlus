@@ -79,7 +79,7 @@ fun CategorySheet(
 		IconGrid(vForm.icon) { vForm = vForm.copy(icon = it) }
 		LemonPillButton(
 			onClick        = { inOnSave(vForm) { vError = it } },
-			contentPadding = PaddingValues(vertical = 14.dp),
+			contentPadding = PaddingValues(vertical = 16.dp),
 			modifier       = Modifier.fillMaxWidth()
 		) {
 			Text(if (inEditing == null) "Créer la catégorie" else "Enregistrer")

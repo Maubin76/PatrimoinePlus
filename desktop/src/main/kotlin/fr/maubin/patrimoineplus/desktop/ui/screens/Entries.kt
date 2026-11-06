@@ -37,7 +37,7 @@ fun EntriesScreen(
 		modifier            = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp).padding(top = 6.dp, bottom = 28.dp).padding(bottom = LocalAssistantRoom.current),
 		verticalArrangement = Arrangement.spacedBy(32.dp)
 	) {
-		PageHeader(inTitle = "Opérations", inSubtitle = "Saisie rapide en grille, opérations récurrentes et mensualités.", inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) })
+		PageHeader(inTitle = "Opérations", inSubtitle = "Saisie rapide en grille, opérations récurrentes et mensualités", inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) })
 		Box(Modifier.tourAnchor("ops.batch")) { BatchSection(inSpace, inController) }
 		Box(Modifier.tourAnchor("ops.recurring")) { RecurringSection(inSpace, inController) }
 	}

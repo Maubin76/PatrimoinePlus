@@ -73,6 +73,13 @@ private val kFallNight         = Color(0xFFFF8E83)								// baisse (sombre)
 private val kWarnNight         = Color(0xFFF7A75E)								// avertissement (sombre)
 
 /*
+	Filet des commandes de la coque (pilules, ronds) : encre très légère en
+	clair, voile clair en sombre.
+	inNight : fond sombre
+*/
+fun chromeLine(inNight: Boolean): Color = if (inNight) Color.White.copy(alpha = 0.09f) else Color(0xFF14171C).copy(alpha = 0.09f)
+
+/*
 	Vrai si le fond courant est sombre.
 */
 @Composable
@@ -136,16 +143,16 @@ fun GhostPill(
 			inSelected && vNight -> Color.White.copy(alpha = 0.16f)
 			inSelected           -> Color.White
 			vNight               -> Color.White.copy(alpha = if (vHovered) 0.11f else 0.06f)
-			else                 -> Color.White.copy(alpha = if (vHovered) 0.85f else 0.55f)
+			else                 -> if (vHovered) Color(0xFFF4F6F8) else Color.White
 		}, tween(kHoverMillis), label = "pilule")										// fond, en fondu
 	Row(
 		modifier          = inModifier
-			.height(38.dp)
+			.height(40.dp)
 			.background(vFill, kPill)
-			.border(1.dp, Color.White.copy(alpha = if (vNight) 0.1f else 0.9f), kPill)
+			.border(1.dp, chromeLine(vNight), kPill)
 			.hoverable(vSource)
 			.clickable(interactionSource = vSource, indication = null, role = Role.Button, onClick = inOnClick)
-			.padding(PaddingValues(start = if (inIcon != null) 14.dp else 18.dp, end = 18.dp)),
+			.padding(PaddingValues(start = if (inIcon != null) 14.dp else 18.dp, end = 20.dp)),
 		verticalAlignment = Alignment.CenterVertically
 	) {
 		inIcon?.let { inGlyph ->
@@ -172,20 +179,20 @@ fun GhostButton(
 	onClick        : () -> Unit,
 	modifier       : Modifier      = Modifier,
 	enabled        : Boolean       = true,
-	contentPadding : PaddingValues = PaddingValues(horizontal = 18.dp),
+	contentPadding : PaddingValues = PaddingValues(horizontal = 20.dp),
 	content        : @Composable androidx.compose.foundation.layout.RowScope.() -> Unit
 )
 {
 	val vNight   = isNight()															// fond sombre
 	val vSource  = remember { MutableInteractionSource() }							// survol
 	val vHovered by vSource.collectIsHoveredAsState()								// souris au-dessus
-	val vFill    by animateColorAsState(Color.White.copy(alpha = if (vNight) (if (vHovered && enabled) 0.11f else 0.06f) else (if (vHovered && enabled) 0.85f else 0.55f)), tween(kHoverMillis), label = "pilule")	// fond
+	val vFill    by animateColorAsState(if (vNight) Color.White.copy(alpha = if (vHovered && enabled) 0.11f else 0.06f) else (if (vHovered && enabled) Color(0xFFF4F6F8) else Color.White), tween(kHoverMillis), label = "pilule")	// fond
 	val vInk     = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else 0.38f)	// encre
 	Row(
 		modifier              = modifier
 			.heightIn(min = 40.dp)
 			.background(vFill, kPill)
-			.border(1.dp, Color.White.copy(alpha = if (vNight) 0.1f else 0.9f), kPill)
+			.border(1.dp, chromeLine(vNight), kPill)
 			.hoverable(vSource, enabled)
 			.clickable(interactionSource = vSource, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
 			.padding(contentPadding),
@@ -252,7 +259,7 @@ fun LemonPillButton(
 	onClick        : () -> Unit,
 	modifier       : Modifier      = Modifier,
 	enabled        : Boolean       = true,
-	contentPadding : PaddingValues = PaddingValues(horizontal = 22.dp),
+	contentPadding : PaddingValues = PaddingValues(horizontal = 24.dp),
 	content        : @Composable androidx.compose.foundation.layout.RowScope.() -> Unit
 )
 {
@@ -268,7 +275,7 @@ fun LemonPillButton(
 		}, tween(kHoverMillis), label = "citron")										// fond
 	Row(
 		modifier              = modifier
-			.heightIn(min = 42.dp)
+			.heightIn(min = 40.dp)
 			.background(vFill, kPill)
 			.hoverable(vSource, enabled)
 			.clickable(interactionSource = vSource, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
@@ -335,7 +342,7 @@ fun DeltaPill(
 	}																				// ton de la pastille
 	val (vFill, vText) = toneColors(vTone)											// couleurs
 	Row(
-		modifier          = Modifier.height(20.dp).background(vFill, RoundedCornerShape(5.dp)).padding(horizontal = 6.dp),
+		modifier          = Modifier.height(20.dp).background(vFill, RoundedCornerShape(5.dp)).padding(horizontal = 8.dp),
 		verticalAlignment = Alignment.CenterVertically
 	) {
 		if (inRise != null)
@@ -375,7 +382,7 @@ fun StatusChip(
 		else (if (vNight) inColor.copy(alpha = 0.18f) else inColor.copy(alpha = 0.13f)) to (if (vNight) inColor else lerp(inColor, Color.Black, 0.38f))	// couleurs
 	Box(
 		modifier         = Modifier
-			.height(22.dp)
+			.height(24.dp)
 			.background(vFill, kChip)
 			.border(1.dp, vText.copy(alpha = if (inTone == Tone.BAD) 0.45f else 0.16f), kChip)
 			.padding(horizontal = 8.dp),
@@ -428,8 +435,8 @@ fun MoreMenu(
 		Box(
 			modifier         = Modifier
 				.size(32.dp)
-				.background(Color.White.copy(alpha = if (vNight) (if (vHovered) 0.12f else 0.05f) else (if (vHovered) 0.9f else 0.5f)), kPill)
-				.border(1.dp, Color.White.copy(alpha = if (vNight) 0.1f else 0.9f), kPill)
+				.background(if (vNight) Color.White.copy(alpha = if (vHovered) 0.12f else 0.05f) else (if (vHovered) Color(0xFFF4F6F8) else Color.White), kPill)
+				.border(1.dp, chromeLine(vNight), kPill)
 				.hoverable(vSource)
 				.clickable(interactionSource = vSource, indication = null, role = Role.Button) { vOpen = true }
 				.semantics { contentDescription = inLabel },
@@ -595,12 +602,6 @@ fun ArcGauge(
 			vShown.forEachIndexed { inIndex, (_, inColor) ->
 				val vSweep = maxOf(0.1f, vAngles[inIndex] - 2f * vCap)										// arc entre les deux bouts arrondis
 				drawArc(inColor, vAt + vCap, vSweep, false, vBox.topLeft, vBox.size, style = Stroke(vStroke, cap = StrokeCap.Round))
-				val vShine = vR + vStroke * 0.2f															// rayon du reflet
-				drawArc(
-					Color.White.copy(alpha = 0.2f), vAt + vCap, vSweep, false,
-					Offset(vCenter.x - vShine, vCenter.y - vShine), Size(2f * vShine, 2f * vShine),
-					style = Stroke(vStroke * 0.24f, cap = StrokeCap.Round)
-				)
 				vAt += vAngles[inIndex] + vGap
 			}
 		}

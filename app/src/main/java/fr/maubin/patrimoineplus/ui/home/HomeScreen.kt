@@ -62,6 +62,7 @@ import fr.maubin.patrimoineplus.ui.components.Tone
 import fr.maubin.patrimoineplus.ui.theme.colorfulPalette
 import fr.maubin.patrimoineplus.domain.format.formatPermille
 import fr.maubin.patrimoineplus.ui.components.monthTitle
+import fr.maubin.patrimoineplus.ui.components.LocalAccent
 
 private const val kClearedDisplay = "– – –,– – €"						// afficheur vide : aucun compte
 
@@ -128,7 +129,7 @@ fun HomeContent(
 				if (inState.series.size > 1)
 				{
 					item { EvolutionPanel(inState) }
-					item { Spacer(Modifier.height(14.dp)) }
+					item { Spacer(Modifier.height(16.dp)) }
 				}
 				item { RepartitionPanel(inState, inOnManageAccounts) }
 			}
@@ -138,8 +139,8 @@ fun HomeContent(
 
 /*
 	Évolution du patrimoine : variation sur la période suivie (douze mois au
-	plus), en pastille, et la valeur en fin de chaque mois en mini-barres
-	(hauteurs relatives : la plus basse à 20 %), le mois en cours marqué.
+	plus), en pastille, puis la courbe de la valeur en fin de chaque mois, à
+	la couleur principale (graphique principal de l'accueil).
 	inState : état de l'accueil
 */
 @Composable
@@ -155,19 +156,15 @@ private fun EvolutionPanel(inState: HomeUiState)
 			AmountText(inCents = vChange, inStyle = MaterialTheme.typography.headlineMedium, inShowPlusSign = true)
 			if (vStart > 0)
 			{
-				Spacer(Modifier.width(10.dp))
+				Spacer(Modifier.width(8.dp))
 				DeltaPill(formatPermille(vChange * 1000 / vStart), if (vChange == 0L) null else vChange > 0)
 			}
 		}
 		Text("Depuis ${monthTitle(vSeries.first().month).lowercase()}", style = MaterialTheme.typography.bodySmall, color = vMuted)
 		Spacer(Modifier.height(16.dp))
-		MicroBars(
-			inValues   = vSeries.map { it.valueCents },
-			inColorOf  = { inIndex -> if (inIndex == vSeries.lastIndex) vMain else vMain.copy(alpha = 0.45f) },
-			inModifier = Modifier.fillMaxWidth().height(56.dp).semantics { contentDescription = "Patrimoine en fin de mois, sur ${vSeries.size} mois" },
-			inBar      = 5.dp,
-			inRelative = true
-		)
+		CompositionLocalProvider(LocalAccent provides vMain) {
+			BalanceChart(vSeries, vSeries.last().month)
+		}
 	}
 }
 
@@ -212,9 +209,9 @@ private fun RepartitionPanel(
 				SeriesDot(typeColor(inGroup.type))
 				Spacer(Modifier.width(12.dp))
 				Text(inGroup.type.label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-				AmountText(inCents = inGroup.subtotalCents, inStyle = MaterialTheme.typography.bodyMedium, inColor = vMuted)
-				Spacer(Modifier.width(10.dp))
-				StatusChip("${inGroup.percent}\u202F%", Tone.NEUTRAL)
+				AmountText(inCents = inGroup.subtotalCents, inStyle = MaterialTheme.typography.bodyLarge)
+				Spacer(Modifier.width(12.dp))
+				Text("${inGroup.percent}\u202F%", style = MaterialTheme.typography.bodyMedium, color = vMuted, textAlign = TextAlign.End, modifier = Modifier.width(44.dp))
 			}
 		}
 		if (inState.unlinkedDebtCents != 0L)
@@ -292,7 +289,7 @@ private fun TotalBlock(inState: HomeUiState)
 				AmountText(inCents = vChange, inStyle = MaterialTheme.typography.bodyLarge, inShowPlusSign = true, inTrend = true)
 				Text(" ce mois-ci", style = MaterialTheme.typography.bodyLarge, color = vColors.onSurfaceVariant)
 			}
-			Spacer(Modifier.height(10.dp))
+			Spacer(Modifier.height(12.dp))
 		}
 		Text(if (inState.isEmpty) "Rien à calculer pour l’instant" else "Calculé au ${inState.asOf}", style = MaterialTheme.typography.bodySmall, color = vColors.onSurfaceVariant)
 	}

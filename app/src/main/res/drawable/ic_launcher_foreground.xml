@@ -1,83 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Premier plan de l’icône : deux cartes de comptes en verre (puce et courbe de hausse sur celle de devant) et le « + ». -->
+<!-- Premier plan de l’icône, à plat : carte de derrière jaune citron (inclinée), carte de devant blanc cassé avec sa puce et sa courbe de hausse à l’encre, et le « + » jaune. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-	xmlns:aapt="http://schemas.android.com/aapt"
 	android:width="108dp"
 	android:height="108dp"
 	android:viewportWidth="108"
 	android:viewportHeight="108">
 	<group android:translateX="18" android:translateY="18" android:scaleX="0.6" android:scaleY="0.6">
 		<group android:pivotX="61" android:pivotY="52" android:rotation="-12">
-		<path
-			android:pathData="M42,34 H80 A8,8 0 0 1 88,42 V62 A8,8 0 0 1 80,70 H42 A8,8 0 0 1 34,62 V42 A8,8 0 0 1 42,34 Z">
-			<aapt:attr name="android:fillColor">
-				<gradient android:type="linear" android:startX="0" android:startY="34" android:endX="0" android:endY="70">
-					<item android:offset="0" android:color="#CC6F86E8" />
-					<item android:offset="1" android:color="#D92A3A8C" />
-				</gradient>
-			</aapt:attr>
-		</path>
 			<path
-			android:pathData="M42,34 H80 A8,8 0 0 1 88,42 V62 A8,8 0 0 1 80,70 H42 A8,8 0 0 1 34,62 V42 A8,8 0 0 1 42,34 Z"
-			android:strokeWidth="1">
-			<aapt:attr name="android:strokeColor">
-				<gradient android:type="linear" android:startX="34" android:startY="34" android:endX="88" android:endY="70">
-					<item android:offset="0" android:color="#B3FFFFFF" />
-					<item android:offset="0.5" android:color="#14FFFFFF" />
-					<item android:offset="1" android:color="#4DFFFFFF" />
-				</gradient>
-			</aapt:attr>
-		</path>
+				android:pathData="M42,34 H80 A8,8 0 0 1 88,42 V62 A8,8 0 0 1 80,70 H42 A8,8 0 0 1 34,62 V42 A8,8 0 0 1 42,34 Z"
+				android:fillColor="#FFF8E24B" />
 		</group>
 		<path
-			android:pathData="M12,72 a46,46 0 1,0 92,0 a46,46 0 1,0 -92,0 Z">
-			<aapt:attr name="android:fillColor">
-				<gradient android:type="radial" android:centerX="58" android:centerY="72" android:gradientRadius="46" android:startColor="#806A5CF5" android:endColor="#006A5CF5" />
-			</aapt:attr>
-		</path>
-		<path
-			android:pathData="M37,50 H79 A9,9 0 0 1 88,59 V81 A9,9 0 0 1 79,90 H37 A9,9 0 0 1 28,81 V59 A9,9 0 0 1 37,50 Z">
-			<aapt:attr name="android:fillColor">
-				<gradient android:type="linear" android:startX="28" android:startY="50" android:endX="44" android:endY="90">
-					<item android:offset="0" android:color="#F29A8DFF" />
-					<item android:offset="0.55" android:color="#E66A5CF5" />
-					<item android:offset="1" android:color="#EB3B31B0" />
-				</gradient>
-			</aapt:attr>
-		</path>
-		<path
-			android:pathData="M28,59 A9,9 0 0 1 37,50 H79 A9,9 0 0 1 88,59 V64 H28 Z">
-			<aapt:attr name="android:fillColor">
-				<gradient android:type="linear" android:startX="0" android:startY="50" android:endX="0" android:endY="64">
-					<item android:offset="0" android:color="#66FFFFFF" />
-					<item android:offset="1" android:color="#00FFFFFF" />
-				</gradient>
-			</aapt:attr>
-		</path>
-		<path
 			android:pathData="M37,50 H79 A9,9 0 0 1 88,59 V81 A9,9 0 0 1 79,90 H37 A9,9 0 0 1 28,81 V59 A9,9 0 0 1 37,50 Z"
-			android:strokeWidth="1.2">
-			<aapt:attr name="android:strokeColor">
-				<gradient android:type="linear" android:startX="28" android:startY="50" android:endX="88" android:endY="90">
-					<item android:offset="0" android:color="#B3FFFFFF" />
-					<item android:offset="0.5" android:color="#14FFFFFF" />
-					<item android:offset="1" android:color="#4DFFFFFF" />
-				</gradient>
-			</aapt:attr>
-		</path>
+			android:fillColor="#FFF4F6F8" />
 		<path
 			android:pathData="M37,58 H44 A2,2 0 0 1 46,60 V64 A2,2 0 0 1 44,66 H37 A2,2 0 0 1 35,64 V60 A2,2 0 0 1 37,58 Z"
-			android:fillColor="#D9F3F3F7" />
+			android:fillColor="#FF14171C" />
 		<path
 			android:pathData="M36,82 L48,76 L56,79 L70,70"
 			android:strokeWidth="2.6"
-			android:strokeColor="#FFF3F3F7"
+			android:strokeColor="#FF14171C"
 			android:strokeLineCap="round"
 			android:strokeLineJoin="round" />
 		<path
 			android:pathData="M90,28 V40 M84,34 H96"
 			android:strokeWidth="3.6"
-			android:strokeColor="#FFF3F3F7"
+			android:strokeColor="#FFF8E24B"
 			android:strokeLineCap="round"
 			android:strokeLineJoin="round" />
 	</group>

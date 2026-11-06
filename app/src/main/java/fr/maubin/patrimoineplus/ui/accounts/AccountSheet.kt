@@ -156,7 +156,7 @@ fun AccountSheet(
 				}
 				else inOnSave(vForm) { vErrors = it }
 			},
-			contentPadding = PaddingValues(vertical = 14.dp),
+			contentPadding = PaddingValues(vertical = 16.dp),
 			modifier       = Modifier.fillMaxWidth()
 		) {
 			Text(if (inEditing == null) "Créer le compte" else "Enregistrer")

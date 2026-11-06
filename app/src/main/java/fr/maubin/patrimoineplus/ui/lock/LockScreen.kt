@@ -175,7 +175,7 @@ fun LockContent(
 				LemonPillButton(
 					onClick        = inOnUnlock,
 					enabled        = inProgress >= 1f,
-					contentPadding = PaddingValues(horizontal = 40.dp, vertical = 14.dp)
+					contentPadding = PaddingValues(horizontal = 40.dp, vertical = 16.dp)
 				) {
 					Text(if (inAuth) "Déverrouiller" else "Entrer")
 				}

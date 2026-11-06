@@ -141,12 +141,12 @@ fun SidePanel(
 			CompositionLocalProvider(LocalPanelSubmit provides inOnEnter) {
 				Column(
 					modifier            = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 12.dp),
-					verticalArrangement = Arrangement.spacedBy(14.dp),
+					verticalArrangement = Arrangement.spacedBy(16.dp),
 					content             = inContent
 				)
 			}
 			HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-			Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)) {
+			Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 18.dp), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)) {
 				inActions()
 			}
 		}

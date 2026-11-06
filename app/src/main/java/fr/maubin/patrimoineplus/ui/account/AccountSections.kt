@@ -360,7 +360,7 @@ fun StatementSheet(
 				val vCents = parseEuros(vAmount)									// montant lu
 				if (vCents == null) vError = "Montant illisible (ex. 12 038,20)." else inOnSave(vDate, vCents)
 			},
-			contentPadding = PaddingValues(vertical = 14.dp),
+			contentPadding = PaddingValues(vertical = 16.dp),
 			modifier       = Modifier.fillMaxWidth()
 		) { Text("Enregistrer") }
 	}
@@ -410,7 +410,7 @@ fun PricesSheet(
 				if (vParsed.values.any { it == null || it == 0L }) vError = "Un cours est illisible (ex. 144,91)."
 				else inOnSave(vDate, vParsed.mapValues { it.value!! })
 			},
-			contentPadding = PaddingValues(vertical = 14.dp),
+			contentPadding = PaddingValues(vertical = 16.dp),
 			modifier       = Modifier.fillMaxWidth()
 		) { Text("Enregistrer les cours") }
 	}
@@ -490,7 +490,7 @@ fun OpeningPositionSheet(
 				}
 				if (vError == null) inOnSave(if (vNew) null else vAssetId, vName, vQty!!, vPru!!)
 			},
-			contentPadding = PaddingValues(vertical = 14.dp),
+			contentPadding = PaddingValues(vertical = 16.dp),
 			modifier       = Modifier.fillMaxWidth()
 		) { Text("Ajouter la position") }
 	}
@@ -546,7 +546,7 @@ fun AssetSheet(
 		) { Text(if (vBusy) "Recherche…" else "Chercher la cotation") }
 		vFound?.let { inListing ->
 			BorderedCard {
-				Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+				Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
 					Text("${inListing.symbol} · ${inListing.exchange.orEmpty()} · ${formatPrice(toPriceUnits(inListing.price))}", style = MaterialTheme.typography.titleMedium)
 					Text(inListing.name.orEmpty(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 					if (inListing.guessed)
@@ -562,7 +562,7 @@ fun AssetSheet(
 		LemonPillButton(
 			onClick        = { inOnSave(vName, vIsin, vTicker) },
 			enabled        = vName.isNotBlank() && (vIsin.isBlank() || vIsinOk),
-			contentPadding = PaddingValues(vertical = 14.dp),
+			contentPadding = PaddingValues(vertical = 16.dp),
 			modifier       = Modifier.fillMaxWidth()
 		) { Text("Enregistrer") }
 	}

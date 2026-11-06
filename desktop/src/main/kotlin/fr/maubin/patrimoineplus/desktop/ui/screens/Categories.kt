@@ -101,7 +101,7 @@ private fun CategoryList(
 				verticalAlignment = Alignment.CenterVertically
 			) {
 				Icon(CategoryIcons.of(inCategory.icon), contentDescription = null, modifier = Modifier.size(20.dp))
-				Spacer(Modifier.width(14.dp))
+				Spacer(Modifier.width(16.dp))
 				Column(Modifier.weight(1f)) {
 					Text(inCategory.name + if (inCategory.archived) " (archivée)" else "", style = MaterialTheme.typography.bodyLarge)
 					Text("${vUsage[inCategory.id] ?: 0} opération(s)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -53,10 +53,10 @@ fun WelcomeScreen(
 			)
 			Spacer(Modifier.height(36.dp))
 			Column(Modifier.launchReveal(0.42f, inDy = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-				LemonPillButton(onClick = inOnFolder, contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp)) {
+				LemonPillButton(onClick = inOnFolder, contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)) {
 					Text("Choisir le dossier des données…")
 				}
-				GhostButton(onClick = inOnDemo, contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp)) {
+				GhostButton(onClick = inOnDemo, contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)) {
 					Text("Essayer avec la démonstration")
 				}
 			}

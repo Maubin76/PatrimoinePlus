@@ -30,14 +30,13 @@ private val kVioletDeep  = Color(0xFF3B31B0)										// violet du verre sombre,
 fun isGlass(): Boolean = LocalGlass.current
 
 /*
-	Panneau de verre de la brume : blanc translucide, à peine plus dense en
-	haut à gauche (la lumière), liseré blanc net qui s'adoucit vers le bas à
-	droite ; sans ombre portée, qui se verrait à travers. En sombre, verre
-	d'ardoise, liseré clair très léger.
+	Panneau de l'appli : surface unie (blanche en clair, un cran au-dessus du
+	fond en sombre), filet à l'encre très léger, ombre neutre courte et douce
+	en clair seulement ; un peu plus soutenu au survol.
 	inShape : forme du panneau
 	inDark  : fond sombre
-	inTint  : teinte du verre (thème Coloré : type du compte) ; non précisée : verre neutre
-	inLift  : élévation au survol, de 0 à 1
+	inTint  : sans effet (panneaux neutres ; gardé pour les appels existants)
+	inLift  : survol, de 0 à 1
 */
 fun Modifier.glassPanel(
 	inShape : Shape,
@@ -46,26 +45,12 @@ fun Modifier.glassPanel(
 	inLift  : Float = 0f
 ): Modifier
 {
-	val vTinted = inTint != Color.Unspecified											// verre teinté
-	val vTop    = when
-	{
-		inDark && vTinted -> inTint.copy(alpha = 0.16f + 0.05f * inLift)
-		inDark            -> Color.White.copy(alpha = 0.075f + 0.03f * inLift)
-		vTinted           -> lerp(Color.White, inTint, 0.14f).copy(alpha = 0.72f + 0.08f * inLift)
-		else              -> Color.White.copy(alpha = 0.66f + 0.1f * inLift)
-	}																				// verre, côté lumière
-	val vLow    = when
-	{
-		inDark && vTinted -> inTint.copy(alpha = 0.05f)
-		inDark            -> Color.White.copy(alpha = 0.04f)
-		vTinted           -> lerp(Color.White, inTint, 0.2f).copy(alpha = 0.58f)
-		else              -> Color.White.copy(alpha = 0.54f)
-	}																				// verre, côté ombre
-	val vEdge   = if (inDark) listOf(Color.White.copy(alpha = 0.16f), Color.White.copy(alpha = 0.05f)) else listOf(Color.White.copy(alpha = 0.95f), Color.White.copy(alpha = 0.55f))	// liseré
-	return this																		// pas d'ombre : elle se verrait à travers le verre
-		.then(if (inDark) Modifier.background(kSmoke, inShape) else Modifier)			// sombre : verre fumé, qui atténue le fond
-		.background(Brush.linearGradient(listOf(vTop, vLow), start = Offset.Zero, end = Offset.Infinite), inShape)
-		.border(1.dp, Brush.linearGradient(vEdge, start = Offset.Zero, end = Offset.Infinite), inShape)
+	val vFill = if (inDark) lerp(Color(0xFF181D24), Color(0xFF1E242C), inLift) else lerp(Color.White, Color(0xFFFBFCFD), inLift)	// surface
+	val vLine = if (inDark) Color.White.copy(alpha = 0.07f) else Color(0xFF14171C).copy(alpha = 0.07f)							// filet
+	return this
+		.then(if (inDark) Modifier else Modifier.shadow((4f + 4f * inLift).dp, inShape, ambientColor = Color(0xFF14171C).copy(alpha = 0.05f), spotColor = Color(0xFF14171C).copy(alpha = 0.07f)))
+		.background(vFill, inShape)
+		.border(1.dp, vLine, inShape)
 }
 
 /*
@@ -93,9 +78,8 @@ fun Modifier.glassHero(
 val kGlassHero = Color(0xFF5A4DD8)
 
 /*
-	Fond creusé (piste d'un choix, puce, rail d'une barre, pastille) : sur le
-	verre, voile d'encre translucide qui laisse passer le verre ; sinon la
-	couleur donnée.
+	Fond creusé (piste d'un choix, puce, rail d'une barre, pastille) : voile
+	d'encre léger, sur toute surface ; sinon la couleur donnée.
 	inColor : couleur hors effet verre
 */
 @Composable

@@ -142,14 +142,14 @@ fun OperationLine(
 			.heightIn(min = 52.dp)
 			.clip(MaterialTheme.shapes.small)
 			.then(if (inOnClick != null) Modifier.clickable(onClick = inOnClick) else Modifier)
-			.padding(horizontal = 8.dp, vertical = 6.dp),
+			.padding(horizontal = 8.dp, vertical = 8.dp),
 		verticalAlignment = Alignment.CenterVertically
 	) {
 		val vAccent = operationAccent(inCents)												// entrée ou sortie (thème Coloré)
 		Box(Modifier.size(32.dp).clip(CircleShape).background(vAccent?.first ?: glassWell(vColors.surfaceContainer)), contentAlignment = Alignment.Center) {
 			Icon(CategoryIcons.of(inIcon), contentDescription = null, tint = vAccent?.second ?: LocalContentColor.current, modifier = Modifier.size(18.dp))
 		}
-		Spacer(Modifier.width(14.dp))
+		Spacer(Modifier.width(16.dp))
 		Column(Modifier.weight(1f)) {
 			Text(inTitle, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
 			Text(inDetail, style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -200,7 +200,7 @@ fun CellField(
 			singleLine    = true,
 			textStyle     = vStyle,
 			cursorBrush   = androidx.compose.ui.graphics.SolidColor(vColors.onSurface),
-			modifier      = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+			modifier      = Modifier.fillMaxWidth().padding(vertical = 8.dp),
 			decorationBox = { inField ->
 				Box(Modifier.fillMaxWidth(), contentAlignment = if (inEnd) Alignment.CenterEnd else Alignment.CenterStart) {	// toute la largeur : alignement à droite exact, avec ou sans filet
 					if (inValue.isEmpty() && inPlaceholder.isNotEmpty()) Text(inPlaceholder, style = vStyle.copy(color = vColors.onSurfaceVariant), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())

@@ -57,7 +57,7 @@ class DesktopUiTest
 		fCompose.onNodeWithText("Patrimoine net").assertExists()													// démonstration avec crédits : net, puis brut et crédits
 		fCompose.onNodeWithText("Brut ").assertExists()
 		fCompose.onNodeWithText("Répartition").assertExists()
-		fCompose.onNodeWithText("Démonstration : données fictives, modifiables, jamais enregistrées.").assertExists()
+		fCompose.onNodeWithText("Démonstration : données fictives, modifiables, jamais enregistrées").assertExists()
 		fCompose.onNodeWithText("Comptes").assertExists()
 		fCompose.onNodeWithText("Dernières opérations").assertExists()
 		fCompose.onNodeWithText("Livret A").performScrollTo().performClick()

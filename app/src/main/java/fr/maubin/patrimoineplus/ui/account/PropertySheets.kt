@@ -79,7 +79,7 @@ fun PurchaseSheet(
 				vErrors = checkPurchase(vForm, inAccounts)
 				if (vErrors.isEmpty) inOnSave(vForm) { vGeneral = it }
 			},
-			contentPadding = PaddingValues(vertical = 14.dp),
+			contentPadding = PaddingValues(vertical = 16.dp),
 			modifier       = Modifier.fillMaxWidth()
 		) {
 			Text("Enregistrer")
@@ -166,7 +166,7 @@ fun SaleSheet(
 				vErrors = checkSale(vForm, inItem, inAccounts)
 				if (vErrors.isEmpty) inOnSave(vForm) { vGeneral = it }
 			},
-			contentPadding = PaddingValues(vertical = 14.dp),
+			contentPadding = PaddingValues(vertical = 16.dp),
 			modifier       = Modifier.fillMaxWidth()
 		) {
 			Text("Enregistrer la vente")

@@ -63,7 +63,7 @@ fun DevicesScreen(inController: DesktopController)
 	var vName     by remember { mutableStateOf(vSettings.deviceName) }				// nom saisi
 	LaunchedEffect(Unit) { inController.diagnostic.refresh(); inController.refreshPeers() }
 	Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp).padding(top = 6.dp, bottom = 28.dp).padding(bottom = LocalAssistantRoom.current)) {
-		PageHeader(inTitle = "Appareils", inSubtitle = "Synchronisation directe avec le téléphone, sur le Wi-Fi de la maison.", inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) })
+		PageHeader(inTitle = "Appareils", inSubtitle = "Synchronisation directe avec le téléphone, sur le Wi-Fi de la maison", inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) })
 		Spacer(Modifier.height(28.dp))
 		SectionHeader(inTitle = "Ce PC", inModifier = Modifier.tourAnchor("devices.this"))
 		Spacer(Modifier.height(12.dp))
@@ -115,7 +115,7 @@ fun DevicesScreen(inController: DesktopController)
 				}
 				vSpace.data.history.forEach { inEntry ->
 					Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-						Text(Instant.ofEpochMilli(inEntry.at).atZone(ZoneId.systemDefault()).format(kHistoryTime), style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant, modifier = Modifier.width(150.dp))
+						Text(Instant.ofEpochMilli(inEntry.at).atZone(ZoneId.systemDefault()).format(kHistoryTime), style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant, modifier = Modifier.width(152.dp))
 						Text(inEntry.device, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.width(180.dp))
 						Text(inEntry.summary, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
 					}
