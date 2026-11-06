@@ -872,7 +872,7 @@ private fun AccountRow(
 			}
 		}
 		Box(Modifier.weight(1f).padding(end = 24.dp)) {
-			if (vSteps.size > 1) MicroBars(vSteps, { inIndex -> if (inIndex == vSteps.lastIndex) vAccent else vAccent.copy(alpha = 0.45f) }, Modifier.fillMaxWidth().height(26.dp), 3.dp, inRelative = true)
+			if (vSteps.size > 1) MicroBars(vSteps, { inIndex -> if (inIndex == vSteps.lastIndex) vAccent else vAccent.copy(alpha = 0.45f) }, Modifier.fillMaxWidth().height(26.dp), 3.dp, inRelative = true, inSpread = 0.25f)
 		}
 		Box(Modifier.width(140.dp)) {
 			inTile.monthChange?.let { inChange -> AmountText(inCents = inChange, inStyle = MaterialTheme.typography.bodyMedium, inShowPlusSign = true, inTrend = true) }

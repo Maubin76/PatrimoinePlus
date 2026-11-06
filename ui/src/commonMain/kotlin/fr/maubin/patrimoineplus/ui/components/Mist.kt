@@ -461,6 +461,7 @@ fun MoreMenu(
 	inRelative : hauteurs relatives (de 20 % pour la plus basse à 100 % pour la plus haute)
 	inMark     : rang de la barre repérée (aujourd'hui, mois en cours) ; null sans
 	inLabel    : texte écrit au-dessus de la barre repérée (variation) ; null sans
+	inSpread   : part de l'écart entre deux barres gardée (1 : barres réparties sur toute la largeur ; ¼ : regroupées à gauche)
 */
 @Composable
 fun MicroBars(
@@ -470,7 +471,8 @@ fun MicroBars(
 	inBar      : Dp       = 3.dp,
 	inRelative : Boolean  = false,
 	inMark     : Int?     = null,
-	inLabel    : String?  = null
+	inLabel    : String?  = null,
+	inSpread   : Float    = 1f
 )
 {
 	val vMeasurer = rememberTextMeasurer()												// mesure de l'étiquette
@@ -480,15 +482,30 @@ fun MicroBars(
 		val vText  = inLabel?.let { vMeasurer.measure(it, vStyle) }						// étiquette mesurée
 		val vRoom  = (vText?.size?.height ?: 0) + if (vText != null) 4.dp.toPx() else 0f	// place de l'étiquette en haut
 		val vPlot  = Size(size.width, size.height - vRoom)									// zone des barres
-		val vPitch = if (inValues.size > 1) (size.width - inBar.toPx()) / (inValues.size - 1) else 0f	// pas
+		val vPitch = pitch(size.width, inBar.toPx(), inValues.size, inSpread)						// pas
 		if (vText != null && inMark != null)
 		{
 			val vCenter = inMark * vPitch + inBar.toPx() / 2f										// milieu de la barre repérée
 			drawText(vText, topLeft = Offset((vCenter - vText.size.width / 2f).coerceIn(0f, size.width - vText.size.width), 0f))
 		}
-		translate(top = vRoom) { bars(inValues, inColorOf, inBar.toPx(), inRelative, vPlot) }
+		translate(top = vRoom) { bars(inValues, inColorOf, inBar.toPx(), inRelative, vPlot, inSpread) }
 	}
 }
+
+/*
+	Pas entre deux barres : la largeur répartie entre les barres, l'écart
+	réduit à la part demandée.
+	inWidth  : largeur disponible, en pixels
+	inBar    : épaisseur d'une barre, en pixels
+	inCount  : nombre de barres
+	inSpread : part de l'écart gardée
+*/
+private fun pitch(
+	inWidth  : Float,
+	inBar    : Float,
+	inCount  : Int,
+	inSpread : Float
+): Float = if (inCount > 1) inBar + ((inWidth - inBar) / (inCount - 1) - inBar) * inSpread else 0f
 
 /*
 	Dessine les barres des mini-graphes dans une zone.
@@ -497,13 +514,15 @@ fun MicroBars(
 	inBar      : épaisseur d'une barre, en pixels
 	inRelative : hauteurs relatives
 	inArea     : zone des barres
+	inSpread   : part de l'écart entre deux barres gardée
 */
 private fun DrawScope.bars(
 	inValues   : List<Long>,
 	inColorOf  : (Int) -> Color,
 	inBar      : Float,
 	inRelative : Boolean,
-	inArea     : Size
+	inArea     : Size,
+	inSpread   : Float
 )
 {
 	val size = inArea																	// zone (masque la taille du dessin)
@@ -513,7 +532,7 @@ private fun DrawScope.bars(
 			val vLow   = inValues.min().toFloat()												// plus basse valeur
 			val vRange = (inValues.max() - inValues.min()).toFloat()							// étendue
 			val vWidth = inBar																	// épaisseur
-			val vPitch = if (inValues.size > 1) (size.width - vWidth) / (inValues.size - 1) else 0f	// pas
+			val vPitch = pitch(size.width, vWidth, inValues.size, inSpread)								// pas
 			inValues.forEachIndexed { inIndex, inValue ->
 				val vShare = if (vRange > 0f) 0.2f + 0.8f * (inValue - vLow) / vRange else 0.6f	// hauteur relative
 				val vTall  = size.height * vShare												// hauteur
@@ -526,7 +545,7 @@ private fun DrawScope.bars(
 		val vSpan   = (vMax - vMin).takeIf { it > 0f } ?: 1f							// étendue
 		val vZero   = size.height * vMax / vSpan										// ordonnée de zéro
 		val vBar    = inBar																// épaisseur
-		val vStep   = if (inValues.size > 1) (size.width - vBar) / (inValues.size - 1) else 0f	// pas entre deux barres
+		val vStep   = pitch(size.width, vBar, inValues.size, inSpread)						// pas entre deux barres
 		val vRadius = CornerRadius(vBar / 2f, vBar / 2f)								// bouts arrondis
 		inValues.forEachIndexed { inIndex, inValue ->
 			val vX = inIndex * vStep														// abscisse
