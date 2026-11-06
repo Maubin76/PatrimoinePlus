@@ -84,16 +84,17 @@ data class BackdropTint(
 	val color : Color
 )
 
-// Teintes proposées : neutres doux, toutes lisibles sous l'encre (contraste ≥ 12:1).
+// Teintes proposées : la première est le fond par défaut ; les autres, franches
+// mais toutes lisibles sous l'encre (contraste ≥ 10:1).
 val kBackdropTints = listOf(
 	BackdropTint("Brume", Color(0xFFE0E6EB)),
-	BackdropTint("Pierre", Color(0xFFE4E2DE)),
-	BackdropTint("Sable", Color(0xFFEDE6DA)),
-	BackdropTint("Rose poudré", Color(0xFFF0E1E3)),
-	BackdropTint("Lavande", Color(0xFFE6E2F0)),
-	BackdropTint("Ciel", Color(0xFFDCE8F2)),
-	BackdropTint("Menthe", Color(0xFFDCEDE8)),
-	BackdropTint("Sauge", Color(0xFFDFE8DF))
+	BackdropTint("Pierre", Color(0xFFCFC6B6)),
+	BackdropTint("Sable", Color(0xFFEBCD99)),
+	BackdropTint("Rose poudré", Color(0xFFEFB7C3)),
+	BackdropTint("Lavande", Color(0xFFCBBBF0)),
+	BackdropTint("Ciel", Color(0xFFA9CBEF)),
+	BackdropTint("Menthe", Color(0xFFA2D9C4)),
+	BackdropTint("Sauge", Color(0xFFB6D0AA))
 )
 
 /*

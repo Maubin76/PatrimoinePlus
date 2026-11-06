@@ -73,7 +73,8 @@ import fr.maubin.patrimoineplus.ui.components.GhostPill
 import fr.maubin.patrimoineplus.ui.components.GhostButton
 import fr.maubin.patrimoineplus.ui.components.BackdropSettings
 import fr.maubin.patrimoineplus.desktop.ui.LocalPhotoPicker
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Box
+import fr.maubin.patrimoineplus.desktop.data.NavPosition
 
 /*
 	Réglages de l'appli PC : source des données (dossier des données,
@@ -126,6 +127,10 @@ fun SettingsScreen(
 		SectionHeader(inTitle = "Apparence", inModifier = Modifier.tourAnchor("settings.appearance"))
 		Spacer(Modifier.height(12.dp))
 		Choice(ThemeMode.entries.map { it to it.label }, vSettings.appearance, inController::setAppearance)
+		Spacer(Modifier.height(16.dp))
+		Text("Barre de navigation", style = MaterialTheme.typography.titleMedium)
+		Spacer(Modifier.height(8.dp))
+		Choice(NavPosition.entries.map { it to it.label }, vSettings.nav, inController::setNavPosition)
 		Spacer(Modifier.height(16.dp))
 		Text("Couleurs des données", style = MaterialTheme.typography.titleMedium)
 		Spacer(Modifier.height(8.dp))

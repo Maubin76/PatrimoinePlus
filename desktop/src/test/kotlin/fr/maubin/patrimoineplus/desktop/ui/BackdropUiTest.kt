@@ -105,7 +105,7 @@ class BackdropUiTest
 	@Test
 	fun colors()
 	{
-		kBackdropTints.forEach { assertTrue("${it.name} : ${backdropContrast(it.color)}", backdropContrast(it.color) >= 12f) }
+		kBackdropTints.forEach { assertTrue("${it.name} : ${backdropContrast(it.color)}", backdropContrast(it.color) >= 10f) }
 		kBackdropTints.forEach { assertTrue(darkBackdrop(it.color).luminance() < 0.02f) }
 		assertEquals(Color(0xFFEDE6DA), parseBackdropColor(" #EDE6DA "))
 		assertEquals("#EDE6DA", backdropCode(Color(0xFFEDE6DA)))
@@ -125,12 +125,12 @@ class BackdropUiTest
 	{
 		val vApp    = demo()																// démonstration
 		val vConfig = DesktopConfig(fTemp.root.toPath().resolve("desktop.properties"))	// réglages relus
-		vApp.setBackgroundColor("#EDE6DA")
-		assertEquals("#EDE6DA", vConfig.load().background)
-		assertEquals(Color(0xFFEDE6DA), vApp.backdrop.value.color)
+		vApp.setBackgroundColor("#EBCD99")
+		assertEquals("#EBCD99", vConfig.load().background)
+		assertEquals(Color(0xFFEBCD99), vApp.backdrop.value.color)
 		vApp.setBackgroundColor("rouge")
 		assertEquals("Couleur illisible : saisissez un code comme #E0E6EB.", vApp.notice.value)
-		assertEquals("#EDE6DA", vConfig.load().background)
+		assertEquals("#EBCD99", vConfig.load().background)
 		vApp.setBackgroundPhoto(photo())
 		assertEquals(kPhotoBackground, vConfig.load().background)
 		assertTrue(Files.isRegularFile(vConfig.photoFile))
@@ -164,7 +164,7 @@ class BackdropUiTest
 		fCompose.waitForIdle()
 		fCompose.onNodeWithContentDescription("Fond Sable").performScrollTo().performClick()
 		fCompose.waitForIdle()
-		assertEquals("#EDE6DA", vApp.settings.value.background)
+		assertEquals("#EBCD99", vApp.settings.value.background)
 		vApp.show(Screen.DASHBOARD)
 		capture(vApp, "fond-couleur-clair")
 		vApp.setAppearance(ThemeMode.DARK)

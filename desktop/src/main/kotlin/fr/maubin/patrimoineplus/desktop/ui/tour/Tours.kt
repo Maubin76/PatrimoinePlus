@@ -40,7 +40,7 @@ object Tours
 				TourStep("dashboard.accounts", "Vos comptes", "Une ligne par compte : son évolution, la variation du mois, sa part et sa valeur. Un clic ouvre le compte ; « Réorganiser » change leur ordre."),
 				TourStep("shell.newop", "Saisir une opération", "Le bouton jaune, sur chaque page : dépense, revenu, virement, ordre de bourse ou mensualité, dans le panneau de saisie à droite. Raccourci : Ctrl+N."),
 				TourStep("shell.privacy", "Recherche et mode discret", "La loupe cherche dans toutes vos opérations (Ctrl+F) ; l'œil masque les montants quand quelqu'un regarde votre écran."),
-				TourStep("shell.rail", "Les autres pages", "Les pilules du haut : objectifs, recherche, opérations, budget, projection, bilan, appareils et réglages. Chacune a sa visite guidée à votre première venue.")
+				TourStep("shell.rail", "Les autres pages", "Ces pilules mènent aux objectifs, à la recherche, aux opérations, au budget, à la projection, au bilan, aux appareils et aux réglages. Chacune a sa visite guidée à votre première venue ; Réglages › Apparence les place en haut, en bas, à gauche ou à droite.")
 			)
 			Screen.GOALS.name      -> listOf(
 				TourStep("goals.global", "Objectifs globaux", "Des cibles à moyen terme suivies sur vos comptes : matelas de sécurité, livret plein, apport pour un achat… avec le rythme pour les atteindre."),

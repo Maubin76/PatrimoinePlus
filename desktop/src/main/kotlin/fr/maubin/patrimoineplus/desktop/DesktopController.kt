@@ -98,7 +98,8 @@ import fr.maubin.patrimoineplus.ui.components.parseBackdropColor
 import fr.maubin.patrimoineplus.ui.components.backdropCode
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
-import java.nio.file.StandardCopyOption
+import java.nio.file.StandardCopyOption
+import fr.maubin.patrimoineplus.desktop.data.NavPosition
 
 private const val kDayCheckMillis = 60_000L										// contrôle du changement de jour
 
@@ -1067,6 +1068,12 @@ class DesktopController(
 		inVeil : intensité, de 0 à 100
 	*/
 	fun setBackgroundVeil(inVeil: Int) = update(fSettings.value.copy(veil = inVeil.coerceIn(0, 100)))
+
+	/*
+		Place la barre de navigation (pilules des pages).
+		inPosition : haut, bas, gauche ou droite
+	*/
+	fun setNavPosition(inPosition: NavPosition) = update(fSettings.value.copy(nav = inPosition))
 
 	/*
 		Photo de fond mémorisée, décodée ; null sans photo ou si elle est illisible.

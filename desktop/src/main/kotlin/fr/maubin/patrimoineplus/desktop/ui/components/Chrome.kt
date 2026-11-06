@@ -54,17 +54,26 @@ val kChromeButton              = 40.dp											// diamètre d'un bouton rond d
 val LocalPageStatus = staticCompositionLocalOf { "" }
 
 /*
-	Info-bulle de la coque : pilule à l'encre, sous l'élément.
+	Info-bulle de la coque : pilule à l'encre, sous l'élément par défaut.
 	inLabel   : texte
+	inSide    : côté de l'info-bulle (BottomCenter, TopCenter, CenterEnd, CenterStart)
 	inContent : élément survolé
 */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChromeTooltip(
 	inLabel   : String,
+	inSide    : Alignment = Alignment.BottomCenter,
 	inContent : @Composable () -> Unit
 )
 {
+	val vOffset = when (inSide)
+	{
+		Alignment.CenterEnd   -> DpOffset(8.dp, 0.dp)
+		Alignment.CenterStart -> DpOffset((-8).dp, 0.dp)
+		Alignment.TopCenter   -> DpOffset(0.dp, (-8).dp)
+		else                  -> DpOffset(0.dp, 8.dp)
+	}																				// écart à l'élément survolé
 	val vColors = MaterialTheme.colorScheme										// palette courante
 	TooltipArea(
 		tooltip          = {
@@ -73,7 +82,7 @@ fun ChromeTooltip(
 			}
 		},
 		delayMillis      = 350,
-		tooltipPlacement = TooltipPlacement.ComponentRect(anchor = Alignment.BottomCenter, alignment = Alignment.BottomCenter, offset = DpOffset(0.dp, 8.dp)),
+		tooltipPlacement = TooltipPlacement.ComponentRect(anchor = inSide, alignment = inSide, offset = vOffset),
 		content          = inContent
 	)
 }
@@ -131,6 +140,7 @@ data class NavEntry(
 	inEntries  : pages
 	inActive   : rang de la page active
 	inOnSelect : change de page
+	inSide     : côté des info-bulles : null ou TopCenter pour une rangée (page active avec son nom) ; CenterEnd ou CenterStart pour une colonne d'icônes
 	inModifier : modificateur appliqué
 */
 @Composable
@@ -138,11 +148,13 @@ fun NavPills(
 	inEntries  : List<NavEntry>,
 	inActive   : Int,
 	inOnSelect : (Int) -> Unit,
-	inModifier : Modifier = Modifier
+	inModifier : Modifier   = Modifier,
+	inSide     : Alignment? = null
 )
 {
-	val vNight = isNight()															// fond sombre
-	Row(inModifier.animateContentSize(tween(220)), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+	val vNight    = isNight()														// fond sombre
+	val vVertical = inSide == Alignment.CenterEnd || inSide == Alignment.CenterStart	// colonne d'icônes
+	val vItems = @Composable {
 		inEntries.forEachIndexed { inIndex, inEntry ->
 			val vActive  = inIndex == inActive													// page active
 			val vSource  = remember { MutableInteractionSource() }								// survol
@@ -168,16 +180,18 @@ fun NavPills(
 					verticalAlignment = Alignment.CenterVertically
 				) {
 					Icon(inEntry.icon, contentDescription = null, modifier = Modifier.size(18.dp))
-					if (vActive)
+					if (vActive && !vVertical)
 					{
 						Spacer(Modifier.width(8.dp))
 						Text(inEntry.label, style = MaterialTheme.typography.labelLarge, maxLines = 1)
 					}
 				}
 			}
-			if (vActive) vPill() else ChromeTooltip(inEntry.label) { vPill() }
+			if (vActive && !vVertical) vPill() else ChromeTooltip(inEntry.label, inSide ?: Alignment.BottomCenter) { vPill() }
 		}
-	}
+	}																				// pilules
+	if (!vVertical) Row(inModifier.animateContentSize(tween(220)), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) { vItems() }
+	else Column(inModifier, verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) { vItems() }
 }
 
 /*

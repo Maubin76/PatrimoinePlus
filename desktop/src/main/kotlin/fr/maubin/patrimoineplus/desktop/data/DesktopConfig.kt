@@ -52,6 +52,7 @@ val kAssistantDefault = System.getProperty("patrimoineplus.assistant") != "off"
 	background : fond choisi : vide pour le fond par défaut, « #RRGGBB » pour une couleur, « photo » pour la photo copiée (photoFile)
 	blur       : flou de la photo de fond, de 0 à 100
 	veil       : voile de lisibilité sur la photo de fond, de 0 à 100
+	nav        : position de la barre de navigation (pilules des pages)
 */
 data class DesktopSettings(
 	val source     : Source    = Source.None,
@@ -76,8 +77,22 @@ data class DesktopSettings(
 	val autostart  : Boolean   = false,
 	val background : String    = "",
 	val blur       : Int       = 60,
-	val veil       : Int       = 40
+	val veil       : Int       = 40,
+	val nav        : NavPosition = NavPosition.TOP
 )
+
+/*
+	Position de la barre de navigation du PC (pilules des pages) ; le reste de
+	la barre du haut (logo, recherche, apparence, vue) y reste toujours.
+	label : nom affiché dans les réglages
+*/
+enum class NavPosition(val label: String)
+{
+	TOP("Haut"),
+	BOTTOM("Bas"),
+	LEFT("Gauche"),
+	RIGHT("Droite")
+}
 
 /*
 	Fichier des réglages de l'appli PC (texte « clé=valeur »), dans le dossier
@@ -134,7 +149,8 @@ class DesktopConfig(private val inFile: Path)
 			autostart  = vProps.getProperty("start_with_windows") == "true",
 			background = vProps.getProperty("background").orEmpty(),
 			blur       = vProps.getProperty("background_blur")?.toIntOrNull()?.coerceIn(0, 100) ?: 60,
-			veil       = vProps.getProperty("background_veil")?.toIntOrNull()?.coerceIn(0, 100) ?: 40
+			veil       = vProps.getProperty("background_veil")?.toIntOrNull()?.coerceIn(0, 100) ?: 40,
+			nav        = NavPosition.entries.firstOrNull { it.name == vProps.getProperty("nav_position") } ?: NavPosition.TOP
 		)
 	}
 
@@ -178,6 +194,7 @@ class DesktopConfig(private val inFile: Path)
 		vProps.setProperty("background", inSettings.background)
 		vProps.setProperty("background_blur", inSettings.blur.toString())
 		vProps.setProperty("background_veil", inSettings.veil.toString())
+		vProps.setProperty("nav_position", inSettings.nav.name)
 		inFile.parent?.let { Files.createDirectories(it) }
 		val vTemp = inFile.resolveSibling("${inFile.fileName}.tmp")				// écriture provisoire
 		Files.newBufferedWriter(vTemp, Charsets.UTF_8).use { vProps.store(it, "Réglages de PatrimoinePlus (PC)") }

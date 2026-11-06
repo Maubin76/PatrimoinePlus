@@ -219,7 +219,8 @@ style, en clair ou en sombre.
 - **Fond personnalisé** (Réglages › Apparence › Fond, PC et téléphone ;
   `ui/components/Backdrop.kt`) : propre à chaque appareil, jamais dans le
   fichier d'échange. Huit teintes proposées (la première, « Brume », est le
-  fond par défaut ; toutes à plus de 12:1 sous l'encre), ou une couleur libre
+  fond par défaut ; les sept autres franches mais toutes à plus de 10:1 sous
+  l'encre : pierre, sable, rose poudré, lavande, ciel, menthe, sauge), ou une couleur libre
   « #RRGGBB » avec une alerte sous 4,5:1. En sombre, la même teinte très
   foncée (luminosité 8,5 %, saturation plafonnée). Ou une **photo** : copiée
   à part (PC : `fond-ecran.img` dans le dossier des réglages ; téléphone :
@@ -493,7 +494,12 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   avec le logo, les pages en pilules au centre (page active en pilule
   blanche avec son nom, autres en ronds de verre, nom en info-bulle), puis
   recherche (Ctrl+F), mode discret, bascule clair / sombre et vue (profil ou
-  famille). Chaque page commence par une ligne de titre (`PageHeader`) :
+  famille). Réglages › Apparence › **Barre de navigation** (PC seulement,
+  réglage `nav_position`) : Haut (défaut), Bas (rangée centrée sous le
+  contenu, info-bulles au-dessus), Gauche ou Droite (colonne d'icônes
+  centrée le long du contenu, nom en info-bulle vers le contenu ; à droite,
+  masquée tant qu'un panneau de saisie est ouvert) ; logo, recherche, œil,
+  apparence et vue restent toujours en haut. Chaque page commence par une ligne de titre (`PageHeader`) :
   grand titre léger, ligne d'état (source, dernier enregistrement,
   synchronisation), actions en pilules, bouton jaune « Nouvelle opération »
   (Ctrl+N). Messages et alertes en pastille flottante sous la barre.

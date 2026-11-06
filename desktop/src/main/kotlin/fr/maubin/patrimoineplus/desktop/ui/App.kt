@@ -166,7 +166,8 @@ import fr.maubin.patrimoineplus.desktop.ui.components.ChromeButton
 import fr.maubin.patrimoineplus.desktop.ui.components.NavPills
 import fr.maubin.patrimoineplus.desktop.ui.components.NavEntry
 import fr.maubin.patrimoineplus.desktop.ui.components.LocalPageStatus
-import fr.maubin.patrimoineplus.ui.components.LemonButton
+import fr.maubin.patrimoineplus.ui.components.LemonButton
+import fr.maubin.patrimoineplus.desktop.data.NavPosition
 
 private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)	// heure de lecture du fichier
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
@@ -328,9 +329,10 @@ private fun Shell(
 			}
 		}
 	) {
-		Box(Modifier.launchReveal(0.15f, inDy = (-12).dp)) { TopBar(inSpace, vNav.screen, inController, inDark, scopeOf(vSet.view, inSpace.data.profiles)) }	// puis la barre du haut
+		Box(Modifier.launchReveal(0.15f, inDy = (-12).dp)) { TopBar(inSpace, vNav.screen, inController, inDark, scopeOf(vSet.view, inSpace.data.profiles), vSet.nav == NavPosition.TOP) }	// puis la barre du haut
 		Box(Modifier.weight(1f).fillMaxWidth()) {
 		Row(Modifier.fillMaxSize()) {
+			if (vSet.nav == NavPosition.LEFT) PageNav(vNav.screen, inController, Alignment.CenterEnd, Modifier.fillMaxHeight().padding(start = 16.dp, end = 4.dp).launchReveal(0.15f, inDy = 0.dp))
 			Box(Modifier.weight(1f).fillMaxHeight().launchReveal(0.35f, inDy = 14.dp), contentAlignment = Alignment.TopCenter) {	// enfin l'écran
 				Box(Modifier.widthIn(max = kContentMaxWidth).fillMaxSize()) {
 				CompositionLocalProvider(LocalPageStatus provides vStatus) {
@@ -385,9 +387,11 @@ private fun Shell(
 				}
 			}
 		}
+			if (vSet.nav == NavPosition.RIGHT && vPanel == null) PageNav(vNav.screen, inController, Alignment.CenterStart, Modifier.fillMaxHeight().padding(start = 4.dp, end = 16.dp).launchReveal(0.15f, inDy = 0.dp))
 		}
 		ShellToast(inSpace, vNotice, inController, Modifier.align(Alignment.TopCenter).padding(top = 8.dp))
 		}
+		if (vSet.nav == NavPosition.BOTTOM) PageNav(vNav.screen, inController, Alignment.TopCenter, Modifier.fillMaxWidth().padding(vertical = 12.dp).launchReveal(0.15f, inDy = 12.dp))
 	}
 	(inSpace.status as? LoadStatus.Items)?.let { inItems ->
 		MergeConflictsDialog(inItems.conflicts, "Ce PC", "Le fichier du dossier", inController::resolveItems)
@@ -577,6 +581,7 @@ private fun UnsavedDialog(
 	inController : contrôleur
 	inDark       : mode sombre effectif
 	inProfile    : profil affiché ; null pour la famille
+	inWithNav    : vrai si les pages sont dans la barre du haut (réglage « Haut »)
 */
 @Composable
 private fun TopBar(
@@ -584,7 +589,8 @@ private fun TopBar(
 	inScreen     : Screen,
 	inController : DesktopController,
 	inDark       : Boolean,
-	inProfile    : String?
+	inProfile    : String?,
+	inWithNav    : Boolean
 )
 {
 	val vHidden = LocalAmountsHidden.current									// mode discret actif
@@ -597,12 +603,7 @@ private fun TopBar(
 			Spacer(Modifier.width(8.dp))
 			Text("PatrimoinePlus", style = MaterialTheme.typography.titleMedium)
 		}
-		NavPills(
-			inEntries  = Screen.entries.map { NavEntry(it.label, screenIcon(it)) },
-			inActive   = Screen.entries.indexOf(inScreen),
-			inOnSelect = { inController.show(Screen.entries[it]) },
-			inModifier = Modifier.tourAnchor("shell.rail")
-		)
+		if (inWithNav) PageNav(inScreen, inController, null)
 		Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), verticalAlignment = Alignment.CenterVertically) {
 			Row(Modifier.tourAnchor("shell.privacy"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
 				ChromeButton(LineIcons.Search, "Rechercher (Ctrl+F)", inController::focusSearch)
@@ -611,6 +612,34 @@ private fun TopBar(
 			ChromeButton(if (inDark) LineIcons.Sun else LineIcons.Moon, if (inDark) "Apparence claire" else "Apparence sombre", { inController.setAppearance(if (inDark) ThemeMode.LIGHT else ThemeMode.DARK) })
 			if (inSpace.data.profiles.size > 1) ViewSwitcher(inSpace.data.profiles, inProfile, inController::setView)
 		}
+	}
+}
+
+/*
+	Pilules des pages, là où le réglage les place : rangée en haut ou en bas
+	(page active avec son nom), colonne d'icônes à gauche ou à droite (noms en
+	info-bulle vers le contenu).
+	inScreen     : page active
+	inController : contrôleur
+	inSide       : côté des info-bulles (null : sous la rangée du haut)
+	inModifier   : modificateur appliqué au conteneur
+*/
+@Composable
+private fun PageNav(
+	inScreen     : Screen,
+	inController : DesktopController,
+	inSide       : Alignment?,
+	inModifier   : Modifier = Modifier
+)
+{
+	Box(inModifier, contentAlignment = Alignment.Center) {
+		NavPills(
+			inEntries  = Screen.entries.map { NavEntry(it.label, screenIcon(it)) },
+			inActive   = Screen.entries.indexOf(inScreen),
+			inOnSelect = { inController.show(Screen.entries[it]) },
+			inModifier = Modifier.tourAnchor("shell.rail"),
+			inSide     = inSide
+		)
 	}
 }
 
