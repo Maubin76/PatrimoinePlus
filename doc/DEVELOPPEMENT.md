@@ -503,6 +503,15 @@ bord** de pilotage plutôt qu'une suite d'écrans.
   grand titre léger, ligne d'état (source, dernier enregistrement,
   synchronisation), actions en pilules, bouton jaune « Nouvelle opération »
   (Ctrl+N). Messages et alertes en pastille flottante sous la barre.
+- **Réglages du PC en tuiles** (`ui/screens/Settings.kt`) : la page s'ouvre
+  sur une grille de neuf tuiles, trois par rangée (Données, Apparence,
+  Synchronisation, Confidentialité, Profils, Tutoriels, Assistant, Mises à
+  jour, Catégories), chacune avec son icône et le résumé de son état (source,
+  « Clair · barre en haut · fond sable », nombre de profils, tutoriels vus,
+  version…). Un clic ouvre la rubrique (`SettingsSection`, gardée dans
+  `Navigation.section` ; `openSettings`) ; « Tous les réglages » (`back`) ou
+  la pilule Réglages reviennent à la grille. Rubriques limitées à 920 dp de
+  large, sauf les catégories sur deux colonnes.
 - **Thèmes personnalisés** (Réglages › Apparence › Couleurs des données, PC et
   téléphone) : « Créer un thème », un nom et cinq couleurs en hexadécimal
   (#RRGGBB, ou #RGB), qui remplacent celles de la brume, une par rôle : principale (chiffre mis en

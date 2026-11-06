@@ -142,15 +142,38 @@ enum class ReportTab(val label: String)
 }
 
 /*
+	Rubrique des réglages, ouverte depuis sa tuile.
+	label : titre de la tuile et de la rubrique
+	hint  : ligne sous le titre de la rubrique ouverte
+*/
+enum class SettingsSection(
+	val label : String,
+	val hint  : String
+)
+{
+	DATA("Données", "Dossier des données, sauvegardes et démonstration"),
+	APPEARANCE("Apparence", "Clair ou sombre, barre de navigation, couleurs des données et fond"),
+	SYNC("Synchronisation", "Wi-Fi de la maison et fonctionnement en arrière-plan"),
+	PRIVACY("Confidentialité", "Montants masqués sur tous les écrans"),
+	PROFILES("Profils", "Les membres de la famille et leurs comptes"),
+	TOURS("Tutoriels", "Visites guidées de chaque page"),
+	ASSISTANT("Assistant", "Le compagnon qui résume le mois"),
+	UPDATES("Mises à jour", "Version installée et nouvelles versions"),
+	CATEGORIES("Catégories", "Catégories de dépense et de revenu")
+}
+
+/*
 	Position dans l'appli.
 	screen    : écran principal
 	accountId : compte ouvert depuis le tableau de bord ; null sinon
 	month     : mois affiché dans la vue d'un compte Courant ; null : mois courant
+	section   : rubrique des réglages ouverte ; null : grille des tuiles
 */
 data class Navigation(
-	val screen    : Screen     = Screen.DASHBOARD,
-	val accountId : String?    = null,
-	val month     : YearMonth? = null
+	val screen    : Screen           = Screen.DASHBOARD,
+	val accountId : String?          = null,
+	val month     : YearMonth?       = null,
+	val section   : SettingsSection? = null
 )
 
 /*
@@ -1116,6 +1139,17 @@ class DesktopController(
 	}
 
 	/*
+		Ouvre une rubrique des réglages (ferme le panneau).
+		inSection : rubrique ; null pour revenir à la grille des tuiles
+	*/
+	fun openSettings(inSection: SettingsSection?) = whenDiscarded {
+		fBank.value = null
+		fNavigation.value = Navigation(Screen.SETTINGS, section = inSection)
+		fPanel.value      = null
+		fDirty.value      = false
+	}
+
+	/*
 		Ouvre la vue d'un compte, sur le mois courant.
 		inAccountId : compte
 	*/
@@ -1136,7 +1170,8 @@ class DesktopController(
 	}
 
 	/*
-		Retour : de la vue d'un compte vers le tableau de bord.
+		Retour : de la vue d'un compte vers le tableau de bord, d'une rubrique
+		des réglages vers la grille des tuiles.
 	*/
 	fun back() = whenDiscarded {
 		fBank.value = null

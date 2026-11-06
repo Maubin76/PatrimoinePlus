@@ -10,6 +10,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import fr.maubin.patrimoineplus.desktop.DesktopController
 import fr.maubin.patrimoineplus.desktop.Screen
+import fr.maubin.patrimoineplus.desktop.SettingsSection
 import fr.maubin.patrimoineplus.desktop.data.DesktopConfig
 import fr.maubin.patrimoineplus.desktop.data.Workspace
 import fr.maubin.patrimoineplus.ui.theme.ThemeMode
@@ -111,6 +112,7 @@ class TourUiTest
 		fCompose.waitForIdle()
 		assertNull(vApp.tour.value)												// visites coupées
 		vApp.show(Screen.SETTINGS)
+		vApp.openSettings(SettingsSection.TOURS)
 		fCompose.waitForIdle()
 		fCompose.onNodeWithContentDescription("Revoir le tutoriel Budget").performScrollTo().performClick()
 		fCompose.waitForIdle()
@@ -118,6 +120,7 @@ class TourUiTest
 		assertEquals(Screen.BUDGET.name, vApp.tour.value!!.key)
 		vApp.finishTour()
 		vApp.show(Screen.SETTINGS)
+		vApp.openSettings(SettingsSection.TOURS)
 		fCompose.waitForIdle()
 		capture(vApp, "29-reglages-tutoriels")
 		fCompose.onNodeWithText("Réactiver tous les tutoriels").performScrollTo().performClick()

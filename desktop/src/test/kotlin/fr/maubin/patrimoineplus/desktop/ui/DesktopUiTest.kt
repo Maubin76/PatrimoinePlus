@@ -10,6 +10,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import fr.maubin.patrimoineplus.desktop.DesktopController
 import fr.maubin.patrimoineplus.desktop.Screen
+import fr.maubin.patrimoineplus.desktop.SettingsSection
 import fr.maubin.patrimoineplus.desktop.data.DesktopConfig
 import fr.maubin.patrimoineplus.desktop.data.Workspace
 import org.jetbrains.skia.EncodedImageFormat
@@ -63,6 +64,7 @@ class DesktopUiTest
 		fCompose.onNodeWithText("Livret A").performScrollTo().performClick()
 		fCompose.onNodeWithText("Solde au jour").assertExists()
 		fCompose.onNodeWithContentDescription("Réglages").performClick()					// rail d'icônes : nom de l'écran en description
+		fCompose.onNodeWithText("Données").performClick()									// tuile Données : ouvre la section
 		fCompose.onNodeWithText("Fermer").performClick()
 		fCompose.onNodeWithText("Choisir le dossier des données…").assertExists()
 	}
@@ -112,6 +114,7 @@ class DesktopUiTest
 		capture("08-saisie-panneau") { App(vApp) { null } }
 		vApp.closePanel()
 		vApp.show(Screen.SETTINGS)
+		vApp.openSettings(SettingsSection.CATEGORIES)
 		capture("09-categories") { App(vApp) { null } }
 		vApp.openPanel(fr.maubin.patrimoineplus.desktop.Panel.AccountSheet(vApp.workspace.value.data.accounts.first { it.name == "PEA" }.id))
 		capture("10-fiche-compte") { App(vApp) { null } }

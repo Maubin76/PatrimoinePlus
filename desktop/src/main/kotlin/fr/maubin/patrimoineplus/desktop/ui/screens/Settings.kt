@@ -74,12 +74,30 @@ import fr.maubin.patrimoineplus.ui.components.GhostButton
 import fr.maubin.patrimoineplus.ui.components.BackdropSettings
 import fr.maubin.patrimoineplus.desktop.ui.LocalPhotoPicker
 import androidx.compose.foundation.layout.Box
-import fr.maubin.patrimoineplus.desktop.data.NavPosition
+import fr.maubin.patrimoineplus.desktop.data.NavPosition
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.vector.ImageVector
+import fr.maubin.patrimoineplus.desktop.SettingsSection
+import fr.maubin.patrimoineplus.desktop.data.DesktopSettings
+import fr.maubin.patrimoineplus.ui.components.Tile
+import fr.maubin.patrimoineplus.ui.components.kBackdropTints
+import fr.maubin.patrimoineplus.ui.components.backdropCode
+import fr.maubin.patrimoineplus.domain.model.CategoryKind
 
 /*
-	Réglages de l'appli PC : source des données (dossier des données,
-	démonstration), apparence et thème de couleurs, mode discret, catégories.
-	inSpace        : données (catégories)
+	Réglages de l'appli PC : grille de tuiles, une par rubrique (icône, nom,
+	résumé de l'état) ; un clic ouvre la rubrique, « Tous les réglages »
+	revient à la grille.
+	inSpace        : données (profils, catégories, thèmes)
 	inController   : contrôleur
 	inOnPickFolder : ouvre le sélecteur de dossier
 */
@@ -90,142 +108,381 @@ fun SettingsScreen(
 	inOnPickFolder : () -> Path?
 )
 {
+	val vNav by inController.navigation.collectAsState()					// rubrique ouverte
+	AnimatedContent(targetState = vNav.section, transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(120)) }, label = "rubrique") { inSection ->
+		Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp).padding(top = 6.dp, bottom = 28.dp).padding(bottom = LocalAssistantRoom.current)) {
+			if (inSection == null) SettingsTiles(inSpace, inController)
+			else SettingsDetail(inSection, inSpace, inController, inOnPickFolder)
+		}
+	}
+}
+
+/*
+	Grille des rubriques : trois tuiles par rangée, de même hauteur.
+	inSpace      : données (profils, catégories)
+	inController : contrôleur
+*/
+@Composable
+private fun SettingsTiles(
+	inSpace      : WorkspaceState,
+	inController : DesktopController
+)
+{
 	val vSettings by inController.settings.collectAsState()				// réglages
-	val vColors   = MaterialTheme.colorScheme									// palette courante
-	Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 28.dp).padding(top = 6.dp, bottom = 28.dp).padding(bottom = LocalAssistantRoom.current)) {
-		PageHeader(inTitle = "Réglages", inSubtitle = "Données, apparence, mises à jour et aide", inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) })
-		Spacer(Modifier.height(28.dp))
-		SectionHeader(inTitle = "Données", inModifier = Modifier.tourAnchor("settings.data"))
-		Spacer(Modifier.height(12.dp))
-		FloatingCard {
-			Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-				Text(
-					text  = when (val vSource = vSettings.source)
-					{
-						Source.Demo      -> "Démonstration : données fictives en mémoire, rien n’est lu ni écrit sur le disque."
-						is Source.Folder -> "Dossier des données : ${vSource.path}\nFichier : $kSyncFileName, enregistré à chaque modification."
-						Source.None      -> "Aucune source."
-					},
-					style = MaterialTheme.typography.bodyLarge
-				)
-				val vBackup by inController.backupInfo.collectAsState()								// sauvegardes du PC
-				vBackup?.let { inInfo ->
-					Text(inInfo, style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
-				}
-				Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-					if (vBackup != null) GhostButton(onClick = { inController.backupIfDue(inForce = true) }) { Text("Sauvegarder maintenant") }
-					GhostButton(onClick = { inOnPickFolder()?.let(inController::openFolder) }) { Text("Choisir un dossier…") }
-					if (vSettings.source != Source.Demo)
-					{
-						GhostButton(onClick = inController::openDemo) { Text("Passer en démonstration") }
-					}
-					GhostButton(onClick = inController::closeSource) { Text("Fermer") }
+	PageHeader(inTitle = "Réglages", inSubtitle = "Une tuile par rubrique ; un clic l’ouvre", inPrimary = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) })
+	Spacer(Modifier.height(28.dp))
+	Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+		SettingsSection.entries.chunked(3).forEach { inRow ->
+			Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+				inRow.forEach { inSection ->
+					val vAnchor = kSectionAnchors[inSection]?.let { Modifier.tourAnchor(it) } ?: Modifier		// repère de la visite guidée
+					SectionTile(inSection, sectionSummary(inSection, inSpace, vSettings, inController), Modifier.weight(1f).fillMaxHeight().then(vAnchor)) { inController.openSettings(inSection) }
 				}
 			}
 		}
-		Spacer(Modifier.height(32.dp))
-		SectionHeader(inTitle = "Apparence", inModifier = Modifier.tourAnchor("settings.appearance"))
+	}
+}
+
+private val kSectionAnchors = mapOf(
+	SettingsSection.DATA       to "settings.data",
+	SettingsSection.APPEARANCE to "settings.appearance",
+	SettingsSection.PROFILES   to "settings.profiles",
+	SettingsSection.TOURS      to "settings.tours"
+)																				// tuiles montrées par la visite guidée
+
+/*
+	Tuile d'une rubrique : icône dans un rond, nom, chevron, puis résumé de
+	l'état en deux lignes au plus.
+	inSection  : rubrique
+	inSummary  : résumé de l'état
+	inModifier : modificateur appliqué
+	inOnClick  : ouvre la rubrique
+*/
+@Composable
+private fun SectionTile(
+	inSection  : SettingsSection,
+	inSummary  : String,
+	inModifier : Modifier,
+	inOnClick  : () -> Unit
+)
+{
+	val vColors = MaterialTheme.colorScheme										// palette courante
+	Tile(inModifier = inModifier, inOnClick = inOnClick, inClickLabel = "Ouvrir la rubrique ${inSection.label}") {
+		Row(verticalAlignment = Alignment.CenterVertically) {
+			Box(Modifier.size(40.dp).clip(CircleShape).background(vColors.onSurface.copy(alpha = 0.05f)), contentAlignment = Alignment.Center) {
+				Icon(sectionIcon(inSection), contentDescription = null, modifier = Modifier.size(20.dp))
+			}
+			Spacer(Modifier.width(12.dp))
+			Text(inSection.label, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Normal), modifier = Modifier.weight(1f))
+			Icon(LineIcons.ChevronRight, contentDescription = null, tint = vColors.onSurfaceVariant, modifier = Modifier.size(18.dp))
+		}
 		Spacer(Modifier.height(12.dp))
-		Choice(ThemeMode.entries.map { it to it.label }, vSettings.appearance, inController::setAppearance)
-		Spacer(Modifier.height(16.dp))
-		Text("Barre de navigation", style = MaterialTheme.typography.titleMedium)
-		Spacer(Modifier.height(8.dp))
-		Choice(NavPosition.entries.map { it to it.label }, vSettings.nav, inController::setNavPosition)
-		Spacer(Modifier.height(16.dp))
-		Text("Couleurs des données", style = MaterialTheme.typography.titleMedium)
-		Spacer(Modifier.height(8.dp))
-		val vCustom = inSpace.data.themes.firstOrNull { it.id == vSettings.palette }	// thème personnalisé choisi ; null sans
-		Text(
-			vCustom?.let { "Thème personnalisé « ${it.name} » : ses cinq couleurs remplacent celles de la brume (hausses, baisses, épargne, immobilier, secondaire)." }
-				?: "Brume lumineuse : orange, bleu, vert, bleu ciel et rouge pour les données ; un thème personnalisé peut les remplacer.",
-			style = MaterialTheme.typography.bodyMedium,
-			color = vColors.onSurfaceVariant
-		)
-		if (vCustom != null)
+		Text(inSummary, style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+	}
+}
+
+/*
+	Icône d'une rubrique.
+	inSection : rubrique
+*/
+private fun sectionIcon(inSection: SettingsSection): ImageVector =
+	when (inSection)
+	{
+		SettingsSection.DATA       -> LineIcons.Folder
+		SettingsSection.APPEARANCE -> LineIcons.Drop
+		SettingsSection.SYNC       -> LineIcons.Wifi
+		SettingsSection.PRIVACY    -> LineIcons.Lock
+		SettingsSection.PROFILES   -> LineIcons.Family
+		SettingsSection.TOURS      -> LineIcons.Help
+		SettingsSection.ASSISTANT  -> LineIcons.Smile
+		SettingsSection.UPDATES    -> LineIcons.Download
+		SettingsSection.CATEGORIES -> LineIcons.Tag
+	}
+
+/*
+	Résumé de l'état d'une rubrique, pour sa tuile.
+	inSection    : rubrique
+	inSpace      : données (profils, catégories)
+	inSettings   : réglages
+	inController : contrôleur (version installée)
+*/
+private fun sectionSummary(
+	inSection    : SettingsSection,
+	inSpace      : WorkspaceState,
+	inSettings   : DesktopSettings,
+	inController : DesktopController
+): String =
+	when (inSection)
+	{
+		SettingsSection.DATA       -> when (val vSource = inSettings.source)
 		{
-			Spacer(Modifier.height(12.dp))
-			GhostPill("Revenir aux couleurs de la brume", { inController.setColorTheme(ColorTheme.COLORFUL) })
+			Source.Demo      -> "Démonstration : données fictives, jamais enregistrées"
+			is Source.Folder -> vSource.path.toString()
+			Source.None      -> "Aucune source"
 		}
-		Spacer(Modifier.height(12.dp))
-		CustomThemes(inSpace.data.themes, vCustom?.id, inController)
-		Spacer(Modifier.height(24.dp))
-		val vPick = LocalPhotoPicker.current																// sélecteur de photo
-		Box(Modifier.tourAnchor("settings.backdrop")) {
-			FloatingCard {
-			Box(Modifier.padding(24.dp)) {
-			BackdropSettings(
-				inCode          = vSettings.background,
-				inBlur          = vSettings.blur,
-				inVeil          = vSettings.veil,
-				inOnColor       = inController::setBackgroundColor,
-				inOnPickPhoto   = { vPick()?.let(inController::setBackgroundPhoto) },
-				inOnRemovePhoto = inController::removeBackgroundPhoto,
-				inOnBlur        = inController::setBackgroundBlur,
-				inOnVeil        = inController::setBackgroundVeil
-			)
-			}
-			}
+		SettingsSection.APPEARANCE -> "${inSettings.appearance.label} · barre ${navPlace(inSettings.nav)} · ${backdropName(inSettings.background)}"
+		SettingsSection.SYNC       -> if (inSettings.wifiSync) "Wi-Fi de la maison activé" else "Wi-Fi désactivé"
+		SettingsSection.PRIVACY    -> if (inSettings.hidden) "Mode discret : montants masqués" else "Montants visibles"
+		SettingsSection.PROFILES   -> inSpace.data.profiles.let { inList -> "${inList.size} profil${if (inList.size > 1) "s" else ""} : ${inList.joinToString(", ") { it.name }}" }
+		SettingsSection.TOURS      -> if (inSettings.toursOff) "Visites coupées" else "${Tours.keys.count { it in inSettings.toursSeen }} sur ${Tours.keys.size} vues"
+		SettingsSection.ASSISTANT  -> when
+		{
+			!inSettings.assistant -> "Masqué"
+			inSettings.calm       -> "Affiché, en mode calme"
+			else                  -> "Affiché"
 		}
-		Spacer(Modifier.height(32.dp))
-		SectionHeader(inTitle = "Synchronisation avec le téléphone")
-		Spacer(Modifier.height(12.dp))
-		FloatingCard {
-			Column(Modifier.padding(horizontal = 24.dp, vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-				WifiSyncSwitch(vSettings.wifiSync, inController::setWifiSync)
-				BackgroundOptions(inController)
-				TextButton(onClick = { inController.show(fr.maubin.patrimoineplus.desktop.Screen.DEVICES) }) { Text("Appairage et appareils : page Appareils") }
-			}
-		}
-		Spacer(Modifier.height(32.dp))
-		SectionHeader(inTitle = "Confidentialité")
-		Spacer(Modifier.height(12.dp))
-		FloatingCard {
-			Row(Modifier.padding(horizontal = 24.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-				Column(Modifier.weight(1f)) {
-					Text("Mode discret", style = MaterialTheme.typography.titleMedium)
-					Text("Masque les montants sur tous les écrans.", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
-				}
-				Switch(checked = vSettings.hidden, onCheckedChange = { inController.toggleHidden() })
-			}
-		}
-		Spacer(Modifier.height(32.dp))
-		SectionHeader(inTitle = "Profils", inModifier = Modifier.tourAnchor("settings.profiles"))
-		Spacer(Modifier.height(12.dp))
-		ProfilesSection(inSpace.data.profiles, inController)
-		Spacer(Modifier.height(32.dp))
-		SectionHeader(inTitle = "Tutoriels", inModifier = Modifier.tourAnchor("settings.tours"))
-		Spacer(Modifier.height(12.dp))
-		ToursSection(vSettings.toursSeen, vSettings.toursOff, inController)
-		Spacer(Modifier.height(32.dp))
-		SectionHeader(inTitle = "Assistant")
-		Spacer(Modifier.height(12.dp))
-		FloatingCard {
-			Column(Modifier.padding(horizontal = 24.dp, vertical = 18.dp)) {
-				Row(verticalAlignment = Alignment.CenterVertically) {
-					Column(Modifier.weight(1f)) {
-						Text("Afficher l’assistant", style = MaterialTheme.typography.titleMedium)
-						Text("En haut à gauche : son humeur résume le mois (budget, objectifs, patrimoine) ; survolez-le ou cliquez dessus pour le détail.", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
-					}
-					Switch(checked = vSettings.assistant, onCheckedChange = inController::setAssistant, modifier = Modifier.semantics { contentDescription = "Afficher l’assistant" })
-				}
-				Spacer(Modifier.height(12.dp))
-				Row(verticalAlignment = Alignment.CenterVertically) {
-					Column(Modifier.weight(1f)) {
-						Text("Mode calme", style = MaterialTheme.typography.titleMedium)
-						Text("Il ne fait plus que suivre le pointeur des yeux : ni réactions, ni bulle qui s’ouvre d’elle-même.", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
-					}
-					Switch(checked = vSettings.calm, enabled = vSettings.assistant, onCheckedChange = inController::setAssistantCalm, modifier = Modifier.semantics { contentDescription = "Mode calme de l’assistant" })
-				}
-			}
-		}
-		Spacer(Modifier.height(32.dp))
-		SectionHeader(inTitle = "Mises à jour")
-		Spacer(Modifier.height(12.dp))
-		UpdatesSection(vSettings.updates, inController)
-		Spacer(Modifier.height(32.dp))
-		SectionHeader(inTitle = "Catégories")
-		Spacer(Modifier.height(12.dp))
+		SettingsSection.UPDATES    -> "Version ${inController.appVersion ?: "inconnue"}${if (inSettings.updates) " · vérifiée au démarrage" else ""}"
+		SettingsSection.CATEGORIES -> inSpace.data.categories.let { inList -> "${inList.count { it.kind == CategoryKind.EXPENSE }} de dépense, ${inList.count { it.kind == CategoryKind.INCOME }} de revenu" }
+	}
+
+/*
+	Place de la barre de navigation, en toutes lettres.
+	inPosition : position
+*/
+private fun navPlace(inPosition: NavPosition): String =
+	when (inPosition)
+	{
+		NavPosition.TOP    -> "en haut"
+		NavPosition.BOTTOM -> "en bas"
+		NavPosition.LEFT   -> "à gauche"
+		NavPosition.RIGHT  -> "à droite"
+	}
+
+/*
+	Nom du fond choisi : par défaut, photo, teinte proposée ou code libre.
+	inCode : réglage du fond (vide, « photo » ou « #RRGGBB »)
+*/
+private fun backdropName(inCode: String): String =
+	when (inCode)
+	{
+		""   -> "fond par défaut"
+		"photo" -> "fond photo"
+		else -> kBackdropTints.firstOrNull { backdropCode(it.color) == inCode }?.let { "fond ${it.name.lowercase()}" } ?: "fond $inCode"
+	}
+
+/*
+	Rubrique ouverte : titre et ligne d'aide, « Tous les réglages » pour
+	revenir à la grille, puis ses réglages (largeur limitée, sauf les
+	catégories sur deux colonnes).
+	inSection      : rubrique
+	inSpace        : données
+	inController   : contrôleur
+	inOnPickFolder : ouvre le sélecteur de dossier
+*/
+@Composable
+private fun SettingsDetail(
+	inSection      : SettingsSection,
+	inSpace        : WorkspaceState,
+	inController   : DesktopController,
+	inOnPickFolder : () -> Path?
+)
+{
+	val vSettings by inController.settings.collectAsState()				// réglages
+	PageHeader(
+		inTitle    = inSection.label,
+		inSubtitle = inSection.hint,
+		inActions  = { GhostPill("Tous les réglages", inController::back, inIcon = LineIcons.Back) },
+		inPrimary  = { LemonButton("Nouvelle opération", inController::newOperation, inIcon = LineIcons.Plus) }
+	)
+	Spacer(Modifier.height(28.dp))
+	if (inSection == SettingsSection.CATEGORIES)
+	{
 		CategoriesSection(inSpace, inController)
+		return
+	}
+	Column(Modifier.widthIn(max = 920.dp)) {
+		when (inSection)
+		{
+			SettingsSection.DATA       -> DataSection(vSettings.source, inController, inOnPickFolder)
+			SettingsSection.APPEARANCE -> AppearanceSection(inSpace, vSettings, inController)
+			SettingsSection.SYNC       -> SyncSection(vSettings.wifiSync, inController)
+			SettingsSection.PRIVACY    -> PrivacySection(vSettings.hidden, inController)
+			SettingsSection.PROFILES   -> ProfilesSection(inSpace.data.profiles, inController)
+			SettingsSection.TOURS      -> ToursSection(vSettings.toursSeen, vSettings.toursOff, inController)
+			SettingsSection.ASSISTANT  -> AssistantSection(vSettings.assistant, vSettings.calm, inController)
+			SettingsSection.UPDATES    -> UpdatesSection(vSettings.updates, inController)
+			SettingsSection.CATEGORIES -> Unit
+		}
+	}
+}
+
+/*
+	Données : source affichée, sauvegardes du PC, choix d'un dossier,
+	démonstration et fermeture.
+	inSource       : source des données
+	inController   : contrôleur
+	inOnPickFolder : ouvre le sélecteur de dossier
+*/
+@Composable
+private fun DataSection(
+	inSource       : Source,
+	inController   : DesktopController,
+	inOnPickFolder : () -> Path?
+)
+{
+	val vColors = MaterialTheme.colorScheme										// palette courante
+	FloatingCard {
+		Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+			Text(
+				text  = when (inSource)
+				{
+					Source.Demo      -> "Démonstration : données fictives en mémoire, rien n’est lu ni écrit sur le disque."
+					is Source.Folder -> "Dossier des données : ${inSource.path}\nFichier : $kSyncFileName, enregistré à chaque modification."
+					Source.None      -> "Aucune source."
+				},
+				style = MaterialTheme.typography.bodyLarge
+			)
+			val vBackup by inController.backupInfo.collectAsState()								// sauvegardes du PC
+			vBackup?.let { inInfo ->
+				Text(inInfo, style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+			}
+			Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+				if (vBackup != null) GhostButton(onClick = { inController.backupIfDue(inForce = true) }) { Text("Sauvegarder maintenant") }
+				GhostButton(onClick = { inOnPickFolder()?.let(inController::openFolder) }) { Text("Choisir un dossier…") }
+				if (inSource != Source.Demo)
+				{
+					GhostButton(onClick = inController::openDemo) { Text("Passer en démonstration") }
+				}
+				GhostButton(onClick = inController::closeSource) { Text("Fermer") }
+			}
+		}
+	}
+}
+
+/*
+	Apparence : clair ou sombre, position de la barre de navigation,
+	couleurs des données (thèmes personnalisés), fond.
+	inSpace      : données (thèmes personnalisés)
+	inSettings   : réglages
+	inController : contrôleur
+*/
+@Composable
+private fun AppearanceSection(
+	inSpace      : WorkspaceState,
+	inSettings   : DesktopSettings,
+	inController : DesktopController
+)
+{
+	val vColors = MaterialTheme.colorScheme										// palette courante
+	Text("Mode", style = MaterialTheme.typography.titleMedium)
+	Spacer(Modifier.height(8.dp))
+	Choice(ThemeMode.entries.map { it to it.label }, inSettings.appearance, inController::setAppearance)
+	Spacer(Modifier.height(20.dp))
+	Text("Barre de navigation", style = MaterialTheme.typography.titleMedium)
+	Spacer(Modifier.height(8.dp))
+	Choice(NavPosition.entries.map { it to it.label }, inSettings.nav, inController::setNavPosition)
+	Spacer(Modifier.height(20.dp))
+	Text("Couleurs des données", style = MaterialTheme.typography.titleMedium)
+	Spacer(Modifier.height(8.dp))
+	val vCustom = inSpace.data.themes.firstOrNull { it.id == inSettings.palette }	// thème personnalisé choisi ; null sans
+	Text(
+		vCustom?.let { "Thème personnalisé « ${it.name} » : ses cinq couleurs remplacent celles de la brume (hausses, baisses, épargne, immobilier, secondaire)." }
+			?: "Brume lumineuse : orange, bleu, vert, bleu ciel et rouge pour les données ; un thème personnalisé peut les remplacer.",
+		style = MaterialTheme.typography.bodyMedium,
+		color = vColors.onSurfaceVariant
+	)
+	if (vCustom != null)
+	{
+		Spacer(Modifier.height(12.dp))
+		GhostPill("Revenir aux couleurs de la brume", { inController.setColorTheme(ColorTheme.COLORFUL) })
+	}
+	Spacer(Modifier.height(12.dp))
+	CustomThemes(inSpace.data.themes, vCustom?.id, inController)
+	Spacer(Modifier.height(24.dp))
+	val vPick = LocalPhotoPicker.current																// sélecteur de photo
+	Box(Modifier.tourAnchor("settings.backdrop")) {
+		FloatingCard {
+			Box(Modifier.padding(24.dp)) {
+				BackdropSettings(
+					inCode          = inSettings.background,
+					inBlur          = inSettings.blur,
+					inVeil          = inSettings.veil,
+					inOnColor       = inController::setBackgroundColor,
+					inOnPickPhoto   = { vPick()?.let(inController::setBackgroundPhoto) },
+					inOnRemovePhoto = inController::removeBackgroundPhoto,
+					inOnBlur        = inController::setBackgroundBlur,
+					inOnVeil        = inController::setBackgroundVeil
+				)
+			}
+		}
+	}
+}
+
+/*
+	Synchronisation avec le téléphone : Wi-Fi de la maison, fonctionnement en
+	arrière-plan, lien vers la page Appareils.
+	inWifi       : synchronisation Wi-Fi active
+	inController : contrôleur
+*/
+@Composable
+private fun SyncSection(
+	inWifi       : Boolean,
+	inController : DesktopController
+)
+{
+	FloatingCard {
+		Column(Modifier.padding(horizontal = 24.dp, vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+			WifiSyncSwitch(inWifi, inController::setWifiSync)
+			BackgroundOptions(inController)
+			TextButton(onClick = { inController.show(fr.maubin.patrimoineplus.desktop.Screen.DEVICES) }) { Text("Appairage et appareils : page Appareils") }
+		}
+	}
+}
+
+/*
+	Confidentialité : mode discret.
+	inHidden     : montants masqués
+	inController : contrôleur
+*/
+@Composable
+private fun PrivacySection(
+	inHidden     : Boolean,
+	inController : DesktopController
+)
+{
+	FloatingCard {
+		Row(Modifier.padding(horizontal = 24.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+			Column(Modifier.weight(1f)) {
+				Text("Mode discret", style = MaterialTheme.typography.titleMedium)
+				Text("Masque les montants sur tous les écrans.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+			}
+			Switch(checked = inHidden, onCheckedChange = { inController.toggleHidden() })
+		}
+	}
+}
+
+/*
+	Assistant : affiché ou non, mode calme.
+	inOn         : assistant affiché
+	inCalm       : mode calme
+	inController : contrôleur
+*/
+@Composable
+private fun AssistantSection(
+	inOn         : Boolean,
+	inCalm       : Boolean,
+	inController : DesktopController
+)
+{
+	val vColors = MaterialTheme.colorScheme										// palette courante
+	FloatingCard {
+		Column(Modifier.padding(horizontal = 24.dp, vertical = 18.dp)) {
+			Row(verticalAlignment = Alignment.CenterVertically) {
+				Column(Modifier.weight(1f)) {
+					Text("Afficher l’assistant", style = MaterialTheme.typography.titleMedium)
+					Text("En haut à gauche : son humeur résume le mois (budget, objectifs, patrimoine) ; survolez-le ou cliquez dessus pour le détail.", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+				}
+				Switch(checked = inOn, onCheckedChange = inController::setAssistant, modifier = Modifier.semantics { contentDescription = "Afficher l’assistant" })
+			}
+			Spacer(Modifier.height(12.dp))
+			Row(verticalAlignment = Alignment.CenterVertically) {
+				Column(Modifier.weight(1f)) {
+					Text("Mode calme", style = MaterialTheme.typography.titleMedium)
+					Text("Il ne fait plus que suivre le pointeur des yeux : ni réactions, ni bulle qui s’ouvre d’elle-même.", style = MaterialTheme.typography.bodyMedium, color = vColors.onSurfaceVariant)
+				}
+				Switch(checked = inCalm, enabled = inOn, onCheckedChange = inController::setAssistantCalm, modifier = Modifier.semantics { contentDescription = "Mode calme de l’assistant" })
+			}
+		}
 	}
 }
 

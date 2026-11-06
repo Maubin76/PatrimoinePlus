@@ -10,6 +10,7 @@ import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.Density
 import fr.maubin.patrimoineplus.desktop.DesktopController
 import fr.maubin.patrimoineplus.desktop.Screen
+import fr.maubin.patrimoineplus.desktop.SettingsSection
 import fr.maubin.patrimoineplus.desktop.data.DesktopConfig
 import fr.maubin.patrimoineplus.desktop.data.Workspace
 import fr.maubin.patrimoineplus.ui.theme.ColorTheme
@@ -63,7 +64,7 @@ class ThemesUiTest
 	fun customTheme()
 	{
 		val vConfig = DesktopConfig(fTemp.root.toPath().resolve("desktop.properties"))	// réglages
-		val vApp    = DesktopController(vConfig, Workspace(kClock), null, kClock).apply { openDemo(); setAppearance(ThemeMode.LIGHT); show(Screen.SETTINGS) }	// démonstration
+		val vApp    = DesktopController(vConfig, Workspace(kClock), null, kClock).apply { openDemo(); setAppearance(ThemeMode.LIGHT); show(Screen.SETTINGS); openSettings(SettingsSection.APPEARANCE) }	// démonstration
 		fCompose.setContent { App(vApp) { null } }
 		fCompose.waitForIdle()
 		fCompose.onNodeWithText("Créer un thème").performScrollTo().performClick()

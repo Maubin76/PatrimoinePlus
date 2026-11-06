@@ -13,6 +13,7 @@ import fr.maubin.patrimoineplus.data.demo.kDemoPartnerId
 import fr.maubin.patrimoineplus.desktop.DesktopController
 import fr.maubin.patrimoineplus.desktop.Panel
 import fr.maubin.patrimoineplus.desktop.Screen
+import fr.maubin.patrimoineplus.desktop.SettingsSection
 import fr.maubin.patrimoineplus.desktop.data.DesktopConfig
 import fr.maubin.patrimoineplus.desktop.data.Workspace
 import fr.maubin.patrimoineplus.domain.calc.kFamilyView
@@ -125,6 +126,7 @@ class ProfilesUiTest
 	{
 		val vApp = demo()																	// démonstration
 		vApp.show(Screen.SETTINGS)
+		vApp.openSettings(SettingsSection.PROFILES)
 		fCompose.setContent { App(vApp) { null } }
 		fCompose.waitForIdle()
 		fCompose.onNodeWithContentDescription("Nom du nouveau profil").performScrollTo().performTextInput("Sam")

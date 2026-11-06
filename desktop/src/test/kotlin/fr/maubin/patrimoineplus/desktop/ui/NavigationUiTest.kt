@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.Density
 import fr.maubin.patrimoineplus.desktop.DesktopController
 import fr.maubin.patrimoineplus.desktop.ReportTab
 import fr.maubin.patrimoineplus.desktop.Screen
+import fr.maubin.patrimoineplus.desktop.SettingsSection
 import fr.maubin.patrimoineplus.desktop.data.DesktopConfig
 import fr.maubin.patrimoineplus.desktop.data.Workspace
 import fr.maubin.patrimoineplus.ui.search.SearchQuery
@@ -101,8 +102,10 @@ class NavigationUiTest
 		vApp.show(Screen.SETTINGS)
 		fCompose.waitForIdle()
 		fCompose.onNodeWithText("Catégories").assertExists()
-		fCompose.onNodeWithText("Ajouter une catégorie de dépense").assertExists()
 		capture(vApp, "22-reglages")
+		vApp.openSettings(SettingsSection.CATEGORIES)
+		fCompose.waitForIdle()
+		fCompose.onNodeWithText("Ajouter une catégorie de dépense").assertExists()
 	}
 
 	/*

@@ -24,6 +24,7 @@ import fr.maubin.patrimoineplus.data.sync.kSyncFileName
 import fr.maubin.patrimoineplus.desktop.DesktopController
 import fr.maubin.patrimoineplus.desktop.Panel
 import fr.maubin.patrimoineplus.desktop.Screen
+import fr.maubin.patrimoineplus.desktop.SettingsSection
 import fr.maubin.patrimoineplus.desktop.data.DesktopConfig
 import fr.maubin.patrimoineplus.desktop.data.LoadStatus
 import fr.maubin.patrimoineplus.desktop.data.Workspace
@@ -201,6 +202,7 @@ class DesktopEditingTest
 	{
 		val vApp = demoApp()														// contrôleur
 		vApp.show(Screen.SETTINGS)
+		vApp.openSettings(SettingsSection.CATEGORIES)
 		fCompose.onNodeWithText("Ajouter une catégorie de dépense").performScrollTo().performClick()
 		type("Nom", "Cadeaux")
 		fCompose.onNodeWithText("Enregistrer").performClick()

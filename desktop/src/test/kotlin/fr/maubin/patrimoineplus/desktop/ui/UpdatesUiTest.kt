@@ -12,6 +12,7 @@ import fr.maubin.patrimoineplus.data.update.Release
 import fr.maubin.patrimoineplus.data.update.ReleaseAsset
 import fr.maubin.patrimoineplus.desktop.DesktopController
 import fr.maubin.patrimoineplus.desktop.Screen
+import fr.maubin.patrimoineplus.desktop.SettingsSection
 import fr.maubin.patrimoineplus.desktop.data.DesktopConfig
 import fr.maubin.patrimoineplus.desktop.data.Workspace
 import fr.maubin.patrimoineplus.desktop.update.DesktopUpdater
@@ -231,6 +232,7 @@ class UpdatesUiTest
 	{
 		val vApp = controller(release())													// contrôleur
 		vApp.show(Screen.SETTINGS)
+		vApp.openSettings(SettingsSection.UPDATES)
 		fCompose.setContent { App(vApp) { null } }
 		fCompose.waitForIdle()
 		fCompose.onNodeWithText("Version installée : 1.2").performScrollTo().assertExists()

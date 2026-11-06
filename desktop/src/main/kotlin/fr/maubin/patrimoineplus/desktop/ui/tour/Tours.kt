@@ -71,7 +71,7 @@ object Tours
 			)
 			Screen.SETTINGS.name   -> listOf(
 				TourStep("settings.data", "Vos données", "Le dossier où ce PC range vos données, ou la démonstration ; rien ne sort de la maison, le téléphone se synchronise par le Wi-Fi familial."),
-				TourStep("settings.appearance", "Apparence", "Clair, sombre ou comme le système ; un thème personnalisé remplace les couleurs des données."),
+				TourStep("settings.appearance", "Apparence", "Clair ou sombre, place de la barre de navigation, couleurs des données et fond (couleur ou photo)."),
 				TourStep("settings.profiles", "Profils", "Chaque membre de la famille suit ses comptes ; la vue Famille les rassemble tous."),
 				TourStep("settings.tours", "Tutoriels", "Revoyez la visite d'une page, ou réactivez-les toutes.")
 			)

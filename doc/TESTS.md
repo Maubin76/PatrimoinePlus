@@ -1,11 +1,11 @@
 # Tests
 
-Tous les tests tournent sur la JVM, sans émulateur (404 tests au total) :
+Tous les tests tournent sur la JVM, sans émulateur (406 tests au total) :
 
 ```sh
 ./gradlew :core:test                    # module commun : 206 tests, Kotlin pur (core/src/test)
 ./gradlew :app:testDebugUnitTest        # appli Android : 85 tests, Robolectric (app/src/test)
-./gradlew :desktop:test                 # appli PC : 113 tests (desktop/src/test)
+./gradlew :desktop:test                 # appli PC : 115 tests (desktop/src/test)
 ./gradlew :app:recordRoborazziDebug     # régénère les captures d'écran
 ```
 
@@ -64,6 +64,7 @@ communes (fausse source de cours, réponses Yahoo enregistrées) sont dans
 | `MonthGoalsTest` (3) | `:core` `ui/goals` (objectifs du mois) | objectifs tirés du budget (un par thème prévu, épargne des investissements prévus, identifiants stables), refixer remplace, mois rangés ; évaluation (dépassé, tenu, manqué sur un mois écoulé ; en cours, atteint sur le mois en cours ; opération à venir non comptée) ; fichier relu à l'identique, ancien fichier sans mois lisible |
 | `PlanningTest` (6) | `:core` `domain/calc/Planning`, `data/edit` (récurrences et crédits) | **tableau d'amortissement** (mensualité de 846,94 € pour 10 000 € à 3 % sur 12 mois, intérêts du premier mois, capital remboursé en entier pour plusieurs taux et durées, taux nul) ; dates d'échéance (31 → fin des mois courts, sans dériver ; fin ; après la dernière traitée) ; **échéances arrivées créées une fois** (dépenses, virements, **une opération par mensualité** : payeur puis compte Crédit, intérêts et assurance comptés dans la catégorie ; mêmes identifiants sur deux appareils ; opération supprimée non recréée ; compte archivé ignoré) ; crédit créé sur le fichier (solde du jour = capital restant dû, horodatages tirés de la date, second passage sans effet, fichier valide) ; budget : le thème Crédit compte capital et intérêts ; récurrences : refus, dernière échéance gardée, catégorie réaffectée, compte supprimé, **type d'un compte utilisé par une récurrence verrouillé** ; **saisie** : prochaine échéance (après la dernière créée, aujourd'hui compris, future, terminée), remboursement régulier qui garde son signe et sa dernière échéance |
 | `PropertyUiTest` (1) | `:desktop` comptes de biens (sans écran) | tableau de bord et pages Immobilier et Collection ; objet ajouté par le panneau (déjà possédé : aucun compte débité) ; vente de la montre par le panneau (plus-value affichée, prix versé sur le compte payeur) ; captures `19-*.png` |
+| `SettingsTilesUiTest` (2) | réglages du PC en tuiles | résumés des tuiles à jour (source, apparence avec la barre à gauche, mode discret) ; la tuile Apparence ouvre sa rubrique, « Tous les réglages » et la page Réglages reviennent à la grille ; captures `reglages-tuiles-clair/sombre.png`, `reglages-apparence.png` |
 | `NavPositionUiTest` (3) | position de la barre de navigation du PC | haut par défaut, chaque position mémorisée et relue, valeur inconnue ramenée en haut ; « Gauche » choisi dans Réglages › Apparence, une seule barre affichée, page Budget atteinte par son icône ; captures `navigation-top/bottom/left/right.png` (droite en sombre) |
 | `BackdropUiTest` (3), `ScreenshotTest.backdropPhoto` | fond personnalisé | teintes proposées lisibles (≥ 10:1), version sombre très foncée, codes lus et écrits, haut du fond selon la couleur ; couleur choisie et mémorisée, code illisible refusé avec un message ; photo copiée dans les réglages, prête à dessiner, image illisible refusée, retrait (copie supprimée) ; flou et voile mémorisés (bornés à 100) ; pastille « Sable » choisie dans les réglages ; captures `fond-*.png` (couleur et photo, clair et sombre, réglages ; téléphone : accueil sur photo, réglages en mode photo) |
 | `MistCapturesTest` (2) | `:desktop` refonte « brume lumineuse » | **aucune assertion** : tableau de bord en clair (première vue et page entière) et en sombre, chaque page principale et quatre vues de compte au format d'une fenêtre (1440 × 900), dans `build/captures-brume/` |

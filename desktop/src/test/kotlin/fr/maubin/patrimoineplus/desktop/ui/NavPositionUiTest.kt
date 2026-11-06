@@ -10,6 +10,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import fr.maubin.patrimoineplus.desktop.DesktopController
 import fr.maubin.patrimoineplus.desktop.Screen
+import fr.maubin.patrimoineplus.desktop.SettingsSection
 import fr.maubin.patrimoineplus.desktop.data.DesktopConfig
 import fr.maubin.patrimoineplus.desktop.data.NavPosition
 import fr.maubin.patrimoineplus.desktop.data.Workspace
@@ -95,6 +96,7 @@ class NavPositionUiTest
 	{
 		val vApp = demo()																	// démonstration
 		vApp.show(Screen.SETTINGS)
+		vApp.openSettings(SettingsSection.APPEARANCE)
 		fCompose.setContent { App(vApp) { null } }
 		fCompose.waitForIdle()
 		fCompose.onNodeWithText("Gauche").performScrollTo().performClick()

@@ -162,4 +162,28 @@ object LineIcons
 	// Ajouter : croix droite.
 	val Plus: ImageVector = lineIcon("Ajouter", "M12 5 V19", "M5 12 H19")
 
+	// Dossier : chemise à onglet.
+	val Folder: ImageVector = lineIcon("Dossier", "M3 6.5 A1.5 1.5 0 0 1 4.5 5 H9.5 L11.5 7 H19.5 A1.5 1.5 0 0 1 21 8.5 V18 A1.5 1.5 0 0 1 19.5 19.5 H4.5 A1.5 1.5 0 0 1 3 18 Z", "M3 10 H21")
+
+	// Apparence : goutte d'encre.
+	val Drop: ImageVector = lineIcon("Apparence", "M12 3.5 C15.5 8 18 11 18 14 A6 6 0 0 1 6 14 C6 11 8.5 8 12 3.5 Z")
+
+	// Synchronisation : ondes du Wi-Fi.
+	val Wifi: ImageVector = lineIcon("Wi-Fi", "M3 9.5 C8 5 16 5 21 9.5", "M6 13 C9.5 10 14.5 10 18 13", "M9 16.3 C10.8 14.9 13.2 14.9 15 16.3", "M12 19.3 V19.5")
+
+	// Confidentialité : cadenas fermé.
+	val Lock: ImageVector = lineIcon("Confidentialité", "M6 11 H18 V20 H6 Z", "M8.5 11 V8 A3.5 3.5 0 0 1 15.5 8 V11", "M12 14.5 V16.5")
+
+	// Aide : point d'interrogation dans un cercle.
+	val Help: ImageVector = lineIcon("Aide", circle(12f, 12f, 8.5f), "M9.7 9.5 A2.4 2.4 0 1 1 13 11.7 C12.3 12 12 12.6 12 13.4", "M12 16.6 V16.8")
+
+	// Assistant : visage souriant.
+	val Smile: ImageVector = lineIcon("Assistant", circle(12f, 12f, 8.5f), "M8.5 14 C9.5 15.5 10.7 16 12 16 C13.3 16 14.5 15.5 15.5 14", "M9 9.5 V10", "M15 9.5 V10")
+
+	// Mises à jour : flèche vers un plateau.
+	val Download: ImageVector = lineIcon("Mises à jour", "M12 4 V14", "M8 10.5 L12 14.5 L16 10.5", "M4.5 16 V19 H19.5 V16")
+
+	// Catégories : étiquette percée.
+	val Tag: ImageVector = lineIcon("Catégories", "M4 4 H11 L20 13 L13 20 L4 11 Z", circle(8f, 8f, 1.3f))
+
 }
