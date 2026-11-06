@@ -70,7 +70,10 @@ import fr.maubin.patrimoineplus.ui.components.GhostButton
 import fr.maubin.patrimoineplus.desktop.ui.components.PageHeader
 import fr.maubin.patrimoineplus.ui.components.LemonButton
 import fr.maubin.patrimoineplus.ui.components.GhostPill
-import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.ui.components.BackdropSettings
+import fr.maubin.patrimoineplus.desktop.ui.LocalPhotoPicker
+import androidx.compose.foundation.layout.Box
 
 /*
 	Réglages de l'appli PC : source des données (dossier des données,
@@ -140,6 +143,24 @@ fun SettingsScreen(
 		}
 		Spacer(Modifier.height(12.dp))
 		CustomThemes(inSpace.data.themes, vCustom?.id, inController)
+		Spacer(Modifier.height(24.dp))
+		val vPick = LocalPhotoPicker.current																// sélecteur de photo
+		Box(Modifier.tourAnchor("settings.backdrop")) {
+			FloatingCard {
+			Box(Modifier.padding(24.dp)) {
+			BackdropSettings(
+				inCode          = vSettings.background,
+				inBlur          = vSettings.blur,
+				inVeil          = vSettings.veil,
+				inOnColor       = inController::setBackgroundColor,
+				inOnPickPhoto   = { vPick()?.let(inController::setBackgroundPhoto) },
+				inOnRemovePhoto = inController::removeBackgroundPhoto,
+				inOnBlur        = inController::setBackgroundBlur,
+				inOnVeil        = inController::setBackgroundVeil
+			)
+			}
+			}
+		}
 		Spacer(Modifier.height(32.dp))
 		SectionHeader(inTitle = "Synchronisation avec le téléphone")
 		Spacer(Modifier.height(12.dp))

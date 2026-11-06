@@ -70,7 +70,11 @@ import fr.maubin.patrimoineplus.ui.settings.SyncVersionDialog
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
 import fr.maubin.patrimoineplus.ui.settings.NetworkDiagnosticEntry
-import fr.maubin.patrimoineplus.ui.settings.WifiSyncSection
+import fr.maubin.patrimoineplus.ui.settings.WifiSyncSection
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import fr.maubin.patrimoineplus.ui.components.BackdropSettings
 
 private const val kSlideMillis = 260									// entrée et sortie de la vue d'un compte
 
@@ -236,6 +240,7 @@ private fun MainTabs(
 					inOnGlass      = inAppViewModel::setGlassEffect,
 					inProfiles     = ProfilesActions(vView.profiles, vProfError, vProfiles::add, vProfiles::rename, vProfiles::askRemove, vPending, vProfiles::confirmRemove, vProfiles::cancelRemove),
 					inThemes       = ThemesActions(vThemes, vCustom, inAppViewModel::setCustomTheme, inAppViewModel::saveTheme, inAppViewModel::deleteTheme),
+					inBackdrop     = { BackdropChooser(inAppViewModel, vSnackbar) },
 					inUpdates      = UpdatesActions(vChecking, inUpdates.version, inUpdates::setEnabled) {
 						inUpdates.checkNow { inMessage -> vScope.launch { vSnackbar.showSnackbar(inMessage) } }
 					},
@@ -284,5 +289,37 @@ private fun demoActions(inSnackbar: SnackbarHostState): DemoActions?
 	return DemoActions(
 		onLoad  = { vDemo.loadDemo { vScope.launch { inSnackbar.showSnackbar("Données de démonstration chargées.") } } },
 		onClear = { vDemo.clearAll { vScope.launch { inSnackbar.showSnackbar("Toutes les données ont été effacées.") } } }
+	)
+}
+
+/*
+	Réglage du fond du téléphone : teintes, couleur libre, photo choisie dans
+	la galerie (sélecteur de photos d'Android, sans autorisation à donner),
+	flou et voile.
+	inAppViewModel : état partagé (fond choisi)
+	inSnackbar     : messages éphémères (photo illisible)
+*/
+@Composable
+private fun BackdropChooser(
+	inAppViewModel : AppViewModel,
+	inSnackbar     : SnackbarHostState
+)
+{
+	val vCode   by inAppViewModel.background.collectAsStateWithLifecycle()				// fond choisi
+	val vBlur   by inAppViewModel.backgroundBlur.collectAsStateWithLifecycle()			// flou
+	val vVeil   by inAppViewModel.backgroundVeil.collectAsStateWithLifecycle()			// voile
+	val vScope  = rememberCoroutineScope()													// portée des messages
+	val vPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { inUri ->
+		inUri?.let { inAppViewModel.setBackgroundPhoto(it) { vScope.launch { inSnackbar.showSnackbar("Image illisible : choisissez une autre photo.") } } }
+	}																						// sélecteur de photos
+	BackdropSettings(
+		inCode          = vCode,
+		inBlur          = vBlur,
+		inVeil          = vVeil,
+		inOnColor       = inAppViewModel::setBackgroundColor,
+		inOnPickPhoto   = { vPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+		inOnRemovePhoto = inAppViewModel::removeBackgroundPhoto,
+		inOnBlur        = inAppViewModel::setBackgroundBlur,
+		inOnVeil        = inAppViewModel::setBackgroundVeil
 	)
 }

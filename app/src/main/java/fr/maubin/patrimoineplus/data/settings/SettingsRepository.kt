@@ -12,7 +12,8 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 import androidx.datastore.preferences.core.stringSetPreferencesKey
-import fr.maubin.patrimoineplus.ui.theme.ColorTheme
+import fr.maubin.patrimoineplus.ui.theme.ColorTheme
+import androidx.datastore.preferences.core.intPreferencesKey
 
 /*
 	Réglages de l'application, mémorisés entre les sessions.
@@ -45,6 +46,33 @@ interface SettingsRepository
 
 	// Effet verre (désactivé par défaut).
 	val glassEffect: Flow<Boolean>
+
+	// Fond choisi : vide pour le fond par défaut, « #RRGGBB » pour une couleur, « photo » pour la photo copiée.
+	val background: Flow<String>
+
+	// Flou de la photo de fond, de 0 à 100.
+	val backgroundBlur: Flow<Int>
+
+	// Voile de lisibilité sur la photo de fond, de 0 à 100.
+	val backgroundVeil: Flow<Int>
+
+	/*
+		Choisit le fond.
+		inBackground : vide pour le fond par défaut, « #RRGGBB » ou « photo »
+	*/
+	suspend fun setBackground(inBackground: String)
+
+	/*
+		Règle le flou de la photo de fond.
+		inBlur : de 0 à 100
+	*/
+	suspend fun setBackgroundBlur(inBlur: Int)
+
+	/*
+		Règle le voile de la photo de fond.
+		inVeil : de 0 à 100
+	*/
+	suspend fun setBackgroundVeil(inVeil: Int)
 
 	// Thème personnalisé choisi (identifiant) ; vide : le thème de couleurs.
 	val customTheme: Flow<String>
@@ -161,6 +189,9 @@ class DataStoreSettingsRepository @Inject constructor(
 	private val kTrendColorsKey   = booleanPreferencesKey("trend_colors")	// ancienne clé des couleurs de hausse et de baisse (lue pour la reprise)
 	private val kColorThemeKey    = stringPreferencesKey("color_theme")		// clé du thème de couleurs
 	private val kGlassKey         = booleanPreferencesKey("glass_effect")	// clé de l'effet verre
+	private val kBackgroundKey    = stringPreferencesKey("background")		// clé du fond choisi
+	private val kBlurKey          = intPreferencesKey("background_blur")	// clé du flou de la photo de fond
+	private val kVeilKey          = intPreferencesKey("background_veil")	// clé du voile de la photo de fond
 	private val kViewKey          = stringPreferencesKey("view_profile")	// clé de la vue affichée
 	private val kCustomThemeKey   = stringPreferencesKey("custom_theme")	// clé du thème personnalisé choisi
 	private val kPieChartsKey     = stringSetPreferencesKey("pie_chart_keys")	// clé des répartitions affichées en cercle
@@ -209,6 +240,42 @@ class DataStoreSettingsRepository @Inject constructor(
 	override suspend fun setGlassEffect(inGlass: Boolean)
 	{
 		inDataStore.edit { inPreferences -> inPreferences[kGlassKey] = inGlass }
+	}
+
+	override val background: Flow<String> =
+		inDataStore.data.map { inPreferences -> inPreferences[kBackgroundKey].orEmpty() }
+
+	override val backgroundBlur: Flow<Int> =
+		inDataStore.data.map { inPreferences -> inPreferences[kBlurKey] ?: 60 }
+
+	override val backgroundVeil: Flow<Int> =
+		inDataStore.data.map { inPreferences -> inPreferences[kVeilKey] ?: 40 }
+
+	/*
+		Enregistre le fond choisi.
+		inBackground : vide, « #RRGGBB » ou « photo »
+	*/
+	override suspend fun setBackground(inBackground: String)
+	{
+		inDataStore.edit { inPreferences -> inPreferences[kBackgroundKey] = inBackground }
+	}
+
+	/*
+		Enregistre le flou de la photo de fond.
+		inBlur : de 0 à 100
+	*/
+	override suspend fun setBackgroundBlur(inBlur: Int)
+	{
+		inDataStore.edit { inPreferences -> inPreferences[kBlurKey] = inBlur.coerceIn(0, 100) }
+	}
+
+	/*
+		Enregistre le voile de la photo de fond.
+		inVeil : de 0 à 100
+	*/
+	override suspend fun setBackgroundVeil(inVeil: Int)
+	{
+		inDataStore.edit { inPreferences -> inPreferences[kVeilKey] = inVeil.coerceIn(0, 100) }
 	}
 
 	override val updatesEnabled: Flow<Boolean> =

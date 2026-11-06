@@ -116,11 +116,12 @@ fun main(inArgs: Array<String>)
 			}
 			val vSettings by vController.settings.collectAsState()					// réglages (apparence)
 			val vDark     = vSettings.appearance.isDark()								// mode sombre effectif
-			LaunchedEffect(vDark, vSettings.glass) {
-				val (vCaption, vText) = titleBarColors(vDark, vSettings.glass)			// couleurs de la barre de titre
+			val vBackdrop by vController.backdrop.collectAsState()						// fond choisi (barre de titre assortie)
+			LaunchedEffect(vDark, vSettings.glass, vBackdrop) {
+				val (vCaption, vText) = titleBarColors(vDark, vSettings.glass, vBackdrop)	// couleurs de la barre de titre
 				TitleBar.apply(window, vCaption, vText, vDark)
 			}
-			App(vController, inOnPickSaveFile = ::pickSaveFile, inOnPickBankFile = ::pickBankFile, inOnPickSave = ::pickSave, inOnPickFolder = ::pickFolder, inWindowShown = { window.isShowing })
+			App(vController, inOnPickSaveFile = ::pickSaveFile, inOnPickBankFile = ::pickBankFile, inOnPickSave = ::pickSave, inOnPickPhoto = ::pickPhoto, inOnPickFolder = ::pickFolder, inWindowShown = { window.isShowing })
 		}
 	}
 }
@@ -222,6 +223,19 @@ private fun pickBankFile(): Path?
 	val vChooser = JFileChooser().apply {
 		dialogTitle = "Relevé exporté par la banque"
 		fileFilter  = javax.swing.filechooser.FileNameExtensionFilter("Relevé de la banque (CSV)", "csv", "txt")
+	}																			// sélecteur
+	return if (vChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) vChooser.selectedFile.toPath() else null
+}
+
+/*
+	Sélecteur d'une photo de fond (JPEG, PNG, GIF, BMP) ; null si
+	l'utilisateur annule.
+*/
+private fun pickPhoto(): Path?
+{
+	val vChooser = JFileChooser().apply {
+		dialogTitle = "Photo de fond"
+		fileFilter  = javax.swing.filechooser.FileNameExtensionFilter("Photo (JPEG, PNG, GIF, BMP)", "jpg", "jpeg", "png", "gif", "bmp")
 	}																			// sélecteur
 	return if (vChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) vChooser.selectedFile.toPath() else null
 }

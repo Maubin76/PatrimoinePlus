@@ -58,7 +58,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
 import fr.maubin.patrimoineplus.ui.components.GhostButton
-import fr.maubin.patrimoineplus.ui.components.LemonPillButton
+import fr.maubin.patrimoineplus.ui.components.LemonPillButton
+import androidx.compose.foundation.layout.Box
 
 /*
 	Verrou et sauvegarde, vus par l'écran des réglages.
@@ -92,6 +93,7 @@ data class SafetyActions(
 	inOnGlass      : active ou retire l'effet verre
 	inProfiles     : profils de la famille ; null pour masquer la section
 	inThemes       : thèmes personnalisés et leurs actions ; null pour masquer la liste
+	inBackdrop     : réglage du fond (couleur, photo) ; null pour le masquer
 	inUpdates      : mises à jour (vérification, version) ; null pour masquer la section
 */
 @Composable
@@ -108,6 +110,7 @@ fun SettingsScreen(
 	inOnGlass      : (Boolean) -> Unit = {},
 	inProfiles     : ProfilesActions? = null,
 	inThemes       : ThemesActions? = null,
+	inBackdrop     : (@Composable () -> Unit)? = null,
 	inUpdates      : UpdatesActions? = null,
 	inDiagnostic   : (@Composable () -> Unit)? = null
 )
@@ -140,6 +143,10 @@ fun SettingsScreen(
 			inThemes?.let { inActions ->
 				Spacer(Modifier.height(12.dp))
 				CustomThemes(inActions)
+			}
+			inBackdrop?.let { inContent ->
+				Spacer(Modifier.height(24.dp))
+				BorderedCard { Box(Modifier.padding(20.dp)) { inContent() } }
 			}
 			Spacer(Modifier.height(32.dp))
 			SectionHeader(inTitle = "Confidentialité")

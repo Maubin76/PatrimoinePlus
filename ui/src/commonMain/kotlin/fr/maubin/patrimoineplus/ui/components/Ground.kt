@@ -25,18 +25,28 @@ import androidx.compose.ui.unit.IntSize
 import kotlin.math.roundToInt
 
 /*
-	Fond de l'application (téléphone et PC), sous tout le contenu : un neutre
-	gris-bleu, à peine plus clair en haut (ardoise en sombre).
-	inDark  : mode sombre
-	inGlass : sans effet (un seul style ; gardé pour les appels existants)
+	Fond de l'application (téléphone et PC), sous tout le contenu : celui
+	choisi par l'utilisateur (photo floutée et voilée, ou couleur unie), sinon
+	un neutre gris-bleu, à peine plus clair en haut (ardoise en sombre).
+	inDark     : mode sombre
+	inGlass    : sans effet (un seul style ; gardé pour les appels existants)
+	inBackdrop : fond choisi
 */
 @Composable
 fun AppGround(
-	inDark  : Boolean,
-	inGlass : Boolean = true
+	inDark     : Boolean,
+	inGlass    : Boolean  = true,
+	inBackdrop : Backdrop = Backdrop()
 )
 {
-	GlassBackdrop(inDark)
+	val vPhoto = inBackdrop.photo																// photo choisie
+	val vColor = inBackdrop.color																// couleur choisie
+	when
+	{
+		vPhoto != null -> PhotoBackdrop(vPhoto, inDark, inBackdrop.blur, inBackdrop.veil)
+		vColor != null -> ColorBackdrop(vColor, inDark)
+		else           -> GlassBackdrop(inDark)
+	}
 }
 
 /*
@@ -72,7 +82,7 @@ fun GlassBackdrop(inDark: Boolean)
 	inRadius : rayon du flou, en pixels
 	inDraw   : dessin, en proportions de la zone (size est celle de l'image réduite)
 */
-private fun softImage(
+internal fun softImage(
 	inScope  : CacheDrawScope,
 	inRadius : Float,
 	inDraw   : DrawScope.() -> Unit
@@ -149,13 +159,15 @@ private fun DrawScope.deskGradients(inDark: Boolean)
 	Couleur de la barre de titre de la fenêtre (PC) : celle du haut du fond
 	de l'appli, pour que la fenêtre forme un seul bloc ; le titre à l'encre
 	du thème.
-	inDark  : mode sombre
-	inGlass : effet verre
+	inDark     : mode sombre
+	inGlass    : sans effet (gardé pour les appels existants)
+	inBackdrop : fond choisi (couleur, ou photo voilée)
 	Retour : fond de la barre et couleur du titre
 */
 fun titleBarColors(
-	inDark  : Boolean,
-	inGlass : Boolean
+	inDark     : Boolean,
+	inGlass    : Boolean,
+	inBackdrop : Backdrop = Backdrop()
 ): Pair<Color, Color> =
-	if (inDark) Color(0xFF12161C) to Color(0xFFEDF0F4) else Color(0xFFE6EBF0) to Color(0xFF14171C)
+	backdropTop(inDark, inBackdrop, if (inDark) Color(0xFF12161C) else Color(0xFFE6EBF0)) to (if (inDark) Color(0xFFEDF0F4) else Color(0xFF14171C))
 

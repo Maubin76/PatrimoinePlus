@@ -92,7 +92,13 @@ import fr.maubin.patrimoineplus.desktop.update.appVersion
 import java.util.UUID
 import fr.maubin.patrimoineplus.desktop.data.PeerService
 import fr.maubin.patrimoineplus.desktop.data.PeerStore
-import fr.maubin.patrimoineplus.desktop.data.PeerData
+import fr.maubin.patrimoineplus.desktop.data.PeerData
+import fr.maubin.patrimoineplus.ui.components.Backdrop
+import fr.maubin.patrimoineplus.ui.components.parseBackdropColor
+import fr.maubin.patrimoineplus.ui.components.backdropCode
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import java.nio.file.StandardCopyOption
 
 private const val kDayCheckMillis = 60_000L										// contrôle du changement de jour
 
@@ -998,6 +1004,84 @@ class DesktopController(
 	*/
 	fun setGlass(inGlass: Boolean) = update(fSettings.value.copy(glass = inGlass))
 
+	private val fPhoto = MutableStateFlow(loadPhoto())								// photo de fond décodée ; null sans
+
+	// Fond choisi, prêt à dessiner (couleur, ou photo floutée et voilée ; par défaut sinon).
+	val backdrop: StateFlow<Backdrop> = DerivedFlow(listOf(fSettings, fPhoto)) {
+		val vSet = fSettings.value																	// réglages
+		Backdrop(
+			color = if (vSet.background.startsWith("#")) parseBackdropColor(vSet.background) else null,
+			photo = if (vSet.background == kPhotoBackground) fPhoto.value else null,
+			blur  = vSet.blur / 100f,
+			veil  = vSet.veil / 100f
+		)
+	}
+
+	/*
+		Choisit la couleur du fond (code « #RRGGBB ») ; null revient au fond par
+		défaut. La photo éventuelle est oubliée.
+		inCode : code de la couleur ; null pour le fond par défaut
+	*/
+	fun setBackgroundColor(inCode: String?)
+	{
+		val vColor = inCode?.let(::parseBackdropColor)													// couleur lue
+		if (inCode != null && vColor == null) return showNotice("Couleur illisible : saisissez un code comme #E0E6EB.")
+		removePhotoFile()
+		update(fSettings.value.copy(background = vColor?.let(::backdropCode).orEmpty()))
+	}
+
+	/*
+		Met une photo en fond : elle est copiée dans le dossier des réglages
+		(l'original peut ensuite être déplacé), puis floutée et voilée selon
+		les réglages. Une image illisible est refusée, avec un message.
+		inPath : photo choisie
+	*/
+	fun setBackgroundPhoto(inPath: Path)
+	{
+		val vImage = readPhoto(inPath) ?: return showNotice("Image illisible : choisissez une photo JPEG ou PNG.")	// photo décodée
+		runCatching {
+			Files.createDirectories(inConfig.photoFile.parent)
+			Files.copy(inPath, inConfig.photoFile, StandardCopyOption.REPLACE_EXISTING)
+		}.onFailure { return showNotice("Copie de la photo impossible : ${it.message ?: "erreur inconnue"}.") }
+		fPhoto.value = vImage
+		update(fSettings.value.copy(background = kPhotoBackground))
+	}
+
+	/*
+		Retire la photo de fond : retour au fond par défaut.
+	*/
+	fun removeBackgroundPhoto()
+	{
+		removePhotoFile()
+		update(fSettings.value.copy(background = ""))
+	}
+
+	/*
+		Règle le flou de la photo de fond.
+		inBlur : intensité, de 0 à 100
+	*/
+	fun setBackgroundBlur(inBlur: Int) = update(fSettings.value.copy(blur = inBlur.coerceIn(0, 100)))
+
+	/*
+		Règle le voile de lisibilité sur la photo de fond.
+		inVeil : intensité, de 0 à 100
+	*/
+	fun setBackgroundVeil(inVeil: Int) = update(fSettings.value.copy(veil = inVeil.coerceIn(0, 100)))
+
+	/*
+		Photo de fond mémorisée, décodée ; null sans photo ou si elle est illisible.
+	*/
+	private fun loadPhoto(): ImageBitmap? = if (inConfig.load().background == kPhotoBackground) readPhoto(inConfig.photoFile) else null
+
+	/*
+		Supprime la copie de la photo de fond.
+	*/
+	private fun removePhotoFile()
+	{
+		runCatching { Files.deleteIfExists(inConfig.photoFile) }
+		fPhoto.value = null
+	}
+
 	/*
 		Choisit la forme d'un diagramme de répartition (mémorisée pour lui seul).
 		inKey : clé du diagramme
@@ -1586,3 +1670,27 @@ data class ActiveTour(
 	val step : Int
 )
 
+const val kPhotoBackground = "photo"												// réglage du fond : la photo copiée
+private const val kPhotoMax   = 1600												// plus grand côté gardé d'une photo de fond (mémoire)
+
+/*
+	Lit une photo et la réduit à 1 600 pixels au plus de côté (le fond est
+	flouté : la pleine définition ne servirait à rien) ; null si elle est
+	illisible.
+	inPath : fichier de la photo
+*/
+fun readPhoto(inPath: Path): ImageBitmap?
+{
+	val vImage = runCatching { javax.imageio.ImageIO.read(inPath.toFile()) }.getOrNull() ?: return null	// image lue
+	val vScale = minOf(1.0, kPhotoMax.toDouble() / maxOf(vImage.width, vImage.height))					// réduction
+	if (vScale >= 1.0) return vImage.toComposeImageBitmap()
+	val vW     = maxOf(1, (vImage.width * vScale).toInt())														// largeur réduite
+	val vH     = maxOf(1, (vImage.height * vScale).toInt())														// hauteur réduite
+	val vSmall = java.awt.image.BufferedImage(vW, vH, java.awt.image.BufferedImage.TYPE_INT_RGB)				// image réduite
+	vSmall.createGraphics().apply {
+		setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR)
+		drawImage(vImage, 0, 0, vW, vH, null)
+		dispose()
+	}
+	return vSmall.toComposeImageBitmap()
+}

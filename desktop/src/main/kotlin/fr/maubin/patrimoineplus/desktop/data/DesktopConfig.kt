@@ -49,6 +49,9 @@ val kAssistantDefault = System.getProperty("patrimoineplus.assistant") != "off"
 	toursSeen  : visites guidées déjà vues ou passées (nom de la page)
 	toursOff   : vrai si l'utilisateur a coupé les visites guidées
 	palette    : thème personnalisé choisi (identifiant) ; vide : le thème de couleurs
+	background : fond choisi : vide pour le fond par défaut, « #RRGGBB » pour une couleur, « photo » pour la photo copiée (photoFile)
+	blur       : flou de la photo de fond, de 0 à 100
+	veil       : voile de lisibilité sur la photo de fond, de 0 à 100
 */
 data class DesktopSettings(
 	val source     : Source    = Source.None,
@@ -70,7 +73,10 @@ data class DesktopSettings(
 	val deviceName : String    = "",
 	val wifiSync   : Boolean   = false,
 	val tray       : Boolean   = false,
-	val autostart  : Boolean   = false
+	val autostart  : Boolean   = false,
+	val background : String    = "",
+	val blur       : Int       = 60,
+	val veil       : Int       = 40
 )
 
 /*
@@ -83,6 +89,9 @@ class DesktopConfig(private val inFile: Path)
 {
 	// Dossier des réglages (appareils appairés, versions communes).
 	val folder: Path get() = inFile.toAbsolutePath().parent
+
+	// Copie de la photo de fond choisie (indépendante de l'original, qui peut être déplacé).
+	val photoFile: Path get() = folder.resolve("fond-ecran.img")
 
 	/*
 		Lit les réglages.
@@ -122,7 +131,10 @@ class DesktopConfig(private val inFile: Path)
 			deviceName = vProps.getProperty("device_name").orEmpty(),
 			wifiSync   = vProps.getProperty("wifi_sync") == "true",
 			tray       = vProps.getProperty("tray_on_close") == "true",
-			autostart  = vProps.getProperty("start_with_windows") == "true"
+			autostart  = vProps.getProperty("start_with_windows") == "true",
+			background = vProps.getProperty("background").orEmpty(),
+			blur       = vProps.getProperty("background_blur")?.toIntOrNull()?.coerceIn(0, 100) ?: 60,
+			veil       = vProps.getProperty("background_veil")?.toIntOrNull()?.coerceIn(0, 100) ?: 40
 		)
 	}
 
@@ -163,6 +175,9 @@ class DesktopConfig(private val inFile: Path)
 		vProps.setProperty("wifi_sync", inSettings.wifiSync.toString())
 		vProps.setProperty("tray_on_close", inSettings.tray.toString())
 		vProps.setProperty("start_with_windows", inSettings.autostart.toString())
+		vProps.setProperty("background", inSettings.background)
+		vProps.setProperty("background_blur", inSettings.blur.toString())
+		vProps.setProperty("background_veil", inSettings.veil.toString())
 		inFile.parent?.let { Files.createDirectories(it) }
 		val vTemp = inFile.resolveSibling("${inFile.fileName}.tmp")				// écriture provisoire
 		Files.newBufferedWriter(vTemp, Charsets.UTF_8).use { vProps.store(it, "Réglages de PatrimoinePlus (PC)") }

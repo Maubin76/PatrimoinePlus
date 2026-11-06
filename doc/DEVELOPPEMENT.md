@@ -216,6 +216,22 @@ style, en clair ou en sombre.
   à 7 %, ombre neutre courte en clair, coins de 16 dp ; cadres intérieurs
   de 8 dp pour les listes et les tableaux. Espacements sur une grille de
   4 dp (panneaux : 24 dp de marge, 20 dp entre eux).
+- **Fond personnalisé** (Réglages › Apparence › Fond, PC et téléphone ;
+  `ui/components/Backdrop.kt`) : propre à chaque appareil, jamais dans le
+  fichier d'échange. Huit teintes proposées (la première, « Brume », est le
+  fond par défaut ; toutes à plus de 12:1 sous l'encre), ou une couleur libre
+  « #RRGGBB » avec une alerte sous 4,5:1. En sombre, la même teinte très
+  foncée (luminosité 8,5 %, saturation plafonnée). Ou une **photo** : copiée
+  à part (PC : `fond-ecran.img` dans le dossier des réglages ; téléphone :
+  dossier privé de l'appli, choisie par le sélecteur de photos d'Android,
+  sans autorisation), réduite à 1 600 pixels de côté, recadrée pour couvrir
+  la fenêtre, floutée une fois pour toutes (petite image agrandie par
+  étapes) puis voilée (blanc en clair, noir en sombre, la photo toujours
+  assombrie en sombre). Deux curseurs, **Flou** et **Voile** (0 à 100,
+  enregistrés au lâcher). La barre de titre du PC prend la couleur du haut
+  du fond (couleur moyenne de la photo voilée). Réglages du PC :
+  `background` (vide, code ou `photo`), `background_blur`,
+  `background_veil`.
 - Un seul accent dans la coque : le jaune citron, pour « Nouvelle opération »
   (`LemonButton`) et l'action principale d'un panneau ou d'une feuille
   (`LemonPillButton`, `LemonDisc` sur le téléphone). Pilules et boutons

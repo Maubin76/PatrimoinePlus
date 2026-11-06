@@ -94,7 +94,10 @@ import fr.maubin.patrimoineplus.R
 import fr.maubin.patrimoineplus.data.update.UpdateOffer
 import fr.maubin.patrimoineplus.data.update.ReleaseAsset
 import fr.maubin.patrimoineplus.ui.components.UpdateDialog
-import fr.maubin.patrimoineplus.ui.components.UpdateUiState
+import fr.maubin.patrimoineplus.ui.components.UpdateUiState
+import fr.maubin.patrimoineplus.ui.components.Backdrop
+import fr.maubin.patrimoineplus.ui.components.BackdropSettings
+import androidx.compose.ui.graphics.asImageBitmap
 
 private const val kOutDir = "build/outputs/roborazzi"						// dossier des captures
 
@@ -528,6 +531,55 @@ class ScreenshotTest
 		val vState = buildHomeState(vDemo.accounts, vDemo.transactions, vDemo.prices, vToday, vDemo.loans)	// état calculé, en net
 		captureRoboImage("$kOutDir/home-demo.png", content = shell(false, false, TopLevelDestination.Home) {
 			HomeContent(vState, {}, {})
+		})
+	}
+
+	/*
+		Photo de test pour le fond : dégradé chaud et froid avec un soleil
+		(aucune image extérieure).
+	*/
+	private fun testPhoto(): androidx.compose.ui.graphics.ImageBitmap
+	{
+		val vBitmap = android.graphics.Bitmap.createBitmap(1200, 800, android.graphics.Bitmap.Config.ARGB_8888)	// image dessinée
+		val vCanvas = android.graphics.Canvas(vBitmap)																// dessin
+		vCanvas.drawPaint(android.graphics.Paint().apply { shader = android.graphics.LinearGradient(0f, 0f, 1200f, 800f, 0xFFF2A65A.toInt(), 0xFF3C6EB4.toInt(), android.graphics.Shader.TileMode.CLAMP) })
+		vCanvas.drawCircle(900f, 250f, 130f, android.graphics.Paint().apply { color = 0xFFFFF1B0.toInt() })
+		return vBitmap.asImageBitmap()
+	}
+
+	/*
+		Fond personnalisé : accueil de démonstration sur une photo floutée et
+		voilée, en clair et en sombre ; réglages avec le choix du fond en mode
+		photo (pastilles, couleur libre, flou et voile).
+	*/
+	@Test
+	@Config(qualifiers = "w360dp-h1300dp-xxhdpi")
+	fun backdropPhoto()
+	{
+		val vToday    = LocalDate.parse("2026-10-07")							// date de calcul
+		val vDemo     = buildDemoData(vToday)										// démonstration
+		val vState    = buildHomeState(vDemo.accounts, vDemo.transactions, vDemo.prices, vToday, vDemo.loans)	// état calculé, en net
+		val vBackdrop = Backdrop(photo = testPhoto())								// fond en photo
+		listOf(false to "clair", true to "sombre").forEach { (inDark, inName) ->
+			captureRoboImage("$kOutDir/fond-photo-$inName.png", content = {
+				PatrimoineTheme(inDarkTheme = inDark) {
+					Box(Modifier.fillMaxSize()) {
+						AppGround(inDark, true, vBackdrop)
+						AppFrame(inPosition = { 0f }, inSelected = TopLevelDestination.Home, inOnSelect = {}, inSnackbar = remember { SnackbarHostState() }) { HomeContent(vState, {}, {}) }
+					}
+				}
+			})
+		}
+		captureRoboImage("$kOutDir/fond-reglages.png", content = {
+			PatrimoineTheme(inDarkTheme = false) {
+				Box(Modifier.fillMaxSize()) {
+					AppGround(false, true, vBackdrop)
+					AppFrame(inPosition = { 3f }, inSelected = TopLevelDestination.Settings, inOnSelect = {}, inSnackbar = remember { SnackbarHostState() }) {
+						SettingsScreen(ThemeMode.LIGHT, {}, false, {}, SafetyActions(true, "8 octobre 2026", "Documents/PatrimoinePlus", {}, {}, {}), null,
+							inBackdrop = { BackdropSettings("photo", 60, 40, {}, {}, {}, {}, {}) })
+					}
+				}
+			}
 		})
 	}
 

@@ -101,7 +101,8 @@ class MainActivity : FragmentActivity()
 			}
 			DeskTheme(inDarkTheme = vDark, inColorTheme = vColors, inGlass = vGlass, inPalette = vPalette) {
 				Box(Modifier.fillMaxSize()) {
-					AppGround(vDark, vGlass)												// fond pastel, ou formes floues derrière le verre
+					val vBackdrop by fAppViewModel.backdrop.collectAsStateWithLifecycle()		// fond choisi
+					AppGround(vDark, vGlass, vBackdrop)										// fond par défaut, couleur ou photo floutée
 					if (vLock == LockState.UNLOCKED)
 					{
 						vKept.SaveableStateProvider("contenu") {

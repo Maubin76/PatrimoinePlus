@@ -172,6 +172,9 @@ private val kTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.FRANCE)
 // Choix d'un relevé exporté par la banque (vue d'un compte) ; fourni par App.
 val LocalBankPicker = staticCompositionLocalOf<() -> Path?> { { null } }
 
+// Sélecteur d'une photo de fond ; null si l'utilisateur annule.
+val LocalPhotoPicker = staticCompositionLocalOf<() -> Path?> { { null } }
+
 // Choix d'un fichier à écrire d'après un nom proposé (export PDF) ; fourni par App.
 val LocalSavePicker = staticCompositionLocalOf<(String) -> Path?> { { null } }
 
@@ -182,12 +185,14 @@ private const val kTourDelay   = 450L													// attente avant la visite d'u
 private val kEase       = CubicBezierEasing(0.2f, 0f, 0f, 1f)						// courbe « accentuée » de Material
 
 /*
-	Racine de l'appli PC : thème selon l'apparence choisie, fond pastel, mode
-	discret, puis écran d'accueil (aucune source) ou appli complète.
+	Racine de l'appli PC : thème selon l'apparence choisie, fond choisi
+	(défaut, couleur ou photo floutée), mode discret, puis écran d'accueil
+	(aucune source) ou appli complète.
 	inController     : contrôleur
 	inOnPickSaveFile : choix d'un fichier où enregistrer une copie ; null si annulé
 	inOnPickBankFile : choix d'un relevé exporté par la banque ; null si annulé
 	inOnPickSave     : choix d'un fichier à écrire, d'après un nom proposé ; null si annulé
+	inOnPickPhoto    : choix d'une photo de fond ; null si annulé
 	inWindowShown    : vrai quand la fenêtre est à l'écran (l'animation du lancement l'attend) ; null sans fenêtre (tests)
 	inOnPickFolder   : ouvre le sélecteur de dossier ; rend le dossier choisi ou null
 */
@@ -197,6 +202,7 @@ fun App(
 	inOnPickSaveFile : () -> Path? = { null },
 	inOnPickBankFile : () -> Path? = { null },
 	inOnPickSave     : (String) -> Path? = { null },
+	inOnPickPhoto    : () -> Path? = { null },
 	inWindowShown    : (() -> Boolean)? = null,
 	inOnPickFolder   : () -> Path?
 )
@@ -209,8 +215,9 @@ fun App(
 	val vLaunch   = rememberLaunch(inWindowShown)												// lancement : fond seul, puis arrivée des éléments
 	val vPointer  = remember { mutableStateOf<Offset?>(null) }									// pointeur dans la fenêtre (regard de l'assistant)
 	DeskTheme(inDarkTheme = vDark, inColorTheme = vSettings.colors, inGlass = vSettings.glass, inPalette = vPalette) {
-		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie), LocalTourAnchors provides remember { TourAnchors() }, LocalLaunch provides vLaunch, LocalPointer provides remember { { vPointer.value } }, LocalAssistant provides (if (vSettings.assistant) vSettings.calm else null), LocalAssistantRoom provides (if (vSettings.assistant) kAssistantRoom else 0.dp), LocalProfiles provides vSpace.data.profiles, LocalPanelGuard provides remember(inController) { PanelGuard(inController::setPanelDirty, inController::whenDiscarded) }) {
-			AppGround(vDark, vSettings.glass)												// fond pastel, ou formes floues derrière le verre
+		CompositionLocalProvider(LocalAmountsHidden provides vSettings.hidden, LocalBankPicker provides inOnPickBankFile, LocalPhotoPicker provides inOnPickPhoto, LocalSavePicker provides inOnPickSave, LocalProportionStyle provides ProportionStyle(vSettings.pies, inController::setPie), LocalTourAnchors provides remember { TourAnchors() }, LocalLaunch provides vLaunch, LocalPointer provides remember { { vPointer.value } }, LocalAssistant provides (if (vSettings.assistant) vSettings.calm else null), LocalAssistantRoom provides (if (vSettings.assistant) kAssistantRoom else 0.dp), LocalProfiles provides vSpace.data.profiles, LocalPanelGuard provides remember(inController) { PanelGuard(inController::setPanelDirty, inController::whenDiscarded) }) {
+			val vBackdrop by inController.backdrop.collectAsState()						// fond choisi
+			AppGround(vDark, vSettings.glass, vBackdrop)										// fond par défaut, couleur ou photo floutée
 			Surface(
 				modifier     = Modifier.fillMaxSize().pointerInput(Unit) {
 					awaitPointerEventScope {
