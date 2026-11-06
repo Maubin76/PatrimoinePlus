@@ -48,7 +48,7 @@ fun <T> PillChoice(
 {
 	val vColors = MaterialTheme.colorScheme										// palette courante
 	Row(
-		modifier              = Modifier.fillMaxWidth().clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = if (isNight()) 0.05f else 0.4f)).border(1.dp, Color.White.copy(alpha = if (isNight()) 0.08f else 0.85f), RoundedCornerShape(50)).padding(4.dp).selectableGroup(),
+		modifier              = Modifier.fillMaxWidth().clip(RoundedCornerShape(50)).background(vColors.onSurface.copy(alpha = if (isNight()) 0.07f else 0.05f)).padding(4.dp).selectableGroup(),
 		horizontalArrangement = Arrangement.spacedBy(4.dp)
 	) {
 		inOptions.forEach { inOption ->
@@ -60,6 +60,7 @@ fun <T> PillChoice(
 					.height(40.dp)
 					.clip(RoundedCornerShape(50))
 					.background(vFill)
+					.then(if (vActive) Modifier.border(1.dp, vColors.onSurface.copy(alpha = if (isNight()) 0.12f else 0.1f), RoundedCornerShape(50)) else Modifier)
 					.selectable(selected = vActive, enabled = inEnabled, role = Role.RadioButton) { inOnSelect(inOption) },
 				contentAlignment = Alignment.Center
 			) {

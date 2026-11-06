@@ -105,6 +105,7 @@ import fr.maubin.patrimoineplus.ui.components.LocalAccent
 import fr.maubin.patrimoineplus.ui.components.accountAccent
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
+import fr.maubin.patrimoineplus.ui.theme.colorfulPalette
 
 private val kMonthTitle = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.FRANCE)	// en-tête d'un mois
 private val kShortDay   = DateTimeFormatter.ofPattern("d MMM", Locale.FRANCE)	// date en tête du sous-titre
@@ -407,8 +408,9 @@ fun AccountDetailScreen(
 private fun Set<String>.toggle(inId: String): Set<String> = if (inId in this) this - inId else this + inId
 
 /*
-	Vue d'un compte à la couleur de son type (thème Coloré : courbes et
-	éléments d'accent) ; voir AccountDetailBody.
+	Contenu de la vue d'un compte, sans état propre (prévisualisable), à la
+	couleur de son type (courbes, barres et éléments d'accent) ; voir
+	AccountDetailFrame.
 	inState      : état du compte
 	inExtras     : compléments
 	inSelection  : opérations sélectionnées
@@ -418,7 +420,7 @@ private fun Set<String>.toggle(inId: String): Set<String> = if (inId in this) th
 	inQuotesAt   : date de la dernière mise à jour des cours
 */
 @Composable
-private fun AccountDetailBody(
+fun AccountDetailContent(
 	inState      : AccountDetailState,
 	inExtras     : AccountExtras,
 	inSelection  : Set<String>,
@@ -429,12 +431,12 @@ private fun AccountDetailBody(
 )
 {
 	CompositionLocalProvider(LocalAccent provides (inState.account?.let { accountAccent(it.type) } ?: Color.Unspecified)) {
-		AccountDetailBody(inState, inExtras, inSelection, inSnackbar, inActions, inRefreshing, inQuotesAt)
+		AccountDetailFrame(inState, inExtras, inSelection, inSnackbar, inActions, inRefreshing, inQuotesAt)
 	}
 }
 
 /*
-	Contenu de la vue d'un compte, sans état propre (prévisualisable).
+	Cadre de la vue d'un compte : barre du haut, sélection, sections du type.
 	inState     : état du mois
 	inExtras    : relevés ou portefeuille
 	inSelection : opérations sélectionnées
@@ -445,7 +447,7 @@ private fun AccountDetailBody(
 */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AccountDetailContent(
+private fun AccountDetailFrame(
 	inState      : AccountDetailState,
 	inExtras     : AccountExtras,
 	inSelection  : Set<String>,
@@ -807,7 +809,7 @@ private fun ExpensesCard(inLines: List<CategoryLine>)
 									.fillMaxWidth((inLine.netCents.coerceAtLeast(0L).toFloat() / vMax).coerceIn(0f, 1f))
 									.height(4.dp)
 									.clip(CircleShape)
-									.background(vColors.onSurface)
+									.background(LocalAccent.current.takeIf { it != Color.Unspecified } ?: colorfulPalette().main)
 							)
 						}
 					}

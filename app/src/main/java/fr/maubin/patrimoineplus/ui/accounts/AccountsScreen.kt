@@ -66,6 +66,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import fr.maubin.patrimoineplus.ui.shell.LocalViewChip
 import fr.maubin.patrimoineplus.ui.components.GhostButton
+import fr.maubin.patrimoineplus.ui.components.StatusChip
+import fr.maubin.patrimoineplus.ui.components.Tone
 
 /*
 	Onglet des comptes : liste réordonnable avec la valeur de chaque compte,
@@ -318,7 +320,8 @@ private fun AccountRow(
 				inColor = if (inItem.valueCents < 0) MaterialTheme.colorScheme.error else Color.Unspecified
 			)
 			inItem.weight?.let { inWeight ->
-				Text("${inWeight.percent}\u202F%", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+				Spacer(Modifier.height(4.dp))
+				StatusChip("${inWeight.percent}\u202F%", Tone.NEUTRAL, allocationColor(inWeight.rank))
 			}
 		}
 	}
